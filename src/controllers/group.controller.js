@@ -91,19 +91,28 @@ async function create(req, res) {
 async function update(req, res) {
   try {
     const { id } = req.params;
-    const { groupName, groupLink, ownerId, memberCount } = req.body;
+    const { groupName, groupLink, ownerId } = req.body;
 
     // 参数验证
     if (groupName && groupName.length > 50) {
       return responseUtil.badRequest(res, '群组名称长度不能超过50个字符');
     }
 
+    // 处理 ownerId
+    let parsedOwnerId;
+    if (ownerId === null || ownerId === undefined) {
+      // 不修改群主
+      parsedOwnerId = undefined;
+    } else {
+      // 如果提供了 ownerId，转换为整数
+      parsedOwnerId = parseInt(ownerId, 10);
+    }
+
     const result = await groupModel.update({
       id: parseInt(id, 10),
       groupName,
       groupLink,
-      ownerId: ownerId ? parseInt(ownerId, 10) : undefined,
-      memberCount: memberCount !== undefined ? parseInt(memberCount, 10) : undefined
+      ownerId: parsedOwnerId
     });
 
     if (!result) {

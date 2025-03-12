@@ -100,12 +100,13 @@ router.put(
       .withMessage('群组链接必须是有效的URL'),
     body('ownerId')
       .optional()
-      .isInt()
-      .withMessage('群主ID必须是整数'),
-    body('memberCount')
-      .optional()
-      .isInt({ min: 0 })
-      .withMessage('成员数量必须是非负整数')
+      .custom((value) => {
+        // 允许传入 null 或不传
+        if (value === null || value === undefined) return true;
+        // 如果传值了，必须是整数
+        return Number.isInteger(Number(value));
+      })
+      .withMessage('群主ID必须是整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.update
