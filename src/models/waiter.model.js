@@ -4,6 +4,22 @@
  */
 const { pool } = require('./db');
 const logger = require('../config/logger.config');
+const { formatDateTime } = require('../utils/date.util');
+
+/**
+ * 格式化小二信息
+ * @param {Object} waiter - 小二信息
+ * @returns {Object} 格式化后的小二信息
+ */
+function formatWaiter(waiter) {
+  if (!waiter) return null;
+  return {
+    ...waiter,
+    last_login_time: formatDateTime(waiter.last_login_time),
+    create_time: formatDateTime(waiter.create_time),
+    update_time: formatDateTime(waiter.update_time)
+  };
+}
 
 /**
  * 根据用户名查找小二
@@ -16,7 +32,7 @@ async function findByUsername(username) {
       'SELECT * FROM waiters WHERE username = ?',
       [username]
     );
-    return rows.length > 0 ? rows[0] : null;
+    return rows.length > 0 ? formatWaiter(rows[0]) : null;
   } catch (error) {
     logger.error(`根据用户名查找小二失败: ${error.message}`);
     throw error;
@@ -34,7 +50,7 @@ async function findById(id) {
       'SELECT * FROM waiters WHERE id = ?',
       [id]
     );
-    return rows.length > 0 ? rows[0] : null;
+    return rows.length > 0 ? formatWaiter(rows[0]) : null;
   } catch (error) {
     logger.error(`根据ID查找小二失败: ${error.message}`);
     throw error;
@@ -77,7 +93,7 @@ async function getList(filters = {}, page = 1, pageSize = 10) {
     const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
     
     return {
-      list: rows,
+      list: rows.map(formatWaiter),
       total: countResult[0].total,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)

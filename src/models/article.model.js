@@ -4,6 +4,21 @@
  */
 const { pool } = require('./db');
 const logger = require('../config/logger.config');
+const { formatDateTime } = require('../utils/date.util');
+
+/**
+ * 格式化文章信息
+ * @param {Object} article - 文章信息
+ * @returns {Object} 格式化后的文章信息
+ */
+function formatArticle(article) {
+  if (!article) return null;
+  return {
+    ...article,
+    create_time: formatDateTime(article.create_time),
+    update_time: formatDateTime(article.update_time)
+  };
+}
 
 /**
  * 根据位置标识获取文章
@@ -16,7 +31,7 @@ async function getByLocation(location) {
       'SELECT * FROM articles WHERE location = ?',
       [location]
     );
-    return rows.length > 0 ? rows[0] : null;
+    return rows.length > 0 ? formatArticle(rows[0]) : null;
   } catch (error) {
     logger.error(`获取文章失败: ${error.message}`);
     throw error;
