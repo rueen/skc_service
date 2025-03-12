@@ -3,7 +3,7 @@
  * 处理渠道相关的路由
  */
 const express = require('express');
-const { body, query } = require('express-validator');
+const { body, query, param } = require('express-validator');
 const channelController = require('../controllers/channel.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../utils/validator.util');
@@ -12,12 +12,12 @@ const rateLimiterMiddleware = require('../middlewares/rateLimiter.middleware');
 const router = express.Router();
 
 /**
- * @route GET /api/support/channels/list
+ * @route GET /api/support/channels
  * @desc 获取渠道列表
  * @access Private
  */
 router.get(
-  '/list',
+  '/',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
@@ -38,16 +38,24 @@ router.get(
   '/:id',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
+  [
+    param('id')
+      .notEmpty()
+      .withMessage('渠道ID不能为空')
+      .isInt()
+      .withMessage('渠道ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.get
 );
 
 /**
- * @route POST /api/support/channels/add
+ * @route POST /api/support/channels
  * @desc 添加渠道
  * @access Private
  */
 router.post(
-  '/add',
+  '/',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
@@ -74,6 +82,11 @@ router.put(
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
+    param('id')
+      .notEmpty()
+      .withMessage('渠道ID不能为空')
+      .isInt()
+      .withMessage('渠道ID必须是整数'),
     body('name')
       .optional()
       .isLength({ max: 50 })
@@ -96,6 +109,14 @@ router.delete(
   '/:id',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
+  [
+    param('id')
+      .notEmpty()
+      .withMessage('渠道ID不能为空')
+      .isInt()
+      .withMessage('渠道ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.remove
 );
 

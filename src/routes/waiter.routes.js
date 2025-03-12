@@ -3,7 +3,7 @@
  * 处理小二管理相关的路由
  */
 const express = require('express');
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const waiterController = require('../controllers/waiter.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../utils/validator.util');
@@ -16,23 +16,23 @@ router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
- * @route GET /api/support/waiters/list
+ * @route GET /api/support/waiters
  * @desc 获取小二列表
  * @access Private (需要 waiter:list 权限)
  */
 router.get(
-  '/list',
+  '/',
   authMiddleware.hasPermission('waiter:list'),
   waiterController.getList
 );
 
 /**
- * @route POST /api/support/waiters/add
+ * @route POST /api/support/waiters
  * @desc 创建小二
  * @access Private (需要管理员权限)
  */
 router.post(
-  '/add',
+  '/',
   authMiddleware.isAdmin,
   [
     body('username')
@@ -65,15 +65,15 @@ router.post(
 );
 
 /**
- * @route PUT /api/support/waiters/edit
+ * @route PUT /api/support/waiters/:id
  * @desc 更新小二信息
  * @access Private (需要管理员权限)
  */
 router.put(
-  '/edit',
+  '/:id',
   authMiddleware.isAdmin,
   [
-    body('id')
+    param('id')
       .notEmpty()
       .withMessage('小二ID不能为空')
       .isInt()
@@ -106,15 +106,15 @@ router.put(
 );
 
 /**
- * @route DELETE /api/support/waiters/delete
+ * @route DELETE /api/support/waiters/:id
  * @desc 删除小二
  * @access Private (需要管理员权限)
  */
 router.delete(
-  '/delete',
+  '/:id',
   authMiddleware.isAdmin,
   [
-    body('id')
+    param('id')
       .notEmpty()
       .withMessage('小二ID不能为空')
       .isInt()

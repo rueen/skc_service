@@ -10,7 +10,7 @@
  * 处理文章相关的路由
  */
 const express = require('express');
-const { body, query } = require('express-validator');
+const { body, query, param } = require('express-validator');
 const articleController = require('../controllers/article.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../utils/validator.util');
@@ -19,19 +19,29 @@ const rateLimiterMiddleware = require('../middlewares/rateLimiter.middleware');
 const router = express.Router();
 
 /**
- * @route GET /api/support/articles/get
+ * @route GET /api/support/articles/:id
  * @desc 获取文章
  * @access Public
  */
-router.get('/get', articleController.get);
+router.get(
+  '/:id',
+  [
+    param('id')
+      .optional()
+      .isInt()
+      .withMessage('文章ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  articleController.get
+);
 
 /**
- * @route GET /api/support/articles/list
+ * @route GET /api/support/articles
  * @desc 获取文章列表
  * @access Private
  */
 router.get(
-  '/list',
+  '/',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
@@ -44,12 +54,12 @@ router.get(
 );
 
 /**
- * @route POST /api/support/articles/add
+ * @route POST /api/support/articles
  * @desc 添加文章
  * @access Private
  */
 router.post(
-  '/add',
+  '/',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
@@ -72,16 +82,16 @@ router.post(
 );
 
 /**
- * @route PUT /api/support/articles/edit
+ * @route PUT /api/support/articles/:id
  * @desc 更新文章
  * @access Private
  */
 router.put(
-  '/edit',
+  '/:id',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
-    body('id')
+    param('id')
       .notEmpty()
       .withMessage('文章ID不能为空')
       .isInt()
@@ -104,19 +114,20 @@ router.put(
 );
 
 /**
- * @route DELETE /api/support/articles/delete
+ * @route DELETE /api/support/articles/:id
  * @desc 删除文章
  * @access Private
  */
 router.delete(
-  '/delete',
+  '/:id',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
-    body('id').optional().isInt().withMessage('文章ID必须是整数'),
-    body('location').optional()
-      .isLength({ max: 50 })
-      .withMessage('位置标识长度不能超过50个字符')
+    param('id')
+      .notEmpty()
+      .withMessage('文章ID不能为空')
+      .isInt()
+      .withMessage('文章ID必须是整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   articleController.remove
