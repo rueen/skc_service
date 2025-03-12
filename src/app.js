@@ -48,7 +48,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 静态文件服务
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, '../uploads')));
 
 // 日志中间件
 // 在生产环境中将日志写入文件
