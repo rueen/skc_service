@@ -5,10 +5,24 @@
 
 // API 前缀
 const API_PREFIX = '/api/support';
+const PUBLIC_API_PREFIX = '/api';
 
 // 分页默认值
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 10;
+
+// 图片上传配置
+const UPLOAD_CONFIG = {
+  MAX_SIZE: 1024 * 1024, // 1MB
+  ALLOWED_TYPES: [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/svg+xml'
+  ],
+  ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg']
+};
 
 // 响应状态码
 const STATUS_CODES = {
@@ -133,6 +147,7 @@ const ENV = {
 
 module.exports = {
   API_PREFIX,
+  PUBLIC_API_PREFIX,
   DEFAULT_PAGE,
   DEFAULT_PAGE_SIZE,
   STATUS_CODES,
@@ -146,5 +161,6 @@ module.exports = {
   OCCUPATION_TYPE,
   SETTLEMENT_STATUS,
   PERMISSIONS,
-  ENV
+  ENV,
+  UPLOAD_CONFIG
 }; 

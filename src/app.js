@@ -31,13 +31,24 @@ app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? ['https://admin.example.com'] 
     : '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin'
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  credentials: true
 }));
 
 // 请求体解析
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 静态文件服务
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // 日志中间件
 // 在生产环境中将日志写入文件

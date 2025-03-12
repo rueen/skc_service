@@ -7,11 +7,12 @@ const authRoutes = require('./auth.routes');
 const waiterRoutes = require('./waiter.routes');
 const articleRoutes = require('./article.routes');
 const channelRoutes = require('./channel.routes');
+const uploadRoutes = require('./upload.routes');
 
 const router = express.Router();
 
 // API前缀
-const API_PREFIX = '/api/support';
+const { API_PREFIX, PUBLIC_API_PREFIX } = require('../config/api.config');
 
 // 用户认证路由
 router.use(`${API_PREFIX}/users`, authRoutes);
@@ -24,6 +25,9 @@ router.use(`${API_PREFIX}/articles`, articleRoutes);
 
 // 渠道管理路由
 router.use(`${API_PREFIX}/channels`, channelRoutes);
+
+// 文件上传路由（公共接口）
+router.use(`${PUBLIC_API_PREFIX}/upload`, uploadRoutes);
 
 // 在这里添加其他路由
 // router.use(`${API_PREFIX}/tasks`, taskRoutes);
