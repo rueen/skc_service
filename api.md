@@ -359,12 +359,12 @@ CREATE TABLE `articles` (
 
 #### 用户登录
 - **接口**：`POST /users/login`
-- **描述**：用户登录
+- **描述**：用户登录接口，服务端使用 bcrypt 验证密码
 - **请求参数**：
   ```json
   {
-    "username": "用户名",
-    "password": "密码"    
+    "username": "admin",     // 用户名
+    "password": "admin123"   // 原始密码（应通过 HTTPS 传输确保安全）
   }
   ```
 - **响应示例**：
@@ -373,10 +373,21 @@ CREATE TABLE `articles` (
     "code": 0,
     "message": "登录成功",
     "data": {
-      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "username": "admin",
+      "permissions": [
+        "task:list",
+        "task:create",
+        "task:edit",
+        "task:audit"
+      ]
     }
   }
   ```
+- **密码验证流程**：
+  1. 客户端通过 HTTPS 将原始密码发送到服务器
+  2. 服务器使用 bcrypt 的 `compare` 方法验证密码
+  3. 验证成功后返回 token 和用户信息
 
 ### 任务管理
 
@@ -755,7 +766,6 @@ CREATE TABLE `articles` (
     "icon": "http://abc",
   }
   ```
-
 #### 编辑渠道
 - **接口**：`PUT /channels/edit`
 - **描述**：编辑渠道信息
@@ -940,7 +950,7 @@ CREATE TABLE `articles` (
         {
           "id": 1,
           "username": "admin",
-          "isAdmin": true,
+          "is_admin": true,
           "remarks": "管理员",
           "permissions": "",  // 权限
         }
@@ -975,13 +985,15 @@ CREATE TABLE `articles` (
 
 ### 文章管理
 
-#### 获取文章
-- **接口**：`GET /articles/get`
+#### 获取文章列表
+- **接口**：`GET /articles/list`
 - **描述**：获取文章内容
-- **请求参数**：
+- **请求参数**：支持分页和筛选
   ```json
   {
-    "location": "userAgreement"
+    "page": 1,           // 页码
+    "pageSize": 10,      // 每页条数
+    "keyword": "",      // 搜索关键字（可选）
   }
   ```
 - **响应示例**：
@@ -990,24 +1002,41 @@ CREATE TABLE `articles` (
     "code": 0,
     "message": "",
     "data": {
-      "id": 1,
-      "title": "用户协议",
-      "content": "这是用户协议的内容...",
-      "location": "userAgreement",
-      "updateTime": "2024-02-28 10:00:00"
+      "total": 100,
+      "list": [
+        {
+          "id": 1,
+          "title": "用户协议",
+          "content": "这是用户协议的内容...",
+          "location": "userAgreement",
+          "updateTime": "2024-02-28 10:00:00"
+        }
+      ],
+      "page": 1,
+      "pageSize": 10
     }
   }
   ```
 
-#### 编辑文章
-- **接口**：`PUT /articles/edit`
-- **描述**：编辑文章内容
+#### 添加文章
+- **接口**：`POST /articles/add`
+- **描述**：添加新渠道
 - **请求参数**：
   ```json
   {
-    "id": 1,
     "title": "用户协议",
     "content": "这是用户协议的内容...",
-    "location": "userAgreement",
+    "location": "userAgreement",      // 需要确保唯一性
+    "updateTime": "2024-02-28 10:00:00"
   }
   ```
+#### 编辑文章
+- **接口**：`PUT /articles/edit`
+- **描述**：编辑文章信息
+- **请求参数**：与添加文章相同，需要额外传入 `id` 或 `location` 字段
+
+#### 删除文章
+- **接口**：`DELETE /articles/delete`
+- **描述**：删除文章
+- **请求参数**：`id` 或 `location`
+
