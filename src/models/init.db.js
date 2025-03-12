@@ -204,8 +204,8 @@ CREATE TABLE IF NOT EXISTS articles (
 
 // 初始化管理员账号
 const initAdminUser = `
-INSERT INTO waiters (username, password, is_admin, remarks)
-SELECT 'admin', '$2b$10$rKN3RmZ0J2CvQIAJzILYpODM.CZxsRqgAJRNkwQwQMpLQzJaKjiHK', 1, '系统管理员'
+INSERT INTO waiters (username, password, is_admin, remarks, permissions)
+SELECT 'admin', '$2b$10$rKN3RmZ0J2CvQIAJzILYpODM.CZxsRqgAJRNkwQwQMpLQzJaKjiHK', 1, '系统管理员', 'task:list,task:create,task:edit,task:audit,task:auditDetail,account:list,member:list,member:create,member:edit,member:view,channel:list,group:list,waiter:list,settlement:withdrawal,settlement:otherBills,article:list'
 FROM dual
 WHERE NOT EXISTS (SELECT 1 FROM waiters WHERE username = 'admin');
 `;
