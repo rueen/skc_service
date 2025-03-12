@@ -116,7 +116,7 @@ async function update(req, res) {
  */
 async function remove(req, res) {
   try {
-    const { id } = req.params;
+    const { id } = req.body;
     
     // 验证ID
     if (!validatorUtil.isValidId(id)) {

@@ -97,13 +97,27 @@ router.put(
 );
 
 /**
- * @route DELETE /api/support/waiters/delete/:id
+ * @route DELETE /api/support/waiters/delete
  * @desc 删除小二
  * @access Private (需要管理员权限)
  */
 router.delete(
-  '/delete/:id',
+  '/delete',
   authMiddleware.isAdmin,
+  [
+    body('id')
+      .notEmpty()
+      .withMessage('小二ID不能为空')
+      .isInt()
+      .withMessage('小二ID必须是整数'),
+  ],
+  (req, res, next) => {
+    // 验证请求参数
+    if (!validatorUtil.validateRequest(req, res)) {
+      return;
+    }
+    next();
+  },
   waiterController.remove
 );
 
