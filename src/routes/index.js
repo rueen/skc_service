@@ -8,6 +8,7 @@ const waiterRoutes = require('./waiter.routes');
 const articleRoutes = require('./article.routes');
 const channelRoutes = require('./channel.routes');
 const uploadRoutes = require('./upload.routes');
+const groupRoutes = require('./group.routes');
 
 const router = express.Router();
 
@@ -26,6 +27,9 @@ router.use(`${API_PREFIX}/articles`, articleRoutes);
 // 渠道管理路由
 router.use(`${API_PREFIX}/channels`, channelRoutes);
 
+// 群组管理路由
+router.use(`${API_PREFIX}/groups`, groupRoutes);
+
 // 文件上传路由（公共接口）
 router.use(`${PUBLIC_API_PREFIX}/upload`, uploadRoutes);
 
@@ -34,7 +38,6 @@ router.use(`${PUBLIC_API_PREFIX}/upload`, uploadRoutes);
 // router.use(`${API_PREFIX}/taskSubmitted`, taskSubmittedRoutes);
 // router.use(`${API_PREFIX}/accounts`, accountRoutes);
 // router.use(`${API_PREFIX}/members`, memberRoutes);
-// router.use(`${API_PREFIX}/group`, groupRoutes);
 // router.use(`${API_PREFIX}/settlement`, settlementRoutes);
 
 module.exports = router; 
