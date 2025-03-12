@@ -51,24 +51,14 @@ router.post(
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
-    body('channel_name')
+    body('name')
       .notEmpty()
       .withMessage('渠道名称不能为空')
-      .isLength({ max: 100 })
-      .withMessage('渠道名称长度不能超过100个字符'),
-    body('channel_desc')
-      .optional()
-      .isLength({ max: 500 })
-      .withMessage('渠道描述长度不能超过500个字符'),
-    body('channel_type')
-      .notEmpty()
-      .withMessage('渠道类型不能为空')
       .isLength({ max: 50 })
-      .withMessage('渠道类型长度不能超过50个字符'),
-    body('channel_config')
-      .optional()
-      .isObject()
-      .withMessage('渠道配置必须是对象格式')
+      .withMessage('渠道名称长度不能超过50个字符'),
+    body('icon')
+      .notEmpty()
+      .withMessage('渠道图标不能为空')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.add
@@ -84,22 +74,14 @@ router.put(
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
-    body('channel_name')
-      .optional()
-      .isLength({ max: 100 })
-      .withMessage('渠道名称长度不能超过100个字符'),
-    body('channel_desc')
-      .optional()
-      .isLength({ max: 500 })
-      .withMessage('渠道描述长度不能超过500个字符'),
-    body('channel_type')
+    body('name')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('渠道类型长度不能超过50个字符'),
-    body('channel_config')
+      .withMessage('渠道名称长度不能超过50个字符'),
+    body('icon')
       .optional()
-      .isObject()
-      .withMessage('渠道配置必须是对象格式')
+      .notEmpty()
+      .withMessage('渠道图标不能为空')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.edit

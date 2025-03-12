@@ -15,7 +15,9 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 function formatChannel(channel) {
   if (!channel) return null;
   return {
-    ...channel,
+    id: channel.id,
+    name: channel.name,
+    icon: channel.icon,
     create_time: formatDateTime(channel.create_time),
     update_time: formatDateTime(channel.update_time)
   };
@@ -37,8 +39,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 
     // 添加筛选条件
     if (filters.keyword) {
-      conditions.push('(channel_name LIKE ? OR channel_desc LIKE ?)');
-      queryParams.push(`%${filters.keyword}%`, `%${filters.keyword}%`);
+      conditions.push('name LIKE ?');
+      queryParams.push(`%${filters.keyword}%`);
     }
 
     // 组合查询条件
@@ -98,8 +100,8 @@ async function create(channelData) {
 
     // 检查渠道名称是否已存在
     const [existing] = await connection.query(
-      'SELECT id FROM channels WHERE channel_name = ?',
-      [channelData.channel_name]
+      'SELECT id FROM channels WHERE name = ?',
+      [channelData.name]
     );
 
     if (existing.length > 0) {
@@ -108,8 +110,8 @@ async function create(channelData) {
 
     // 创建渠道
     const [result] = await connection.query(
-      'INSERT INTO channels (channel_name, channel_desc, channel_type, channel_config) VALUES (?, ?, ?, ?)',
-      [channelData.channel_name, channelData.channel_desc, channelData.channel_type, JSON.stringify(channelData.channel_config || {})]
+      'INSERT INTO channels (name, icon) VALUES (?, ?)',
+      [channelData.name, channelData.icon]
     );
 
     await connection.commit();
@@ -134,10 +136,10 @@ async function update(channelData) {
     await connection.beginTransaction();
 
     // 检查渠道名称是否已存在（排除当前渠道）
-    if (channelData.channel_name) {
+    if (channelData.name) {
       const [existing] = await connection.query(
-        'SELECT id FROM channels WHERE channel_name = ? AND id != ?',
-        [channelData.channel_name, channelData.id]
+        'SELECT id FROM channels WHERE name = ? AND id != ?',
+        [channelData.name, channelData.id]
       );
 
       if (existing.length > 0) {
@@ -149,21 +151,13 @@ async function update(channelData) {
     const updateFields = [];
     const params = [];
 
-    if (channelData.channel_name) {
-      updateFields.push('channel_name = ?');
-      params.push(channelData.channel_name);
+    if (channelData.name) {
+      updateFields.push('name = ?');
+      params.push(channelData.name);
     }
-    if (channelData.channel_desc) {
-      updateFields.push('channel_desc = ?');
-      params.push(channelData.channel_desc);
-    }
-    if (channelData.channel_type) {
-      updateFields.push('channel_type = ?');
-      params.push(channelData.channel_type);
-    }
-    if (channelData.channel_config) {
-      updateFields.push('channel_config = ?');
-      params.push(JSON.stringify(channelData.channel_config));
+    if (channelData.icon) {
+      updateFields.push('icon = ?');
+      params.push(channelData.icon);
     }
 
     if (updateFields.length === 0) {

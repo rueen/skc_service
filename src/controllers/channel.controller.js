@@ -63,18 +63,16 @@ async function get(req, res) {
  */
 async function add(req, res) {
   try {
-    const { channel_name, channel_desc, channel_type, channel_config } = req.body;
+    const { name, icon } = req.body;
     
-    if (!channel_name || !channel_type) {
-      return responseUtil.badRequest(res, '渠道名称和类型不能为空');
+    if (!name) {
+      return responseUtil.badRequest(res, '渠道名称不能为空');
     }
     
     // 创建渠道
     const result = await channelModel.create({
-      channel_name,
-      channel_desc,
-      channel_type,
-      channel_config
+      name,
+      icon
     });
     
     return responseUtil.success(res, result, '创建渠道成功');
@@ -95,7 +93,7 @@ async function add(req, res) {
 async function edit(req, res) {
   try {
     const { id } = req.params;
-    const { channel_name, channel_desc, channel_type, channel_config } = req.body;
+    const { name, icon } = req.body;
     
     if (!id) {
       return responseUtil.badRequest(res, '渠道ID不能为空');
@@ -110,10 +108,8 @@ async function edit(req, res) {
     // 更新渠道
     const success = await channelModel.update({
       id,
-      channel_name,
-      channel_desc,
-      channel_type,
-      channel_config
+      name,
+      icon
     });
     
     if (!success) {
