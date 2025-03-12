@@ -154,29 +154,25 @@ async function update(articleData) {
     let query = 'UPDATE articles SET title = ?, content = ?';
     const params = [articleData.title, articleData.content];
 
-    // 如果提供了新的 location，需要检查唯一性
-    if (articleData.newLocation) {
+    // 如果要更新 location，需要检查唯一性
+    if (articleData.location) {
+      // 检查新的 location 是否已存在（排除当前文章）
       const [existing] = await connection.query(
         'SELECT id FROM articles WHERE location = ? AND id != ?',
-        [articleData.newLocation, articleData.id]
+        [articleData.location, articleData.id]
       );
 
       if (existing.length > 0) {
-        throw new Error('新的位置标识已存在');
+        throw new Error('文章位置标识已存在');
       }
 
       query += ', location = ?';
-      params.push(articleData.newLocation);
-    }
-
-    // 根据 id 或 location 更新
-    if (articleData.id) {
-      query += ' WHERE id = ?';
-      params.push(articleData.id);
-    } else {
-      query += ' WHERE location = ?';
       params.push(articleData.location);
     }
+
+    // 根据 id 更新
+    query += ' WHERE id = ?';
+    params.push(articleData.id);
 
     const [result] = await connection.query(query, params);
     await connection.commit();

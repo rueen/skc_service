@@ -89,10 +89,10 @@ async function add(req, res) {
  */
 async function edit(req, res) {
   try {
-    const { id, title, content, location, newLocation } = req.body;
+    const { id, title, content, location } = req.body;
     
-    if (!title || !content || !(id || location)) {
-      return responseUtil.badRequest(res, '标题、内容和标识信息(id或location)不能为空');
+    if (!id || !title || !content) {
+      return responseUtil.badRequest(res, '文章ID、标题和内容不能为空');
     }
     
     // 更新文章
@@ -100,8 +100,7 @@ async function edit(req, res) {
       id,
       title,
       content,
-      location,
-      newLocation
+      location
     });
     
     if (!success) {
@@ -110,7 +109,7 @@ async function edit(req, res) {
     
     return responseUtil.success(res, null, '更新文章成功');
   } catch (error) {
-    if (error.message === '新的位置标识已存在') {
+    if (error.message === '文章位置标识已存在') {
       return responseUtil.badRequest(res, error.message);
     }
     logger.error(`更新文章失败: ${error.message}`);

@@ -81,6 +81,11 @@ router.put(
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
+    body('id')
+      .notEmpty()
+      .withMessage('文章ID不能为空')
+      .isInt()
+      .withMessage('文章ID必须是整数'),
     body('title')
       .notEmpty()
       .withMessage('标题不能为空')
@@ -89,13 +94,10 @@ router.put(
     body('content')
       .notEmpty()
       .withMessage('内容不能为空'),
-    body('id').optional().isInt().withMessage('文章ID必须是整数'),
-    body('location').optional()
+    body('location')
+      .optional()
       .isLength({ max: 50 })
-      .withMessage('位置标识长度不能超过50个字符'),
-    body('newLocation').optional()
-      .isLength({ max: 50 })
-      .withMessage('新位置标识长度不能超过50个字符')
+      .withMessage('位置标识长度不能超过50个字符')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   articleController.edit
