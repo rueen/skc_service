@@ -5,6 +5,9 @@
 const responseUtil = require('../utils/response.util');
 const logger = require('../config/logger.config');
 
+// 从环境变量获取基础URL，默认使用localhost
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
+
 /**
  * 上传图片
  * @param {Object} req - Express请求对象
@@ -16,8 +19,8 @@ async function uploadImage(req, res) {
       return responseUtil.badRequest(res, '请选择要上传的图片');
     }
 
-    // 返回图片访问路径
-    const imageUrl = `/uploads/${req.file.filename}`;
+    // 返回完整的图片访问路径
+    const imageUrl = `${BASE_URL}/uploads/${req.file.filename}`;
     return responseUtil.success(res, { url: imageUrl });
 
   } catch (error) {
