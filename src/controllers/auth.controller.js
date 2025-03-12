@@ -7,26 +7,6 @@ const authUtil = require('../utils/auth.util');
 const responseUtil = require('../utils/response.util');
 const logger = require('../config/logger.config');
 
-// 所有可用的权限列表
-const ALL_PERMISSIONS = [
-  'task:list',
-  'task:create',
-  'task:edit',
-  'task:audit',
-  'task:auditDetail',
-  'account:list',
-  'member:list',
-  'member:create',
-  'member:edit',
-  'member:view',
-  'channel:list',
-  'group:list',
-  'waiter:list',
-  'settlement:withdrawal',
-  'settlement:otherBills',
-  'article:list'
-].join(',');
-
 /**
  * 用户登录
  * @param {Object} req - Express请求对象
@@ -51,15 +31,12 @@ async function login(req, res) {
     // 更新最后登录时间
     await waiterModel.updateLastLoginTime(waiter.id);
 
-    // 如果是管理员，赋予所有权限
-    const permissions = waiter.is_admin === 1 ? ALL_PERMISSIONS : waiter.permissions;
-
     // 生成令牌
     const token = authUtil.generateToken({
       id: waiter.id,
       username: waiter.username,
       isAdmin: waiter.is_admin === 1,
-      permissions
+      permissions: waiter.permissions
     });
 
     // 返回用户信息和令牌
@@ -69,7 +46,7 @@ async function login(req, res) {
         id: waiter.id,
         username: waiter.username,
         isAdmin: waiter.is_admin === 1,
-        permissions
+        permissions: waiter.permissions
       }
     }, '登录成功');
   } catch (error) {
@@ -93,15 +70,12 @@ async function getCurrentUser(req, res) {
       return responseUtil.notFound(res, '用户不存在');
     }
 
-    // 如果是管理员，返回所有权限
-    const permissions = waiter.is_admin === 1 ? ALL_PERMISSIONS : waiter.permissions;
-
     // 返回用户信息
     return responseUtil.success(res, {
       id: waiter.id,
       username: waiter.username,
       isAdmin: waiter.is_admin === 1,
-      permissions,
+      permissions: waiter.permissions,
       lastLoginTime: waiter.last_login_time
     });
   } catch (error) {
