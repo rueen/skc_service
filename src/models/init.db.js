@@ -210,6 +210,22 @@ FROM dual
 WHERE NOT EXISTS (SELECT 1 FROM waiters WHERE username = 'admin');
 `;
 
+// 初始化用户协议文章
+const initUserAgreement = `
+INSERT INTO articles (title, content, location)
+SELECT '用户协议', '用户在使用本服务之前，请仔细阅读本协议的所有内容。如果您不同意本协议的任何内容，请不要使用本服务。当您使用本服务时，即表示您已经同意遵守本协议的所有条款。', 'userAgreement'
+FROM dual
+WHERE NOT EXISTS (SELECT 1 FROM articles WHERE location = 'userAgreement');
+`;
+
+// 初始化隐私政策文章
+const initPrivacyPolicy = `
+INSERT INTO articles (title, content, location)
+SELECT '隐私政策', '我们非常重视您的隐私保护。本隐私政策说明了我们如何收集、使用、披露、处理和保护您的个人信息。请您在使用我们的服务前，仔细阅读并了解本隐私政策。', 'privacyPolicy'
+FROM dual
+WHERE NOT EXISTS (SELECT 1 FROM articles WHERE location = 'privacyPolicy');
+`;
+
 // 执行所有SQL语句创建表
 async function initTables() {
   const connection = await pool.getConnection();
@@ -231,8 +247,12 @@ async function initTables() {
     await connection.query(createWaitersTable);
     await connection.query(createArticlesTable);
     
-    // 初始化管理员账号 (密码: admin123)
+    // 初始化管理员账号
     await connection.query(initAdminUser);
+    
+    // 初始化基础文章（分开执行）
+    await connection.query(initUserAgreement);
+    await connection.query(initPrivacyPolicy);
     
     // 提交事务
     await connection.commit();
