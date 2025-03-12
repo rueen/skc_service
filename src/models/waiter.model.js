@@ -135,6 +135,11 @@ async function update(id, waiterData) {
     const queryParams = [];
 
     // 构建更新字段
+    if (waiterData.username) {
+      updateFields.push('username = ?');
+      queryParams.push(waiterData.username);
+    }
+
     if (waiterData.password) {
       updateFields.push('password = ?');
       queryParams.push(waiterData.password);

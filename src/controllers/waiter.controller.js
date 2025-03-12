@@ -68,8 +68,7 @@ async function create(req, res) {
  */
 async function update(req, res) {
   try {
-    const { id } = req.params;
-    const { password, isAdmin, remarks, permissions } = req.body;
+    const { id, username, password, isAdmin, remarks, permissions } = req.body;
     
     // 验证ID
     if (!validatorUtil.isValidId(id)) {
@@ -81,6 +80,14 @@ async function update(req, res) {
     if (!waiter) {
       return responseUtil.notFound(res, '小二不存在');
     }
+
+    // 如果要更新用户名，检查是否已存在
+    if (username && username !== waiter.username) {
+      const existingWaiter = await waiterModel.findByUsername(username);
+      if (existingWaiter) {
+        return responseUtil.badRequest(res, '用户名已存在');
+      }
+    }
     
     // 准备更新数据
     const updateData = {};
@@ -91,6 +98,7 @@ async function update(req, res) {
     }
     
     // 更新其他字段
+    if (username) updateData.username = username;
     if (isAdmin !== undefined) updateData.isAdmin = !!isAdmin;
     if (remarks !== undefined) updateData.remarks = remarks;
     if (permissions !== undefined) updateData.permissions = permissions;

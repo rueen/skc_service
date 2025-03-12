@@ -65,14 +65,23 @@ router.post(
 );
 
 /**
- * @route PUT /api/support/waiters/edit/:id
+ * @route PUT /api/support/waiters/edit
  * @desc 更新小二信息
  * @access Private (需要管理员权限)
  */
 router.put(
-  '/edit/:id',
+  '/edit',
   authMiddleware.isAdmin,
   [
+    body('id')
+      .notEmpty()
+      .withMessage('小二ID不能为空')
+      .isInt()
+      .withMessage('小二ID必须是整数'),
+    body('username')
+      .optional()
+      .isLength({ min: 3, max: 20 })
+      .withMessage('用户名长度应为3-20个字符'),
     body('password')
       .optional()
       .isLength({ min: 6 })
