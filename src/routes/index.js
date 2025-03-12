@@ -6,6 +6,7 @@ const express = require('express');
 const authRoutes = require('./auth.routes');
 const waiterRoutes = require('./waiter.routes');
 const articleRoutes = require('./article.routes');
+const channelRoutes = require('./channel.routes');
 
 const router = express.Router();
 
@@ -21,12 +22,14 @@ router.use(`${API_PREFIX}/waiters`, waiterRoutes);
 // 文章管理路由
 router.use(`${API_PREFIX}/articles`, articleRoutes);
 
+// 渠道管理路由
+router.use(`${API_PREFIX}/channels`, channelRoutes);
+
 // 在这里添加其他路由
 // router.use(`${API_PREFIX}/tasks`, taskRoutes);
 // router.use(`${API_PREFIX}/taskSubmitted`, taskSubmittedRoutes);
 // router.use(`${API_PREFIX}/accounts`, accountRoutes);
 // router.use(`${API_PREFIX}/members`, memberRoutes);
-// router.use(`${API_PREFIX}/channels`, channelRoutes);
 // router.use(`${API_PREFIX}/group`, groupRoutes);
 // router.use(`${API_PREFIX}/settlement`, settlementRoutes);
 

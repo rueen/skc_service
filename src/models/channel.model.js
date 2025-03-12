@@ -1,0 +1,243 @@
+/**
+ * 渠道模型
+ * 处理渠道相关的数据库操作
+ */
+const { pool } = require('./db');
+const logger = require('../config/logger.config');
+const { formatDateTime } = require('../utils/date.util');
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
+
+/**
+ * 格式化渠道信息
+ * @param {Object} channel - 渠道信息
+ * @returns {Object} 格式化后的渠道信息
+ */
+function formatChannel(channel) {
+  if (!channel) return null;
+  return {
+    ...channel,
+    create_time: formatDateTime(channel.create_time),
+    update_time: formatDateTime(channel.update_time)
+  };
+}
+
+/**
+ * 获取渠道列表
+ * @param {Object} filters - 筛选条件
+ * @param {number} page - 页码
+ * @param {number} pageSize - 每页条数
+ * @returns {Promise<Object>} 渠道列表和总数
+ */
+async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
+  try {
+    let query = 'SELECT * FROM channels';
+    let countQuery = 'SELECT COUNT(*) as total FROM channels';
+    const queryParams = [];
+    const conditions = [];
+
+    // 添加筛选条件
+    if (filters.keyword) {
+      conditions.push('(channel_name LIKE ? OR channel_desc LIKE ?)');
+      queryParams.push(`%${filters.keyword}%`, `%${filters.keyword}%`);
+    }
+
+    // 组合查询条件
+    if (conditions.length > 0) {
+      const whereClause = ' WHERE ' + conditions.join(' AND ');
+      query += whereClause;
+      countQuery += whereClause;
+    }
+
+    // 添加排序和分页
+    query += ' ORDER BY create_time DESC LIMIT ? OFFSET ?';
+    queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
+
+    // 执行查询
+    const [rows] = await pool.query(query, queryParams);
+    const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
+    
+    return {
+      list: rows.map(formatChannel),
+      total: countResult[0].total,
+      page: parseInt(page, 10),
+      pageSize: parseInt(pageSize, 10)
+    };
+  } catch (error) {
+    logger.error(`获取渠道列表失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * 根据ID获取渠道
+ * @param {number} id - 渠道ID
+ * @returns {Promise<Object|null>} 渠道信息或null
+ */
+async function getById(id) {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM channels WHERE id = ?',
+      [id]
+    );
+    return rows.length > 0 ? formatChannel(rows[0]) : null;
+  } catch (error) {
+    logger.error(`获取渠道失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * 创建渠道
+ * @param {Object} channelData - 渠道数据
+ * @returns {Promise<Object>} 创建结果
+ */
+async function create(channelData) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 检查渠道名称是否已存在
+    const [existing] = await connection.query(
+      'SELECT id FROM channels WHERE channel_name = ?',
+      [channelData.channel_name]
+    );
+
+    if (existing.length > 0) {
+      throw new Error('渠道名称已存在');
+    }
+
+    // 创建渠道
+    const [result] = await connection.query(
+      'INSERT INTO channels (channel_name, channel_desc, channel_type, channel_config) VALUES (?, ?, ?, ?)',
+      [channelData.channel_name, channelData.channel_desc, channelData.channel_type, JSON.stringify(channelData.channel_config || {})]
+    );
+
+    await connection.commit();
+    return { id: result.insertId };
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`创建渠道失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * 更新渠道
+ * @param {Object} channelData - 渠道数据
+ * @returns {Promise<boolean>} 更新是否成功
+ */
+async function update(channelData) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 检查渠道名称是否已存在（排除当前渠道）
+    if (channelData.channel_name) {
+      const [existing] = await connection.query(
+        'SELECT id FROM channels WHERE channel_name = ? AND id != ?',
+        [channelData.channel_name, channelData.id]
+      );
+
+      if (existing.length > 0) {
+        throw new Error('渠道名称已存在');
+      }
+    }
+
+    // 构建更新语句
+    const updateFields = [];
+    const params = [];
+
+    if (channelData.channel_name) {
+      updateFields.push('channel_name = ?');
+      params.push(channelData.channel_name);
+    }
+    if (channelData.channel_desc) {
+      updateFields.push('channel_desc = ?');
+      params.push(channelData.channel_desc);
+    }
+    if (channelData.channel_type) {
+      updateFields.push('channel_type = ?');
+      params.push(channelData.channel_type);
+    }
+    if (channelData.channel_config) {
+      updateFields.push('channel_config = ?');
+      params.push(JSON.stringify(channelData.channel_config));
+    }
+
+    if (updateFields.length === 0) {
+      return true; // 没有需要更新的字段
+    }
+
+    params.push(channelData.id);
+    const [result] = await connection.query(
+      `UPDATE channels SET ${updateFields.join(', ')} WHERE id = ?`,
+      params
+    );
+
+    await connection.commit();
+    return result.affectedRows > 0;
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`更新渠道失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * 删除渠道
+ * @param {number} id - 渠道ID
+ * @returns {Promise<boolean>} 删除是否成功
+ */
+async function remove(id) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 检查是否有关联的账号
+    const [accounts] = await connection.query(
+      'SELECT COUNT(*) as count FROM accounts WHERE channel_id = ?',
+      [id]
+    );
+
+    if (accounts[0].count > 0) {
+      throw new Error('该渠道下存在关联账号，无法删除');
+    }
+
+    // 检查是否有关联的任务
+    const [tasks] = await connection.query(
+      'SELECT COUNT(*) as count FROM tasks WHERE channel_id = ?',
+      [id]
+    );
+
+    if (tasks[0].count > 0) {
+      throw new Error('该渠道下存在关联任务，无法删除');
+    }
+
+    // 删除渠道
+    const [result] = await connection.query(
+      'DELETE FROM channels WHERE id = ?',
+      [id]
+    );
+
+    await connection.commit();
+    return result.affectedRows > 0;
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`删除渠道失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+module.exports = {
+  getList,
+  getById,
+  create,
+  update,
+  remove
+}; 
