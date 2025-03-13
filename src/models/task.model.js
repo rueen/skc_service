@@ -28,6 +28,7 @@ function formatTask(task) {
   formattedTask.taskName = task.task_name;
   formattedTask.channelId = task.channel_id;
   formattedTask.taskType = task.task_type;
+  formattedTask.channelName = task.channel_name;
   
   // 安全解析 JSON 字段
   try {
@@ -88,6 +89,7 @@ function formatTask(task) {
   delete formattedTask.content_requirement;
   delete formattedTask.task_info;
   delete formattedTask.task_status;
+  delete formattedTask.channel_name;
   
   return formattedTask;
 }
@@ -221,7 +223,6 @@ async function getById(id) {
     
     try {
       const task = formatTask(rows[0]);
-      task.channelName = rows[0].channel_name;
       
       // 如果有群组ID，获取群组名称
       if (task.groupIds && task.groupIds.length > 0) {
