@@ -28,11 +28,27 @@ function formatTask(task) {
   formattedTask.taskName = task.task_name;
   formattedTask.channelId = task.channel_id;
   formattedTask.taskType = task.task_type;
-  formattedTask.groupIds = task.group_ids ? JSON.parse(task.group_ids) : [];
+  
+  // 安全解析 JSON 字段
+  try {
+    formattedTask.groupIds = task.group_ids && task.group_ids.trim() ? JSON.parse(task.group_ids) : [];
+  } catch (error) {
+    logger.error(`解析 group_ids 失败: ${error.message}, 原始值: ${task.group_ids}`);
+    formattedTask.groupIds = [];
+  }
+  
   formattedTask.groupMode = task.group_mode === 1;
   formattedTask.userRange = task.user_range;
   formattedTask.taskCount = task.task_count;
-  formattedTask.customFields = task.custom_fields ? JSON.parse(task.custom_fields) : [];
+  
+  // 安全解析 JSON 字段
+  try {
+    formattedTask.customFields = task.custom_fields && task.custom_fields.trim() ? JSON.parse(task.custom_fields) : [];
+  } catch (error) {
+    logger.error(`解析 custom_fields 失败: ${error.message}, 原始值: ${task.custom_fields}`);
+    formattedTask.customFields = [];
+  }
+  
   formattedTask.unlimitedQuota = task.unlimited_quota === 1;
   formattedTask.fansRequired = task.fans_required;
   formattedTask.contentRequirement = task.content_requirement;
@@ -111,19 +127,28 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const [rows] = await pool.query(query, queryParams);
     const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
     
-    return {
-      list: rows.map(task => {
+    // 安全处理每个任务记录
+    const formattedList = [];
+    for (const task of rows) {
+      try {
         const formattedTask = formatTask(task);
         // 只返回列表需要的字段
-        return {
+        formattedList.push({
           id: formattedTask.id,
           taskName: formattedTask.taskName,
           channelId: formattedTask.channelId,
           channelName: task.channel_name,
           taskStatus: formattedTask.taskStatus,
           createTime: formattedTask.createTime
-        };
-      }),
+        });
+      } catch (error) {
+        logger.error(`格式化任务失败，任务ID: ${task.id}, 错误: ${error.message}`);
+        // 跳过这条记录，继续处理其他记录
+      }
+    }
+    
+    return {
+      list: formattedList,
       total: countResult[0].total,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
@@ -153,25 +178,45 @@ async function getById(id) {
       return null;
     }
     
-    const task = formatTask(rows[0]);
-    task.channelName = rows[0].channel_name;
-    
-    // 如果有群组ID，获取群组名称
-    if (task.groupIds && task.groupIds.length > 0) {
-      const [groups] = await pool.query(
-        `SELECT id, group_name FROM \`groups\` WHERE id IN (?)`,
-        [task.groupIds]
-      );
+    try {
+      const task = formatTask(rows[0]);
+      task.channelName = rows[0].channel_name;
       
-      task.groups = groups.map(group => ({
-        id: group.id,
-        groupName: group.group_name
-      }));
-    } else {
-      task.groups = [];
+      // 如果有群组ID，获取群组名称
+      if (task.groupIds && task.groupIds.length > 0) {
+        try {
+          const [groups] = await pool.query(
+            `SELECT id, group_name FROM \`groups\` WHERE id IN (?)`,
+            [task.groupIds]
+          );
+          
+          task.groups = groups.map(group => ({
+            id: group.id,
+            groupName: group.group_name
+          }));
+        } catch (error) {
+          logger.error(`获取任务关联群组失败，任务ID: ${id}, 错误: ${error.message}`);
+          task.groups = [];
+        }
+      } else {
+        task.groups = [];
+      }
+      
+      return task;
+    } catch (error) {
+      logger.error(`格式化任务详情失败，任务ID: ${id}, 错误: ${error.message}`);
+      
+      // 返回基本信息，避免完全失败
+      return {
+        id: rows[0].id,
+        taskName: rows[0].task_name,
+        channelId: rows[0].channel_id,
+        channelName: rows[0].channel_name,
+        taskStatus: rows[0].task_status,
+        createTime: formatDateTime(rows[0].create_time),
+        error: '任务详情格式化失败，请联系管理员'
+      };
     }
-    
-    return task;
   } catch (error) {
     logger.error(`获取任务详情失败: ${error.message}`);
     throw error;
@@ -210,6 +255,44 @@ async function create(taskData) {
       }
     }
     
+    // 处理 userRange 和 taskCount 的关系
+    const userRange = taskData.userRange;
+    let taskCount = taskData.taskCount || 0;
+    
+    // 如果 userRange 为 0（全部用户），则 taskCount 设为 0
+    if (userRange === 0) {
+      taskCount = 0;
+    } else if (userRange === 1) {
+      // 如果 userRange 为 1，确保 taskCount 是非负整数
+      if (taskCount === undefined || taskCount === null) {
+        throw new Error('当用户范围为1时，完成任务次数不能为空');
+      }
+      
+      if (!Number.isInteger(Number(taskCount)) || Number(taskCount) < 0) {
+        throw new Error('完成任务次数必须是非负整数');
+      }
+    } else {
+      throw new Error('用户范围必须是0或1');
+    }
+    
+    // 安全处理 JSON 数据
+    let groupIdsJson = '[]';
+    let customFieldsJson = '[]';
+    
+    try {
+      groupIdsJson = JSON.stringify(taskData.groupIds || []);
+    } catch (error) {
+      logger.error(`序列化 groupIds 失败: ${error.message}`);
+      groupIdsJson = '[]';
+    }
+    
+    try {
+      customFieldsJson = JSON.stringify(taskData.customFields || []);
+    } catch (error) {
+      logger.error(`序列化 customFields 失败: ${error.message}`);
+      customFieldsJson = '[]';
+    }
+    
     // 创建任务
     const [result] = await connection.query(
       `INSERT INTO tasks 
@@ -225,11 +308,11 @@ async function create(taskData) {
         taskData.taskType,
         taskData.reward,
         taskData.brand,
-        JSON.stringify(taskData.groupIds || []),
+        groupIdsJson,
         taskData.groupMode ? 1 : 0,
-        taskData.userRange || 1,
-        taskData.taskCount || 0,
-        JSON.stringify(taskData.customFields || []),
+        userRange,
+        taskCount,
+        customFieldsJson,
         taskData.startTime,
         taskData.endTime,
         taskData.unlimitedQuota ? 1 : 0,
@@ -264,13 +347,16 @@ async function update(taskData) {
     
     // 检查任务是否存在
     const [existingTask] = await connection.query(
-      'SELECT id FROM tasks WHERE id = ?',
+      'SELECT id, user_range FROM tasks WHERE id = ?',
       [taskData.id]
     );
     
     if (existingTask.length === 0) {
       throw new Error('任务不存在');
     }
+    
+    // 获取当前任务的 userRange
+    const currentUserRange = existingTask[0].user_range;
     
     // 检查渠道是否存在
     if (taskData.channelId) {
@@ -293,6 +379,45 @@ async function update(taskData) {
       
       if (groups[0].count !== taskData.groupIds.length) {
         throw new Error('部分所选群组不存在');
+      }
+    }
+    
+    // 处理 userRange 和 taskCount 的关系
+    let userRange = taskData.userRange;
+    let taskCount = taskData.taskCount;
+    
+    // 如果更新了 userRange
+    if (userRange !== undefined) {
+      if (userRange !== 0 && userRange !== 1) {
+        throw new Error('用户范围必须是0或1');
+      }
+      
+      // 如果 userRange 为 0（全部用户），则 taskCount 设为 0
+      if (userRange === 0) {
+        taskCount = 0;
+      } else if (userRange === 1 && taskCount === undefined) {
+        // 如果 userRange 为 1 但没有提供 taskCount，则获取当前的 taskCount
+        const [currentTask] = await connection.query(
+          'SELECT task_count FROM tasks WHERE id = ?',
+          [taskData.id]
+        );
+        
+        if (currentTask.length > 0) {
+          taskCount = currentTask[0].task_count;
+        } else {
+          throw new Error('当用户范围为1时，完成任务次数不能为空');
+        }
+      }
+    } else if (taskCount !== undefined) {
+      // 如果只更新了 taskCount，需要检查当前的 userRange
+      if (currentUserRange === 0) {
+        // 如果当前 userRange 为 0，则忽略 taskCount 的更新
+        taskCount = 0;
+      } else if (currentUserRange === 1) {
+        // 如果当前 userRange 为 1，确保 taskCount 是非负整数
+        if (!Number.isInteger(Number(taskCount)) || Number(taskCount) < 0) {
+          throw new Error('完成任务次数必须是非负整数');
+        }
       }
     }
     
@@ -331,8 +456,16 @@ async function update(taskData) {
     }
     
     if (taskData.groupIds !== undefined) {
-      updateFields.push('group_ids = ?');
-      params.push(JSON.stringify(taskData.groupIds || []));
+      try {
+        const groupIdsJson = JSON.stringify(taskData.groupIds || []);
+        updateFields.push('group_ids = ?');
+        params.push(groupIdsJson);
+      } catch (error) {
+        logger.error(`序列化 groupIds 失败: ${error.message}`);
+        // 使用空数组作为默认值
+        updateFields.push('group_ids = ?');
+        params.push('[]');
+      }
     }
     
     if (taskData.groupMode !== undefined) {
@@ -340,19 +473,27 @@ async function update(taskData) {
       params.push(taskData.groupMode ? 1 : 0);
     }
     
-    if (taskData.userRange !== undefined) {
+    if (userRange !== undefined) {
       updateFields.push('user_range = ?');
-      params.push(taskData.userRange);
+      params.push(userRange);
     }
     
-    if (taskData.taskCount !== undefined) {
+    if (taskCount !== undefined) {
       updateFields.push('task_count = ?');
-      params.push(taskData.taskCount);
+      params.push(taskCount);
     }
     
     if (taskData.customFields !== undefined) {
-      updateFields.push('custom_fields = ?');
-      params.push(JSON.stringify(taskData.customFields || []));
+      try {
+        const customFieldsJson = JSON.stringify(taskData.customFields || []);
+        updateFields.push('custom_fields = ?');
+        params.push(customFieldsJson);
+      } catch (error) {
+        logger.error(`序列化 customFields 失败: ${error.message}`);
+        // 使用空数组作为默认值
+        updateFields.push('custom_fields = ?');
+        params.push('[]');
+      }
     }
     
     if (taskData.startTime !== undefined) {

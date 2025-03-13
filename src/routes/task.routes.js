@@ -122,13 +122,23 @@ router.post(
       .isBoolean()
       .withMessage('群组模式必须是布尔值'),
     body('userRange')
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage('用户范围必须是大于0的整数'),
+      .notEmpty()
+      .withMessage('用户范围不能为空')
+      .isIn([0, 1])
+      .withMessage('用户范围必须是0或1，0表示全部用户，1表示需要校验完成任务次数'),
     body('taskCount')
-      .optional()
-      .isInt({ min: 0 })
-      .withMessage('任务数量必须是非负整数'),
+      .custom((value, { req }) => {
+        // 当 userRange 为 1 时，taskCount 必须存在且为非负整数
+        if (req.body.userRange === 1) {
+          if (value === undefined || value === null) {
+            throw new Error('当用户范围为1时，完成任务次数不能为空');
+          }
+          if (!Number.isInteger(Number(value)) || Number(value) < 0) {
+            throw new Error('完成任务次数必须是非负整数');
+          }
+        }
+        return true;
+      }),
     body('customFields')
       .notEmpty()
       .withMessage('自定义字段不能为空')
@@ -223,12 +233,19 @@ router.put(
       .withMessage('群组模式必须是布尔值'),
     body('userRange')
       .optional()
-      .isInt({ min: 1 })
-      .withMessage('用户范围必须是大于0的整数'),
+      .isIn([0, 1])
+      .withMessage('用户范围必须是0或1，0表示全部用户，1表示需要校验完成任务次数'),
     body('taskCount')
       .optional()
-      .isInt({ min: 0 })
-      .withMessage('任务数量必须是非负整数'),
+      .custom((value, { req }) => {
+        // 当 userRange 为 1 时，如果提供了 taskCount，必须为非负整数
+        if (req.body.userRange === 1 && value !== undefined) {
+          if (!Number.isInteger(Number(value)) || Number(value) < 0) {
+            throw new Error('完成任务次数必须是非负整数');
+          }
+        }
+        return true;
+      }),
     body('customFields')
       .optional()
       .isArray()
