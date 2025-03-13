@@ -31,7 +31,14 @@ function formatTask(task) {
   
   // 安全解析 JSON 字段
   try {
-    formattedTask.groupIds = task.group_ids && task.group_ids.trim() ? JSON.parse(task.group_ids) : [];
+    // 检查 group_ids 是否已经是数组
+    if (Array.isArray(task.group_ids)) {
+      formattedTask.groupIds = task.group_ids;
+    } else if (typeof task.group_ids === 'string' && task.group_ids.trim()) {
+      formattedTask.groupIds = JSON.parse(task.group_ids);
+    } else {
+      formattedTask.groupIds = [];
+    }
   } catch (error) {
     logger.error(`解析 group_ids 失败: ${error.message}, 原始值: ${task.group_ids}`);
     formattedTask.groupIds = [];
@@ -44,7 +51,14 @@ function formatTask(task) {
   
   // 安全解析 JSON 字段
   try {
-    formattedTask.customFields = task.custom_fields && task.custom_fields.trim() ? JSON.parse(task.custom_fields) : [];
+    // 检查 custom_fields 是否已经是数组
+    if (Array.isArray(task.custom_fields)) {
+      formattedTask.customFields = task.custom_fields;
+    } else if (typeof task.custom_fields === 'string' && task.custom_fields.trim()) {
+      formattedTask.customFields = JSON.parse(task.custom_fields);
+    } else {
+      formattedTask.customFields = [];
+    }
   } catch (error) {
     logger.error(`解析 custom_fields 失败: ${error.message}, 原始值: ${task.custom_fields}`);
     formattedTask.customFields = [];
@@ -212,9 +226,11 @@ async function getById(id) {
       // 如果有群组ID，获取群组名称
       if (task.groupIds && task.groupIds.length > 0) {
         try {
+          // 修复：使用 MySQL 的 IN 查询时，需要将数组展开为逗号分隔的字符串
+          const placeholders = task.groupIds.map(() => '?').join(',');
           const [groups] = await pool.query(
-            `SELECT id, group_name FROM \`groups\` WHERE id IN (?)`,
-            [task.groupIds]
+            `SELECT id, group_name FROM \`groups\` WHERE id IN (${placeholders})`,
+            task.groupIds
           );
           
           task.groups = groups.map(group => ({
@@ -678,5 +694,6 @@ module.exports = {
   getById,
   create,
   update,
-  remove
+  remove,
+  formatTask
 }; 
