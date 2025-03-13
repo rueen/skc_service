@@ -78,6 +78,32 @@ function formatTask(task) {
 }
 
 /**
+ * 将 ISO 格式的日期时间字符串转换为 MySQL 兼容的格式
+ * @param {string} dateTimeString - ISO 格式的日期时间字符串
+ * @returns {string} MySQL 兼容的日期时间字符串
+ */
+function formatDateTimeForMySQL(dateTimeString) {
+  if (!dateTimeString) return null;
+  
+  try {
+    // 将 ISO 字符串转换为 Date 对象
+    const date = new Date(dateTimeString);
+    
+    // 检查日期是否有效
+    if (isNaN(date.getTime())) {
+      logger.error(`无效的日期时间字符串: ${dateTimeString}`);
+      return null;
+    }
+    
+    // 格式化为 MySQL 兼容的格式: YYYY-MM-DD HH:MM:SS
+    return date.toISOString().slice(0, 19).replace('T', ' ');
+  } catch (error) {
+    logger.error(`日期时间格式转换失败: ${error.message}, 原始值: ${dateTimeString}`);
+    return null;
+  }
+}
+
+/**
  * 获取任务列表
  * @param {Object} filters - 筛选条件
  * @param {number} page - 页码
@@ -293,6 +319,10 @@ async function create(taskData) {
       customFieldsJson = '[]';
     }
     
+    // 格式化日期时间为 MySQL 兼容格式
+    const startTime = formatDateTimeForMySQL(taskData.startTime);
+    const endTime = formatDateTimeForMySQL(taskData.endTime);
+    
     // 创建任务
     const [result] = await connection.query(
       `INSERT INTO tasks 
@@ -313,8 +343,8 @@ async function create(taskData) {
         userRange,
         taskCount,
         customFieldsJson,
-        taskData.startTime,
-        taskData.endTime,
+        startTime,
+        endTime,
         taskData.unlimitedQuota ? 1 : 0,
         taskData.fansRequired || null,
         taskData.contentRequirement || null,
@@ -497,13 +527,15 @@ async function update(taskData) {
     }
     
     if (taskData.startTime !== undefined) {
+      const formattedStartTime = formatDateTimeForMySQL(taskData.startTime);
       updateFields.push('start_time = ?');
-      params.push(taskData.startTime);
+      params.push(formattedStartTime);
     }
     
     if (taskData.endTime !== undefined) {
+      const formattedEndTime = formatDateTimeForMySQL(taskData.endTime);
       updateFields.push('end_time = ?');
-      params.push(taskData.endTime);
+      params.push(formattedEndTime);
     }
     
     if (taskData.unlimitedQuota !== undefined) {
