@@ -482,7 +482,7 @@ CREATE TABLE `articles` (
   ```
 
 #### 获取任务详情
-- **接口**：`GET /tasks/detail`
+- **接口**：`GET /tasks/:id`
 - **描述**：获取任务详细信息
 - **请求参数**：
   ```json
@@ -539,7 +539,7 @@ CREATE TABLE `articles` (
   ```
 
 #### 获取已提交详情
-- **接口**：`GET /taskSubmitted/detail`
+- **接口**：`GET /taskSubmitted/:id`
 - **描述**：获取已提交详情
 - **请求参数**：
   ```json
@@ -697,7 +697,7 @@ CREATE TABLE `articles` (
 - **描述**：删除会员
 
 #### 获取会员详情
-- **接口**：`GET /members/detail`
+- **接口**：`GET /members/:id`
 - **描述**：获取会员详情
 - **请求参数**：
   ```json
