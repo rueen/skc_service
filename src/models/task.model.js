@@ -37,7 +37,8 @@ function formatTask(task) {
     formattedTask.groupIds = [];
   }
   
-  formattedTask.groupMode = task.group_mode === 1;
+  // 将 groupMode 保持为数字类型，与入参保持一致
+  formattedTask.groupMode = task.group_mode;
   formattedTask.userRange = task.user_range;
   formattedTask.taskCount = task.task_count;
   
@@ -301,6 +302,13 @@ async function create(taskData) {
       throw new Error('用户范围必须是0或1');
     }
     
+    // 处理 groupMode，确保是 0 或 1
+    let groupMode = taskData.groupMode;
+    if (groupMode !== 0 && groupMode !== 1) {
+      // 如果不是有效值，则根据 groupIds 判断
+      groupMode = (taskData.groupIds && taskData.groupIds.length > 0) ? 1 : 0;
+    }
+    
     // 安全处理 JSON 数据
     let groupIdsJson = '[]';
     let customFieldsJson = '[]';
@@ -339,7 +347,7 @@ async function create(taskData) {
         taskData.reward,
         taskData.brand,
         groupIdsJson,
-        taskData.groupMode ? 1 : 0,
+        groupMode,
         userRange,
         taskCount,
         customFieldsJson,
@@ -499,8 +507,35 @@ async function update(taskData) {
     }
     
     if (taskData.groupMode !== undefined) {
+      // 确保 groupMode 是 0 或 1
+      let groupMode = taskData.groupMode;
+      if (groupMode !== 0 && groupMode !== 1) {
+        // 如果不是有效值，则根据 groupIds 判断
+        if (taskData.groupIds !== undefined) {
+          groupMode = (taskData.groupIds && taskData.groupIds.length > 0) ? 1 : 0;
+        } else {
+          // 如果没有提供 groupIds，则获取当前的 groupIds
+          const [currentTask] = await connection.query(
+            'SELECT group_ids FROM tasks WHERE id = ?',
+            [taskData.id]
+          );
+          
+          if (currentTask.length > 0) {
+            try {
+              const currentGroupIds = JSON.parse(currentTask[0].group_ids || '[]');
+              groupMode = (currentGroupIds && currentGroupIds.length > 0) ? 1 : 0;
+            } catch (error) {
+              logger.error(`解析当前 group_ids 失败: ${error.message}`);
+              groupMode = 0;
+            }
+          } else {
+            groupMode = 0;
+          }
+        }
+      }
+      
       updateFields.push('group_mode = ?');
-      params.push(taskData.groupMode ? 1 : 0);
+      params.push(groupMode);
     }
     
     if (userRange !== undefined) {
