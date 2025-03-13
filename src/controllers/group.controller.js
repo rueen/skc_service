@@ -14,11 +14,12 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
  */
 async function list(req, res) {
   try {
-    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, groupName, ownerId } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, groupName, ownerId, keyword } = req.query;
     const filters = {};
     
     if (groupName) filters.groupName = groupName;
     if (ownerId) filters.ownerId = parseInt(ownerId, 10);
+    if (keyword) filters.keyword = keyword;
 
     const result = await groupModel.getList(filters, page, pageSize);
     return responseUtil.success(res, result);

@@ -40,7 +40,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       FROM \`groups\` g 
       LEFT JOIN members m ON g.owner_id = m.id
     `;
-    let countQuery = 'SELECT COUNT(*) as total FROM `groups` g';
+    let countQuery = 'SELECT COUNT(*) as total FROM `groups` g LEFT JOIN members m ON g.owner_id = m.id';
     const queryParams = [];
     const conditions = [];
 
@@ -52,6 +52,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     if (filters.ownerId) {
       conditions.push('g.owner_id = ?');
       queryParams.push(filters.ownerId);
+    }
+    
+    // 添加关键词搜索
+    if (filters.keyword) {
+      conditions.push('(g.group_name LIKE ? OR m.member_nickname LIKE ? OR g.group_link LIKE ?)');
+      queryParams.push(`%${filters.keyword}%`, `%${filters.keyword}%`, `%${filters.keyword}%`);
     }
 
     // 组合查询条件
