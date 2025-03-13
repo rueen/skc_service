@@ -18,8 +18,8 @@ function formatChannel(channel) {
     id: channel.id,
     name: channel.name,
     icon: channel.icon,
-    create_time: formatDateTime(channel.create_time),
-    update_time: formatDateTime(channel.update_time)
+    createTime: formatDateTime(channel.create_time),
+    updateTime: formatDateTime(channel.update_time)
   };
 }
 

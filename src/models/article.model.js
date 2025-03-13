@@ -14,11 +14,19 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
  */
 function formatArticle(article) {
   if (!article) return null;
-  return {
-    ...article,
-    create_time: formatDateTime(article.create_time),
-    update_time: formatDateTime(article.update_time)
-  };
+  
+  // 提取基本字段
+  const formattedArticle = { ...article };
+  
+  // 格式化时间字段，使用驼峰命名法
+  formattedArticle.createTime = formatDateTime(article.create_time);
+  formattedArticle.updateTime = formatDateTime(article.update_time);
+  
+  // 删除原始字段
+  delete formattedArticle.create_time;
+  delete formattedArticle.update_time;
+  
+  return formattedArticle;
 }
 
 /**

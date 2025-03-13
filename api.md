@@ -34,6 +34,7 @@
 - [注意事项](#注意事项)
   - [安全要求](#安全要求)
   - [其他要求](#其他要求)
+  - [命名规范](#命名规范)
 
 ## 基础信息
 
@@ -1056,3 +1057,9 @@ CREATE TABLE `articles` (
 - 遵循 RESTful API 设计原则
 - 为这个项目中的所有代码写上详细注释
 - 充分考虑安全因素
+
+#### 命名规范
+- 数据库表字段：使用下划线命名法（snake_case）
+  - 例如：create_time、update_time、last_login_time
+- API 响应字段：使用驼峰命名法（camelCase）
+  - 例如：createTime、updateTime、lastLoginTime
