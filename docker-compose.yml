@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # MySQL数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: skc_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - skc_network
+    command: --default-authentication-plugin=mysql_native_password
+
+  # 管理后台服务
+  admin_backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: skc_admin
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_POOL_LIMIT=${DB_POOL_LIMIT:-10}
+      - JWT_SECRET=${ADMIN_JWT_SECRET}
+      - JWT_EXPIRES_IN=${ADMIN_JWT_EXPIRES_IN}
+      - PORT=${ADMIN_PORT:-3002}
+      - BASE_URL=${ADMIN_BASE_URL:-/api/support}
+      - UPLOAD_DIR=${UPLOAD_DIR:-uploads}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-5242880}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    command: ["npm", "run", "start:admin"]
+    networks:
+      - skc_network
+
+  # H5前端服务
+  h5_backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: skc_h5
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_POOL_LIMIT=${DB_POOL_LIMIT:-10}
+      - JWT_SECRET=${H5_JWT_SECRET}
+      - JWT_EXPIRES_IN=${H5_JWT_EXPIRES_IN}
+      - PORT=${H5_PORT:-3001}
+      - BASE_URL=${H5_BASE_URL:-/api/h5}
+      - UPLOAD_DIR=${UPLOAD_DIR:-uploads/h5}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-5242880}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - WX_APPID=${WX_APPID}
+      - WX_SECRET=${WX_SECRET}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    command: ["npm", "run", "start:h5"]
+    networks:
+      - skc_network
+
+  # Nginx服务
+  nginx:
+    image: nginx:1.21-alpine
+    container_name: skc_nginx
+    restart: always
+    depends_on:
+      - admin_backend
+      - h5_backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./admin-frontend/dist:/usr/share/nginx/html/admin
+      - ./h5-frontend/dist:/usr/share/nginx/html/h5
+      - ./uploads:/usr/share/nginx/html/uploads
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - skc_network
+
+networks:
+  skc_network:
+    driver: bridge
+
+volumes:
+  mysql_data: 

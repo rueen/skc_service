@@ -1,6 +1,15 @@
-# SKC API 服务
+# SKC Service
 
-这是一个基于Node.js + Express的后端API服务，用于SKC系统的后台管理。
+SKC Service 是一个支持管理后台和H5端的服务平台，提供任务管理、会员管理、渠道管理和文章管理等功能。
+
+## 项目架构
+
+项目采用同一代码库部署两个独立应用实例的架构：
+
+- **管理后台**：提供给管理员使用的后台管理系统API
+- **H5端**：提供给普通用户使用的H5应用API
+
+两个应用共享数据模型和工具函数，但有独立的路由、控制器和中间件。
 
 ## 技术栈
 
@@ -8,109 +17,152 @@
 - Express
 - MySQL
 - JWT认证
-- bcrypt密码加密
+- Winston日志
 
-## 项目结构
+## 目录结构
 
 ```
 src/
-  ├── config/           # 配置文件
-  ├── controllers/      # 控制器
-  ├── middlewares/      # 中间件
-  ├── models/           # 数据模型
-  ├── routes/           # 路由
-  ├── utils/            # 工具函数
-  ├── logs/             # 日志文件
-  └── app.js            # 应用入口
+├── shared/               # 共享代码
+│   ├── app-common.js     # 共享的应用配置
+│   ├── models/           # 数据模型（共享）
+│   ├── utils/            # 工具函数（共享）
+│   ├── config/           # 配置文件（共享）
+│   ├── middlewares/      # 共享中间件
+│   └── routes/           # 共享路由
+├── admin/                # 管理后台代码
+│   ├── admin-server.js   # 管理后台服务入口
+│   ├── routes/           # 管理后台路由
+│   ├── controllers/      # 管理后台控制器
+│   └── middlewares/      # 管理后台中间件
+├── h5/                   # H5端代码
+│   ├── h5-server.js      # H5端服务入口
+│   ├── routes/           # H5端路由
+│   ├── controllers/      # H5端控制器
+│   └── middlewares/      # H5端中间件
+└── logs/                 # 日志文件
 ```
 
-## 安装与运行
+## 环境要求
 
-### 前置条件
+- Node.js >= 16.0.0
+- MySQL >= 5.7
 
-- Node.js (v14+)
-- MySQL (v5.7+)
+## 安装
 
-### 安装依赖
+1. 克隆仓库
+
+```bash
+git clone https://github.com/yourusername/skc_service.git
+cd skc_service
+```
+
+2. 安装依赖
 
 ```bash
 npm install
 ```
 
-### 配置环境变量
+3. 配置环境变量
 
-复制`.env.example`文件为`.env`，并根据实际情况修改配置：
+复制环境变量示例文件并根据需要修改：
 
 ```bash
-# 服务器配置
-PORT=3001
-NODE_ENV=development
-
-# 数据库配置
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=skc
-DB_PORT=3306
-
-# JWT配置
-JWT_SECRET=your_jwt_secret_key_here
-JWT_EXPIRES_IN=24h
-
-# 日志配置
-LOG_LEVEL=info
-
-# 限流配置
-RATE_LIMIT_WINDOW_MS=15*60*1000  # 15分钟
-RATE_LIMIT_MAX=100  # 每个IP在时间窗口内最多请求次数
+cp .env.admin.example .env.admin
+cp .env.h5.example .env.h5
 ```
 
-### 运行开发环境
+4. 初始化数据库
+
+确保MySQL服务已启动，并创建了相应的数据库。
+
+## 启动服务
+
+### 开发环境
+
+启动管理后台服务：
 
 ```bash
-npm run dev
+npm run dev:admin
 ```
 
-### 运行生产环境
+启动H5端服务：
 
 ```bash
-npm start
+npm run dev:h5
+```
+
+同时启动两个服务：
+
+```bash
+npm run dev:all
+```
+
+### 生产环境
+
+启动管理后台服务：
+
+```bash
+npm run start:admin
+```
+
+启动H5端服务：
+
+```bash
+npm run start:h5
+```
+
+同时启动两个服务：
+
+```bash
+npm run start:all
 ```
 
 ## API文档
 
-API文档详见 [api.md](api.md)
+### 管理后台API
 
-## 安全特性
+管理后台API基础路径：`/api/support`
 
-- JWT认证
-- 密码加密存储
-- 请求参数验证
-- API路由保护
-- CORS配置
-- SQL注入防护
-- 接口限流
+- 认证相关：`/api/support/users`
+- 任务管理：`/api/support/tasks`
+- 会员管理：`/api/support/members`
+- 渠道管理：`/api/support/channels`
+- 群组管理：`/api/support/groups`
+- 文章管理：`/api/support/articles`
 
-## 默认管理员账号
+### H5端API
 
-- 用户名：admin
-- 密码：admin123
+H5端API基础路径：`/api/h5`
 
-首次登录后请立即修改密码。
+- 认证相关：`/api/h5/auth`
+- 任务相关：`/api/h5/tasks`
+- 会员相关：`/api/h5/members`
+- 渠道相关：`/api/h5/channels`
+- 文章相关：`/api/h5/articles`
 
-## 开发指南
+## 部署
 
-### 添加新的API
+### 使用PM2
 
-1. 在`models/`目录下创建数据模型
-2. 在`controllers/`目录下创建控制器
-3. 在`routes/`目录下创建路由
-4. 在`routes/index.js`中注册新路由
+```bash
+# 安装PM2
+npm install -g pm2
 
-### 数据库初始化
+# 启动服务
+pm2 start ecosystem.config.js
+```
 
-系统启动时会自动初始化数据库和表结构，无需手动创建。
+### 使用Docker
+
+```bash
+# 构建镜像
+docker-compose build
+
+# 启动服务
+docker-compose up -d
+```
 
 ## 许可证
 
-ISC 
+[MIT](LICENSE) 

@@ -1,0 +1,54 @@
+# 依赖目录
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# 环境变量文件
+.env
+.env.*
+!.env.example
+
+# 日志文件
+logs
+*.log
+
+# 上传文件目录
+uploads
+
+# 编辑器配置
+.idea
+.vscode
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 测试文件
+coverage
+.nyc_output
+test
+
+# Git相关
+.git
+.gitignore
+
+# Docker相关
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Nginx配置
+nginx
+
+# 文档
+README.md
+docs
+
+# 前端构建目录
+admin-frontend/dist
+admin-frontend/node_modules
+h5-frontend/dist
+h5-frontend/node_modules 

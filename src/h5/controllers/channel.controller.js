@@ -1,0 +1,35 @@
+/**
+ * H5端渠道控制器
+ * 处理H5端渠道相关的业务逻辑
+ */
+const channelModel = require('../../models/channel.model');
+const { STATUS_CODES, MESSAGES } = require('../../config/api.config');
+const logger = require('../../config/logger.config');
+
+/**
+ * 获取渠道列表
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getList(req, res) {
+  try {
+    // 获取所有渠道
+    const channels = await channelModel.getAll();
+    
+    return res.json({
+      code: STATUS_CODES.SUCCESS,
+      message: MESSAGES.SUCCESS,
+      data: channels
+    });
+  } catch (error) {
+    logger.error(`获取渠道列表失败: ${error.message}`);
+    return res.status(500).json({
+      code: STATUS_CODES.SERVER_ERROR,
+      message: error.message || MESSAGES.SERVER_ERROR
+    });
+  }
+}
+
+module.exports = {
+  getList
+}; 

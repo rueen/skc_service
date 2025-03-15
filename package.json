@@ -6,6 +6,12 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
+    "start:admin": "node src/admin/admin-server.js",
+    "start:h5": "node src/h5/h5-server.js",
+    "dev:admin": "nodemon src/admin/admin-server.js",
+    "dev:h5": "nodemon src/h5/h5-server.js",
+    "start:all": "concurrently \"npm run start:admin\" \"npm run start:h5\"",
+    "dev:all": "concurrently \"npm run dev:admin\" \"npm run dev:h5\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -27,6 +33,7 @@
     "winston": "^3.12.0"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "nodemon": "^3.1.0"
   }
 }

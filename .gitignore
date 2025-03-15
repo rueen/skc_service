@@ -1,26 +1,39 @@
-# Logs
-logs
+# 依赖
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# 环境变量
+.env
+.env.*
+!.env.example
+!.env.admin.example
+!.env.h5.example
+
+# 日志
+logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# 上传文件
+uploads/
 
-uploads
+# 编辑器配置
+.idea/
+.vscode/
+*.swp
+*.swo
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# 操作系统文件
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+
+# 构建输出
+dist/
+build/
+
+# 测试覆盖率
+coverage/
+
+# SSL证书
+nginx/ssl/
