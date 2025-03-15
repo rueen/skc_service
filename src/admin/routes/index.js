@@ -14,7 +14,6 @@ const authRoutes = require('./auth.routes');
 const waiterRoutes = require('./waiter.routes');
 const articleRoutes = require('./article.routes');
 const channelRoutes = require('./channel.routes');
-const uploadRoutes = require('./upload.routes');
 const groupRoutes = require('./group.routes');
 const memberRoutes = require('./member.routes');
 const taskRoutes = require('./task.routes');
@@ -44,9 +43,6 @@ router.use(`${API_PREFIX}/members`, memberRoutes);
 
 // 任务管理路由
 router.use(`${API_PREFIX}/tasks`, taskRoutes);
-
-// 文件上传路由（公共接口）
-router.use(`${PUBLIC_API_PREFIX}/upload`, uploadRoutes);
 
 // 在这里添加其他路由
 // router.use(`${API_PREFIX}/taskSubmitted`, taskSubmittedRoutes);

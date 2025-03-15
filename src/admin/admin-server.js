@@ -6,6 +6,7 @@ const { initDatabase } = require('../shared/models/db');
 const { initTables } = require('../shared/models/init.db');
 const adminRoutes = require('./routes');
 const healthRoutes = require('../shared/routes/health.routes');
+const { router: sharedRoutes, setAppType } = require('../shared/routes');
 const logger = require('../shared/config/logger.config');
 const errorHandler = require('../shared/middlewares/errorHandler.middleware');
 
@@ -25,6 +26,10 @@ const app = createApp({
 
 // 注册健康检查路由
 app.use('/health', healthRoutes);
+
+// 注册共享路由（设置应用类型为admin）
+app.use(setAppType('admin'));
+app.use(sharedRoutes);
 
 // 注册管理后台路由
 app.use(adminRoutes);

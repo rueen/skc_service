@@ -1,14 +1,14 @@
 /**
- * 上传路由
+ * 共享上传路由
  * 处理文件上传相关的路由
  */
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const { UPLOAD_CONFIG } = require('../../shared/config/api.config');
+const { UPLOAD_CONFIG } = require('../config/api.config');
 const uploadController = require('../controllers/upload.controller');
-const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
-const responseUtil = require('../../shared/utils/response.util');
+const rateLimiterMiddleware = require('../middlewares/rateLimiter.middleware');
+const responseUtil = require('../utils/response.util');
 
 const router = express.Router();
 
@@ -62,6 +62,12 @@ const handleMulterError = (err, req, res, next) => {
   next();
 };
 
+// 中间件：设置应用类型
+const setAppType = (appType) => (req, res, next) => {
+  req.appType = appType;
+  next();
+};
+
 /**
  * @route POST /api/upload/image
  * @desc 上传图片
@@ -75,4 +81,8 @@ router.post(
   uploadController.uploadImage
 );
 
-module.exports = router; 
+// 导出路由和中间件
+module.exports = {
+  router,
+  setAppType
+}; 

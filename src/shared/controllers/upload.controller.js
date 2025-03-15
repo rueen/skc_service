@@ -1,21 +1,9 @@
-/*
- * @Author: diaochan
- * @Date: 2025-03-15 16:12:24
- * @LastEditors: diaochan
- * @LastEditTime: 2025-03-15 16:52:29
- * @Description: 
- */
 /**
- * 上传控制器
+ * 共享上传控制器
  * 处理文件上传相关的请求
  */
-const responseUtil = require('../../shared/utils/response.util');
-const logger = require('../../shared/config/logger.config');
-
-// 获取服务器信息
-const SERVER_HOST = 'http://localhost';
-const PORT = process.env.ADMIN_PORT || 3002;
-const BASE_PATH = process.env.BASE_URL || '/api/support';
+const responseUtil = require('../utils/response.util');
+const logger = require('../config/logger.config');
 
 /**
  * 上传图片
@@ -28,6 +16,16 @@ async function uploadImage(req, res) {
       return responseUtil.badRequest(res, '请选择要上传的图片');
     }
 
+    // 获取服务器信息
+    const appType = req.appType || 'admin'; // 默认为admin
+    const SERVER_HOST = process.env.SERVER_HOST || 'http://localhost';
+    const PORT = appType === 'admin' 
+      ? (process.env.ADMIN_PORT || 3002)
+      : (process.env.H5_PORT || 3001);
+    const BASE_PATH = appType === 'admin'
+      ? (process.env.ADMIN_BASE_URL || '/api/support')
+      : (process.env.H5_BASE_URL || '/api/h5');
+    
     // 构建完整的图片访问路径
     // 如果BASE_PATH是完整URL，则直接使用；否则构建完整URL
     const baseUrl = BASE_PATH.startsWith('http') 
