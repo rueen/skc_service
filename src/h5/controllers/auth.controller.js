@@ -4,9 +4,9 @@
  */
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const memberModel = require('../../models/member.model');
-const { STATUS_CODES, MESSAGES } = require('../../config/api.config');
-const logger = require('../../config/logger.config');
+const memberModel = require('../../shared/models/member.model');
+const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
+const logger = require('../../shared/config/logger.config');
 
 // JWT密钥和过期时间
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';

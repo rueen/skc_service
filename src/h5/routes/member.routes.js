@@ -3,11 +3,11 @@
  * 处理会员相关的路由
  */
 const express = require('express');
-const { body } = require('express-validator');
-const memberController = require('../../controllers/h5/member.controller');
-const authMiddleware = require('../../middlewares/h5Auth.middleware');
-const validatorUtil = require('../../utils/validator.util');
-const rateLimiterMiddleware = require('../../middlewares/rateLimiter.middleware');
+const { body, param } = require('express-validator');
+const memberController = require('../controllers/member.controller');
+const authMiddleware = require('../middlewares/h5Auth.middleware');
+const validatorUtil = require('../../shared/utils/validator.util');
+const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
 

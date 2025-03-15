@@ -3,8 +3,8 @@
  * 处理渠道相关的路由
  */
 const express = require('express');
-const channelController = require('../../controllers/h5/channel.controller');
-const rateLimiterMiddleware = require('../../middlewares/rateLimiter.middleware');
+const channelController = require('../controllers/channel.controller');
+const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
 

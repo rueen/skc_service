@@ -2,10 +2,10 @@
  * H5端会员控制器
  * 处理H5端会员相关的业务逻辑
  */
-const memberModel = require('../../models/member.model');
-const accountModel = require('../../models/account.model');
-const { STATUS_CODES, MESSAGES } = require('../../config/api.config');
-const logger = require('../../config/logger.config');
+const memberModel = require('../../shared/models/member.model');
+const accountModel = require('../../shared/models/account.model');
+const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
+const logger = require('../../shared/config/logger.config');
 
 /**
  * 获取会员个人资料

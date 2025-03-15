@@ -2,10 +2,8 @@
   "name": "skc_service",
   "version": "1.0.0",
   "description": "SKC API服务",
-  "main": "src/app.js",
+  "main": "src/admin/admin-server.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
     "start:admin": "node src/admin/admin-server.js",
     "start:h5": "node src/h5/h5-server.js",
     "dev:admin": "nodemon src/admin/admin-server.js",

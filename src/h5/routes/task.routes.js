@@ -4,10 +4,10 @@
  */
 const express = require('express');
 const { body, query, param } = require('express-validator');
-const taskController = require('../../controllers/h5/task.controller');
-const authMiddleware = require('../../middlewares/h5Auth.middleware');
-const validatorUtil = require('../../utils/validator.util');
-const rateLimiterMiddleware = require('../../middlewares/rateLimiter.middleware');
+const taskController = require('../controllers/task.controller');
+const authMiddleware = require('../middlewares/h5Auth.middleware');
+const validatorUtil = require('../../shared/utils/validator.util');
+const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
 

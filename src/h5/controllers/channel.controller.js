@@ -2,9 +2,9 @@
  * H5端渠道控制器
  * 处理H5端渠道相关的业务逻辑
  */
-const channelModel = require('../../models/channel.model');
-const { STATUS_CODES, MESSAGES } = require('../../config/api.config');
-const logger = require('../../config/logger.config');
+const channelModel = require('../../shared/models/channel.model');
+const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
+const logger = require('../../shared/config/logger.config');
 
 /**
  * 获取渠道列表

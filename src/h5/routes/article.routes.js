@@ -4,9 +4,9 @@
  */
 const express = require('express');
 const { param, query } = require('express-validator');
-const articleController = require('../../controllers/h5/article.controller');
-const validatorUtil = require('../../utils/validator.util');
-const rateLimiterMiddleware = require('../../middlewares/rateLimiter.middleware');
+const articleController = require('../controllers/article.controller');
+const validatorUtil = require('../../shared/utils/validator.util');
+const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
 

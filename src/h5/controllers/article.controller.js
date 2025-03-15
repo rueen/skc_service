@@ -2,9 +2,9 @@
  * H5端文章控制器
  * 处理H5端文章相关的业务逻辑
  */
-const articleModel = require('../../models/article.model');
-const { STATUS_CODES, MESSAGES } = require('../../config/api.config');
-const logger = require('../../config/logger.config');
+const articleModel = require('../../shared/models/article.model');
+const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
+const logger = require('../../shared/config/logger.config');
 
 /**
  * 获取文章列表

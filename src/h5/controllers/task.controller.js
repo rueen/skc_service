@@ -2,10 +2,10 @@
  * H5端任务控制器
  * 处理H5端任务相关的业务逻辑
  */
-const taskModel = require('../../models/task.model');
-const taskSubmittedModel = require('../../models/taskSubmitted.model');
-const { STATUS_CODES, MESSAGES } = require('../../config/api.config');
-const logger = require('../../config/logger.config');
+const taskModel = require('../../shared/models/task.model');
+const taskSubmittedModel = require('../../shared/models/taskSubmitted.model');
+const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
+const logger = require('../../shared/config/logger.config');
 
 /**
  * 获取任务列表
