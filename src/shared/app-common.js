@@ -60,7 +60,7 @@ function createApp(options = {}) {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Cross-Origin-Resource-Policy', 'cross-origin');
     next();
-  }, express.static(path.join(__dirname, '../uploads')));
+  }, express.static(path.join(process.cwd(), 'uploads')));
   
   // 日志中间件
   // 在生产环境中将日志写入文件

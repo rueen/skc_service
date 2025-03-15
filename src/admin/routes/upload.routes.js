@@ -15,7 +15,7 @@ const router = express.Router();
 // 配置 multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../../uploads');
+    const uploadDir = path.join(process.cwd(), 'uploads');
     // 确保上传目录存在
     if (!require('fs').existsSync(uploadDir)) {
       require('fs').mkdirSync(uploadDir, { recursive: true });
