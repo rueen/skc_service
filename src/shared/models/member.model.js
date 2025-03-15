@@ -19,6 +19,7 @@ function formatMember(member) {
     id: member.id,
     memberNickname: member.member_nickname,
     memberAccount: member.member_account,
+    password: member.password,
     groupId: member.group_id,
     groupName: member.group_name,
     inviterId: member.inviter_id,

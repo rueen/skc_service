@@ -21,20 +21,16 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
  */
 async function register(req, res) {
   try {
-    const { memberAccount, password, memberNickname, inviteCode } = req.body;
+    const { memberAccount, password, memberNickname, inviteCode, loginType } = req.body;
     
     // 检查账号是否已存在
     const existingMember = await memberModel.getByAccount(memberAccount);
     if (existingMember) {
-      return res.status(400).json({
-        code: STATUS_CODES.BAD_REQUEST,
-        message: '账号已存在'
-      });
+      return responseUtil.badRequest(res, '账号已存在');
     }
     
     // 加密密码
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await authUtil.hashPassword(password);
     
     // 创建会员
     const memberData = {
@@ -47,30 +43,25 @@ async function register(req, res) {
     const newMember = await memberModel.create(memberData);
     
     // 生成JWT令牌
-    const token = jwt.sign(
-      { id: newMember.id, account: newMember.memberAccount },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-    
-    return res.json({
-      code: STATUS_CODES.SUCCESS,
-      message: '注册成功',
-      data: {
-        token,
-        member: {
-          id: newMember.id,
-          memberAccount: newMember.memberAccount,
-          memberNickname: newMember.memberNickname
-        }
-      }
+    const token = authUtil.generateToken({
+      id: newMember.id, 
+      account: memberAccount,
+      loginType: loginType || 'phone' // 默认为手机号登录类型
     });
+    
+    return responseUtil.success(res, {
+      token,
+      userInfo: {
+        id: newMember.id,
+        nickname: memberNickname,
+        avatar: '',
+        loginType: loginType || 'phone',
+        memberAccount: memberAccount
+      }
+    }, '注册成功');
   } catch (error) {
     logger.error(`用户注册失败: ${error.message}`);
-    return res.status(500).json({
-      code: STATUS_CODES.SERVER_ERROR,
-      message: '注册失败，请稍后重试'
-    });
+    return responseUtil.serverError(res, '注册失败，请稍后重试');
   }
 }
 
@@ -83,25 +74,25 @@ async function login(req, res) {
   try {
     const { loginType, memberAccount, areaCode = '86', password } = req.body;
     
-    // 根据登录类型构建会员账号
-    let accountValue = '';
+    if (!memberAccount) {
+      return responseUtil.badRequest(res, '账号不能为空');
+    }
     
+    if (!password) {
+      return responseUtil.badRequest(res, '密码不能为空');
+    }
+    
+    // 验证账号格式
     if (loginType === 'phone') {
-      if (!memberAccount) {
-        return responseUtil.badRequest(res, '手机号不能为空');
-      }
-      accountValue = `phone_${memberAccount}`;
+      // 可以在这里添加手机号格式验证
     } else if (loginType === 'email') {
-      if (!memberAccount) {
-        return responseUtil.badRequest(res, '邮箱不能为空');
-      }
-      accountValue = `email_${memberAccount}`;
+      // 可以在这里添加邮箱格式验证
     } else {
       return responseUtil.badRequest(res, '不支持的登录类型');
     }
     
-    // 查找会员
-    const member = await memberModel.getByAccount(accountValue);
+    // 查找会员 - 直接使用原始账号
+    let member = await memberModel.getByAccount(memberAccount);
     
     // 如果用户不存在，自动注册
     if (!member) {
@@ -111,10 +102,10 @@ async function login(req, res) {
       // 加密密码
       const hashedPassword = await authUtil.hashPassword(password);
       
-      // 创建会员数据
+      // 创建会员数据 - 使用原始账号，不带前缀
       const memberData = {
         memberNickname: randomNickname,
-        memberAccount: accountValue,
+        memberAccount: memberAccount,
         password: hashedPassword
       };
       
@@ -125,7 +116,8 @@ async function login(req, res) {
       // 生成JWT令牌
       const token = authUtil.generateToken({
         id: createdMember.id,
-        account: createdMember.memberAccount
+        account: createdMember.memberAccount,
+        loginType: loginType // 在令牌中添加登录类型
       });
       
       // 构建用户信息
@@ -143,6 +135,10 @@ async function login(req, res) {
       }, '登录成功');
     } else {
       // 验证密码
+      if (!member.hasPassword) {
+        return responseUtil.error(res, '账号密码未设置，请联系管理员', 1002, 400);
+      }
+      
       const isMatch = await authUtil.comparePassword(password, member.password);
       if (!isMatch) {
         return responseUtil.error(res, '密码错误', 1002, 400);
@@ -156,7 +152,8 @@ async function login(req, res) {
       // 生成JWT令牌
       const token = authUtil.generateToken({
         id: member.id,
-        account: member.memberAccount
+        account: member.memberAccount,
+        loginType: loginType // 在令牌中添加登录类型
       });
       
       // 构建用户信息
@@ -165,7 +162,7 @@ async function login(req, res) {
         nickname: member.memberNickname,
         avatar: member.avatar || '',
         loginType: loginType,
-        memberAccount: memberAccount
+        memberAccount: member.memberAccount
       };
       
       return responseUtil.success(res, {
@@ -194,16 +191,19 @@ async function getUserInfo(req, res) {
       return responseUtil.notFound(res, '用户不存在');
     }
     
-    // 确定登录类型
-    let loginType = '';
-    let memberAccount = '';
+    // 从令牌中获取登录类型，如果没有则尝试推断
+    let loginType = req.user.loginType || '';
     
-    if (member.memberAccount.startsWith('phone_')) {
-      loginType = 'phone';
-      memberAccount = member.memberAccount.replace('phone_', '');
-    } else if (member.memberAccount.startsWith('email_')) {
-      loginType = 'email';
-      memberAccount = member.memberAccount.replace('email_', '');
+    // 如果令牌中没有登录类型，尝试从其他信息推断
+    if (!loginType) {
+      // 可以根据账号格式或其他信息推断登录类型
+      // 例如，如果账号包含@，可能是邮箱
+      if (member.memberAccount.includes('@')) {
+        loginType = 'email';
+      } else {
+        // 默认为手机号登录
+        loginType = 'phone';
+      }
     }
     
     // 构建用户信息
@@ -212,7 +212,7 @@ async function getUserInfo(req, res) {
       nickname: member.memberNickname,
       avatar: member.avatar || '',
       loginType: loginType,
-      memberAccount: memberAccount
+      memberAccount: member.memberAccount
     };
     
     return responseUtil.success(res, userInfo);
