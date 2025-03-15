@@ -88,11 +88,7 @@ router.post(
     body('occupation')
       .optional()
       .isIn(Object.values(OCCUPATION_TYPE))
-      .withMessage('无效的职业类型'),
-    body('isGroupOwner')
-      .optional()
-      .isBoolean()
-      .withMessage('isGroupOwner必须是布尔值')
+      .withMessage('无效的职业类型')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.create
@@ -143,11 +139,7 @@ router.put(
     body('occupation')
       .optional()
       .isIn(Object.values(OCCUPATION_TYPE))
-      .withMessage('无效的职业类型'),
-    body('isGroupOwner')
-      .optional()
-      .isBoolean()
-      .withMessage('isGroupOwner必须是布尔值')
+      .withMessage('无效的职业类型')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.update

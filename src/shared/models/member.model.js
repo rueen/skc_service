@@ -200,6 +200,30 @@ async function getById(id) {
 }
 
 /**
+ * 根据账号获取会员
+ * @param {string} account - 会员账号
+ * @returns {Promise<Object|null>} 会员信息
+ */
+async function getByAccount(account) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT m.*, g.group_name, 
+              inv.member_nickname as inviter_name
+       FROM members m
+       LEFT JOIN \`groups\` g ON m.group_id = g.id
+       LEFT JOIN members inv ON m.inviter_id = inv.id
+       WHERE m.member_account = ?`,
+      [account]
+    );
+    
+    return rows.length > 0 ? formatMember(rows[0]) : null;
+  } catch (error) {
+    logger.error(`根据账号获取会员失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
  * 创建会员
  * @param {Object} memberData - 会员数据
  * @returns {Promise<Object>} 创建结果
@@ -542,6 +566,7 @@ async function remove(id) {
 module.exports = {
   getList,
   getById,
+  getByAccount,
   create,
   update,
   remove

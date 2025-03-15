@@ -7,6 +7,7 @@ const { body } = require('express-validator');
 const authController = require('../controllers/auth.controller');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
+const authMiddleware = require('../../shared/middlewares/auth.middleware');
 
 const router = express.Router();
 
@@ -47,22 +48,57 @@ router.post(
 
 /**
  * @route POST /api/h5/auth/login
- * @desc 用户登录
+ * @desc 用户登录（支持手机号和邮箱登录）
  * @access Public
  */
 router.post(
   '/login',
-  rateLimiterMiddleware.apiLimiter,
+  rateLimiterMiddleware.loginLimiter,
   [
+    body('loginType')
+      .notEmpty()
+      .withMessage('登录类型不能为空')
+      .isIn(['phone', 'email'])
+      .withMessage('登录类型必须为phone或email'),
     body('memberAccount')
       .notEmpty()
-      .withMessage('账号不能为空'),
+      .withMessage('账号不能为空')
+      .isString()
+      .withMessage('账号必须为字符串'),
+    body('areaCode')
+      .optional()
+      .isString()
+      .withMessage('区号必须为字符串'),
     body('password')
       .notEmpty()
       .withMessage('密码不能为空')
+      .isLength({ min: 6, max: 20 })
+      .withMessage('密码长度必须在6-20个字符之间')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authController.login
+);
+
+/**
+ * @route GET /api/h5/auth/user-info
+ * @desc 获取用户信息
+ * @access Private
+ */
+router.get(
+  '/user-info',
+  authMiddleware.verifyToken,
+  authController.getUserInfo
+);
+
+/**
+ * @route POST /api/h5/auth/logout
+ * @desc 用户退出登录
+ * @access Private
+ */
+router.post(
+  '/logout',
+  authMiddleware.verifyToken,
+  authController.logout
 );
 
 module.exports = router; 
