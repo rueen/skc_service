@@ -80,17 +80,6 @@ router.post(
 );
 
 /**
- * @route GET /api/h5/auth/user-info
- * @desc 获取用户信息
- * @access Private
- */
-router.get(
-  '/user-info',
-  authMiddleware.verifyToken,
-  authController.getUserInfo
-);
-
-/**
  * @route POST /api/h5/auth/logout
  * @desc 用户退出登录
  * @access Private

@@ -4,6 +4,7 @@
  */
 const express = require('express');
 const authRoutes = require('./auth.routes');
+const userRoutes = require('./user.routes');
 const taskRoutes = require('./task.routes');
 const memberRoutes = require('./member.routes');
 const channelRoutes = require('./channel.routes');
@@ -13,6 +14,9 @@ const router = express.Router();
 
 // 用户认证路由
 router.use('/auth', authRoutes);
+
+// 用户信息路由
+router.use('/user', userRoutes);
 
 // 任务相关路由
 router.use('/tasks', taskRoutes);
