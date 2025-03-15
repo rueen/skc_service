@@ -135,16 +135,6 @@ const PERMISSIONS = {
   }
 };
 
-// 环境配置
-const ENV = {
-  DEV: {
-    API_URL: 'http://localhost:3001/api/support'
-  },
-  PROD: {
-    API_URL: 'https://api.example.com/api/support'
-  }
-};
-
 module.exports = {
   API_PREFIX,
   PUBLIC_API_PREFIX,
@@ -161,6 +151,5 @@ module.exports = {
   OCCUPATION_TYPE,
   SETTLEMENT_STATUS,
   PERMISSIONS,
-  ENV,
   UPLOAD_CONFIG
 }; 
