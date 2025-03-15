@@ -1,39 +1,17 @@
-/**
- * 认证中间件
- * 验证用户是否已登录和权限检查
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-15 16:12:24
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-15 22:16:58
+ * @Description: 
  */
-const authUtil = require('../../shared/utils/auth.util');
+/**
+ * 管理后台认证中间件
+ * 提供管理后台特有的权限验证功能
+ */
+const { verifyToken } = require('../../shared/middlewares/auth.middleware');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
-
-/**
- * 验证用户是否已登录
- * @param {Object} req - Express请求对象
- * @param {Object} res - Express响应对象
- * @param {Function} next - Express下一个中间件函数
- */
-const verifyToken = (req, res, next) => {
-  try {
-    // 从请求头中提取令牌
-    const token = authUtil.extractTokenFromHeader(req);
-    if (!token) {
-      return responseUtil.unauthorized(res, '未提供访问令牌');
-    }
-
-    // 验证令牌
-    const decoded = authUtil.verifyToken(token);
-    if (!decoded) {
-      return responseUtil.unauthorized(res, '访问令牌无效或已过期');
-    }
-
-    // 将用户信息存储在请求对象中
-    req.user = decoded;
-    next();
-  } catch (error) {
-    logger.error(`认证中间件错误: ${error.message}`);
-    return responseUtil.serverError(res);
-  }
-};
 
 /**
  * 验证用户是否为管理员
@@ -101,7 +79,7 @@ const hasPermission = (requiredPermissions) => {
 };
 
 module.exports = {
-  verifyToken,
+  verifyToken,  // 从shared中导出，保持接口一致性
   isAdmin,
   hasPermission
 }; 

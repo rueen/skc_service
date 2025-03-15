@@ -5,7 +5,7 @@
 const express = require('express');
 const { body, query, param } = require('express-validator');
 const taskController = require('../controllers/task.controller');
-const authMiddleware = require('../middlewares/h5Auth.middleware');
+const authMiddleware = require('../../shared/middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
