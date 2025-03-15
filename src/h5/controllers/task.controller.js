@@ -6,6 +6,7 @@ const taskModel = require('../../shared/models/task.model');
 const taskSubmittedModel = require('../../shared/models/taskSubmitted.model');
 const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
+const responseUtil = require('../../shared/utils/response.util');
 
 /**
  * 获取任务列表
@@ -27,17 +28,10 @@ async function getList(req, res) {
     // 获取任务列表
     const result = await taskModel.getList(filters, page, pageSize);
     
-    return res.json({
-      code: STATUS_CODES.SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: result
-    });
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取任务列表失败: ${error.message}`);
-    return res.status(500).json({
-      code: STATUS_CODES.SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
   }
 }
 
@@ -54,31 +48,18 @@ async function getDetail(req, res) {
     const task = await taskModel.getById(parseInt(id, 10));
     
     if (!task) {
-      return res.status(404).json({
-        code: STATUS_CODES.NOT_FOUND,
-        message: '任务不存在'
-      });
+      return responseUtil.notFound(res, '任务不存在');
     }
     
     // 检查任务是否已结束
     if (task.taskStatus === 'ended') {
-      return res.status(400).json({
-        code: STATUS_CODES.BAD_REQUEST,
-        message: '该任务已结束'
-      });
+      return responseUtil.badRequest(res, '该任务已结束');
     }
     
-    return res.json({
-      code: STATUS_CODES.SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: task
-    });
+    return responseUtil.success(res, task);
   } catch (error) {
     logger.error(`获取任务详情失败: ${error.message}`);
-    return res.status(500).json({
-      code: STATUS_CODES.SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
   }
 }
 
@@ -97,18 +78,12 @@ async function submitTask(req, res) {
     const task = await taskModel.getById(parseInt(id, 10));
     
     if (!task) {
-      return res.status(404).json({
-        code: STATUS_CODES.NOT_FOUND,
-        message: '任务不存在'
-      });
+      return responseUtil.notFound(res, '任务不存在');
     }
     
     // 检查任务是否已结束
     if (task.taskStatus === 'ended') {
-      return res.status(400).json({
-        code: STATUS_CODES.BAD_REQUEST,
-        message: '该任务已结束，无法提交'
-      });
+      return responseUtil.badRequest(res, '该任务已结束，无法提交');
     }
     
     // 检查是否已提交过该任务
@@ -129,17 +104,10 @@ async function submitTask(req, res) {
       submitTime: new Date()
     });
     
-    return res.json({
-      code: STATUS_CODES.SUCCESS,
-      message: '任务提交成功，请等待审核',
-      data: result
-    });
+    return responseUtil.success(res, result, '任务提交成功，请等待审核');
   } catch (error) {
     logger.error(`提交任务失败: ${error.message}`);
-    return res.status(500).json({
-      code: STATUS_CODES.SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
   }
 }
 
@@ -163,17 +131,10 @@ async function getSubmittedList(req, res) {
     // 获取已提交的任务列表
     const result = await taskSubmittedModel.getList(filters, page, pageSize);
     
-    return res.json({
-      code: STATUS_CODES.SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: result
-    });
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取已提交的任务列表失败: ${error.message}`);
-    return res.status(500).json({
-      code: STATUS_CODES.SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
   }
 }
 

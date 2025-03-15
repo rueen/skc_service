@@ -136,17 +136,17 @@ async function login(req, res) {
     } else {
       // 验证密码
       if (!member.hasPassword) {
-        return responseUtil.error(res, '账号密码未设置，请联系管理员', 1002, 400);
+        return responseUtil.error(res, '账号密码未设置，请联系管理员', STATUS_CODES.BAD_REQUEST, STATUS_CODES.BAD_REQUEST);
       }
       
       const isMatch = await authUtil.comparePassword(password, member.password);
       if (!isMatch) {
-        return responseUtil.error(res, '密码错误', 1002, 400);
+        return responseUtil.error(res, '密码错误', STATUS_CODES.BAD_REQUEST, STATUS_CODES.BAD_REQUEST);
       }
       
       // 检查用户状态
       if (member.status === 0) {
-        return responseUtil.error(res, '用户已被禁用', 1003, 403);
+        return responseUtil.error(res, '用户已被禁用', STATUS_CODES.FORBIDDEN, STATUS_CODES.FORBIDDEN);
       }
       
       // 生成JWT令牌

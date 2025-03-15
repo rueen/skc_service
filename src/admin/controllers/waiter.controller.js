@@ -7,6 +7,7 @@ const authUtil = require('../../shared/utils/auth.util');
 const validatorUtil = require('../../shared/utils/validator.util');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
+const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 
 /**
  * 获取小二列表

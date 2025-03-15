@@ -6,6 +6,7 @@ const memberModel = require('../../shared/models/member.model');
 const accountModel = require('../../shared/models/account.model');
 const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
+const responseUtil = require('../../shared/utils/response.util');
 
 /**
  * 获取会员个人资料
@@ -20,26 +21,16 @@ async function getProfile(req, res) {
     const member = await memberModel.getById(memberId);
     
     if (!member) {
-      return res.status(404).json({
-        code: STATUS_CODES.NOT_FOUND,
-        message: '会员不存在'
-      });
+      return responseUtil.notFound(res, '会员不存在');
     }
     
     // 移除敏感信息
     delete member.password;
     
-    return res.json({
-      code: STATUS_CODES.SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: member
-    });
+    return responseUtil.success(res, member);
   } catch (error) {
     logger.error(`获取会员个人资料失败: ${error.message}`);
-    return res.status(500).json({
-      code: STATUS_CODES.SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
   }
 }
 
@@ -57,10 +48,7 @@ async function updateProfile(req, res) {
     const member = await memberModel.getById(memberId);
     
     if (!member) {
-      return res.status(404).json({
-        code: STATUS_CODES.NOT_FOUND,
-        message: '会员不存在'
-      });
+      return responseUtil.notFound(res, '会员不存在');
     }
     
     // 更新会员信息
@@ -74,10 +62,7 @@ async function updateProfile(req, res) {
     const success = await memberModel.update(updateData);
     
     if (!success) {
-      return res.status(500).json({
-        code: STATUS_CODES.SERVER_ERROR,
-        message: '更新个人资料失败'
-      });
+      return responseUtil.serverError(res, '更新个人资料失败');
     }
     
     // 获取更新后的会员信息
@@ -86,17 +71,10 @@ async function updateProfile(req, res) {
     // 移除敏感信息
     delete updatedMember.password;
     
-    return res.json({
-      code: STATUS_CODES.SUCCESS,
-      message: '更新个人资料成功',
-      data: updatedMember
-    });
+    return responseUtil.success(res, updatedMember, '更新个人资料成功');
   } catch (error) {
     logger.error(`更新会员个人资料失败: ${error.message}`);
-    return res.status(500).json({
-      code: STATUS_CODES.SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
   }
 }
 
@@ -112,17 +90,10 @@ async function getAccounts(req, res) {
     // 获取会员账号列表
     const accounts = await accountModel.getByMemberId(memberId);
     
-    return res.json({
-      code: STATUS_CODES.SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: accounts
-    });
+    return responseUtil.success(res, accounts);
   } catch (error) {
     logger.error(`获取会员账号列表失败: ${error.message}`);
-    return res.status(500).json({
-      code: STATUS_CODES.SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
   }
 }
 
@@ -140,10 +111,7 @@ async function addAccount(req, res) {
     const existingAccount = await accountModel.getByMemberAndChannel(memberId, channelId);
     
     if (existingAccount) {
-      return res.status(400).json({
-        code: STATUS_CODES.BAD_REQUEST,
-        message: '您已添加过该渠道的账号'
-      });
+      return responseUtil.badRequest(res, '您已添加过该渠道的账号');
     }
     
     // 添加账号
@@ -160,17 +128,10 @@ async function addAccount(req, res) {
     
     const newAccount = await accountModel.create(accountData);
     
-    return res.json({
-      code: STATUS_CODES.SUCCESS,
-      message: '添加账号成功，请等待审核',
-      data: newAccount
-    });
+    return responseUtil.success(res, newAccount, '添加账号成功，请等待审核');
   } catch (error) {
     logger.error(`添加会员账号失败: ${error.message}`);
-    return res.status(500).json({
-      code: STATUS_CODES.SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
   }
 }
 

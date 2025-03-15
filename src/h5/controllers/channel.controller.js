@@ -5,6 +5,7 @@
 const channelModel = require('../../shared/models/channel.model');
 const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
+const responseUtil = require('../../shared/utils/response.util');
 
 /**
  * 获取渠道列表
@@ -16,17 +17,10 @@ async function getList(req, res) {
     // 获取所有渠道
     const channels = await channelModel.getAll();
     
-    return res.json({
-      code: STATUS_CODES.SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: channels
-    });
+    return responseUtil.success(res, channels);
   } catch (error) {
     logger.error(`获取渠道列表失败: ${error.message}`);
-    return res.status(500).json({
-      code: STATUS_CODES.SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
   }
 }
 

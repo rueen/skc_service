@@ -5,7 +5,7 @@
 const memberModel = require('../../shared/models/member.model');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
-const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, OCCUPATION_TYPE } = require('../../shared/config/api.config');
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, OCCUPATION_TYPE, STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 
 /**
  * 获取会员列表

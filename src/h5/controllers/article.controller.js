@@ -5,6 +5,7 @@
 const articleModel = require('../../shared/models/article.model');
 const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
+const responseUtil = require('../../shared/utils/response.util');
 
 /**
  * 获取文章列表
@@ -25,17 +26,10 @@ async function getList(req, res) {
     // 获取文章列表
     const result = await articleModel.getList(filters, page, pageSize);
     
-    return res.json({
-      code: STATUS_CODES.SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: result
-    });
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取文章列表失败: ${error.message}`);
-    return res.status(500).json({
-      code: STATUS_CODES.SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
   }
 }
 
@@ -52,34 +46,21 @@ async function getDetail(req, res) {
     const article = await articleModel.getById(parseInt(id, 10));
     
     if (!article) {
-      return res.status(404).json({
-        code: STATUS_CODES.NOT_FOUND,
-        message: '文章不存在'
-      });
+      return responseUtil.notFound(res, '文章不存在');
     }
     
     // 检查文章是否已发布
     if (!article.isPublished) {
-      return res.status(403).json({
-        code: STATUS_CODES.FORBIDDEN,
-        message: '该文章尚未发布'
-      });
+      return responseUtil.forbidden(res, '该文章尚未发布');
     }
     
     // 增加文章阅读量
     await articleModel.incrementViewCount(parseInt(id, 10));
     
-    return res.json({
-      code: STATUS_CODES.SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: article
-    });
+    return responseUtil.success(res, article);
   } catch (error) {
     logger.error(`获取文章详情失败: ${error.message}`);
-    return res.status(500).json({
-      code: STATUS_CODES.SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
   }
 }
 
