@@ -61,11 +61,11 @@ async function getDetail(req, res) {
  */
 async function create(req, res) {
   try {
-    const { memberNickname, memberAccount, groupId, inviterId, occupation, isGroupOwner } = req.body;
+    const { memberNickname, memberAccount, password, groupId, inviterId, occupation, isGroupOwner } = req.body;
 
     // 参数验证
-    if (!memberNickname || !memberAccount) {
-      return responseUtil.badRequest(res, '会员昵称和会员账号不能为空');
+    if (!memberNickname || !memberAccount || !password) {
+      return responseUtil.badRequest(res, '会员昵称、账号和密码为必填项');
     }
 
     if (memberNickname.length > 50) {
@@ -81,9 +81,14 @@ async function create(req, res) {
       return responseUtil.badRequest(res, '无效的职业类型');
     }
 
+    // 处理密码哈希
+    const { hashPassword } = require('../../shared/utils/auth.util');
+    const hashedPassword = await hashPassword(password);
+
     const result = await memberModel.create({
       memberNickname,
       memberAccount,
+      password: hashedPassword,
       groupId: groupId ? parseInt(groupId, 10) : null,
       inviterId: inviterId ? parseInt(inviterId, 10) : null,
       occupation,
@@ -114,7 +119,7 @@ async function create(req, res) {
 async function update(req, res) {
   try {
     const { id } = req.params;
-    const { memberNickname, memberAccount, groupId, inviterId, occupation, isGroupOwner } = req.body;
+    const { memberNickname, memberAccount, password, groupId, inviterId, occupation, isGroupOwner } = req.body;
 
     if (!id) {
       return responseUtil.badRequest(res, '会员ID不能为空');
@@ -134,10 +139,18 @@ async function update(req, res) {
       return responseUtil.badRequest(res, '无效的职业类型');
     }
 
+    // 处理密码哈希
+    let hashedPassword;
+    if (password) {
+      const { hashPassword } = require('../../shared/utils/auth.util');
+      hashedPassword = await hashPassword(password);
+    }
+
     const result = await memberModel.update({
       id: parseInt(id, 10),
       memberNickname,
       memberAccount,
+      password: password !== undefined ? hashedPassword : undefined,
       groupId: groupId !== undefined ? (groupId ? parseInt(groupId, 10) : null) : undefined,
       inviterId: inviterId !== undefined ? (inviterId ? parseInt(inviterId, 10) : null) : undefined,
       occupation,

@@ -26,6 +26,7 @@ function formatMember(member) {
     occupation: member.occupation,
     isGroupOwner: member.is_group_owner === 1,
     inviteCode: member.invite_code,
+    hasPassword: !!member.password,
     createTime: formatDateTime(member.create_time),
     updateTime: formatDateTime(member.update_time)
   };
@@ -261,11 +262,12 @@ async function create(memberData) {
     // 创建会员
     const [result] = await connection.query(
       `INSERT INTO members 
-       (member_nickname, member_account, group_id, inviter_id, occupation, is_group_owner, invite_code)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (member_nickname, member_account, password, group_id, inviter_id, occupation, is_group_owner, invite_code)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         memberData.memberNickname,
         memberData.memberAccount,
+        memberData.password || null,
         memberData.groupId || null,
         memberData.inviterId || null,
         memberData.occupation || null,
@@ -363,6 +365,11 @@ async function update(memberData) {
     if (memberData.memberAccount !== undefined) {
       updateFields.push('member_account = ?');
       params.push(memberData.memberAccount);
+    }
+    
+    if (memberData.password !== undefined) {
+      updateFields.push('password = ?');
+      params.push(memberData.password);
     }
     
     if (memberData.groupId !== undefined) {

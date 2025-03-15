@@ -72,6 +72,11 @@ router.post(
       .withMessage('会员账号不能为空')
       .isLength({ max: 50 })
       .withMessage('会员账号长度不能超过50个字符'),
+    body('password')
+      .notEmpty()
+      .withMessage('密码不能为空')
+      .isLength({ min: 6 })
+      .withMessage('密码长度至少为6个字符'),
     body('groupId')
       .optional()
       .isInt()
@@ -115,6 +120,10 @@ router.put(
       .optional()
       .isLength({ max: 50 })
       .withMessage('会员账号长度不能超过50个字符'),
+    body('password')
+      .optional()
+      .isLength({ min: 6 })
+      .withMessage('密码长度至少为6个字符'),
     body('groupId')
       .optional()
       .custom((value) => {

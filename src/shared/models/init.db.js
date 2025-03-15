@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS members (
   id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '会员ID',
   member_nickname varchar(50) NOT NULL COMMENT '会员昵称',
   member_account varchar(50) NOT NULL COMMENT '会员账号',
+  password varchar(100) DEFAULT NULL COMMENT '密码（哈希后）',
   group_id bigint(20) DEFAULT NULL COMMENT '所属群组ID',
   inviter_id bigint(20) DEFAULT NULL COMMENT '邀请人ID',
   occupation varchar(20) DEFAULT NULL COMMENT '职业：housewife-宝妈，freelancer-自由职业，student-学生',
