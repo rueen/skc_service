@@ -66,7 +66,7 @@ function createApp(options = {}) {
   // 在生产环境中将日志写入文件
   if (process.env.NODE_ENV === 'production') {
     // 确保日志目录存在
-    const logDirectory = path.join(__dirname, 'logs');
+    const logDirectory = path.join(process.cwd(), 'logs');
     fs.existsSync(logDirectory) || fs.mkdirSync(logDirectory);
     
     // 创建日志写入流

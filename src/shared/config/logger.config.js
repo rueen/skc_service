@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-15 16:10:51
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-15 18:39:37
+ * @Description: 
+ */
 /**
  * 日志配置文件
  * 使用winston配置日志记录
@@ -10,6 +17,9 @@ const path = require('path');
 const logFormat = printf(({ level, message, timestamp }) => {
   return `${timestamp} [${level}]: ${message}`;
 });
+
+// 日志目录路径
+const logDirectory = path.join(process.cwd(), 'logs');
 
 // 创建日志记录器
 const logger = createLogger({
@@ -29,12 +39,12 @@ const logger = createLogger({
     }),
     // 错误日志文件
     new transports.File({ 
-      filename: path.join(__dirname, '../logs/error.log'), 
+      filename: path.join(logDirectory, 'error.log'), 
       level: 'error' 
     }),
     // 所有日志文件
     new transports.File({ 
-      filename: path.join(__dirname, '../logs/combined.log') 
+      filename: path.join(logDirectory, 'combined.log') 
     })
   ]
 });
