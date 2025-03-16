@@ -5,6 +5,7 @@
 const express = require('express');
 const healthRoutes = require('./health.routes');
 const { router: uploadRoutes, setAppType } = require('./upload.routes');
+const enumRoutes = require('./enum.routes');
 
 const router = express.Router();
 
@@ -13,6 +14,9 @@ router.use('/api/health', healthRoutes);
 
 // 上传路由
 router.use('/api/upload', uploadRoutes);
+
+// 枚举常量路由
+router.use('/api/enums', enumRoutes);
 
 module.exports = {
   router,
