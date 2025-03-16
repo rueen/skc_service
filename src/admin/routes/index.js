@@ -24,7 +24,10 @@ const router = express.Router();
 const { API_PREFIX, PUBLIC_API_PREFIX } = require('../../shared/config/api.config');
 
 // 用户认证路由
-router.use(`${API_PREFIX}/users`, authRoutes);
+router.use(`${API_PREFIX}/auth`, authRoutes);
+
+// 用户信息路由
+router.use(`${API_PREFIX}/user`, authRoutes);
 
 // 小二管理路由
 router.use(`${API_PREFIX}/waiters`, waiterRoutes);

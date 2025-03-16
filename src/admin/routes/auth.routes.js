@@ -12,7 +12,7 @@ const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.midd
 const router = express.Router();
 
 /**
- * @route POST /api/support/users/login
+ * @route POST /api/support/auth/login
  * @desc 用户登录
  * @access Public
  */
@@ -38,12 +38,23 @@ router.post(
 );
 
 /**
- * @route GET /api/support/users/current
+ * @route POST /api/support/auth/logout
+ * @desc 用户退出登录
+ * @access Private
+ */
+router.post(
+  '/logout',
+  authMiddleware.verifyToken,
+  authController.logout
+);
+
+/**
+ * @route GET /api/support/user/info
  * @desc 获取当前用户信息
  * @access Private
  */
 router.get(
-  '/current',
+  '/info',
   authMiddleware.verifyToken,
   authController.getCurrentUser
 );

@@ -85,7 +85,23 @@ async function getCurrentUser(req, res) {
   }
 }
 
+/**
+ * 用户退出登录
+ * @param {Object} req - Express请求对象
+ * @param {Object} res - Express响应对象
+ */
+async function logout(req, res) {
+  try {
+    // 客户端需要清除token，服务端无需特殊处理
+    return responseUtil.success(res, null, '退出登录成功');
+  } catch (error) {
+    logger.error(`退出登录失败: ${error.message}`);
+    return responseUtil.serverError(res, '退出登录失败');
+  }
+}
+
 module.exports = {
   login,
-  getCurrentUser
+  getCurrentUser,
+  logout
 }; 

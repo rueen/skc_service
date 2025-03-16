@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-15 16:12:24
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-16 10:04:41
+ * @Description: 
+ */
 /**
  * 限流中间件
  * 防止API被过度请求，保护服务器资源
@@ -51,7 +58,7 @@ const apiLimiter = rateLimit({
  */
 const loginLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1小时
-  max: 10, // 每个IP最多10次登录尝试
+  max: 20, // 每个IP最多20次登录尝试
   standardHeaders: true,
   legacyHeaders: false,
   message: {
