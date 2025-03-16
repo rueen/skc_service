@@ -66,6 +66,7 @@ function formatTask(task) {
   }
   
   formattedTask.unlimitedQuota = task.unlimited_quota === 1;
+  formattedTask.quota = task.quota || 0;
   formattedTask.fansRequired = task.fans_required;
   formattedTask.contentRequirement = task.content_requirement;
   formattedTask.taskInfo = task.task_info;
@@ -148,6 +149,13 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     if (filters.taskStatus) {
       conditions.push('t.task_status = ?');
       queryParams.push(filters.taskStatus);
+    }
+    
+    // 支持多个任务状态筛选
+    if (filters.taskStatusIn && Array.isArray(filters.taskStatusIn) && filters.taskStatusIn.length > 0) {
+      const placeholders = filters.taskStatusIn.map(() => '?').join(', ');
+      conditions.push(`t.task_status IN (${placeholders})`);
+      queryParams.push(...filters.taskStatusIn);
     }
     
     if (filters.channelId) {
@@ -348,14 +356,17 @@ async function create(taskData) {
     const startTime = formatDateTimeForMySQL(taskData.startTime);
     const endTime = formatDateTimeForMySQL(taskData.endTime);
     
+    // 处理 quota 字段
+    const quota = taskData.quota !== undefined ? taskData.quota : 0;
+    
     // 创建任务
     const [result] = await connection.query(
       `INSERT INTO tasks 
        (task_name, channel_id, category, task_type, reward, brand, 
         group_ids, group_mode, user_range, task_count, custom_fields, 
-        start_time, end_time, unlimited_quota, fans_required, 
+        start_time, end_time, unlimited_quota, quota, fans_required, 
         content_requirement, task_info, notice, task_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         taskData.taskName,
         taskData.channelId,
@@ -371,6 +382,7 @@ async function create(taskData) {
         startTime,
         endTime,
         taskData.unlimitedQuota ? 1 : 0,
+        quota,
         taskData.fansRequired || null,
         taskData.contentRequirement || null,
         taskData.taskInfo || null,
@@ -593,6 +605,11 @@ async function update(taskData) {
     if (taskData.unlimitedQuota !== undefined) {
       updateFields.push('unlimited_quota = ?');
       params.push(taskData.unlimitedQuota ? 1 : 0);
+    }
+    
+    if (taskData.quota !== undefined) {
+      updateFields.push('quota = ?');
+      params.push(taskData.quota);
     }
     
     if (taskData.fansRequired !== undefined) {
