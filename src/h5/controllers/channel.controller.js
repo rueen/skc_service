@@ -15,9 +15,9 @@ const responseUtil = require('../../shared/utils/response.util');
 async function getList(req, res) {
   try {
     // 获取所有渠道
-    const channels = await channelModel.getAll();
+    const result = await channelModel.getList();
     
-    return responseUtil.success(res, channels);
+    return responseUtil.success(res, result.list);
   } catch (error) {
     logger.error(`获取渠道列表失败: ${error.message}`);
     return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);

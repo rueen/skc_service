@@ -19,7 +19,7 @@ async function getList(req, res) {
     
     // 构建筛选条件
     const filters = {
-      taskStatus: 'processing' // 只显示进行中的任务
+      taskStatusIn: ['not_started', 'processing'] // 显示未开始和进行中的任务
     };
     
     if (channelId) filters.channelId = parseInt(channelId, 10);
