@@ -29,11 +29,11 @@ const TaskType = TASK_TYPE;
 
 const TaskTypeLang = {
   [TaskType.IMAGE_TEXT]: {
-    'zh-CN': '图文任务',
+    'zh-CN': '图文',
     'en-US': 'Image & Text'
   },
   [TaskType.VIDEO]: {
-    'zh-CN': '视频任务',
+    'zh-CN': '视频',
     'en-US': 'Video'
   }
 };
