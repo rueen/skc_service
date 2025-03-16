@@ -29,6 +29,8 @@ function formatTask(task) {
   formattedTask.channelId = task.channel_id;
   formattedTask.taskType = task.task_type;
   formattedTask.channelName = task.channel_name;
+  formattedTask.reward = task.reward;
+  formattedTask.category = task.category;
   
   // 安全解析 JSON 字段
   try {
@@ -91,6 +93,7 @@ function formatTask(task) {
   delete formattedTask.task_info;
   delete formattedTask.task_status;
   delete formattedTask.channel_name;
+  delete formattedTask.channel_icon;
   
   return formattedTask;
 }
@@ -131,7 +134,7 @@ function formatDateTimeForMySQL(dateTimeString) {
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
     let query = `
-      SELECT t.*, c.name as channel_name
+      SELECT t.*, c.name as channel_name, c.icon as channel_icon
       FROM tasks t
       LEFT JOIN channels c ON t.channel_id = c.id
     `;
@@ -183,13 +186,24 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     for (const task of rows) {
       try {
         const formattedTask = formatTask(task);
-        // 只返回列表需要的字段
+        // 返回更多的任务信息
         formattedList.push({
           id: formattedTask.id,
           taskName: formattedTask.taskName,
+          taskStatus: formattedTask.taskStatus,
           channelId: formattedTask.channelId,
           channelName: task.channel_name,
-          taskStatus: formattedTask.taskStatus,
+          channelIcon: task.channel_icon,
+          reward: formattedTask.reward,
+          category: formattedTask.category,
+          taskType: formattedTask.taskType,
+          fansRequired: formattedTask.fansRequired,
+          startTime: formattedTask.startTime,
+          endTime: formattedTask.endTime,
+          unlimitedQuota: formattedTask.unlimitedQuota,
+          quota: formattedTask.quota,
+          groupMode: formattedTask.groupMode,
+          groupIds: formattedTask.groupIds,
           createTime: formattedTask.createTime
         });
       } catch (error) {
