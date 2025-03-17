@@ -28,6 +28,8 @@ function formatMember(member) {
     isGroupOwner: member.is_group_owner === 1,
     inviteCode: member.invite_code,
     hasPassword: !!member.password,
+    phone: member.phone || '',
+    email: member.email || '',
     createTime: formatDateTime(member.create_time),
     updateTime: formatDateTime(member.update_time)
   };
@@ -287,8 +289,8 @@ async function create(memberData) {
     // 创建会员
     const [result] = await connection.query(
       `INSERT INTO members 
-       (member_nickname, member_account, password, group_id, inviter_id, occupation, is_group_owner, invite_code)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (member_nickname, member_account, password, group_id, inviter_id, occupation, is_group_owner, invite_code, phone, email)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         memberData.memberNickname,
         memberData.memberAccount,
@@ -297,7 +299,9 @@ async function create(memberData) {
         memberData.inviterId || null,
         memberData.occupation || null,
         memberData.isGroupOwner ? 1 : 0,
-        inviteCode
+        inviteCode,
+        memberData.phone || null,
+        memberData.email || null
       ]
     );
     
@@ -395,6 +399,16 @@ async function update(memberData) {
     if (memberData.password !== undefined) {
       updateFields.push('password = ?');
       params.push(memberData.password);
+    }
+    
+    if (memberData.phone !== undefined) {
+      updateFields.push('phone = ?');
+      params.push(memberData.phone);
+    }
+    
+    if (memberData.email !== undefined) {
+      updateFields.push('email = ?');
+      params.push(memberData.email);
     }
     
     if (memberData.groupId !== undefined) {

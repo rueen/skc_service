@@ -40,13 +40,21 @@ async function register(req, res) {
       inviteCode
     };
     
+    // 根据登录类型设置 phone 或 email 字段
+    const actualLoginType = loginType || 'phone'; // 默认为手机号登录类型
+    if (actualLoginType === 'phone') {
+      memberData.phone = memberAccount;
+    } else if (actualLoginType === 'email') {
+      memberData.email = memberAccount;
+    }
+    
     const newMember = await memberModel.create(memberData);
     
     // 生成JWT令牌
     const token = authUtil.generateToken({
       id: newMember.id, 
       account: memberAccount,
-      loginType: loginType || 'phone' // 默认为手机号登录类型
+      loginType: actualLoginType
     });
     
     return responseUtil.success(res, {
@@ -55,8 +63,10 @@ async function register(req, res) {
         id: newMember.id,
         nickname: memberNickname,
         avatar: '',
-        loginType: loginType || 'phone',
-        memberAccount: memberAccount
+        loginType: actualLoginType,
+        memberAccount: memberAccount,
+        phone: actualLoginType === 'phone' ? memberAccount : '',
+        email: actualLoginType === 'email' ? memberAccount : ''
       }
     }, '注册成功');
   } catch (error) {
@@ -109,6 +119,13 @@ async function login(req, res) {
         password: hashedPassword
       };
       
+      // 根据登录类型设置 phone 或 email 字段
+      if (loginType === 'phone') {
+        memberData.phone = memberAccount;
+      } else if (loginType === 'email') {
+        memberData.email = memberAccount;
+      }
+      
       // 创建新会员
       const newMember = await memberModel.create(memberData);
       const createdMember = await memberModel.getById(newMember.id);
@@ -126,7 +143,9 @@ async function login(req, res) {
         nickname: createdMember.memberNickname,
         avatar: createdMember.avatar || '',
         loginType: loginType,
-        memberAccount: memberAccount
+        memberAccount: memberAccount,
+        phone: loginType === 'phone' ? memberAccount : (createdMember.phone || ''),
+        email: loginType === 'email' ? memberAccount : (createdMember.email || '')
       };
       
       return responseUtil.success(res, {
@@ -162,7 +181,9 @@ async function login(req, res) {
         nickname: member.memberNickname,
         avatar: member.avatar || '',
         loginType: loginType,
-        memberAccount: member.memberAccount
+        memberAccount: member.memberAccount,
+        phone: loginType === 'phone' ? member.memberAccount : (member.phone || ''),
+        email: loginType === 'email' ? member.memberAccount : (member.email || '')
       };
       
       return responseUtil.success(res, {
@@ -212,7 +233,9 @@ async function getUserInfo(req, res) {
       nickname: member.memberNickname,
       avatar: member.avatar || '',
       loginType: loginType,
-      memberAccount: member.memberAccount
+      memberAccount: member.memberAccount,
+      phone: member.phone || (loginType === 'phone' ? member.memberAccount : ''),
+      email: member.email || (loginType === 'email' ? member.memberAccount : '')
     };
     
     return responseUtil.success(res, userInfo);

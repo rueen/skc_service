@@ -42,7 +42,7 @@ async function getProfile(req, res) {
 async function updateProfile(req, res) {
   try {
     const memberId = req.user.id;
-    const { memberNickname, occupation } = req.body;
+    const { memberNickname, occupation, phone, email } = req.body;
     
     // 获取会员信息
     const member = await memberModel.getById(memberId);
@@ -58,6 +58,10 @@ async function updateProfile(req, res) {
     
     if (memberNickname) updateData.memberNickname = memberNickname;
     if (occupation) updateData.occupation = occupation;
+    
+    // 支持单独编辑 phone 和 email 字段
+    if (phone !== undefined) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
     
     const success = await memberModel.update(updateData);
     
