@@ -89,6 +89,12 @@ async function create(req, res) {
       return responseUtil.badRequest(res, '无效的性别值，应为 0(男)、1(女) 或 2(保密)');
     }
 
+    // 验证密码强度
+    const validatorUtil = require('../../shared/utils/validator.util');
+    if (!validatorUtil.isStrongPassword(password)) {
+      return responseUtil.badRequest(res, '密码不符合要求，密码长度必须在8-20位之间，且必须包含字母和数字');
+    }
+
     // 处理密码哈希
     const { hashPassword } = require('../../shared/utils/auth.util');
     const hashedPassword = await hashPassword(password);
@@ -156,6 +162,14 @@ async function update(req, res) {
     // 验证性别值是否有效
     if (gender !== undefined && ![0, 1, 2].includes(Number(gender))) {
       return responseUtil.badRequest(res, '无效的性别值，应为 0(男)、1(女) 或 2(保密)');
+    }
+
+    // 验证密码强度
+    if (password) {
+      const validatorUtil = require('../../shared/utils/validator.util');
+      if (!validatorUtil.isStrongPassword(password)) {
+        return responseUtil.badRequest(res, '密码不符合要求，密码长度必须在8-20位之间，且必须包含字母和数字');
+      }
     }
 
     // 处理密码哈希

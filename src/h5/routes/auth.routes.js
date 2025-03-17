@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-15 16:12:24
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-17 21:45:46
+ * @Description: 
+ */
 /**
  * H5端认证路由
  * 处理用户登录、注册等认证相关的路由
@@ -30,8 +37,10 @@ router.post(
     body('password')
       .notEmpty()
       .withMessage('密码不能为空')
-      .isLength({ min: 6, max: 20 })
-      .withMessage('密码长度必须在6-20个字符之间'),
+      .isLength({ min: 8, max: 20 })
+      .withMessage('密码长度必须在8-20个字符之间')
+      .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
+      .withMessage('密码必须包含字母和数字'),
     body('memberNickname')
       .notEmpty()
       .withMessage('昵称不能为空')
@@ -72,8 +81,10 @@ router.post(
     body('password')
       .notEmpty()
       .withMessage('密码不能为空')
-      .isLength({ min: 6, max: 20 })
-      .withMessage('密码长度必须在6-20个字符之间')
+      .isLength({ min: 8, max: 20 })
+      .withMessage('密码长度必须在8-20个字符之间')
+      .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
+      .withMessage('密码必须包含字母和数字')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authController.login
@@ -88,6 +99,40 @@ router.post(
   '/logout',
   authMiddleware.verifyToken,
   authController.logout
+);
+
+/**
+ * @route POST /api/h5/auth/change-password
+ * @desc 修改密码
+ * @access Private
+ */
+router.post(
+  '/change-password',
+  authMiddleware.verifyToken,
+  rateLimiterMiddleware.apiLimiter,
+  [
+    body('currentPassword')
+      .notEmpty()
+      .withMessage('当前密码不能为空'),
+    body('newPassword')
+      .notEmpty()
+      .withMessage('新密码不能为空')
+      .isLength({ min: 8, max: 20 })
+      .withMessage('新密码长度必须在8-20个字符之间')
+      .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
+      .withMessage('新密码必须包含字母和数字'),
+    body('confirmPassword')
+      .notEmpty()
+      .withMessage('确认密码不能为空')
+      .custom((value, { req }) => {
+        if (value !== req.body.newPassword) {
+          throw new Error('确认密码与新密码不一致');
+        }
+        return true;
+      })
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  authController.changePassword
 );
 
 module.exports = router; 

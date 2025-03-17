@@ -75,8 +75,10 @@ router.post(
     body('password')
       .notEmpty()
       .withMessage('密码不能为空')
-      .isLength({ min: 6 })
-      .withMessage('密码长度至少为6个字符'),
+      .isLength({ min: 8, max: 20 })
+      .withMessage('密码长度必须在8-20个字符之间')
+      .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
+      .withMessage('密码必须包含字母和数字'),
     body('groupId')
       .optional()
       .isInt()
@@ -118,8 +120,10 @@ router.put(
       .withMessage('会员账号长度不能超过50个字符'),
     body('password')
       .optional()
-      .isLength({ min: 6 })
-      .withMessage('密码长度至少为6个字符'),
+      .isLength({ min: 8, max: 20 })
+      .withMessage('密码长度必须在8-20个字符之间')
+      .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
+      .withMessage('密码必须包含字母和数字'),
     body('groupId')
       .optional()
       .custom((value) => {

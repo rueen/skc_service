@@ -269,9 +269,65 @@ async function logout(req, res) {
   }
 }
 
+/**
+ * 修改密码
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function changePassword(req, res) {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    
+    // 验证新密码与确认密码是否一致
+    if (newPassword !== confirmPassword) {
+      return responseUtil.badRequest(res, '新密码与确认密码不一致');
+    }
+    
+    // 获取用户信息
+    const member = await memberModel.getById(userId);
+    if (!member) {
+      return responseUtil.notFound(res, '用户不存在');
+    }
+    
+    // 验证当前密码是否正确
+    const isPasswordValid = await authUtil.comparePassword(currentPassword, member.password);
+    if (!isPasswordValid) {
+      return responseUtil.badRequest(res, '当前密码不正确');
+    }
+    
+    // 验证新密码是否符合强密码规则
+    const validatorUtil = require('../../shared/utils/validator.util');
+    if (!validatorUtil.isStrongPassword(newPassword)) {
+      return responseUtil.badRequest(res, '新密码不符合要求，密码长度必须在8-20位之间，且必须包含字母和数字');
+    }
+    
+    // 加密新密码
+    const hashedPassword = await authUtil.hashPassword(newPassword);
+    
+    // 更新密码
+    const updateData = {
+      id: userId,
+      password: hashedPassword
+    };
+    
+    const success = await memberModel.update(updateData);
+    
+    if (!success) {
+      return responseUtil.serverError(res, '修改密码失败');
+    }
+    
+    return responseUtil.success(res, null, '密码修改成功');
+  } catch (error) {
+    logger.error(`修改密码失败: ${error.message}`);
+    return responseUtil.serverError(res, '修改密码失败，请稍后重试');
+  }
+}
+
 module.exports = {
   register,
   login,
   getUserInfo,
-  logout
+  logout,
+  changePassword
 }; 

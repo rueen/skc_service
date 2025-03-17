@@ -77,12 +77,12 @@ const isValidUrl = (url) => {
 
 /**
  * 验证密码强度
- * 至少8位，包含大小写字母和数字
+ * 长度8-20位，必须包含字母和数字
  * @param {string} password - 密码
  * @returns {boolean} 是否为强密码
  */
 const isStrongPassword = (password) => {
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+  const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/;
   return passwordRegex.test(password);
 };
 
