@@ -2,12 +2,13 @@
  * 系统枚举常量定义
  * 包含所有枚举值及其多语言文本
  */
-const { STATUS_CODES, MESSAGES, TASK_STATUS, TASK_TYPE, TASK_AUDIT_STATUS, 
-  ACCOUNT_AUDIT_STATUS, WITHDRAWAL_STATUS, BILL_TYPE, OCCUPATION_TYPE, 
-  GENDER_TYPE, SETTLEMENT_STATUS, PERMISSIONS } = require('./api.config');
 
 // 任务状态枚举
-const TaskStatus = TASK_STATUS;
+const TaskStatus = {
+  NOT_STARTED: 'not_started',  // 未开始
+  PROCESSING: 'processing',    // 进行中
+  ENDED: 'ended'              // 已结束
+};
 
 const TaskStatusLang = {
   [TaskStatus.NOT_STARTED]: {
@@ -25,7 +26,10 @@ const TaskStatusLang = {
 };
 
 // 任务类型枚举
-const TaskType = TASK_TYPE;
+const TaskType = {
+  IMAGE_TEXT: 'image_text',   // 图文任务
+  VIDEO: 'video'              // 视频任务
+};
 
 const TaskTypeLang = {
   [TaskType.IMAGE_TEXT]: {
@@ -39,7 +43,11 @@ const TaskTypeLang = {
 };
 
 // 任务审核状态枚举
-const TaskAuditStatus = TASK_AUDIT_STATUS;
+const TaskAuditStatus = {
+  PENDING: 'pending',     // 待审核
+  APPROVED: 'approved',   // 已通过
+  REJECTED: 'rejected'    // 已拒绝
+};
 
 const TaskAuditStatusLang = {
   [TaskAuditStatus.PENDING]: {
@@ -57,7 +65,11 @@ const TaskAuditStatusLang = {
 };
 
 // 账号审核状态枚举
-const AccountAuditStatus = ACCOUNT_AUDIT_STATUS;
+const AccountAuditStatus = {
+  PENDING: 'pending',     // 待审核
+  APPROVED: 'approved',   // 已通过
+  REJECTED: 'rejected'    // 已拒绝
+};
 
 const AccountAuditStatusLang = {
   [AccountAuditStatus.PENDING]: {
@@ -75,7 +87,11 @@ const AccountAuditStatusLang = {
 };
 
 // 提现状态枚举
-const WithdrawalStatus = WITHDRAWAL_STATUS;
+const WithdrawalStatus = {
+  PENDING: 'pending',     // 待处理
+  SUCCESS: 'success',     // 提现成功
+  FAILED: 'failed'       // 提现失败
+};
 
 const WithdrawalStatusLang = {
   [WithdrawalStatus.PENDING]: {
@@ -93,7 +109,12 @@ const WithdrawalStatusLang = {
 };
 
 // 账单类型枚举
-const BillType = BILL_TYPE;
+const BillType = {
+  WITHDRAWAL: 'withdrawal',      // 提现
+  TASK_INCOME: 'task_income',    // 任务收入
+  INVITE_REWARD: 'invite_reward', // 邀请奖励
+  GROUP_REWARD: 'group_reward'   // 群主奖励
+};
 
 const BillTypeLang = {
   [BillType.WITHDRAWAL]: {
@@ -115,7 +136,11 @@ const BillTypeLang = {
 };
 
 // 职业类型枚举
-const OccupationType = OCCUPATION_TYPE;
+const OccupationType = {
+  HOUSEWIFE: 'housewife',      // 宝妈
+  FREELANCER: 'freelancer',    // 自由职业
+  STUDENT: 'student'           // 学生
+};
 
 const OccupationTypeLang = {
   [OccupationType.HOUSEWIFE]: {
@@ -133,7 +158,11 @@ const OccupationTypeLang = {
 };
 
 // 性别类型枚举
-const GenderType = GENDER_TYPE;
+const GenderType = {
+  MALE: 0,      // 男
+  FEMALE: 1,    // 女
+  SECRET: 2     // 保密
+};
 
 const GenderTypeLang = {
   [GenderType.MALE]: {
@@ -151,7 +180,10 @@ const GenderTypeLang = {
 };
 
 // 结算状态枚举
-const SettlementStatus = SETTLEMENT_STATUS;
+const SettlementStatus = {
+  SETTLED: 'settled',    // 已结算
+  FAILED: 'failed'       // 结算失败
+};
 
 const SettlementStatusLang = {
   [SettlementStatus.SETTLED]: {
@@ -161,36 +193,6 @@ const SettlementStatusLang = {
   [SettlementStatus.FAILED]: {
     'zh-CN': '结算失败',
     'en-US': 'Failed'
-  }
-};
-
-// 响应状态码枚举
-const StatusCodes = STATUS_CODES;
-
-const StatusCodesLang = {
-  [StatusCodes.SUCCESS]: {
-    'zh-CN': '成功',
-    'en-US': 'Success'
-  },
-  [StatusCodes.BAD_REQUEST]: {
-    'zh-CN': '请求参数错误',
-    'en-US': 'Bad Request'
-  },
-  [StatusCodes.UNAUTHORIZED]: {
-    'zh-CN': '未授权',
-    'en-US': 'Unauthorized'
-  },
-  [StatusCodes.FORBIDDEN]: {
-    'zh-CN': '禁止访问',
-    'en-US': 'Forbidden'
-  },
-  [StatusCodes.NOT_FOUND]: {
-    'zh-CN': '资源不存在',
-    'en-US': 'Not Found'
-  },
-  [StatusCodes.SERVER_ERROR]: {
-    'zh-CN': '服务器错误',
-    'en-US': 'Server Error'
   }
 };
 
@@ -213,7 +215,5 @@ module.exports = {
   GenderType,
   GenderTypeLang,
   SettlementStatus,
-  SettlementStatusLang,
-  StatusCodes,
-  StatusCodesLang
+  SettlementStatusLang
 }; 

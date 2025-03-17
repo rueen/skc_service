@@ -227,18 +227,27 @@ async function getUserInfo(req, res) {
       }
     }
     
-    // 构建用户信息
-    const userInfo = {
-      id: member.id,
-      nickname: member.memberNickname,
-      avatar: member.avatar || '',
-      loginType: loginType,
-      memberAccount: member.memberAccount,
-      phone: member.phone || (loginType === 'phone' ? member.memberAccount : ''),
-      email: member.email || (loginType === 'email' ? member.memberAccount : '')
-    };
+    // 移除敏感信息
+    delete member.password;
     
-    return responseUtil.success(res, userInfo);
+    // 添加登录类型信息
+    member.loginType = loginType;
+    
+    // 如果有群组ID，获取群组信息
+    if (member.groupId) {
+      try {
+        const groupModel = require('../../shared/models/group.model');
+        const group = await groupModel.getById(member.groupId);
+        if (group) {
+          member.groupLink = group.groupLink;
+        }
+      } catch (groupError) {
+        logger.error(`获取群组信息失败: ${groupError.message}`);
+        // 不影响整体返回，只是群组链接可能为空
+      }
+    }
+    
+    return responseUtil.success(res, member);
   } catch (error) {
     logger.error(`获取用户信息失败: ${error.message}`);
     return responseUtil.serverError(res, '获取用户信息失败，请稍后重试');

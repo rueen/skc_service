@@ -22,6 +22,7 @@ function formatMember(member) {
     password: member.password,
     groupId: member.group_id,
     groupName: member.group_name,
+    groupLink: member.group_link,
     inviterId: member.inviter_id,
     inviterName: member.inviter_name,
     occupation: member.occupation,
@@ -157,7 +158,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 async function getById(id) {
   try {
     const [rows] = await pool.query(
-      `SELECT m.*, g.group_name, 
+      `SELECT m.*, g.group_name, g.group_link,
               inv.member_nickname as inviter_name
        FROM members m
        LEFT JOIN \`groups\` g ON m.group_id = g.id
@@ -196,6 +197,11 @@ async function getById(id) {
     // 生成邀请链接
     if (member.inviteCode) {
       member.inviteUrl = `${process.env.BASE_URL || 'http://localhost:3001'}/invite/${member.inviteCode}`;
+    }
+    
+    // 添加群组链接
+    if (rows[0].group_link) {
+      member.groupLink = rows[0].group_link;
     }
     
     return member;

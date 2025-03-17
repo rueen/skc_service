@@ -5,8 +5,8 @@
 const memberModel = require('../../shared/models/member.model');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
-const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, OCCUPATION_TYPE, STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
-
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
+const { OccupationType } = require('../../shared/config/enums');
 /**
  * 获取会员列表
  * @param {Object} req - 请求对象
@@ -80,7 +80,7 @@ async function create(req, res) {
     }
     
     // 验证职业类型
-    if (occupation && !Object.values(OCCUPATION_TYPE).includes(occupation)) {
+    if (occupation && !Object.values(OccupationType).includes(occupation)) {
       return responseUtil.badRequest(res, '无效的职业类型');
     }
     
@@ -149,7 +149,7 @@ async function update(req, res) {
     }
     
     // 验证职业类型
-    if (occupation && !Object.values(OCCUPATION_TYPE).includes(occupation)) {
+    if (occupation && !Object.values(OccupationType).includes(occupation)) {
       return responseUtil.badRequest(res, '无效的职业类型');
     }
     

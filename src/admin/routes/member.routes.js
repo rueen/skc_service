@@ -8,7 +8,7 @@ const memberController = require('../controllers/member.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
-const { OCCUPATION_TYPE } = require('../../shared/config/api.config');
+const { OccupationType } = require('../../shared/config/enums');
 
 const router = express.Router();
 
@@ -87,7 +87,7 @@ router.post(
       .withMessage('邀请人ID必须是整数'),
     body('occupation')
       .optional()
-      .isIn(Object.values(OCCUPATION_TYPE))
+      .isIn(Object.values(OccupationType))
       .withMessage('无效的职业类型')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
@@ -138,7 +138,7 @@ router.put(
       .withMessage('邀请人ID必须是整数或null'),
     body('occupation')
       .optional()
-      .isIn(Object.values(OCCUPATION_TYPE))
+      .isIn(Object.values(OccupationType))
       .withMessage('无效的职业类型')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
