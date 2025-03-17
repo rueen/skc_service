@@ -15,6 +15,7 @@ const router = express.Router();
  * @route GET /api/h5/members/profile
  * @desc 获取会员个人资料
  * @access Private
+ * @deprecated 此接口已废弃，请使用 GET /api/h5/user/info 替代
  */
 router.get(
   '/profile',

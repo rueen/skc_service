@@ -12,9 +12,13 @@ const responseUtil = require('../../shared/utils/response.util');
  * 获取会员个人资料
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
+ * @deprecated 此函数已废弃，请使用 auth.controller.js 中的 getUserInfo 函数替代
  */
 async function getProfile(req, res) {
   try {
+    // 添加废弃警告日志
+    logger.warn('使用了已废弃的 getProfile 接口，请使用 /api/h5/user/info 替代');
+    
     const memberId = req.user.id;
     
     // 获取会员信息
