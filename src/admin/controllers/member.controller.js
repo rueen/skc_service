@@ -61,7 +61,10 @@ async function getDetail(req, res) {
  */
 async function create(req, res) {
   try {
-    const { memberNickname, memberAccount, password, groupId, inviterId, occupation, isGroupOwner } = req.body;
+    const { 
+      memberNickname, memberAccount, password, groupId, inviterId, 
+      occupation, isGroupOwner, phone, email, avatar, gender, telegram 
+    } = req.body;
 
     // 参数验证
     if (!memberNickname || !memberAccount || !password) {
@@ -80,6 +83,11 @@ async function create(req, res) {
     if (occupation && !Object.values(OCCUPATION_TYPE).includes(occupation)) {
       return responseUtil.badRequest(res, '无效的职业类型');
     }
+    
+    // 验证性别值是否有效
+    if (gender !== undefined && ![0, 1, 2].includes(Number(gender))) {
+      return responseUtil.badRequest(res, '无效的性别值，应为 0(男)、1(女) 或 2(保密)');
+    }
 
     // 处理密码哈希
     const { hashPassword } = require('../../shared/utils/auth.util');
@@ -92,18 +100,21 @@ async function create(req, res) {
       groupId: groupId ? parseInt(groupId, 10) : null,
       inviterId: inviterId ? parseInt(inviterId, 10) : null,
       occupation,
-      isGroupOwner: !!isGroupOwner
+      isGroupOwner: !!isGroupOwner,
+      phone,
+      email,
+      avatar,
+      gender: gender !== undefined ? Number(gender) : 2,
+      telegram
     });
 
     return responseUtil.success(res, result, '创建会员成功');
   } catch (error) {
     if (error.message === '会员账号已存在') {
       return responseUtil.badRequest(res, error.message);
-    }
-    if (error.message === '所选群组不存在') {
+    } else if (error.message === '所选群组不存在') {
       return responseUtil.badRequest(res, error.message);
-    }
-    if (error.message === '邀请人不存在') {
+    } else if (error.message === '邀请人不存在') {
       return responseUtil.badRequest(res, error.message);
     }
     logger.error(`创建会员失败: ${error.message}`);
@@ -119,7 +130,10 @@ async function create(req, res) {
 async function update(req, res) {
   try {
     const { id } = req.params;
-    const { memberNickname, memberAccount, password, groupId, inviterId, occupation, isGroupOwner } = req.body;
+    const { 
+      memberNickname, memberAccount, password, groupId, inviterId, 
+      occupation, isGroupOwner, phone, email, avatar, gender, telegram 
+    } = req.body;
 
     if (!id) {
       return responseUtil.badRequest(res, '会员ID不能为空');
@@ -138,6 +152,11 @@ async function update(req, res) {
     if (occupation && !Object.values(OCCUPATION_TYPE).includes(occupation)) {
       return responseUtil.badRequest(res, '无效的职业类型');
     }
+    
+    // 验证性别值是否有效
+    if (gender !== undefined && ![0, 1, 2].includes(Number(gender))) {
+      return responseUtil.badRequest(res, '无效的性别值，应为 0(男)、1(女) 或 2(保密)');
+    }
 
     // 处理密码哈希
     let hashedPassword;
@@ -154,7 +173,12 @@ async function update(req, res) {
       groupId: groupId !== undefined ? (groupId ? parseInt(groupId, 10) : null) : undefined,
       inviterId: inviterId !== undefined ? (inviterId ? parseInt(inviterId, 10) : null) : undefined,
       occupation,
-      isGroupOwner: isGroupOwner !== undefined ? !!isGroupOwner : undefined
+      isGroupOwner: isGroupOwner !== undefined ? !!isGroupOwner : undefined,
+      phone,
+      email,
+      avatar,
+      gender: gender !== undefined ? Number(gender) : undefined,
+      telegram
     });
 
     if (!result) {

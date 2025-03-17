@@ -42,13 +42,18 @@ async function getProfile(req, res) {
 async function updateProfile(req, res) {
   try {
     const memberId = req.user.id;
-    const { memberNickname, occupation, phone, email } = req.body;
+    const { memberNickname, occupation, phone, email, avatar, gender, telegram } = req.body;
     
     // 获取会员信息
     const member = await memberModel.getById(memberId);
     
     if (!member) {
       return responseUtil.notFound(res, '会员不存在');
+    }
+    
+    // 验证性别值是否有效
+    if (gender !== undefined && ![0, 1, 2].includes(Number(gender))) {
+      return responseUtil.badRequest(res, '无效的性别值，应为 0(男)、1(女) 或 2(保密)');
     }
     
     // 更新会员信息
@@ -62,6 +67,11 @@ async function updateProfile(req, res) {
     // 支持单独编辑 phone 和 email 字段
     if (phone !== undefined) updateData.phone = phone;
     if (email !== undefined) updateData.email = email;
+    
+    // 支持新增字段
+    if (avatar !== undefined) updateData.avatar = avatar;
+    if (gender !== undefined) updateData.gender = Number(gender);
+    if (telegram !== undefined) updateData.telegram = telegram;
     
     const success = await memberModel.update(updateData);
     

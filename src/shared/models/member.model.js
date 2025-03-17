@@ -30,6 +30,9 @@ function formatMember(member) {
     hasPassword: !!member.password,
     phone: member.phone || '',
     email: member.email || '',
+    avatar: member.avatar || '',
+    gender: member.gender !== undefined ? member.gender : 2, // 默认为保密
+    telegram: member.telegram || '',
     createTime: formatDateTime(member.create_time),
     updateTime: formatDateTime(member.update_time)
   };
@@ -289,8 +292,8 @@ async function create(memberData) {
     // 创建会员
     const [result] = await connection.query(
       `INSERT INTO members 
-       (member_nickname, member_account, password, group_id, inviter_id, occupation, is_group_owner, invite_code, phone, email)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (member_nickname, member_account, password, group_id, inviter_id, occupation, is_group_owner, invite_code, phone, email, avatar, gender, telegram)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         memberData.memberNickname,
         memberData.memberAccount,
@@ -301,7 +304,10 @@ async function create(memberData) {
         memberData.isGroupOwner ? 1 : 0,
         inviteCode,
         memberData.phone || null,
-        memberData.email || null
+        memberData.email || null,
+        memberData.avatar || null,
+        memberData.gender !== undefined ? memberData.gender : 2, // 默认为保密
+        memberData.telegram || null
       ]
     );
     
@@ -409,6 +415,21 @@ async function update(memberData) {
     if (memberData.email !== undefined) {
       updateFields.push('email = ?');
       params.push(memberData.email);
+    }
+    
+    if (memberData.avatar !== undefined) {
+      updateFields.push('avatar = ?');
+      params.push(memberData.avatar);
+    }
+    
+    if (memberData.gender !== undefined) {
+      updateFields.push('gender = ?');
+      params.push(memberData.gender);
+    }
+    
+    if (memberData.telegram !== undefined) {
+      updateFields.push('telegram = ?');
+      params.push(memberData.telegram);
     }
     
     if (memberData.groupId !== undefined) {

@@ -93,6 +93,13 @@ const OCCUPATION_TYPE = {
   STUDENT: 'student'           // 学生
 };
 
+// 性别类型
+const GENDER_TYPE = {
+  MALE: 0,      // 男
+  FEMALE: 1,    // 女
+  SECRET: 2     // 保密
+};
+
 // 结算状态
 const SETTLEMENT_STATUS = {
   SETTLED: 'settled',    // 已结算
@@ -149,6 +156,7 @@ module.exports = {
   WITHDRAWAL_STATUS,
   BILL_TYPE,
   OCCUPATION_TYPE,
+  GENDER_TYPE,
   SETTLEMENT_STATUS,
   PERMISSIONS,
   UPLOAD_CONFIG

@@ -4,7 +4,7 @@
  */
 const { STATUS_CODES, MESSAGES, TASK_STATUS, TASK_TYPE, TASK_AUDIT_STATUS, 
   ACCOUNT_AUDIT_STATUS, WITHDRAWAL_STATUS, BILL_TYPE, OCCUPATION_TYPE, 
-  SETTLEMENT_STATUS, PERMISSIONS } = require('./api.config');
+  GENDER_TYPE, SETTLEMENT_STATUS, PERMISSIONS } = require('./api.config');
 
 // 任务状态枚举
 const TaskStatus = TASK_STATUS;
@@ -132,6 +132,24 @@ const OccupationTypeLang = {
   }
 };
 
+// 性别类型枚举
+const GenderType = GENDER_TYPE;
+
+const GenderTypeLang = {
+  [GenderType.MALE]: {
+    'zh-CN': '男',
+    'en-US': 'Male'
+  },
+  [GenderType.FEMALE]: {
+    'zh-CN': '女',
+    'en-US': 'Female'
+  },
+  [GenderType.SECRET]: {
+    'zh-CN': '保密',
+    'en-US': 'Secret'
+  }
+};
+
 // 结算状态枚举
 const SettlementStatus = SETTLEMENT_STATUS;
 
@@ -192,6 +210,8 @@ module.exports = {
   BillTypeLang,
   OccupationType,
   OccupationTypeLang,
+  GenderType,
+  GenderTypeLang,
   SettlementStatus,
   SettlementStatusLang,
   StatusCodes,
