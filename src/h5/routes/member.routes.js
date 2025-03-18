@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-15 16:12:24
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-19 07:54:37
+ * @Description: 
+ */
 /**
  * H5端会员路由
  * 处理会员相关的路由
@@ -10,19 +17,6 @@ const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
-
-/**
- * @route GET /api/h5/members/profile
- * @desc 获取会员个人资料
- * @access Private
- * @deprecated 此接口已废弃，请使用 GET /api/h5/user/info 替代
- */
-router.get(
-  '/profile',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
-  memberController.getProfile
-);
 
 /**
  * @route PUT /api/h5/members/profile
