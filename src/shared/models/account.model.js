@@ -15,24 +15,23 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 function formatAccount(account) {
   if (!account) return null;
   
-  // 提取基本字段
-  const formattedAccount = { ...account };
-  
-  // 格式化时间字段，使用驼峰命名法
-  formattedAccount.createTime = formatDateTime(account.create_time);
-  formattedAccount.updateTime = formatDateTime(account.update_time);
-  
-  // 转换字段名称为驼峰命名法
-  formattedAccount.memberId = account.member_id;
-  formattedAccount.channelId = account.channel_id;
-  formattedAccount.homeUrl = account.home_url;
-  formattedAccount.fansCount = account.fans_count;
-  formattedAccount.friendsCount = account.friends_count;
-  formattedAccount.postsCount = account.posts_count;
-  formattedAccount.accountAuditStatus = account.account_audit_status;
-  formattedAccount.memberName = account.member_name;
-  
-  return formattedAccount;
+  // 创建一个只包含需要的驼峰命名字段的对象
+  return {
+    id: account.id,
+    account: account.account,
+    memberId: account.member_id,
+    channelId: account.channel_id,
+    channelName: account.channel_name,
+    channelIcon: account.channel_icon,
+    homeUrl: account.home_url,
+    fansCount: account.fans_count,
+    friendsCount: account.friends_count,
+    postsCount: account.posts_count,
+    accountAuditStatus: account.account_audit_status,
+    memberName: account.member_name,
+    createTime: formatDateTime(account.create_time),
+    updateTime: formatDateTime(account.update_time)
+  };
 }
 
 /**
@@ -62,9 +61,13 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     // 构建查询语句
     const query = `
-      SELECT a.*, m.member_nickname as member_name
+      SELECT a.*, 
+             m.member_nickname as member_name,
+             c.name as channel_name,
+             c.icon as channel_icon
       FROM accounts a
       LEFT JOIN members m ON a.member_id = m.id
+      LEFT JOIN channels c ON a.channel_id = c.id
       WHERE ${whereClause}
       ORDER BY a.create_time DESC
       LIMIT ? OFFSET ?
@@ -111,9 +114,13 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 async function getByMemberId(memberId) {
   try {
     const query = `
-      SELECT a.*, m.member_nickname as member_name
+      SELECT a.*, 
+             m.member_nickname as member_name,
+             c.name as channel_name,
+             c.icon as channel_icon
       FROM accounts a
       LEFT JOIN members m ON a.member_id = m.id
+      LEFT JOIN channels c ON a.channel_id = c.id
       WHERE a.member_id = ?
       ORDER BY a.channel_id
     `;
@@ -137,9 +144,14 @@ async function getByMemberId(memberId) {
 async function getByMemberAndChannel(memberId, channelId) {
   try {
     const query = `
-      SELECT *
-      FROM accounts
-      WHERE member_id = ? AND channel_id = ?
+      SELECT a.*,
+             m.member_nickname as member_name,
+             c.name as channel_name,
+             c.icon as channel_icon
+      FROM accounts a
+      LEFT JOIN members m ON a.member_id = m.id
+      LEFT JOIN channels c ON a.channel_id = c.id
+      WHERE a.member_id = ? AND a.channel_id = ?
       LIMIT 1
     `;
     
@@ -189,10 +201,26 @@ async function create(accountData) {
       throw new Error('创建账户失败');
     }
     
-    return {
-      id: result.insertId,
-      ...accountData
-    };
+    // 查询新创建的账号(包含渠道信息)
+    const newAccountQuery = `
+      SELECT a.*, 
+             m.member_nickname as member_name,
+             c.name as channel_name,
+             c.icon as channel_icon
+      FROM accounts a
+      LEFT JOIN members m ON a.member_id = m.id
+      LEFT JOIN channels c ON a.channel_id = c.id
+      WHERE a.id = ?
+    `;
+    
+    const [accounts] = await pool.query(newAccountQuery, [result.insertId]);
+    
+    if (accounts.length === 0) {
+      throw new Error('获取新创建的账户信息失败');
+    }
+    
+    // 格式化并返回结果
+    return formatAccount(accounts[0]);
   } catch (error) {
     logger.error(`创建账户失败: ${error.message}`);
     throw error;
