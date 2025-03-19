@@ -24,9 +24,13 @@ function formatAccount(account) {
   
   // 转换字段名称为驼峰命名法
   formattedAccount.memberId = account.member_id;
-  formattedAccount.accountType = account.account_type;
-  formattedAccount.accountName = account.account_name;
-  formattedAccount.accountValue = account.account_value;
+  formattedAccount.channelId = account.channel_id;
+  formattedAccount.homeUrl = account.home_url;
+  formattedAccount.fansCount = account.fans_count;
+  formattedAccount.friendsCount = account.friends_count;
+  formattedAccount.postsCount = account.posts_count;
+  formattedAccount.accountAuditStatus = account.account_audit_status;
+  formattedAccount.memberName = account.member_name;
   
   return formattedAccount;
 }
@@ -51,16 +55,16 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.memberId);
     }
     
-    if (filters.accountType) {
-      whereClause += ' AND a.account_type = ?';
-      queryParams.push(filters.accountType);
+    if (filters.channelId) {
+      whereClause += ' AND a.channel_id = ?';
+      queryParams.push(filters.channelId);
     }
     
     // 构建查询语句
     const query = `
-      SELECT a.*, m.nickname as member_name
-      FROM account a
-      LEFT JOIN member m ON a.member_id = m.id
+      SELECT a.*, m.member_nickname as member_name
+      FROM accounts a
+      LEFT JOIN members m ON a.member_id = m.id
       WHERE ${whereClause}
       ORDER BY a.create_time DESC
       LIMIT ? OFFSET ?
@@ -75,7 +79,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     // 获取总数
     const countQuery = `
       SELECT COUNT(*) as total
-      FROM account a
+      FROM accounts a
       WHERE ${whereClause}
     `;
     
@@ -107,11 +111,11 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 async function getByMemberId(memberId) {
   try {
     const query = `
-      SELECT a.*, m.nickname as member_name
-      FROM account a
-      LEFT JOIN member m ON a.member_id = m.id
+      SELECT a.*, m.member_nickname as member_name
+      FROM accounts a
+      LEFT JOIN members m ON a.member_id = m.id
       WHERE a.member_id = ?
-      ORDER BY a.account_type
+      ORDER BY a.channel_id
     `;
     
     const [rows] = await pool.query(query, [memberId]);
@@ -120,6 +124,35 @@ async function getByMemberId(memberId) {
     return rows.map(formatAccount);
   } catch (error) {
     logger.error(`根据会员ID获取账户列表失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * 根据会员ID和渠道ID获取账号
+ * @param {number} memberId - 会员ID
+ * @param {number} channelId - 渠道ID
+ * @returns {Promise<Object>} 账号信息
+ */
+async function getByMemberAndChannel(memberId, channelId) {
+  try {
+    const query = `
+      SELECT *
+      FROM accounts
+      WHERE member_id = ? AND channel_id = ?
+      LIMIT 1
+    `;
+    
+    const [rows] = await pool.query(query, [memberId, channelId]);
+    
+    if (rows.length === 0) {
+      return null;
+    }
+    
+    // 格式化结果
+    return formatAccount(rows[0]);
+  } catch (error) {
+    logger.error(`根据会员ID和渠道ID获取账号失败: ${error.message}`);
     throw error;
   }
 }
@@ -134,16 +167,20 @@ async function create(accountData) {
     // 准备数据
     const data = {
       member_id: accountData.memberId,
-      account_type: accountData.accountType,
-      account_name: accountData.accountName,
-      account_value: accountData.accountValue,
+      channel_id: accountData.channelId,
+      account: accountData.account,
+      home_url: accountData.homeUrl,
+      fans_count: accountData.fansCount || 0,
+      friends_count: accountData.friendsCount || 0,
+      posts_count: accountData.postsCount || 0,
+      account_audit_status: accountData.accountAuditStatus || 'pending',
       create_time: new Date(),
       update_time: new Date()
     };
     
     // 执行插入
     const query = `
-      INSERT INTO account SET ?
+      INSERT INTO accounts SET ?
     `;
     
     const [result] = await pool.query(query, [data]);
@@ -154,7 +191,7 @@ async function create(accountData) {
     
     return {
       id: result.insertId,
-      ...data
+      ...accountData
     };
   } catch (error) {
     logger.error(`创建账户失败: ${error.message}`);
@@ -171,14 +208,25 @@ async function update(accountData) {
   try {
     // 准备数据
     const data = {
-      account_name: accountData.accountName,
-      account_value: accountData.accountValue,
+      account: accountData.account,
+      home_url: accountData.homeUrl,
+      fans_count: accountData.fansCount,
+      friends_count: accountData.friendsCount,
+      posts_count: accountData.postsCount,
+      account_audit_status: accountData.accountAuditStatus,
       update_time: new Date()
     };
     
+    // 删除未定义的字段
+    Object.keys(data).forEach(key => {
+      if (data[key] === undefined) {
+        delete data[key];
+      }
+    });
+    
     // 执行更新
     const query = `
-      UPDATE account
+      UPDATE accounts
       SET ?
       WHERE id = ?
     `;
@@ -207,7 +255,7 @@ async function update(accountData) {
 async function remove(id) {
   try {
     const query = `
-      DELETE FROM account
+      DELETE FROM accounts
       WHERE id = ?
     `;
     
@@ -230,6 +278,7 @@ async function remove(id) {
 module.exports = {
   getList,
   getByMemberId,
+  getByMemberAndChannel,
   create,
   update,
   remove
