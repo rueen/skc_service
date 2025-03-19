@@ -245,10 +245,57 @@ async function updateAccount(req, res) {
   }
 }
 
+/**
+ * 删除会员账号
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function deleteAccount(req, res) {
+  try {
+    const memberId = req.user.id;
+    const accountId = parseInt(req.params.id, 10);
+    
+    if (isNaN(accountId)) {
+      return responseUtil.badRequest(res, '无效的账号ID');
+    }
+    
+    // 获取账号详情，检查是否存在以及是否属于当前会员
+    const query = `
+      SELECT a.*
+      FROM accounts a
+      WHERE a.id = ?
+      LIMIT 1
+    `;
+    
+    const { pool } = require('../../shared/models/db');
+    const [rows] = await pool.query(query, [accountId]);
+    
+    if (rows.length === 0) {
+      return responseUtil.notFound(res, '账号不存在');
+    }
+    
+    const accountInfo = rows[0];
+    
+    // 检查账号是否属于当前会员
+    if (accountInfo.member_id !== memberId) {
+      return responseUtil.forbidden(res, '无权删除此账号');
+    }
+    
+    // 调用模型的删除方法
+    const result = await accountModel.remove(accountId);
+    
+    return responseUtil.success(res, result, '删除账号成功');
+  } catch (error) {
+    logger.error(`删除账号失败: ${error.message}`);
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+  }
+}
+
 module.exports = {
   updateProfile,
   getAccounts,
   getAccountDetail,
   addAccount,
-  updateAccount
+  updateAccount,
+  deleteAccount
 }; 

@@ -154,4 +154,24 @@ router.put(
   memberController.updateAccount
 );
 
+/**
+ * @route DELETE /api/h5/members/accounts/:id
+ * @desc 删除会员账号
+ * @access Private
+ */
+router.delete(
+  '/accounts/:id',
+  authMiddleware.verifyToken,
+  rateLimiterMiddleware.apiLimiter,
+  [
+    param('id')
+      .notEmpty()
+      .withMessage('账号ID不能为空')
+      .isInt()
+      .withMessage('账号ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.deleteAccount
+);
+
 module.exports = router; 
