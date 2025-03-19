@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-19 13:48:25
+ * @LastEditTime: 2025-03-19 15:00:22
  * @Description: 
  */
 /**
@@ -17,6 +17,7 @@ const channelRoutes = require('./channel.routes');
 const groupRoutes = require('./group.routes');
 const memberRoutes = require('./member.routes');
 const taskRoutes = require('./task.routes');
+const accountRoutes = require('./account.routes');
 
 const router = express.Router();
 
@@ -47,9 +48,11 @@ router.use(`${API_PREFIX}/members`, memberRoutes);
 // 任务管理路由
 router.use(`${API_PREFIX}/tasks`, taskRoutes);
 
+// 账号管理路由
+router.use(`${API_PREFIX}/accounts`, accountRoutes);
+
 // 在这里添加其他路由
 // router.use(`${API_PREFIX}/taskSubmitted`, taskSubmittedRoutes);
-// router.use(`${API_PREFIX}/accounts`, accountRoutes);
 // router.use(`${API_PREFIX}/settlement`, settlementRoutes);
 
 module.exports = router; 

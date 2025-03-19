@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   friends_count int(11) DEFAULT '0' COMMENT '好友数量',
   posts_count int(11) DEFAULT '0' COMMENT '发布数量',
   account_audit_status varchar(20) NOT NULL DEFAULT 'pending' COMMENT '审核状态：pending-待审核，approved-已通过，rejected-已拒绝',
+  reject_reason varchar(255) DEFAULT NULL COMMENT '拒绝原因',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
@@ -128,6 +129,22 @@ CREATE TABLE IF NOT EXISTS \`groups\` (
   PRIMARY KEY (id),
   KEY idx_owner_id (owner_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='群组表';
+`;
+
+// 创建会员群组关联表
+const createMemberGroupsTable = `
+CREATE TABLE IF NOT EXISTS member_groups (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '关联ID',
+  member_id bigint(20) NOT NULL COMMENT '会员ID',
+  group_id bigint(20) NOT NULL COMMENT '群组ID',
+  is_owner tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否群主',
+  join_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_member_id (member_id),
+  KEY idx_group_id (group_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员群组关联表';
 `;
 
 // 创建提现表
@@ -243,6 +260,7 @@ async function initTables() {
     await connection.query(createMembersTable);
     await connection.query(createChannelsTable);
     await connection.query(createGroupsTable);
+    await connection.query(createMemberGroupsTable);
     await connection.query(createWithdrawalsTable);
     await connection.query(createBillsTable);
     await connection.query(createWaitersTable);

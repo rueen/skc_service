@@ -28,6 +28,7 @@ function formatAccount(account) {
     friendsCount: account.friends_count,
     postsCount: account.posts_count,
     accountAuditStatus: account.account_audit_status,
+    rejectReason: account.reject_reason,
     memberName: account.member_name,
     createTime: formatDateTime(account.create_time),
     updateTime: formatDateTime(account.update_time)
@@ -59,12 +60,28 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.channelId);
     }
     
+    if (filters.accountAuditStatus) {
+      whereClause += ' AND a.account_audit_status = ?';
+      queryParams.push(filters.accountAuditStatus);
+    }
+    
+    if (filters.account) {
+      whereClause += ' AND a.account LIKE ?';
+      queryParams.push(`%${filters.account}%`);
+    }
+    
+    if (filters.groupId) {
+      whereClause += ' AND EXISTS (SELECT 1 FROM member_groups mg WHERE mg.member_id = a.member_id AND mg.group_id = ?)';
+      queryParams.push(filters.groupId);
+    }
+    
     // 构建查询语句
     const query = `
       SELECT a.*, 
              m.member_nickname as member_name,
              c.name as channel_name,
-             c.icon as channel_icon
+             c.icon as channel_icon,
+             c.custom_fields as channel_custom_fields
       FROM accounts a
       LEFT JOIN members m ON a.member_id = m.id
       LEFT JOIN channels c ON a.channel_id = c.id
@@ -89,8 +106,23 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const [countRows] = await pool.query(countQuery, queryParams.slice(0, -2));
     const total = countRows[0].total;
     
-    // 格式化结果
-    const formattedRows = rows.map(formatAccount);
+    // 处理渠道自定义字段
+    const formattedRows = rows.map(row => {
+      const formattedAccount = formatAccount(row);
+      
+      // 处理渠道自定义字段
+      if (row.channel_custom_fields) {
+        try {
+          formattedAccount.channelCustomFields = JSON.parse(row.channel_custom_fields);
+        } catch (e) {
+          formattedAccount.channelCustomFields = [];
+        }
+      } else {
+        formattedAccount.channelCustomFields = [];
+      }
+      
+      return formattedAccount;
+    });
     
     return {
       list: formattedRows,
@@ -242,6 +274,7 @@ async function update(accountData) {
       friends_count: accountData.friendsCount,
       posts_count: accountData.postsCount,
       account_audit_status: accountData.accountAuditStatus,
+      reject_reason: accountData.rejectReason,
       update_time: new Date()
     };
     
