@@ -112,10 +112,10 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     if (memberIds.length > 0) {
       const [accounts] = await pool.query(
-        `SELECT member_id, account, home_url 
-         FROM accounts 
-         WHERE member_id IN (?) 
-         AND account_audit_status = 'approved'`,
+        `SELECT a.*, c.name as channel_name, c.icon as channel_icon
+         FROM accounts a
+         LEFT JOIN channels c ON a.channel_id = c.id
+         WHERE a.member_id IN (?)`,
         [memberIds]
       );
       
@@ -125,8 +125,17 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
           accountsMap[account.member_id] = [];
         }
         accountsMap[account.member_id].push({
+          id: account.id,
           account: account.account,
-          homeUrl: account.home_url
+          homeUrl: account.home_url,
+          channelId: account.channel_id,
+          channelName: account.channel_name,
+          channelIcon: account.channel_icon,
+          fansCount: account.fans_count,
+          friendsCount: account.friends_count,
+          postsCount: account.posts_count,
+          accountAuditStatus: account.account_audit_status,
+          createTime: formatDateTime(account.create_time)
         });
       });
     }
@@ -173,7 +182,7 @@ async function getById(id) {
     
     // 获取会员的账号列表
     const [accounts] = await pool.query(
-      `SELECT a.*, c.name as channel_name
+      `SELECT a.*, c.name as channel_name, c.icon as channel_icon
        FROM accounts a
        LEFT JOIN channels c ON a.channel_id = c.id
        WHERE a.member_id = ?`,
@@ -181,10 +190,11 @@ async function getById(id) {
     );
     
     const member = formatMember(rows[0]);
-    member.accounts = accounts.map(account => ({
+    member.accountList = accounts.map(account => ({
       id: account.id,
       channelId: account.channel_id,
       channelName: account.channel_name,
+      channelIcon: account.channel_icon,
       account: account.account,
       homeUrl: account.home_url,
       fansCount: account.fans_count,

@@ -20,7 +20,10 @@ async function list(req, res) {
     if (memberNickname) filters.memberNickname = memberNickname;
     if (groupId) filters.groupId = parseInt(groupId, 10);
 
+    // 获取带有账号信息的会员列表
     const result = await memberModel.getList(filters, page, pageSize);
+    
+    // 确保返回结果包含 accountList 字段
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取会员列表失败: ${error.message}`);
