@@ -114,4 +114,44 @@ router.get(
   memberController.getAccountDetail
 );
 
+/**
+ * @route PUT /api/h5/members/accounts/:id
+ * @desc 更新会员账号
+ * @access Private
+ */
+router.put(
+  '/accounts/:id',
+  authMiddleware.verifyToken,
+  rateLimiterMiddleware.apiLimiter,
+  [
+    param('id')
+      .notEmpty()
+      .withMessage('账号ID不能为空')
+      .isInt()
+      .withMessage('账号ID必须是整数'),
+    body('account')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('账号长度不能超过100个字符'),
+    body('homeUrl')
+      .optional()
+      .isURL()
+      .withMessage('主页链接必须是有效的URL'),
+    body('fansCount')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('粉丝数量必须是非负整数'),
+    body('friendsCount')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('好友数量必须是非负整数'),
+    body('postsCount')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('发布数量必须是非负整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.updateAccount
+);
+
 module.exports = router; 

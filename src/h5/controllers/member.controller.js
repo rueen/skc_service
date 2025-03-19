@@ -184,9 +184,71 @@ async function addAccount(req, res) {
   }
 }
 
+/**
+ * 更新账号信息
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function updateAccount(req, res) {
+  try {
+    const memberId = req.user.id;
+    const accountId = parseInt(req.params.id, 10);
+    
+    if (isNaN(accountId)) {
+      return responseUtil.badRequest(res, '无效的账号ID');
+    }
+    
+    // 获取要更新的字段
+    const { account, homeUrl, fansCount, friendsCount, postsCount } = req.body;
+    
+    // 获取账号详情，检查是否存在以及是否属于当前会员
+    const query = `
+      SELECT a.*
+      FROM accounts a
+      WHERE a.id = ?
+      LIMIT 1
+    `;
+    
+    const { pool } = require('../../shared/models/db');
+    const [rows] = await pool.query(query, [accountId]);
+    
+    if (rows.length === 0) {
+      return responseUtil.notFound(res, '账号不存在');
+    }
+    
+    const accountInfo = rows[0];
+    
+    // 检查账号是否属于当前会员
+    if (accountInfo.member_id !== memberId) {
+      return responseUtil.forbidden(res, '无权更新此账号');
+    }
+    
+    // 准备更新数据
+    const updateData = {
+      id: accountId,
+      account: account,
+      homeUrl: homeUrl,
+      fansCount: fansCount,
+      friendsCount: friendsCount,
+      postsCount: postsCount,
+      accountAuditStatus: 'pending' // 修改后重置为待审核状态
+    };
+    
+    // 调用模型的更新方法
+    await accountModel.update(updateData);
+    
+    // 只返回成功消息，不再返回更新后的账号信息
+    return responseUtil.success(res, { success: true }, '更新账号成功，请等待审核');
+  } catch (error) {
+    logger.error(`更新账号失败: ${error.message}`);
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+  }
+}
+
 module.exports = {
   updateProfile,
   getAccounts,
   getAccountDetail,
-  addAccount
+  addAccount,
+  updateAccount
 }; 
