@@ -66,7 +66,11 @@ router.post(
       .withMessage('渠道名称长度不能超过50个字符'),
     body('icon')
       .notEmpty()
-      .withMessage('渠道图标不能为空')
+      .withMessage('渠道图标不能为空'),
+    body('customFields')
+      .optional()
+      .isArray()
+      .withMessage('customFields必须是数组')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.add
@@ -94,7 +98,11 @@ router.put(
     body('icon')
       .optional()
       .notEmpty()
-      .withMessage('渠道图标不能为空')
+      .withMessage('渠道图标不能为空'),
+    body('customFields')
+      .optional()
+      .isArray()
+      .withMessage('customFields必须是数组')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.edit

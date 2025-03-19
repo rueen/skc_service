@@ -14,10 +14,25 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
  */
 function formatChannel(channel) {
   if (!channel) return null;
+  
+  let customFields = null;
+  try {
+    // 只有当 custom_fields 不是 null 且是字符串时才尝试解析
+    if (channel.custom_fields && typeof channel.custom_fields === 'string') {
+      customFields = JSON.parse(channel.custom_fields);
+    } else if (channel.custom_fields) {
+      // 如果已经是对象（MySQL8可能直接返回JSON对象）
+      customFields = channel.custom_fields;
+    }
+  } catch (error) {
+    logger.error(`解析渠道自定义字段失败: ${error.message}`);
+  }
+  
   return {
     id: channel.id,
     name: channel.name,
     icon: channel.icon,
+    customFields: customFields,
     createTime: formatDateTime(channel.create_time),
     updateTime: formatDateTime(channel.update_time)
   };
@@ -108,10 +123,27 @@ async function create(channelData) {
       throw new Error('渠道名称已存在');
     }
 
+    // 处理customFields字段
+    let customFieldsJson = null;
+    if (channelData.customFields) {
+      try {
+        // 如果已经是字符串，则验证是否为有效的JSON
+        if (typeof channelData.customFields === 'string') {
+          // 尝试解析然后重新stringify确保格式正确
+          customFieldsJson = JSON.stringify(JSON.parse(channelData.customFields));
+        } else {
+          // 如果是对象（数组也是对象），直接stringify
+          customFieldsJson = JSON.stringify(channelData.customFields);
+        }
+      } catch (error) {
+        logger.warn(`自定义字段JSON解析失败，将设置为null: ${error.message}`);
+      }
+    }
+
     // 创建渠道
     const [result] = await connection.query(
-      'INSERT INTO channels (name, icon) VALUES (?, ?)',
-      [channelData.name, channelData.icon]
+      'INSERT INTO channels (name, icon, custom_fields) VALUES (?, ?, ?)',
+      [channelData.name, channelData.icon, customFieldsJson]
     );
 
     await connection.commit();
@@ -158,6 +190,28 @@ async function update(channelData) {
     if (channelData.icon) {
       updateFields.push('icon = ?');
       params.push(channelData.icon);
+    }
+    if (channelData.customFields !== undefined) {
+      updateFields.push('custom_fields = ?');
+      
+      // 安全处理customFields
+      let customFieldsJson = null;
+      if (channelData.customFields) {
+        try {
+          // 如果已经是字符串，则验证是否为有效的JSON
+          if (typeof channelData.customFields === 'string') {
+            // 尝试解析然后重新stringify确保格式正确
+            customFieldsJson = JSON.stringify(JSON.parse(channelData.customFields));
+          } else {
+            // 如果是对象（数组也是对象），直接stringify
+            customFieldsJson = JSON.stringify(channelData.customFields);
+          }
+        } catch (error) {
+          logger.warn(`更新时自定义字段JSON解析失败，将设置为null: ${error.message}`);
+        }
+      }
+      
+      params.push(customFieldsJson);
     }
 
     if (updateFields.length === 0) {

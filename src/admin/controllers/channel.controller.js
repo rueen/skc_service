@@ -63,7 +63,7 @@ async function get(req, res) {
  */
 async function add(req, res) {
   try {
-    const { name, icon } = req.body;
+    const { name, icon, customFields } = req.body;
     
     if (!name) {
       return responseUtil.badRequest(res, '渠道名称不能为空');
@@ -72,7 +72,8 @@ async function add(req, res) {
     // 创建渠道
     const result = await channelModel.create({
       name,
-      icon
+      icon,
+      customFields
     });
     
     return responseUtil.success(res, result, '创建渠道成功');
@@ -93,7 +94,7 @@ async function add(req, res) {
 async function edit(req, res) {
   try {
     const { id } = req.params;
-    const { name, icon } = req.body;
+    const { name, icon, customFields } = req.body;
     
     if (!id) {
       return responseUtil.badRequest(res, '渠道ID不能为空');
@@ -109,7 +110,8 @@ async function edit(req, res) {
     const success = await channelModel.update({
       id,
       name,
-      icon
+      icon,
+      customFields
     });
     
     if (!success) {
