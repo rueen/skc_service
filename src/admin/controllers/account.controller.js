@@ -54,10 +54,10 @@ async function getAccounts(req, res) {
       if (memberIds.length > 0) {
         const { pool } = require('../../shared/models/db');
         
-        // 使用member_groups关联表查询
+        // 使用 member_groups 关联表查询
         const placeholders = memberIds.map(() => '?').join(',');
         const [memberGroups] = await pool.query(`
-          SELECT mg.member_id, g.id as group_id, g.group_name, mg.is_owner
+          SELECT mg.member_id, mg.group_id, g.group_name, mg.is_owner
           FROM member_groups mg
           JOIN \`groups\` g ON mg.group_id = g.id
           WHERE mg.member_id IN (${placeholders})

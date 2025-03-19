@@ -88,15 +88,17 @@ CREATE TABLE IF NOT EXISTS members (
   member_nickname varchar(50) NOT NULL COMMENT '会员昵称',
   member_account varchar(50) NOT NULL COMMENT '会员账号',
   password varchar(100) DEFAULT NULL COMMENT '密码（哈希后）',
-  group_id bigint(20) DEFAULT NULL COMMENT '所属群组ID',
   inviter_id bigint(20) DEFAULT NULL COMMENT '邀请人ID',
   occupation varchar(20) DEFAULT NULL COMMENT '职业：housewife-宝妈，freelancer-自由职业，student-学生',
-  is_group_owner tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否是群主：0-否，1-是',
   invite_code varchar(20) DEFAULT NULL COMMENT '邀请码',
+  phone varchar(20) DEFAULT NULL COMMENT '手机号',
+  email varchar(100) DEFAULT NULL COMMENT '邮箱',
+  avatar varchar(255) DEFAULT NULL COMMENT '头像',
+  gender tinyint(1) DEFAULT '2' COMMENT '性别：0-男，1-女，2-保密',
+  telegram varchar(100) DEFAULT NULL COMMENT 'Telegram账号',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
-  KEY idx_group_id (group_id),
   KEY idx_inviter_id (inviter_id),
   UNIQUE KEY uk_member_account (member_account),
   UNIQUE KEY uk_invite_code (invite_code)
@@ -285,6 +287,41 @@ async function initTables() {
     return false;
   } finally {
     connection.release();
+  }
+}
+
+/**
+ * 初始化members表
+ */
+async function initMembersTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS members (
+        id int(11) NOT NULL AUTO_INCREMENT COMMENT '会员ID',
+        member_nickname varchar(100) NOT NULL COMMENT '会员昵称',
+        member_account varchar(100) NOT NULL COMMENT '会员账号',
+        password varchar(255) DEFAULT NULL COMMENT '密码',
+        inviter_id int(11) DEFAULT NULL COMMENT '邀请人ID',
+        occupation varchar(255) DEFAULT NULL COMMENT '职业',
+        invite_code varchar(10) NOT NULL COMMENT '邀请码',
+        phone varchar(20) DEFAULT NULL COMMENT '手机号',
+        email varchar(100) DEFAULT NULL COMMENT '邮箱',
+        avatar varchar(255) DEFAULT NULL COMMENT '头像',
+        gender tinyint(1) DEFAULT '2' COMMENT '性别：0-男，1-女，2-保密',
+        telegram varchar(100) DEFAULT NULL COMMENT 'Telegram账号',
+        create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+        PRIMARY KEY (id),
+        UNIQUE KEY unique_account (member_account),
+        UNIQUE KEY unique_invite_code (invite_code),
+        INDEX idx_inviter_id (inviter_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员信息';
+    `);
+    console.log('会员表初始化完成');
+    return true;
+  } catch (error) {
+    console.error('初始化会员表失败:', error);
+    throw error;
   }
 }
 
