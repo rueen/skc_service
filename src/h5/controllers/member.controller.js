@@ -86,6 +86,67 @@ async function getAccounts(req, res) {
 }
 
 /**
+ * 获取账号详情
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getAccountDetail(req, res) {
+  try {
+    const memberId = req.user.id;
+    const accountId = parseInt(req.params.id, 10);
+    
+    if (isNaN(accountId)) {
+      return responseUtil.badRequest(res, '无效的账号ID');
+    }
+    
+    // 只查询账号表，不关联渠道表
+    const query = `
+      SELECT a.*, m.member_nickname as member_name
+      FROM accounts a
+      LEFT JOIN members m ON a.member_id = m.id
+      WHERE a.id = ?
+      LIMIT 1
+    `;
+    
+    const { pool } = require('../../shared/models/db');
+    const [rows] = await pool.query(query, [accountId]);
+    
+    if (rows.length === 0) {
+      return responseUtil.notFound(res, '账号不存在');
+    }
+    
+    const account = rows[0];
+    
+    // 检查账号是否属于当前会员
+    if (account.member_id !== memberId) {
+      return responseUtil.forbidden(res, '无权查看此账号');
+    }
+    
+    // 格式化结果
+    const { formatDateTime } = require('../../shared/utils/date.util');
+    const formattedAccount = {
+      id: account.id,
+      account: account.account,
+      memberId: account.member_id,
+      channelId: account.channel_id,
+      homeUrl: account.home_url,
+      fansCount: account.fans_count,
+      friendsCount: account.friends_count,
+      postsCount: account.posts_count,
+      accountAuditStatus: account.account_audit_status,
+      memberName: account.member_name,
+      createTime: formatDateTime(account.create_time),
+      updateTime: formatDateTime(account.update_time)
+    };
+    
+    return responseUtil.success(res, formattedAccount);
+  } catch (error) {
+    logger.error(`获取账号详情失败: ${error.message}`);
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+  }
+}
+
+/**
  * 添加会员账号
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
@@ -126,5 +187,6 @@ async function addAccount(req, res) {
 module.exports = {
   updateProfile,
   getAccounts,
+  getAccountDetail,
   addAccount
 }; 

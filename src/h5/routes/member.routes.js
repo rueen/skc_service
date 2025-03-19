@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-19 09:51:08
+ * @LastEditTime: 2025-03-19 14:09:26
  * @Description: 
  */
 /**
@@ -92,6 +92,26 @@ router.post(
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.addAccount
+);
+
+/**
+ * @route GET /api/h5/members/accounts/:id
+ * @desc 获取会员账号详情
+ * @access Private
+ */
+router.get(
+  '/accounts/:id',
+  authMiddleware.verifyToken,
+  rateLimiterMiddleware.apiLimiter,
+  [
+    param('id')
+      .notEmpty()
+      .withMessage('账号ID不能为空')
+      .isInt()
+      .withMessage('账号ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.getAccountDetail
 );
 
 module.exports = router; 
