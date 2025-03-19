@@ -29,7 +29,7 @@ function formatAccount(account) {
     postsCount: account.posts_count,
     accountAuditStatus: account.account_audit_status,
     rejectReason: account.reject_reason,
-    memberName: account.member_name,
+    memberNickname: account.member_name,
     createTime: formatDateTime(account.create_time),
     updateTime: formatDateTime(account.update_time)
   };
