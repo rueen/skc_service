@@ -61,8 +61,8 @@ async function add(req, res) {
   try {
     const { title, content, location } = req.body;
     
-    if (!title || !content || !location) {
-      return responseUtil.badRequest(res, '标题、内容和位置标识不能为空');
+    if (!title || !content) {
+      return responseUtil.badRequest(res, '标题和内容不能为空');
     }
     
     // 创建文章
@@ -89,10 +89,11 @@ async function add(req, res) {
  */
 async function edit(req, res) {
   try {
-    const { id, title, content, location } = req.body;
+    const { id } = req.params;
+    const { title, content, location } = req.body;
     
-    if (!id || !title || !content) {
-      return responseUtil.badRequest(res, '文章ID、标题和内容不能为空');
+    if (!title || !content) {
+      return responseUtil.badRequest(res, '标题和内容不能为空');
     }
     
     // 更新文章

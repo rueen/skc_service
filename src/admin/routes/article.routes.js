@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-12 14:28:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-12 15:42:41
+ * @LastEditTime: 2025-03-20 21:25:52
  * @Description: 
  */
 /**
@@ -72,8 +72,7 @@ router.post(
       .notEmpty()
       .withMessage('内容不能为空'),
     body('location')
-      .notEmpty()
-      .withMessage('位置标识不能为空')
+      .optional()
       .isLength({ max: 50 })
       .withMessage('位置标识长度不能超过50个字符')
   ],
