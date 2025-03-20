@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-19 15:32:32
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-19 19:56:49
+ * @LastEditTime: 2025-03-19 19:34:52
  * @Description: 
  */
 // 初始化数据库表
@@ -14,6 +14,8 @@ const { migrateMemberGroups } = require('./shared/models/migration');
 const { syncMemberGroups, syncGroupOwnerStatus } = require('./shared/models/sync-member-groups');
 // 导入冗余字段迁移函数
 const { removeRedundantFields } = require('./shared/models/migration-remove-redundant');
+// 导入修复member_groups表约束的函数
+const { fixMemberGroupsConstraint } = require('./shared/models/db-fix-member-groups');
 
 // 启动应用前初始化数据库
 async function initDatabase() {
@@ -44,6 +46,14 @@ async function initDatabase() {
       console.log('冗余字段迁移完成:', redundantFieldsResult.message);
     } else {
       console.error('冗余字段迁移失败:', redundantFieldsResult.message);
+    }
+    
+    // 修复member_groups表约束
+    const fixConstraintResult = await fixMemberGroupsConstraint();
+    if (fixConstraintResult.success) {
+      console.log('member_groups表约束修复完成:', fixConstraintResult.message);
+    } else {
+      console.error('member_groups表约束修复失败:', fixConstraintResult.message);
     }
     
     return true;

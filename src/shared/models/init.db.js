@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS member_groups (
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_member_id (member_id),
+  UNIQUE KEY uk_member_group (member_id, group_id),
   KEY idx_group_id (group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员群组关联表';
 `;
