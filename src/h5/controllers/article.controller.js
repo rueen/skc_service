@@ -63,7 +63,31 @@ async function getDetail(req, res) {
   }
 }
 
+/**
+ * 通过位置标识获取文章详情
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getDetailByLocation(req, res) {
+  try {
+    const { location } = req.params;
+    
+    // 获取文章详情
+    const article = await articleModel.getByLocation(location);
+    
+    if (!article) {
+      return responseUtil.notFound(res, '文章不存在');
+    }
+    
+    return responseUtil.success(res, article);
+  } catch (error) {
+    logger.error(`通过位置标识获取文章详情失败: ${error.message}`);
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+  }
+}
+
 module.exports = {
   getList,
-  getDetail
+  getDetail,
+  getDetailByLocation
 }; 
