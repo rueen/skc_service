@@ -36,7 +36,9 @@ function formatGroup(group) {
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
     let query = `
-      SELECT g.*, m.member_nickname as owner_name 
+      SELECT g.*, 
+             m.member_nickname as owner_name,
+             (SELECT COUNT(*) FROM member_groups mg WHERE mg.group_id = g.id) as member_count
       FROM \`groups\` g 
       LEFT JOIN members m ON g.owner_id = m.id
     `;
@@ -95,7 +97,9 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 async function getById(id) {
   try {
     const [rows] = await pool.query(
-      `SELECT g.*, m.member_nickname as owner_name 
+      `SELECT g.*, 
+              m.member_nickname as owner_name,
+              (SELECT COUNT(*) FROM member_groups mg WHERE mg.group_id = g.id) as member_count
        FROM \`groups\` g 
        LEFT JOIN members m ON g.owner_id = m.id 
        WHERE g.id = ?`,
@@ -171,15 +175,19 @@ async function create(groupData) {
 }
 
 /**
- * 更新群组
+ * 更新群组信息
  * @param {Object} groupData - 群组数据
  * @returns {Promise<boolean>} 更新是否成功
  */
 async function update(groupData) {
+  if (!groupData || !groupData.id) {
+    throw new Error('缺少必要的群组信息');
+  }
+
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-
+    
     // 获取当前群组信息
     const [currentGroup] = await connection.query(
       'SELECT owner_id FROM `groups` WHERE id = ?',
@@ -240,8 +248,7 @@ async function update(groupData) {
         );
       }
     }
-
-    // 构建更新语句
+    
     const updateFields = [];
     const params = [];
 
@@ -257,10 +264,7 @@ async function update(groupData) {
       updateFields.push('owner_id = ?');
       params.push(groupData.ownerId);
     }
-    if (groupData.memberCount !== undefined) {
-      updateFields.push('member_count = ?');
-      params.push(groupData.memberCount);
-    }
+    // 移除手动更新member_count的部分，使用同步脚本来更新实际的成员数量
 
     if (updateFields.length === 0) {
       return true; // 没有需要更新的字段
@@ -346,7 +350,9 @@ async function remove(id) {
 async function getOwnedByMember(memberId) {
   try {
     const query = `
-      SELECT g.*, m.member_nickname as owner_name 
+      SELECT g.*, 
+             m.member_nickname as owner_name,
+             (SELECT COUNT(*) FROM member_groups mg WHERE mg.group_id = g.id) as member_count
       FROM \`groups\` g 
       LEFT JOIN members m ON g.owner_id = m.id
       WHERE g.owner_id = ?
