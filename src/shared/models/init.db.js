@@ -222,6 +222,30 @@ CREATE TABLE IF NOT EXISTS articles (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章表';
 `;
 
+// 创建系统配置表
+const createSystemConfigTable = `
+CREATE TABLE IF NOT EXISTS system_config (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '配置ID',
+  config_key varchar(50) NOT NULL COMMENT '配置键',
+  config_value varchar(255) NOT NULL COMMENT '配置值',
+  description varchar(200) DEFAULT NULL COMMENT '描述',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_config_key (config_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统配置表';
+`;
+
+// 系统配置初始数据
+const initSystemConfig = `
+INSERT INTO system_config (config_key, config_value, description) 
+VALUES 
+('max_group_members', '200', '群组最大成员数'),
+('group_owner_commission_rate', '0.1', '群主收益率（0-1之间的小数）'),
+('invite_reward_amount', '5.00', '邀请奖励金额（元）')
+ON DUPLICATE KEY UPDATE update_time = NOW();
+`;
+
 // 初始化管理员账号
 const initAdminUser = `
 INSERT INTO waiters (username, password, is_admin, remarks, permissions)
@@ -267,6 +291,7 @@ async function initTables() {
     await connection.query(createBillsTable);
     await connection.query(createWaitersTable);
     await connection.query(createArticlesTable);
+    await connection.query(createSystemConfigTable);
     
     // 初始化管理员账号
     await connection.query(initAdminUser);
@@ -274,6 +299,9 @@ async function initTables() {
     // 初始化基础文章（分开执行）
     await connection.query(initUserAgreement);
     await connection.query(initPrivacyPolicy);
+    
+    // 初始化系统配置
+    await connection.query(initSystemConfig);
     
     // 提交事务
     await connection.commit();

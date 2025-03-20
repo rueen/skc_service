@@ -368,11 +368,87 @@ async function getOwnedByMember(memberId) {
   }
 }
 
+/**
+ * 获取系统配置的最大群成员数
+ * @returns {Promise<number>} 最大群成员数
+ */
+async function getMaxGroupMembers() {
+  try {
+    const [rows] = await pool.query(
+      'SELECT config_value FROM system_config WHERE config_key = "max_group_members"'
+    );
+    
+    if (rows.length > 0) {
+      return parseInt(rows[0].config_value, 10);
+    }
+    // 默认值
+    return 200;
+  } catch (error) {
+    logger.error(`获取最大群成员数失败: ${error.message}`);
+    // 出错时返回默认值
+    return 200;
+  }
+}
+
+/**
+ * 获取群主收益率
+ * @returns {Promise<number>} 群主收益率（0-1之间的小数）
+ */
+async function getGroupOwnerCommissionRate() {
+  try {
+    const [rows] = await pool.query(
+      'SELECT config_value FROM system_config WHERE config_key = "group_owner_commission_rate"'
+    );
+    
+    if (rows.length > 0) {
+      return parseFloat(rows[0].config_value);
+    }
+    // 默认值
+    return 0.1;
+  } catch (error) {
+    logger.error(`获取群主收益率失败: ${error.message}`);
+    // 出错时返回默认值
+    return 0.1;
+  }
+}
+
+/**
+ * 检查群组是否已满
+ * @param {number} groupId - 群组ID
+ * @returns {Promise<{isFull: boolean, currentMembers: number, maxMembers: number}>} 是否已满及相关数据
+ */
+async function checkGroupLimit(groupId) {
+  try {
+    // 获取当前群成员数
+    const [currentCountResult] = await pool.query(
+      'SELECT COUNT(*) as count FROM member_groups WHERE group_id = ?',
+      [groupId]
+    );
+    
+    const currentMembers = currentCountResult[0].count;
+    
+    // 获取系统设置的最大群成员数
+    const maxMembers = await getMaxGroupMembers();
+    
+    return {
+      isFull: currentMembers >= maxMembers,
+      currentMembers,
+      maxMembers
+    };
+  } catch (error) {
+    logger.error(`检查群组限制失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   getList,
   getById,
   create,
   update,
   remove,
-  getOwnedByMember
+  getOwnedByMember,
+  getMaxGroupMembers,
+  getGroupOwnerCommissionRate,
+  checkGroupLimit
 }; 
