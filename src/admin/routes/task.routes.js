@@ -160,8 +160,8 @@ router.post(
       .withMessage('是否不限名额必须是布尔值'),
     body('fansRequired')
       .optional()
-      .isLength({ max: 50 })
-      .withMessage('粉丝要求长度不能超过50个字符'),
+      .isInt({ min: 0 })
+      .withMessage('粉丝要求必须是大于等于0的整数'),
     body('contentRequirement')
       .optional()
       .isString()
@@ -264,8 +264,8 @@ router.put(
       .withMessage('是否不限名额必须是布尔值'),
     body('fansRequired')
       .optional()
-      .isLength({ max: 50 })
-      .withMessage('粉丝要求长度不能超过50个字符'),
+      .isInt({ min: 0 })
+      .withMessage('粉丝要求必须是大于等于0的整数'),
     body('contentRequirement')
       .optional()
       .isString()
