@@ -62,16 +62,11 @@ router.post(
   '/',
   authMiddleware.hasPermission('member:create'),
   [
-    body('memberNickname')
-      .notEmpty()
-      .withMessage('会员昵称不能为空')
-      .isLength({ max: 50 })
-      .withMessage('会员昵称长度不能超过50个字符'),
     body('memberAccount')
       .notEmpty()
       .withMessage('会员账号不能为空')
-      .isLength({ max: 50 })
-      .withMessage('会员账号长度不能超过50个字符'),
+      .isLength({ min: 4, max: 50 })
+      .withMessage('会员账号长度必须在4-50个字符之间'),
     body('password')
       .notEmpty()
       .withMessage('密码不能为空')
@@ -79,6 +74,10 @@ router.post(
       .withMessage('密码长度必须在8-20个字符之间')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
       .withMessage('密码必须包含字母和数字'),
+    body('memberNickname')
+      .optional()
+      .isLength({ max: 50 })
+      .withMessage('会员昵称长度不能超过50个字符'),
     body('groupId')
       .optional()
       .isInt()
@@ -90,7 +89,23 @@ router.post(
     body('occupation')
       .optional()
       .isIn(Object.values(OccupationType))
-      .withMessage('无效的职业类型')
+      .withMessage('无效的职业类型'),
+    body('phone')
+      .optional()
+      .isString()
+      .withMessage('手机号必须是字符串'),
+    body('email')
+      .optional()
+      .isEmail()
+      .withMessage('邮箱格式不正确'),
+    body('gender')
+      .optional()
+      .isIn([0, 1, 2])
+      .withMessage('性别值无效，应为 0(男)、1(女) 或 2(保密)'),
+    body('telegram')
+      .optional()
+      .isString()
+      .withMessage('Telegram账号必须是字符串')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.create

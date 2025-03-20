@@ -70,26 +70,8 @@ async function create(req, res) {
     } = req.body;
 
     // 参数验证
-    if (!memberNickname || !memberAccount || !password) {
-      return responseUtil.badRequest(res, '会员昵称、账号和密码为必填项');
-    }
-
-    if (memberNickname.length > 50) {
-      return responseUtil.badRequest(res, '会员昵称长度不能超过50个字符');
-    }
-    
-    if (memberAccount.length > 50) {
-      return responseUtil.badRequest(res, '会员账号长度不能超过50个字符');
-    }
-    
-    // 验证职业类型
-    if (occupation && !Object.values(OccupationType).includes(occupation)) {
-      return responseUtil.badRequest(res, '无效的职业类型');
-    }
-    
-    // 验证性别值是否有效
-    if (gender !== undefined && ![0, 1, 2].includes(Number(gender))) {
-      return responseUtil.badRequest(res, '无效的性别值，应为 0(男)、1(女) 或 2(保密)');
+    if (!memberAccount || !password) {
+      return responseUtil.badRequest(res, '会员账号和密码为必填项');
     }
 
     // 验证密码强度
@@ -102,18 +84,39 @@ async function create(req, res) {
     const { hashPassword } = require('../../shared/utils/auth.util');
     const hashedPassword = await hashPassword(password);
 
+    // 自动检测账号类型
+    let loginType = 'account'; // 默认账号类型
+    let actualEmail = email;
+    let actualPhone = phone;
+
+    // 根据账号格式判断类型
+    if (validatorUtil.isValidEmail(memberAccount)) {
+      loginType = 'email';
+      actualEmail = memberAccount;
+    } else if (validatorUtil.isValidPhone(memberAccount)) {
+      loginType = 'phone';
+      actualPhone = memberAccount;
+    }
+
+    // 生成默认昵称（如果没有提供）
+    const actualNickname = memberNickname || `用户${Math.floor(Math.random() * 1000000)}`;
+
+    // 设置默认头像
+    const defaultAvatar = '';
+    const actualAvatar = avatar || defaultAvatar;
+
     const result = await memberModel.create({
-      memberNickname,
+      memberNickname: actualNickname,
       memberAccount,
       password: hashedPassword,
       groupId: groupId ? parseInt(groupId, 10) : null,
       inviterId: inviterId ? parseInt(inviterId, 10) : null,
       occupation,
       isGroupOwner: !!isGroupOwner,
-      phone,
-      email,
-      avatar,
-      gender: gender !== undefined ? Number(gender) : 2,
+      phone: actualPhone,
+      email: actualEmail,
+      avatar: actualAvatar,
+      gender: gender !== undefined ? Number(gender) : 2, // 默认为保密
       telegram
     });
 
