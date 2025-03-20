@@ -311,6 +311,69 @@ async function getOwnedGroups(req, res) {
   }
 }
 
+/**
+ * 获取以该会员为群主的群成员列表
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getGroupMembers(req, res) {
+  try {
+    const memberId = req.user.id; // 当前登录会员ID
+    const { groupId } = req.query;
+    
+    if (!groupId) {
+      return responseUtil.badRequest(res, '群组ID不能为空');
+    }
+    
+    // 检查群组是否存在
+    const groupModel = require('../../shared/models/group.model');
+    const group = await groupModel.getById(parseInt(groupId, 10));
+    
+    if (!group) {
+      return responseUtil.notFound(res, '群组不存在');
+    }
+    
+    // 验证当前会员是否是该群组的群主
+    const { pool } = require('../../shared/models/db');
+    const [ownerCheck] = await pool.query(
+      `SELECT is_owner 
+       FROM member_groups 
+       WHERE member_id = ? AND group_id = ?`,
+      [memberId, groupId]
+    );
+    
+    if (ownerCheck.length === 0 || !ownerCheck[0].is_owner) {
+      return responseUtil.forbidden(res, '只有群主可以查看群成员列表');
+    }
+    
+    // 获取该群组的所有成员（排除群主自己）
+    const [members] = await pool.query(
+      `SELECT m.id, m.member_nickname, m.avatar, m.phone, m.email, mg.join_time
+       FROM members m
+       JOIN member_groups mg ON m.id = mg.member_id
+       WHERE mg.group_id = ? AND m.id != ? AND mg.is_owner = 0
+       ORDER BY m.create_time ASC`,
+      [groupId, memberId]
+    );
+    
+    // 格式化成员信息（不包含群主角色信息）
+    const { formatDateTime } = require('../../shared/utils/date.util');
+    const formattedMembers = members.map(member => ({
+      id: member.id,
+      nickname: member.member_nickname,
+      avatar: member.avatar || '',
+      phone: member.phone || '',
+      email: member.email || '',
+      joinTime: formatDateTime(member.join_time)
+    }));
+    
+    return responseUtil.success(res, formattedMembers);
+  } catch (error) {
+    logger.error(`获取群成员列表失败: ${error.message}`);
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+  }
+}
+
 module.exports = {
   updateProfile,
   getAccounts,
@@ -318,5 +381,6 @@ module.exports = {
   addAccount,
   updateAccount,
   deleteAccount,
-  getOwnedGroups
+  getOwnedGroups,
+  getGroupMembers
 }; 

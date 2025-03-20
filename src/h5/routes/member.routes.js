@@ -10,7 +10,7 @@
  * 处理会员相关的路由
  */
 const express = require('express');
-const { body, param } = require('express-validator');
+const { body, param, query } = require('express-validator');
 const memberController = require('../controllers/member.controller');
 const authMiddleware = require('../../shared/middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
@@ -184,6 +184,26 @@ router.get(
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   memberController.getOwnedGroups
+);
+
+/**
+ * @route GET /api/h5/members/group-members
+ * @desc 获取以该会员为群主的群成员列表
+ * @access Private
+ */
+router.get(
+  '/group-members',
+  authMiddleware.verifyToken,
+  rateLimiterMiddleware.apiLimiter,
+  [
+    query('groupId')
+      .notEmpty()
+      .withMessage('群组ID不能为空')
+      .isInt()
+      .withMessage('群组ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.getGroupMembers
 );
 
 module.exports = router; 
