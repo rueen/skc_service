@@ -161,17 +161,211 @@ async function batchResolve(req, res) {
       return responseUtil.badRequest(res, '账号ID列表不能为空');
     }
     
-    // 执行批量通过操作
-    const updatePromises = ids.map(id => {
-      return accountModel.update({
-        id,
-        accountAuditStatus: 'approved'
-      });
-    });
+    // 获取系统配置的群组最大成员数
+    const { pool } = require('../../shared/models/db');
+    const [maxMembersConfigRow] = await pool.query(
+      'SELECT config_value FROM system_config WHERE config_key = "max_group_members"'
+    );
+    const maxGroupMembers = maxMembersConfigRow.length > 0 ? parseInt(maxMembersConfigRow[0].config_value, 10) : 200;
     
-    await Promise.all(updatePromises);
+    // 审核结果记录
+    const results = {
+      success: [],
+      failed: []
+    };
     
-    return responseUtil.success(res, { success: true }, `成功审核通过 ${ids.length} 个账号`);
+    // 逐个审核账号
+    for (const id of ids) {
+      // 获取账号信息
+      const [accountRows] = await pool.query(
+        'SELECT * FROM accounts WHERE id = ?',
+        [id]
+      );
+      
+      if (accountRows.length === 0) {
+        results.failed.push({
+          id,
+          reason: '账号不存在'
+        });
+        continue;
+      }
+      
+      const account = accountRows[0];
+      const memberId = account.member_id;
+      
+      if (!memberId) {
+        results.failed.push({
+          id,
+          reason: '账号未关联会员'
+        });
+        continue;
+      }
+      
+      // 检查会员是否已有群组
+      const [memberGroupRows] = await pool.query(
+        'SELECT mg.*, g.group_name FROM member_groups mg JOIN `groups` g ON mg.group_id = g.id WHERE mg.member_id = ?',
+        [memberId]
+      );
+      
+      if (memberGroupRows.length > 0) {
+        // 会员已有群组，直接审核通过
+        await pool.query(
+          'UPDATE accounts SET account_audit_status = "approved", update_time = NOW() WHERE id = ?',
+          [id]
+        );
+        results.success.push({
+          id,
+          memberId,
+          groupId: memberGroupRows[0].group_id,
+          groupName: memberGroupRows[0].group_name,
+          message: '会员已有群组，审核通过'
+        });
+        continue;
+      }
+      
+      // 获取会员的邀请人信息
+      const [memberRows] = await pool.query(
+        'SELECT * FROM members WHERE id = ?',
+        [memberId]
+      );
+      
+      if (memberRows.length === 0) {
+        results.failed.push({
+          id,
+          reason: '会员不存在'
+        });
+        continue;
+      }
+      
+      const inviterId = memberRows[0].inviter_id;
+      
+      if (!inviterId) {
+        results.failed.push({
+          id,
+          reason: '会员没有邀请人，无法自动分配群组'
+        });
+        continue;
+      }
+      
+      // 获取邀请人的群组信息
+      const [inviterGroupRows] = await pool.query(
+        'SELECT mg.*, g.group_name, g.owner_id FROM member_groups mg JOIN `groups` g ON mg.group_id = g.id WHERE mg.member_id = ?',
+        [inviterId]
+      );
+      
+      if (inviterGroupRows.length === 0) {
+        results.failed.push({
+          id,
+          reason: '邀请人没有所属群，无法自动分配群组'
+        });
+        continue;
+      }
+      
+      // 首先尝试分配到邀请人的群组
+      const inviterGroup = inviterGroupRows[0];
+      
+      // 检查邀请人的群组是否已满
+      const [groupMemberCountRows] = await pool.query(
+        'SELECT COUNT(*) as count FROM member_groups WHERE group_id = ?',
+        [inviterGroup.group_id]
+      );
+      
+      const currentGroupMemberCount = groupMemberCountRows[0].count;
+      
+      if (currentGroupMemberCount < maxGroupMembers) {
+        // 邀请人的群组未满，直接分配
+        await pool.query(
+          'INSERT INTO member_groups (member_id, group_id, is_owner) VALUES (?, ?, 0)',
+          [memberId, inviterGroup.group_id]
+        );
+        
+        // 审核通过账号
+        await pool.query(
+          'UPDATE accounts SET account_audit_status = "approved", update_time = NOW() WHERE id = ?',
+          [id]
+        );
+        
+        // 更新群组成员计数
+        await pool.query(
+          'UPDATE `groups` SET member_count = ? WHERE id = ?',
+          [currentGroupMemberCount + 1, inviterGroup.group_id]
+        );
+        
+        results.success.push({
+          id,
+          memberId,
+          groupId: inviterGroup.group_id,
+          groupName: inviterGroup.group_name,
+          message: '分配到邀请人的群组'
+        });
+      } else {
+        // 邀请人的群组已满，查找该群主名下的其他未满群组
+        const ownerId = inviterGroup.owner_id;
+        
+        if (!ownerId) {
+          results.failed.push({
+            id,
+            reason: '邀请人所在群组已满且没有群主'
+          });
+          continue;
+        }
+        
+        // 查找群主名下的其他未满群组
+        const [ownerGroupsRows] = await pool.query(
+          `SELECT g.id, g.group_name, COUNT(mg.member_id) as member_count 
+           FROM \`groups\` g 
+           LEFT JOIN member_groups mg ON g.id = mg.group_id 
+           WHERE g.owner_id = ? 
+           GROUP BY g.id 
+           HAVING member_count < ?
+           ORDER BY member_count ASC`,
+          [ownerId, maxGroupMembers]
+        );
+        
+        if (ownerGroupsRows.length === 0) {
+          results.failed.push({
+            id,
+            reason: '邀请人所在群组已满，且该群主名下所有群组均已满员'
+          });
+          continue;
+        }
+        
+        // 分配到群主名下成员最少的未满群组
+        const targetGroup = ownerGroupsRows[0];
+        
+        await pool.query(
+          'INSERT INTO member_groups (member_id, group_id, is_owner) VALUES (?, ?, 0)',
+          [memberId, targetGroup.id]
+        );
+        
+        // 审核通过账号
+        await pool.query(
+          'UPDATE accounts SET account_audit_status = "approved", update_time = NOW() WHERE id = ?',
+          [id]
+        );
+        
+        // 更新群组成员计数
+        await pool.query(
+          'UPDATE `groups` SET member_count = ? WHERE id = ?',
+          [targetGroup.member_count + 1, targetGroup.id]
+        );
+        
+        results.success.push({
+          id,
+          memberId,
+          groupId: targetGroup.id,
+          groupName: targetGroup.group_name,
+          message: '邀请人所在群组已满，分配到群主名下的其他群组'
+        });
+      }
+    }
+    
+    return responseUtil.success(res, {
+      success: results.success,
+      failed: results.failed,
+      successCount: results.success.length,
+      failedCount: results.failed.length
+    }, `成功审核通过 ${results.success.length} 个账号，${results.failed.length} 个账号审核失败`);
   } catch (error) {
     logger.error(`批量审核通过账号失败: ${error.message}`);
     return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
