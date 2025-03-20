@@ -11,6 +11,10 @@ const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.midd
 
 const router = express.Router();
 
+// 所有任务路由都需要认证
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
+
 /**
  * @route GET /api/support/tasks
  * @desc 获取任务列表
@@ -18,9 +22,7 @@ const router = express.Router();
  */
 router.get(
   '/',
-  authMiddleware.verifyToken,
   authMiddleware.hasPermission('task:list'),
-  rateLimiterMiddleware.apiLimiter,
   [
     query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
     query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
@@ -39,9 +41,7 @@ router.get(
  */
 router.get(
   '/export',
-  authMiddleware.verifyToken,
   authMiddleware.hasPermission('task:list'),
-  rateLimiterMiddleware.apiLimiter,
   [
     query('taskName').optional().isString().withMessage('任务名称必须是字符串'),
     query('taskStatus').optional().isIn(['not_started', 'processing', 'ended']).withMessage('任务状态值无效'),
@@ -58,9 +58,7 @@ router.get(
  */
 router.get(
   '/:id',
-  authMiddleware.verifyToken,
   authMiddleware.hasPermission('task:list'),
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()
@@ -79,9 +77,7 @@ router.get(
  */
 router.post(
   '/',
-  authMiddleware.verifyToken,
   authMiddleware.hasPermission('task:create'),
-  rateLimiterMiddleware.apiLimiter,
   [
     body('taskName')
       .notEmpty()
@@ -190,9 +186,7 @@ router.post(
  */
 router.put(
   '/:id',
-  authMiddleware.verifyToken,
   authMiddleware.hasPermission('task:edit'),
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()
@@ -294,9 +288,7 @@ router.put(
  */
 router.delete(
   '/:id',
-  authMiddleware.verifyToken,
   authMiddleware.hasPermission('task:edit'),
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()
