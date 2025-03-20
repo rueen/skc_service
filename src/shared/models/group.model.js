@@ -338,10 +338,35 @@ async function remove(id) {
   }
 }
 
+/**
+ * 获取会员作为群主的群组列表
+ * @param {number} memberId - 会员ID
+ * @returns {Promise<Array>} 群组列表
+ */
+async function getOwnedByMember(memberId) {
+  try {
+    const query = `
+      SELECT g.*, m.member_nickname as owner_name 
+      FROM \`groups\` g 
+      LEFT JOIN members m ON g.owner_id = m.id
+      WHERE g.owner_id = ?
+      ORDER BY g.create_time DESC
+    `;
+    
+    const [rows] = await pool.query(query, [memberId]);
+    
+    return rows.map(formatGroup);
+  } catch (error) {
+    logger.error(`获取会员作为群主的群组列表失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   getList,
   getById,
   create,
   update,
-  remove
+  remove,
+  getOwnedByMember
 }; 

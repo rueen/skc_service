@@ -7,6 +7,7 @@ const accountModel = require('../../shared/models/account.model');
 const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
+const groupModel = require('../../shared/models/group.model');
 
 /**
  * 更新会员个人资料
@@ -291,11 +292,31 @@ async function deleteAccount(req, res) {
   }
 }
 
+/**
+ * 获取当前会员作为群主的群组列表
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getOwnedGroups(req, res) {
+  try {
+    const memberId = req.user.id;
+    
+    // 获取会员作为群主的群组列表
+    const groups = await groupModel.getOwnedByMember(memberId);
+    
+    return responseUtil.success(res, groups);
+  } catch (error) {
+    logger.error(`获取会员群组列表失败: ${error.message}`);
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+  }
+}
+
 module.exports = {
   updateProfile,
   getAccounts,
   getAccountDetail,
   addAccount,
   updateAccount,
-  deleteAccount
+  deleteAccount,
+  getOwnedGroups
 }; 

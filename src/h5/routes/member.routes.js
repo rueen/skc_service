@@ -174,4 +174,16 @@ router.delete(
   memberController.deleteAccount
 );
 
+/**
+ * @route GET /api/h5/members/owned-groups
+ * @desc 获取当前会员作为群主的群组列表
+ * @access Private
+ */
+router.get(
+  '/owned-groups',
+  authMiddleware.verifyToken,
+  rateLimiterMiddleware.apiLimiter,
+  memberController.getOwnedGroups
+);
+
 module.exports = router; 
