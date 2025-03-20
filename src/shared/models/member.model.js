@@ -11,32 +11,19 @@ const crypto = require('crypto');
 /**
  * 格式化会员信息
  * @param {Object} member - 会员信息
- * @param {Object} groupInfo - 关联的群组信息（可选）
  * @returns {Object} 格式化后的会员信息
  */
-function formatMember(member, groupInfo = null) {
+function formatMember(member) {
   if (!member) return null;
-  
-  // 提取群组信息（优先使用传入的groupInfo，其次是member中的群组信息）
-  const group = groupInfo || {
-    groupId: member.group_id,
-    groupName: member.group_name,
-    groupLink: member.group_link,
-    isGroupOwner: member.is_owner === 1
-  };
   
   return {
     id: member.id,
     memberNickname: member.member_nickname,
     memberAccount: member.member_account,
     password: member.password,
-    groupId: group.groupId,
-    groupName: group.groupName,
-    groupLink: group.groupLink,
     inviterId: member.inviter_id,
     inviterName: member.inviter_name,
     occupation: member.occupation,
-    isGroupOwner: group.isGroupOwner,
     inviteCode: member.invite_code,
     hasPassword: !!member.password,
     phone: member.phone || '',
@@ -78,14 +65,11 @@ function generateInviteCode() {
  */
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
-    let query = `
+    // 修改基础查询，不再直接关联群组表
+    let baseQuery = `
       SELECT m.*, 
-             g.group_name, g.group_link,
-             mg.group_id, mg.is_owner,
              inv.member_nickname as inviter_name
       FROM members m
-      LEFT JOIN member_groups mg ON m.id = mg.member_id
-      LEFT JOIN \`groups\` g ON mg.group_id = g.id
       LEFT JOIN members inv ON m.inviter_id = inv.id
     `;
     
@@ -93,6 +77,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       SELECT COUNT(*) as total 
       FROM members m
     `;
+    
     const queryParams = [];
     const conditions = [];
 
@@ -102,28 +87,65 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(`%${filters.memberNickname}%`);
     }
     
+    // 如果需要按群组筛选，使用子查询
     if (filters.groupId) {
-      conditions.push('mg.group_id = ?');
+      conditions.push('m.id IN (SELECT member_id FROM member_groups WHERE group_id = ?)');
       queryParams.push(filters.groupId);
     }
 
     // 组合查询条件
     if (conditions.length > 0) {
       const whereClause = ' WHERE ' + conditions.join(' AND ');
-      query += whereClause;
+      baseQuery += whereClause;
       countQuery += whereClause;
     }
 
     // 添加排序和分页
-    query += ' ORDER BY m.create_time DESC LIMIT ? OFFSET ?';
+    baseQuery += ' ORDER BY m.create_time DESC LIMIT ? OFFSET ?';
     queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
 
-    // 执行查询
-    const [rows] = await pool.query(query, queryParams);
+    // 执行会员基础信息查询
+    const [members] = await pool.query(baseQuery, queryParams);
     const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
     
+    if (members.length === 0) {
+      return {
+        list: [],
+        total: 0,
+        page: parseInt(page, 10),
+        pageSize: parseInt(pageSize, 10)
+      };
+    }
+    
+    // 获取会员IDs
+    const memberIds = members.map(member => member.id);
+    
+    // 单独查询所有会员的群组关系
+    const [memberGroups] = await pool.query(
+      `SELECT mg.member_id, mg.group_id, mg.is_owner, 
+              g.group_name, g.group_link
+       FROM member_groups mg
+       JOIN \`groups\` g ON mg.group_id = g.id
+       WHERE mg.member_id IN (?)`,
+      [memberIds]
+    );
+    
+    // 按会员ID组织群组数据
+    const groupsMap = {};
+    memberGroups.forEach(group => {
+      if (!groupsMap[group.member_id]) {
+        groupsMap[group.member_id] = [];
+      }
+      
+      groupsMap[group.member_id].push({
+        groupId: group.group_id,
+        groupName: group.group_name,
+        groupLink: group.group_link,
+        isGroupOwner: group.is_owner === 1
+      });
+    });
+    
     // 获取每个会员的账号列表
-    const memberIds = rows.map(row => row.id);
     let accountsMap = {};
     
     if (memberIds.length > 0) {
@@ -156,17 +178,17 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       });
     }
     
-    // 添加账号列表到会员信息中
-    const formattedMembers = rows.map(member => {
-      const groupInfo = {
-        groupId: member.group_id,
-        groupName: member.group_name,
-        groupLink: member.group_link,
-        isGroupOwner: member.is_owner === 1
-      };
+    // 整合会员、群组和账号信息
+    const formattedMembers = members.map(member => {
+      // 使用成员基本信息格式化
+      const formattedMember = formatMember(member);
       
-      const formattedMember = formatMember(member, groupInfo);
+      // 添加群组信息数组
+      formattedMember.groups = groupsMap[member.id] || [];
+      
+      // 添加账号列表
       formattedMember.accountList = accountsMap[member.id] || [];
+      
       return formattedMember;
     });
     
@@ -189,13 +211,10 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
  */
 async function getById(id) {
   try {
+    // 获取会员基本信息
     const [rows] = await pool.query(
-      `SELECT m.*, g.group_name, g.group_link,
-              mg.group_id, mg.is_owner,
-              inv.member_nickname as inviter_name
+      `SELECT m.*, inv.member_nickname as inviter_name
        FROM members m
-       LEFT JOIN member_groups mg ON m.id = mg.member_id
-       LEFT JOIN \`groups\` g ON mg.group_id = g.id
        LEFT JOIN members inv ON m.inviter_id = inv.id
        WHERE m.id = ?`,
       [id]
@@ -214,15 +233,28 @@ async function getById(id) {
       [id]
     );
     
-    // 准备群组信息
-    const groupInfo = {
-      groupId: rows[0].group_id,
-      groupName: rows[0].group_name,
-      groupLink: rows[0].group_link,
-      isGroupOwner: rows[0].is_owner === 1
-    };
+    // 获取会员的群组关系
+    const [memberGroups] = await pool.query(
+      `SELECT mg.group_id, mg.is_owner, 
+              g.group_name, g.group_link
+       FROM member_groups mg
+       JOIN \`groups\` g ON mg.group_id = g.id
+       WHERE mg.member_id = ?`,
+      [id]
+    );
     
-    const member = formatMember(rows[0], groupInfo);
+    // 格式化会员信息
+    const member = formatMember(rows[0]);
+    
+    // 添加群组数组
+    member.groups = memberGroups.map(group => ({
+      groupId: group.group_id,
+      groupName: group.group_name,
+      groupLink: group.group_link,
+      isGroupOwner: group.is_owner === 1
+    }));
+    
+    // 添加账号列表
     member.accountList = accounts.map(account => ({
       id: account.id,
       channelId: account.channel_id,
@@ -256,13 +288,10 @@ async function getById(id) {
  */
 async function getByAccount(account) {
   try {
+    // 获取会员基本信息
     const [rows] = await pool.query(
-      `SELECT m.*, g.group_name, g.group_link,
-              mg.group_id, mg.is_owner,
-              inv.member_nickname as inviter_name
+      `SELECT m.*, inv.member_nickname as inviter_name
        FROM members m
-       LEFT JOIN member_groups mg ON m.id = mg.member_id
-       LEFT JOIN \`groups\` g ON mg.group_id = g.id
        LEFT JOIN members inv ON m.inviter_id = inv.id
        WHERE m.member_account = ?`,
       [account]
@@ -272,15 +301,29 @@ async function getByAccount(account) {
       return null;
     }
     
-    // 准备群组信息
-    const groupInfo = {
-      groupId: rows[0].group_id,
-      groupName: rows[0].group_name,
-      groupLink: rows[0].group_link,
-      isGroupOwner: rows[0].is_owner === 1
-    };
+    // 获取会员的群组关系
+    const memberId = rows[0].id;
+    const [memberGroups] = await pool.query(
+      `SELECT mg.group_id, mg.is_owner, 
+              g.group_name, g.group_link
+       FROM member_groups mg
+       JOIN \`groups\` g ON mg.group_id = g.id
+       WHERE mg.member_id = ?`,
+      [memberId]
+    );
     
-    return formatMember(rows[0], groupInfo);
+    // 格式化会员信息
+    const member = formatMember(rows[0]);
+    
+    // 添加群组数组
+    member.groups = memberGroups.map(group => ({
+      groupId: group.group_id,
+      groupName: group.group_name,
+      groupLink: group.group_link,
+      isGroupOwner: group.is_owner === 1
+    }));
+    
+    return member;
   } catch (error) {
     logger.error(`根据账号获取会员失败: ${error.message}`);
     throw error;
