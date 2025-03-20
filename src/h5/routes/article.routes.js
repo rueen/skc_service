@@ -11,23 +11,6 @@ const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.midd
 const router = express.Router();
 
 /**
- * @route GET /api/h5/articles
- * @desc 获取文章列表
- * @access Public
- */
-router.get(
-  '/',
-  rateLimiterMiddleware.apiLimiter,
-  [
-    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
-    query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
-    query('category').optional().isString().withMessage('文章类别必须是字符串')
-  ],
-  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  articleController.getList
-);
-
-/**
  * @route GET /api/h5/articles/:id
  * @desc 获取文章详情
  * @access Public

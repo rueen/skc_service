@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-15 16:12:24
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-20 21:55:31
+ * @Description: 
+ */
 /**
  * H5端文章控制器
  * 处理H5端文章相关的业务逻辑
@@ -17,9 +24,7 @@ async function getList(req, res) {
     const { page = 1, pageSize = 10, category } = req.query;
     
     // 构建筛选条件
-    const filters = {
-      isPublished: true // 只显示已发布的文章
-    };
+    const filters = {};
     
     if (category) filters.category = category;
     
@@ -49,13 +54,7 @@ async function getDetail(req, res) {
       return responseUtil.notFound(res, '文章不存在');
     }
     
-    // 检查文章是否已发布
-    if (!article.isPublished) {
-      return responseUtil.forbidden(res, '该文章尚未发布');
-    }
-    
-    // 增加文章阅读量
-    await articleModel.incrementViewCount(parseInt(id, 10));
+    // 已移除阅读量统计功能
     
     return responseUtil.success(res, article);
   } catch (error) {
