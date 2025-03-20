@@ -7,6 +7,7 @@ const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 const { OccupationType } = require('../../shared/config/enums');
+const groupModel = require('../../shared/models/group.model');
 /**
  * 获取会员列表
  * @param {Object} req - 请求对象
@@ -65,8 +66,8 @@ async function getDetail(req, res) {
 async function create(req, res) {
   try {
     const { 
-      memberNickname, memberAccount, password, groupId, inviterId, 
-      occupation, isGroupOwner, phone, email, avatar, gender, telegram 
+      memberNickname, memberAccount, password, groupIds, inviterId, 
+      occupation, phone, email, avatar, gender, telegram 
     } = req.body;
 
     // 参数验证
@@ -78,6 +79,25 @@ async function create(req, res) {
     const validatorUtil = require('../../shared/utils/validator.util');
     if (!validatorUtil.isStrongPassword(password)) {
       return responseUtil.badRequest(res, '密码不符合要求，密码长度必须在8-20位之间，且必须包含字母和数字');
+    }
+
+    // 如果指定了群组，检查群组成员数是否达到上限
+    if (groupIds && groupIds.length > 0) {
+      // 检查每个群组是否存在
+      for (const groupId of groupIds) {
+        const parsedGroupId = parseInt(groupId, 10);
+        // 检查群组是否存在
+        const groupExists = await memberModel.checkGroupExists(parsedGroupId);
+        if (!groupExists) {
+          return responseUtil.badRequest(res, `群组ID ${parsedGroupId} 不存在`);
+        }
+        
+        // 检查群组成员数是否达到上限
+        const groupLimit = await groupModel.checkGroupLimit(parsedGroupId);
+        if (groupLimit.isFull) {
+          return responseUtil.badRequest(res, `群组(ID:${parsedGroupId})成员数已达到上限（${groupLimit.maxMembers}人）`);
+        }
+      }
     }
 
     // 处理密码哈希
@@ -109,10 +129,9 @@ async function create(req, res) {
       memberNickname: actualNickname,
       memberAccount,
       password: hashedPassword,
-      groupId: groupId ? parseInt(groupId, 10) : null,
+      groupIds: groupIds || [], // 传递群组ID数组
       inviterId: inviterId ? parseInt(inviterId, 10) : null,
       occupation,
-      isGroupOwner: !!isGroupOwner,
       phone: actualPhone,
       email: actualEmail,
       avatar: actualAvatar,
@@ -124,7 +143,7 @@ async function create(req, res) {
   } catch (error) {
     if (error.message === '会员账号已存在') {
       return responseUtil.badRequest(res, error.message);
-    } else if (error.message === '所选群组不存在') {
+    } else if (error.message.includes('群组不存在')) {
       return responseUtil.badRequest(res, error.message);
     } else if (error.message === '邀请人不存在') {
       return responseUtil.badRequest(res, error.message);
@@ -143,8 +162,8 @@ async function update(req, res) {
   try {
     const { id } = req.params;
     const { 
-      memberNickname, memberAccount, password, groupId, inviterId, 
-      occupation, isGroupOwner, phone, email, avatar, gender, telegram 
+      memberNickname, memberAccount, password, groupIds, inviterId, 
+      occupation, phone, email, avatar, gender, telegram 
     } = req.body;
 
     if (!id) {
@@ -177,6 +196,40 @@ async function update(req, res) {
         return responseUtil.badRequest(res, '密码不符合要求，密码长度必须在8-20位之间，且必须包含字母和数字');
       }
     }
+    
+    // 如果要更新群组ID，检查群组成员数是否达到上限
+    if (groupIds !== undefined) {
+      // 获取会员当前所在群组
+      const currentMember = await memberModel.getById(parseInt(id, 10));
+      if (!currentMember) {
+        return responseUtil.notFound(res, '会员不存在');
+      }
+      
+      // 获取当前会员所在的群组ID列表
+      const currentGroupIds = currentMember.groups.map(group => group.groupId);
+      
+      // 检查每个新群组
+      if (groupIds && groupIds.length > 0) {
+        for (const groupId of groupIds) {
+          const parsedGroupId = parseInt(groupId, 10);
+          
+          // 检查群组是否存在
+          const groupExists = await memberModel.checkGroupExists(parsedGroupId);
+          if (!groupExists) {
+            return responseUtil.badRequest(res, `群组ID ${parsedGroupId} 不存在`);
+          }
+          
+          // 如果是新的群组（不在当前群组列表中），才检查成员数量限制
+          if (!currentGroupIds.includes(parsedGroupId)) {
+            // 检查群组成员数是否达到上限
+            const groupLimit = await groupModel.checkGroupLimit(parsedGroupId);
+            if (groupLimit.isFull) {
+              return responseUtil.badRequest(res, `群组(ID:${parsedGroupId})成员数已达到上限（${groupLimit.maxMembers}人）`);
+            }
+          }
+        }
+      }
+    }
 
     // 处理密码哈希
     let hashedPassword;
@@ -190,10 +243,9 @@ async function update(req, res) {
       memberNickname,
       memberAccount,
       password: password !== undefined ? hashedPassword : undefined,
-      groupId: groupId !== undefined ? (groupId ? parseInt(groupId, 10) : null) : undefined,
+      groupIds: groupIds !== undefined ? groupIds : undefined, // 传递群组ID数组
       inviterId: inviterId !== undefined ? (inviterId ? parseInt(inviterId, 10) : null) : undefined,
       occupation,
-      isGroupOwner: isGroupOwner !== undefined ? !!isGroupOwner : undefined,
       phone,
       email,
       avatar,
@@ -213,7 +265,7 @@ async function update(req, res) {
     if (error.message === '会员账号已被其他会员使用') {
       return responseUtil.badRequest(res, error.message);
     }
-    if (error.message === '所选群组不存在') {
+    if (error.message.includes('群组不存在')) {
       return responseUtil.badRequest(res, error.message);
     }
     if (error.message === '邀请人不存在') {

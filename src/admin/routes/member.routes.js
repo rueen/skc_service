@@ -71,14 +71,18 @@ router.post(
       .notEmpty()
       .withMessage('密码不能为空')
       .isLength({ min: 8, max: 20 })
-      .withMessage('密码长度必须在8-20个字符之间')
+      .withMessage('密码长度必须在8-20位之间')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
       .withMessage('密码必须包含字母和数字'),
     body('memberNickname')
       .optional()
       .isLength({ max: 50 })
       .withMessage('会员昵称长度不能超过50个字符'),
-    body('groupId')
+    body('groupIds')
+      .optional()
+      .isArray()
+      .withMessage('群组ID必须是数组格式'),
+    body('groupIds.*')
       .optional()
       .isInt()
       .withMessage('群组ID必须是整数'),
@@ -139,14 +143,14 @@ router.put(
       .withMessage('密码长度必须在8-20个字符之间')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
       .withMessage('密码必须包含字母和数字'),
-    body('groupId')
+    body('groupIds')
       .optional()
-      .custom((value) => {
-        // 允许传入 null 或整数
-        if (value === null) return true;
-        return Number.isInteger(Number(value));
-      })
-      .withMessage('群组ID必须是整数或null'),
+      .isArray()
+      .withMessage('群组ID必须是数组格式'),
+    body('groupIds.*')
+      .optional()
+      .isInt()
+      .withMessage('群组ID数组中的值必须是整数'),
     body('inviterId')
       .optional()
       .custom((value) => {

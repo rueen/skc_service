@@ -350,17 +350,7 @@ async function create(memberData) {
       throw new Error('会员账号已存在');
     }
     
-    // 检查群组是否存在
-    if (memberData.groupId) {
-      const [group] = await connection.query(
-        'SELECT id FROM `groups` WHERE id = ?',
-        [memberData.groupId]
-      );
-      
-      if (group.length === 0) {
-        throw new Error('所选群组不存在');
-      }
-    }
+    // 检查群组是否存在（已在controller中验证，这里不再重复检查）
     
     // 检查邀请人是否存在
     if (memberData.inviterId) {
@@ -413,26 +403,22 @@ async function create(memberData) {
     const memberId = result.insertId;
     
     // 如果指定了群组，创建会员-群组关联
-    if (memberData.groupId) {
-      await connection.query(
-        `INSERT INTO member_groups 
-         (member_id, group_id, is_owner)
-         VALUES (?, ?, ?)`,
-        [memberId, memberData.groupId, memberData.isGroupOwner ? 1 : 0]
-      );
+    if (memberData.groupIds && memberData.groupIds.length > 0) {
+      // 构建批量插入的参数
+      const groupValues = [];
       
-      // 如果设置为群主，更新群组的群主ID
-      if (memberData.isGroupOwner) {
-        // 先清除该群组的原群主
+      for (const groupId of memberData.groupIds) {
+        // 所有群组关系默认都不是群主
+        groupValues.push([memberId, parseInt(groupId, 10), 0]);
+      }
+      
+      if (groupValues.length > 0) {
+        // 批量插入会员-群组关系
         await connection.query(
-          'UPDATE member_groups SET is_owner = 0 WHERE group_id = ? AND member_id != ?',
-          [memberData.groupId, memberId]
-        );
-        
-        // 设置新群主
-        await connection.query(
-          'UPDATE `groups` SET owner_id = ? WHERE id = ?',
-          [memberId, memberData.groupId]
+          `INSERT INTO member_groups 
+           (member_id, group_id, is_owner)
+           VALUES ?`,
+          [groupValues]
         );
       }
     }
@@ -468,17 +454,6 @@ async function update(memberData) {
       throw new Error('会员不存在');
     }
     
-    // 获取会员当前所在的群组和群主状态
-    const [memberGroup] = await connection.query(
-      `SELECT mg.group_id, mg.is_owner
-       FROM member_groups mg
-       WHERE mg.member_id = ?`,
-      [memberData.id]
-    );
-    
-    const currentGroupId = memberGroup.length > 0 ? memberGroup[0].group_id : null;
-    const currentIsOwner = memberGroup.length > 0 ? memberGroup[0].is_owner === 1 : false;
-    
     // 检查会员账号是否已被其他会员使用
     if (memberData.memberAccount) {
       const [existingAccount] = await connection.query(
@@ -488,18 +463,6 @@ async function update(memberData) {
       
       if (existingAccount.length > 0) {
         throw new Error('会员账号已被其他会员使用');
-      }
-    }
-    
-    // 检查群组是否存在
-    if (memberData.groupId) {
-      const [group] = await connection.query(
-        'SELECT id FROM `groups` WHERE id = ?',
-        [memberData.groupId]
-      );
-      
-      if (group.length === 0) {
-        throw new Error('所选群组不存在');
       }
     }
     
@@ -579,89 +542,42 @@ async function update(memberData) {
       );
     }
     
-    // 处理群组和群主变更
-    const groupIdChanged = memberData.groupId !== undefined && memberData.groupId !== currentGroupId;
-    const isOwnerChanged = memberData.isGroupOwner !== undefined && memberData.isGroupOwner !== currentIsOwner;
-    
-    if (groupIdChanged || isOwnerChanged) {
-      // 如果变更了群组
-      if (groupIdChanged) {
-        // 如果之前有群组，删除旧的关联
-        if (currentGroupId) {
-          // 如果是群主，先清除群组的owner_id
-          if (currentIsOwner) {
-            await connection.query(
-              'UPDATE `groups` SET owner_id = NULL WHERE id = ? AND owner_id = ?',
-              [currentGroupId, memberData.id]
-            );
-          }
-          
-          // 删除旧的关联
-          await connection.query(
-            'DELETE FROM member_groups WHERE member_id = ?',
-            [memberData.id]
-          );
+    // 处理群组关系更新
+    if (memberData.groupIds !== undefined) {
+      // 先删除现有的所有群组关系
+      await connection.query(
+        'DELETE FROM member_groups WHERE member_id = ?',
+        [memberData.id]
+      );
+      
+      // 清除该会员可能担任的所有群主职位
+      await connection.query(
+        'UPDATE `groups` SET owner_id = NULL WHERE owner_id = ?',
+        [memberData.id]
+      );
+      
+      // 如果提供了新的群组列表，则添加新关系
+      if (memberData.groupIds && memberData.groupIds.length > 0) {
+        // 构建批量插入的参数
+        const groupValues = [];
+        
+        for (const groupId of memberData.groupIds) {
+          // 所有群组关系默认都不是群主
+          groupValues.push([memberData.id, parseInt(groupId, 10), 0]);
         }
         
-        // 如果新指定了群组，创建新的关联
-        if (memberData.groupId) {
-          const isOwner = memberData.isGroupOwner !== undefined ? memberData.isGroupOwner : false;
-          
+        if (groupValues.length > 0) {
+          // 批量插入会员-群组关系
           await connection.query(
-            'INSERT INTO member_groups (member_id, group_id, is_owner) VALUES (?, ?, ?)',
-            [memberData.id, memberData.groupId, isOwner ? 1 : 0]
-          );
-          
-          // 如果设置为群主，更新群组的owner_id
-          if (isOwner) {
-            // 先清除群组内其他成员的群主状态
-            await connection.query(
-              'UPDATE member_groups SET is_owner = 0 WHERE group_id = ? AND member_id != ?',
-              [memberData.groupId, memberData.id]
-            );
-            
-            // 设置群组的owner_id
-            await connection.query(
-              'UPDATE `groups` SET owner_id = ? WHERE id = ?',
-              [memberData.id, memberData.groupId]
-            );
-          }
-        }
-      } 
-      // 如果只变更了群主状态但群组没变
-      else if (isOwnerChanged && currentGroupId) {
-        if (memberData.isGroupOwner) {
-          // 先清除群组内其他成员的群主状态
-          await connection.query(
-            'UPDATE member_groups SET is_owner = 0 WHERE group_id = ? AND member_id != ?',
-            [currentGroupId, memberData.id]
-          );
-          
-          // 设置当前会员为群主
-          await connection.query(
-            'UPDATE member_groups SET is_owner = 1 WHERE member_id = ? AND group_id = ?',
-            [memberData.id, currentGroupId]
-          );
-          
-          // 更新群组的owner_id
-          await connection.query(
-            'UPDATE `groups` SET owner_id = ? WHERE id = ?',
-            [memberData.id, currentGroupId]
-          );
-        } else {
-          // 取消群主身份
-          await connection.query(
-            'UPDATE member_groups SET is_owner = 0 WHERE member_id = ? AND group_id = ?',
-            [memberData.id, currentGroupId]
-          );
-          
-          // 清除群组的owner_id（如果当前会员是群主）
-          await connection.query(
-            'UPDATE `groups` SET owner_id = NULL WHERE id = ? AND owner_id = ?',
-            [currentGroupId, memberData.id]
+            `INSERT INTO member_groups 
+             (member_id, group_id, is_owner)
+             VALUES ?`,
+            [groupValues]
           );
         }
       }
+    } else if (memberData.isGroupOwner !== undefined) {
+      // 移除处理群主状态变更的逻辑，因为创建/更新会员时不需要设置群主
     }
     
     await connection.commit();
@@ -767,11 +683,33 @@ async function remove(id) {
   }
 }
 
+/**
+ * 检查群组是否存在
+ * @param {number} groupId - 群组ID
+ * @returns {Promise<boolean>} 群组是否存在
+ */
+async function checkGroupExists(groupId) {
+  try {
+    if (!groupId) return false;
+    
+    const [rows] = await pool.query(
+      'SELECT id FROM `groups` WHERE id = ?',
+      [groupId]
+    );
+    
+    return rows.length > 0;
+  } catch (error) {
+    logger.error(`检查群组存在性失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   getList,
   getById,
   getByAccount,
   create,
   update,
-  remove
+  remove,
+  checkGroupExists
 }; 
