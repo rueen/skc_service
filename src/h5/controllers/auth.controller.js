@@ -93,10 +93,17 @@ async function login(req, res) {
     }
     
     // 验证账号格式
+    const validatorUtil = require('../../shared/utils/validator.util');
     if (loginType === 'phone') {
-      // 可以在这里添加手机号格式验证
+      // 验证手机号格式
+      if (!validatorUtil.isValidPhone(memberAccount)) {
+        return responseUtil.badRequest(res, '手机号格式不正确');
+      }
     } else if (loginType === 'email') {
-      // 可以在这里添加邮箱格式验证
+      // 验证邮箱格式
+      if (!validatorUtil.isValidEmail(memberAccount)) {
+        return responseUtil.badRequest(res, '邮箱格式不正确');
+      }
     } else {
       return responseUtil.badRequest(res, '不支持的登录类型');
     }

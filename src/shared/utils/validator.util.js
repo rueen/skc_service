@@ -52,12 +52,16 @@ const isValidEmail = (email) => {
 };
 
 /**
- * 验证手机号格式是否有效
+ * 验证手机号格式是否有效（支持全球格式）
  * @param {string} phone - 手机号
  * @returns {boolean} 是否为有效手机号
  */
 const isValidPhone = (phone) => {
-  const phoneRegex = /^1[3-9]\d{9}$/;
+  // 全球手机号格式验证
+  // 1. 允许+号开头（可选）
+  // 2. 允许国家/地区代码（可选）
+  // 3. 主体部分必须是数字，长度在5-15位之间
+  const phoneRegex = /^(\+?\d{1,3}[-\s]?)?\d{5,15}$/;
   return phoneRegex.test(phone);
 };
 
