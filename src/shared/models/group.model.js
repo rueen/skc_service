@@ -42,7 +42,31 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       FROM \`groups\` g 
       LEFT JOIN members m ON g.owner_id = m.id
     `;
+    
+    // 如果有memberId筛选，需要通过member_groups表关联
+    if (filters.memberId) {
+      query = `
+        SELECT g.*, 
+               m.member_nickname as owner_name,
+               (SELECT COUNT(*) FROM member_groups mg WHERE mg.group_id = g.id) as member_count
+        FROM \`groups\` g 
+        LEFT JOIN members m ON g.owner_id = m.id
+        JOIN member_groups mg ON g.id = mg.group_id
+      `;
+    }
+    
     let countQuery = 'SELECT COUNT(*) as total FROM `groups` g LEFT JOIN members m ON g.owner_id = m.id';
+    
+    // 同样为计数查询添加关联
+    if (filters.memberId) {
+      countQuery = `
+        SELECT COUNT(DISTINCT g.id) as total 
+        FROM \`groups\` g 
+        LEFT JOIN members m ON g.owner_id = m.id
+        JOIN member_groups mg ON g.id = mg.group_id
+      `;
+    }
+    
     const queryParams = [];
     const conditions = [];
 
@@ -54,6 +78,11 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     if (filters.ownerId) {
       conditions.push('g.owner_id = ?');
       queryParams.push(filters.ownerId);
+    }
+    // 添加成员ID筛选条件
+    if (filters.memberId) {
+      conditions.push('mg.member_id = ?');
+      queryParams.push(filters.memberId);
     }
     
     // 添加关键词搜索
@@ -70,7 +99,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     }
 
     // 添加排序和分页
-    query += ' ORDER BY g.create_time DESC LIMIT ? OFFSET ?';
+    query += ' GROUP BY g.id ORDER BY g.create_time DESC LIMIT ? OFFSET ?';
     queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
 
     // 执行查询

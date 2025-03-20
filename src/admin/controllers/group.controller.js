@@ -14,18 +14,22 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, STATUS_CODES, MESSAGES } = require('../
  */
 async function list(req, res) {
   try {
-    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, groupName, ownerId, keyword } = req.query;
-    const filters = {};
+    const { page = 1, pageSize = 10, groupName, ownerId, memberId, keyword } = req.query;
     
+    // 构建筛选条件
+    const filters = {};
     if (groupName) filters.groupName = groupName;
     if (ownerId) filters.ownerId = parseInt(ownerId, 10);
+    if (memberId) filters.memberId = parseInt(memberId, 10); // 处理新增的成员ID筛选
     if (keyword) filters.keyword = keyword;
-
+    
+    // 获取群组列表
     const result = await groupModel.getList(filters, page, pageSize);
+    
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取群组列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取群组列表失败');
+    return responseUtil.serverError(res, error.message || '获取群组列表失败');
   }
 }
 
