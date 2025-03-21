@@ -269,11 +269,6 @@ async function getById(id) {
       createTime: formatDateTime(account.create_time)
     }));
     
-    // 生成邀请链接
-    if (member.inviteCode) {
-      member.inviteUrl = `${process.env.BASE_URL || 'http://localhost:3001'}/invite/${member.inviteCode}`;
-    }
-    
     return member;
   } catch (error) {
     logger.error(`获取会员详情失败: ${error.message}`);
