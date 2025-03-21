@@ -155,6 +155,29 @@ async function getByTaskAndMember(taskId, memberId) {
 }
 
 /**
+ * 根据会员ID获取所有已报名的任务
+ * @param {number} memberId - 会员ID
+ * @returns {Promise<Array>} 任务报名列表
+ */
+async function getListByMemberId(memberId) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT ta.*, t.task_name, c.name as channel_name, t.reward
+       FROM task_applications ta
+       JOIN tasks t ON ta.task_id = t.id
+       LEFT JOIN channels c ON t.channel_id = c.id
+       WHERE ta.member_id = ?`,
+      [memberId]
+    );
+    
+    return rows.map(formatTaskApplication);
+  } catch (error) {
+    logger.error(`获取会员任务报名列表失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
  * 创建任务报名
  * @param {Object} applicationData - 报名数据
  * @returns {Promise<Object>} 创建结果
@@ -253,6 +276,7 @@ module.exports = {
   getList,
   getById,
   getByTaskAndMember,
+  getListByMemberId,
   create,
   updateStatus,
   updateStatusByTaskAndMember,

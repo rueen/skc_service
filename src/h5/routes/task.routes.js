@@ -14,10 +14,11 @@ const router = express.Router();
 /**
  * @route GET /api/h5/tasks
  * @desc 获取任务列表
- * @access Public
+ * @access Public (但如果用户已登录会返回更多信息)
  */
 router.get(
   '/',
+  authMiddleware.optionalToken, // 可选的Token验证，不强制要求用户登录
   rateLimiterMiddleware.apiLimiter,
   [
     query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
@@ -50,10 +51,11 @@ router.get(
 /**
  * @route GET /api/h5/tasks/:id
  * @desc 获取任务详情
- * @access Public
+ * @access Private
  */
 router.get(
   '/:id',
+  authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
     param('id')

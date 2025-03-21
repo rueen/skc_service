@@ -17,6 +17,7 @@ const responseUtil = require('../../shared/utils/response.util');
 async function getList(req, res) {
   try {
     const { page = 1, pageSize = 10, channelId, category } = req.query;
+    const memberId = req.user ? req.user.id : null;
     
     // 构建筛选条件
     const filters = {
@@ -28,6 +29,32 @@ async function getList(req, res) {
     
     // 获取任务列表
     const result = await taskModel.getList(filters, page, pageSize);
+    
+    // 如果用户已登录，查询用户是否已报名列表中的任务
+    if (memberId) {
+      // 获取用户已报名的所有任务
+      const applications = await taskApplicationModel.getListByMemberId(memberId);
+      
+      // 将任务ID和状态转换为Map，便于快速查找
+      const taskApplicationMap = new Map();
+      applications.forEach(app => {
+        taskApplicationMap.set(app.taskId, app.status);
+      });
+      
+      // 为任务列表添加是否已报名的标记
+      result.list.forEach(task => {
+        const applicationStatus = taskApplicationMap.get(task.id);
+        task.isApplied = !!applicationStatus;
+        if (applicationStatus) {
+          task.applicationStatus = applicationStatus;
+        }
+      });
+    } else {
+      // 用户未登录，所有任务都标记为未报名
+      result.list.forEach(task => {
+        task.isApplied = false;
+      });
+    }
     
     return responseUtil.success(res, result);
   } catch (error) {
@@ -44,6 +71,7 @@ async function getList(req, res) {
 async function getDetail(req, res) {
   try {
     const { id } = req.params;
+    const memberId = req.user.id; // 从请求中获取当前登录会员ID
     
     // 获取任务详情
     const task = await taskModel.getById(parseInt(id, 10));
@@ -55,6 +83,17 @@ async function getDetail(req, res) {
     // 检查任务是否已结束
     if (task.taskStatus === 'ended') {
       return responseUtil.badRequest(res, '该任务已结束');
+    }
+    
+    // 查询当前会员是否已报名该任务
+    const application = await taskApplicationModel.getByTaskAndMember(parseInt(id, 10), memberId);
+    
+    // 添加isApplied字段到任务详情中
+    task.isApplied = !!application;
+    
+    // 如果已报名，添加报名状态
+    if (application) {
+      task.applicationStatus = application.status;
     }
     
     return responseUtil.success(res, task);
