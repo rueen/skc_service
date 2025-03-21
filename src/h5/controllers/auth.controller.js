@@ -82,7 +82,7 @@ async function register(req, res) {
  */
 async function login(req, res) {
   try {
-    const { loginType, memberAccount, areaCode = '86', password } = req.body;
+    const { loginType, memberAccount, areaCode = '86', password, inviteCode } = req.body;
     
     if (!memberAccount) {
       return responseUtil.badRequest(res, '账号不能为空');
@@ -126,6 +126,28 @@ async function login(req, res) {
         password: hashedPassword
       };
       
+      // 处理邀请码
+      if (inviteCode) {
+        try {
+          // 查找邀请人
+          const { pool } = require('../../shared/models/db');
+          const [inviter] = await pool.query(
+            'SELECT id FROM members WHERE invite_code = ?',
+            [inviteCode]
+          );
+          
+          if (inviter.length > 0) {
+            // 找到邀请人，建立关系
+            memberData.inviterId = inviter[0].id;
+          } else {
+            logger.warn(`登录/注册时未找到邀请码 ${inviteCode} 对应的会员`);
+          }
+        } catch (inviterError) {
+          logger.error(`处理邀请码失败: ${inviterError.message}`);
+          // 继续注册流程，不因邀请码处理失败而中断
+        }
+      }
+      
       // 根据登录类型设置 phone 或 email 字段
       if (loginType === 'phone') {
         memberData.phone = memberAccount;
@@ -152,7 +174,8 @@ async function login(req, res) {
         loginType: loginType,
         memberAccount: memberAccount,
         phone: loginType === 'phone' ? memberAccount : (createdMember.phone || ''),
-        email: loginType === 'email' ? memberAccount : (createdMember.email || '')
+        email: loginType === 'email' ? memberAccount : (createdMember.email || ''),
+        inviterNickname: createdMember.inviterNickname || ''
       };
       
       return responseUtil.success(res, {
@@ -190,7 +213,8 @@ async function login(req, res) {
         loginType: loginType,
         memberAccount: member.memberAccount,
         phone: loginType === 'phone' ? member.memberAccount : (member.phone || ''),
-        email: loginType === 'email' ? member.memberAccount : (member.email || '')
+        email: loginType === 'email' ? member.memberAccount : (member.email || ''),
+        inviterNickname: member.inviterNickname || ''
       };
       
       return responseUtil.success(res, {

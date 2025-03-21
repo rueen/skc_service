@@ -22,7 +22,7 @@ function formatMember(member) {
     memberAccount: member.member_account,
     password: member.password,
     inviterId: member.inviter_id,
-    inviterName: member.inviter_name,
+    inviterNickname: member.inviter_nickname,
     occupation: member.occupation,
     inviteCode: member.invite_code,
     hasPassword: !!member.password,
@@ -68,7 +68,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     // 修改基础查询，不再直接关联群组表
     let baseQuery = `
       SELECT m.*, 
-             inv.member_nickname as inviter_name
+             inv.member_nickname as inviter_nickname
       FROM members m
       LEFT JOIN members inv ON m.inviter_id = inv.id
     `;
@@ -213,7 +213,7 @@ async function getById(id) {
   try {
     // 获取会员基本信息
     const [rows] = await pool.query(
-      `SELECT m.*, inv.member_nickname as inviter_name
+      `SELECT m.*, inv.member_nickname as inviter_nickname
        FROM members m
        LEFT JOIN members inv ON m.inviter_id = inv.id
        WHERE m.id = ?`,
@@ -285,7 +285,7 @@ async function getByAccount(account) {
   try {
     // 获取会员基本信息
     const [rows] = await pool.query(
-      `SELECT m.*, inv.member_nickname as inviter_name
+      `SELECT m.*, inv.member_nickname as inviter_nickname
        FROM members m
        LEFT JOIN members inv ON m.inviter_id = inv.id
        WHERE m.member_account = ?`,

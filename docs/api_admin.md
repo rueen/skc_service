@@ -717,7 +717,7 @@ CREATE TABLE `articles` (
       "groupId": 1,    // 所属群组ID
       "groupName": "群组1",
       "inviterId": 1,  // 邀请人ID
-      "inviterName": "李四",
+      "inviterNickname": "李四",
       "occupation": "student",  // 职业
       "isGroupOwner": false, // 是否是群主
       "inviteCode": "ABC123",
