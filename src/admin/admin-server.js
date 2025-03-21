@@ -9,6 +9,7 @@ const healthRoutes = require('../shared/routes/health.routes');
 const { router: sharedRoutes, setAppType } = require('../shared/routes');
 const logger = require('../shared/config/logger.config');
 const errorHandler = require('../shared/middlewares/errorHandler.middleware');
+const { startScheduledTasks } = require('../shared/models/scheduled-tasks');
 
 // 加载环境变量
 require('dotenv').config({ path: '.env.admin' });
@@ -65,6 +66,9 @@ async function startServer() {
       if (process.env.NODE_ENV !== 'production') {
         logger.info('开发模式: 管理后台API可在 http://localhost:3002/api/support 访问');
       }
+      
+      // 启动定时任务
+      startScheduledTasks();
     });
   } catch (error) {
     logger.error(`启动管理后台服务失败: ${error.message}`);

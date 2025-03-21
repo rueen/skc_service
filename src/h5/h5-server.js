@@ -8,6 +8,7 @@ const healthRoutes = require('../shared/routes/health.routes');
 const { router: sharedRoutes, setAppType } = require('../shared/routes');
 const logger = require('../shared/config/logger.config');
 const errorHandler = require('../shared/middlewares/errorHandler.middleware');
+const { startScheduledTasks } = require('../shared/models/scheduled-tasks');
 
 // 加载环境变量
 require('dotenv').config({ path: '.env.h5' });
@@ -56,6 +57,12 @@ async function startServer() {
       
       if (process.env.NODE_ENV !== 'production') {
         logger.info('开发模式: H5端API可在 http://localhost:3001/api/h5 访问');
+      }
+      
+      // 启动定时任务（仅在admin服务未启动时才启动）
+      // 通过环境变量控制是否启动定时任务，避免任务被重复执行
+      if (process.env.ENABLE_SCHEDULED_TASKS === 'true') {
+        startScheduledTasks();
       }
     });
   } catch (error) {

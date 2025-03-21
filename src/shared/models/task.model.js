@@ -6,6 +6,7 @@ const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
+const { TaskStatus } = require('../config/enums');
 
 /**
  * 格式化任务信息
@@ -18,7 +19,7 @@ function formatTask(task) {
   // 提取基本字段
   const formattedTask = { ...task };
   
-  // 格式化时间字段，使用驼峰命名法
+  // 格式化时间字段，返回'YYYY-MM-DD HH:mm:ss'格式的时间字符串
   formattedTask.startTime = formatDateTime(task.start_time);
   formattedTask.endTime = formatDateTime(task.end_time);
   formattedTask.createTime = formatDateTime(task.create_time);
@@ -99,28 +100,50 @@ function formatTask(task) {
 }
 
 /**
- * 将 ISO 格式的日期时间字符串转换为 MySQL 兼容的格式
- * @param {string} dateTimeString - ISO 格式的日期时间字符串
- * @returns {string} MySQL 兼容的日期时间字符串
+ * 根据开始时间和结束时间自动更新任务状态
+ * @param {number} taskId - 任务ID
+ * @param {Date} startTime - 开始时间
+ * @param {Date} endTime - 结束时间
+ * @param {string} currentStatus - 当前任务状态
+ * @returns {Promise<boolean>} 是否更新了状态
  */
-function formatDateTimeForMySQL(dateTimeString) {
-  if (!dateTimeString) return null;
-  
+async function autoUpdateTaskStatus(taskId, startTime, endTime, currentStatus) {
   try {
-    // 将 ISO 字符串转换为 Date 对象
-    const date = new Date(dateTimeString);
-    
-    // 检查日期是否有效
-    if (isNaN(date.getTime())) {
-      logger.error(`无效的日期时间字符串: ${dateTimeString}`);
-      return null;
+    if (!taskId || !startTime || !endTime) {
+      return false;
     }
     
-    // 格式化为 MySQL 兼容的格式: YYYY-MM-DD HH:MM:SS
-    return date.toISOString().slice(0, 19).replace('T', ' ');
+    const now = new Date();
+    let newStatus = currentStatus;
+    
+    // 根据时间判断任务状态
+    if (now >= startTime && now < endTime && currentStatus === TaskStatus.NOT_STARTED) {
+      // 当前时间在开始时间之后，结束时间之前，且状态为未开始，则更新为进行中
+      newStatus = TaskStatus.PROCESSING;
+    } else if (now >= endTime && currentStatus !== TaskStatus.ENDED) {
+      // 当前时间在结束时间之后，且状态不为已结束，则更新为已结束
+      newStatus = TaskStatus.ENDED;
+    } else {
+      // 状态无需更新
+      return false;
+    }
+    
+    // 如果状态需要更新，执行更新
+    if (newStatus !== currentStatus) {
+      const [result] = await pool.query(
+        'UPDATE tasks SET task_status = ? WHERE id = ?',
+        [newStatus, taskId]
+      );
+      
+      logger.info(`自动更新任务状态: 任务 ${taskId} 从 ${currentStatus} 更新为 ${newStatus}`);
+      
+      return result.affectedRows > 0;
+    }
+    
+    return false;
   } catch (error) {
-    logger.error(`日期时间格式转换失败: ${error.message}, 原始值: ${dateTimeString}`);
-    return null;
+    logger.error(`自动更新任务状态失败: ${error.message}`);
+    return false;
   }
 }
 
@@ -181,10 +204,20 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const [rows] = await pool.query(query, queryParams);
     const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
     
-    // 安全处理每个任务记录
+    // 安全处理每个任务记录并自动更新状态
     const formattedList = [];
     for (const task of rows) {
       try {
+        // 自动更新任务状态
+        if (task.start_time && task.end_time) {
+          await autoUpdateTaskStatus(
+            task.id, 
+            new Date(task.start_time), 
+            new Date(task.end_time), 
+            task.task_status
+          );
+        }
+        
         const formattedTask = formatTask(task);
         // 返回更多的任务信息
         formattedList.push({
@@ -232,7 +265,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 async function getById(id) {
   try {
     const [rows] = await pool.query(
-      `SELECT t.*, c.name as channel_name
+      `SELECT t.*, c.name as channel_name, c.icon as channel_icon
        FROM tasks t
        LEFT JOIN channels c ON t.channel_id = c.id
        WHERE t.id = ?`,
@@ -243,46 +276,57 @@ async function getById(id) {
       return null;
     }
     
-    try {
-      const task = formatTask(rows[0]);
+    let task = rows[0];
+    
+    // 自动更新任务状态
+    if (task.start_time && task.end_time) {
+      await autoUpdateTaskStatus(
+        task.id, 
+        new Date(task.start_time), 
+        new Date(task.end_time), 
+        task.task_status
+      );
       
-      // 如果有群组ID，获取群组名称
-      if (task.groupIds && task.groupIds.length > 0) {
-        try {
-          // 修复：使用 MySQL 的 IN 查询时，需要将数组展开为逗号分隔的字符串
-          const placeholders = task.groupIds.map(() => '?').join(',');
-          const [groups] = await pool.query(
-            `SELECT id, group_name FROM \`groups\` WHERE id IN (${placeholders})`,
-            task.groupIds
-          );
-          
-          task.groups = groups.map(group => ({
-            id: group.id,
-            groupName: group.group_name
-          }));
-        } catch (error) {
-          logger.error(`获取任务关联群组失败，任务ID: ${id}, 错误: ${error.message}`);
-          task.groups = [];
-        }
-      } else {
-        task.groups = [];
+      // 如果状态可能已更新，重新获取最新的任务数据
+      const [updatedRows] = await pool.query(
+        `SELECT t.*, c.name as channel_name, c.icon as channel_icon
+         FROM tasks t
+         LEFT JOIN channels c ON t.channel_id = c.id
+         WHERE t.id = ?`,
+        [id]
+      );
+      
+      if (updatedRows.length > 0) {
+        task = updatedRows[0];
       }
-      
-      return task;
-    } catch (error) {
-      logger.error(`格式化任务详情失败，任务ID: ${id}, 错误: ${error.message}`);
-      
-      // 返回基本信息，避免完全失败
-      return {
-        id: rows[0].id,
-        taskName: rows[0].task_name,
-        channelId: rows[0].channel_id,
-        channelName: rows[0].channel_name,
-        taskStatus: rows[0].task_status,
-        createTime: formatDateTime(rows[0].create_time),
-        error: '任务详情格式化失败，请联系管理员'
-      };
     }
+    
+    // 格式化任务数据
+    const formattedTask = formatTask(task);
+    
+    // 如果有群组ID，获取群组名称
+    if (formattedTask.groupIds && formattedTask.groupIds.length > 0) {
+      try {
+        // 使用 MySQL 的 IN 查询时，需要将数组展开为逗号分隔的字符串
+        const placeholders = formattedTask.groupIds.map(() => '?').join(',');
+        const [groups] = await pool.query(
+          `SELECT id, group_name FROM \`groups\` WHERE id IN (${placeholders})`,
+          formattedTask.groupIds
+        );
+        
+        formattedTask.groups = groups.map(group => ({
+          id: group.id,
+          groupName: group.group_name
+        }));
+      } catch (error) {
+        logger.error(`获取任务关联群组失败，任务ID: ${id}, 错误: ${error.message}`);
+        formattedTask.groups = [];
+      }
+    } else {
+      formattedTask.groups = [];
+    }
+    
+    return formattedTask;
   } catch (error) {
     logger.error(`获取任务详情失败: ${error.message}`);
     throw error;
@@ -367,8 +411,8 @@ async function create(taskData) {
     }
     
     // 格式化日期时间为 MySQL 兼容格式
-    const startTime = formatDateTimeForMySQL(taskData.startTime);
-    const endTime = formatDateTimeForMySQL(taskData.endTime);
+    const startTime = taskData.startTime ? new Date(taskData.startTime) : null;
+    const endTime = taskData.endTime ? new Date(taskData.endTime) : null;
     
     // 处理 quota 字段
     const quota = taskData.quota !== undefined ? taskData.quota : 0;
@@ -401,7 +445,7 @@ async function create(taskData) {
         taskData.contentRequirement || null,
         taskData.taskInfo || null,
         taskData.notice || null,
-        taskData.taskStatus || 'not_started'
+        taskData.taskStatus || TaskStatus.NOT_STARTED
       ]
     );
     
@@ -605,15 +649,15 @@ async function update(taskData) {
     }
     
     if (taskData.startTime !== undefined) {
-      const formattedStartTime = formatDateTimeForMySQL(taskData.startTime);
+      const startTime = new Date(taskData.startTime);
       updateFields.push('start_time = ?');
-      params.push(formattedStartTime);
+      params.push(startTime);
     }
     
     if (taskData.endTime !== undefined) {
-      const formattedEndTime = formatDateTimeForMySQL(taskData.endTime);
+      const endTime = new Date(taskData.endTime);
       updateFields.push('end_time = ?');
-      params.push(formattedEndTime);
+      params.push(endTime);
     }
     
     if (taskData.unlimitedQuota !== undefined) {
