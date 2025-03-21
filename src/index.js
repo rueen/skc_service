@@ -16,6 +16,8 @@ const { syncMemberGroups, syncGroupOwnerStatus } = require('./shared/models/sync
 const { removeRedundantFields } = require('./shared/models/migration-remove-redundant');
 // 导入修复member_groups表约束的函数
 const { fixMemberGroupsConstraint } = require('./shared/models/db-fix-member-groups');
+// 导入任务报名表迁移脚本
+const { runMigrations } = require('./shared/models/migration/index');
 
 // 启动应用前初始化数据库
 async function initDatabase() {
@@ -54,6 +56,14 @@ async function initDatabase() {
       console.log('member_groups表约束修复完成:', fixConstraintResult.message);
     } else {
       console.error('member_groups表约束修复失败:', fixConstraintResult.message);
+    }
+    
+    // 执行任务报名表迁移
+    try {
+      await runMigrations();
+      console.log('任务报名表迁移完成');
+    } catch (error) {
+      console.error('任务报名表迁移失败:', error.message);
     }
     
     return true;

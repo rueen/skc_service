@@ -30,6 +30,24 @@ router.get(
 );
 
 /**
+ * @route GET /api/h5/tasks/applications
+ * @desc 获取已报名的任务列表
+ * @access Private
+ */
+router.get(
+  '/applications',
+  authMiddleware.verifyToken,
+  rateLimiterMiddleware.apiLimiter,
+  [
+    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
+    query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
+    query('status').optional().isIn(['applied', 'submitted', 'completed']).withMessage('状态值无效')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  taskController.getAppliedList
+);
+
+/**
  * @route GET /api/h5/tasks/:id
  * @desc 获取任务详情
  * @access Public
@@ -49,12 +67,32 @@ router.get(
 );
 
 /**
- * @route POST /api/h5/tasks/:id/submit
+ * @route POST /api/h5/tasks/apply/:id
+ * @desc 报名任务
+ * @access Private
+ */
+router.post(
+  '/apply/:id',
+  authMiddleware.verifyToken,
+  rateLimiterMiddleware.apiLimiter,
+  [
+    param('id')
+      .notEmpty()
+      .withMessage('任务ID不能为空')
+      .isInt()
+      .withMessage('任务ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  taskController.applyTask
+);
+
+/**
+ * @route POST /api/h5/tasks/submit/:id
  * @desc 提交任务
  * @access Private
  */
 router.post(
-  '/:id/submit',
+  '/submit/:id',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
@@ -71,24 +109,6 @@ router.post(
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.submitTask
-);
-
-/**
- * @route GET /api/h5/tasks/submitted
- * @desc 获取已提交的任务列表
- * @access Private
- */
-router.get(
-  '/submitted',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
-  [
-    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
-    query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
-    query('taskAuditStatus').optional().isIn(['pending', 'approved', 'rejected']).withMessage('审核状态值无效')
-  ],
-  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  taskController.getSubmittedList
 );
 
 module.exports = router; 
