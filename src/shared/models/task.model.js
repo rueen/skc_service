@@ -75,6 +75,11 @@ function formatTask(task) {
   formattedTask.taskInfo = task.task_info;
   formattedTask.taskStatus = task.task_status;
   
+  // 添加已提交数量和剩余名额字段
+  formattedTask.submittedCount = task.submitted_count || 0;
+  // 计算剩余名额：如果不限制名额，返回-1表示无限制；否则返回剩余名额数量
+  formattedTask.remainingQuota = formattedTask.unlimitedQuota ? -1 : Math.max(0, formattedTask.quota - formattedTask.submittedCount);
+  
   // 删除原始字段
   delete formattedTask.start_time;
   delete formattedTask.end_time;
@@ -95,6 +100,7 @@ function formatTask(task) {
   delete formattedTask.task_status;
   delete formattedTask.channel_name;
   delete formattedTask.channel_icon;
+  delete formattedTask.submitted_count;
   
   return formattedTask;
 }
@@ -148,6 +154,27 @@ async function autoUpdateTaskStatus(taskId, startTime, endTime, currentStatus) {
 }
 
 /**
+ * 获取任务已提交数量
+ * @param {number} taskId - 任务ID
+ * @returns {Promise<number>} 已提交数量
+ */
+async function getTaskSubmittedCount(taskId) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT COUNT(*) as count
+       FROM task_applications
+       WHERE task_id = ? AND status = 'submitted'`,
+      [taskId]
+    );
+    
+    return rows[0].count || 0;
+  } catch (error) {
+    logger.error(`获取任务已提交数量失败: ${error.message}`);
+    return 0;
+  }
+}
+
+/**
  * 获取任务列表
  * @param {Object} filters - 筛选条件
  * @param {number} page - 页码
@@ -157,7 +184,8 @@ async function autoUpdateTaskStatus(taskId, startTime, endTime, currentStatus) {
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
     let query = `
-      SELECT t.*, c.name as channel_name, c.icon as channel_icon
+      SELECT t.*, c.name as channel_name, c.icon as channel_icon,
+      (SELECT COUNT(*) FROM task_applications WHERE task_id = t.id AND status = 'submitted') as submitted_count
       FROM tasks t
       LEFT JOIN channels c ON t.channel_id = c.id
     `;
@@ -235,6 +263,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
           endTime: formattedTask.endTime,
           unlimitedQuota: formattedTask.unlimitedQuota,
           quota: formattedTask.quota,
+          submittedCount: formattedTask.submittedCount,
+          remainingQuota: formattedTask.remainingQuota,
           groupMode: formattedTask.groupMode,
           groupIds: formattedTask.groupIds,
           createTime: formattedTask.createTime
@@ -264,11 +294,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
  */
 async function getById(id) {
   try {
-    const [rows] = await pool.query(
-      `SELECT t.*, c.name as channel_name, c.icon as channel_icon
-       FROM tasks t
-       LEFT JOIN channels c ON t.channel_id = c.id
-       WHERE t.id = ?`,
+    let [rows] = await pool.query(
+      `SELECT t.*, c.name as channel_name, c.icon as channel_icon,
+      (SELECT COUNT(*) FROM task_applications WHERE task_id = t.id AND status = 'submitted') as submitted_count
+      FROM tasks t
+      LEFT JOIN channels c ON t.channel_id = c.id
+      WHERE t.id = ?`,
       [id]
     );
     
@@ -280,46 +311,50 @@ async function getById(id) {
     
     // 自动更新任务状态
     if (task.start_time && task.end_time) {
-      await autoUpdateTaskStatus(
+      const statusUpdated = await autoUpdateTaskStatus(
         task.id, 
         new Date(task.start_time), 
         new Date(task.end_time), 
         task.task_status
       );
       
-      // 如果状态可能已更新，重新获取最新的任务数据
-      const [updatedRows] = await pool.query(
-        `SELECT t.*, c.name as channel_name, c.icon as channel_icon
-         FROM tasks t
-         LEFT JOIN channels c ON t.channel_id = c.id
-         WHERE t.id = ?`,
-        [id]
-      );
-      
-      if (updatedRows.length > 0) {
-        task = updatedRows[0];
+      // 如果状态被更新，重新获取最新的任务信息
+      if (statusUpdated) {
+        [rows] = await pool.query(
+          `SELECT t.*, c.name as channel_name, c.icon as channel_icon,
+          (SELECT COUNT(*) FROM task_applications WHERE task_id = t.id AND status = 'submitted') as submitted_count
+          FROM tasks t
+          LEFT JOIN channels c ON t.channel_id = c.id
+          WHERE t.id = ?`,
+          [id]
+        );
+        
+        if (rows.length === 0) {
+          return null;
+        }
+        
+        task = rows[0];
       }
     }
     
-    // 格式化任务数据
     const formattedTask = formatTask(task);
     
-    // 如果有群组ID，获取群组名称
+    // 如果任务有关联的组，获取组信息
     if (formattedTask.groupIds && formattedTask.groupIds.length > 0) {
       try {
-        // 使用 MySQL 的 IN 查询时，需要将数组展开为逗号分隔的字符串
-        const placeholders = formattedTask.groupIds.map(() => '?').join(',');
-        const [groups] = await pool.query(
-          `SELECT id, group_name FROM \`groups\` WHERE id IN (${placeholders})`,
+        const [groupRows] = await pool.query(
+          `SELECT id, group_name
+           FROM groups
+           WHERE id IN (${formattedTask.groupIds.map(() => '?').join(',')})`,
           formattedTask.groupIds
         );
         
-        formattedTask.groups = groups.map(group => ({
+        formattedTask.groups = groupRows.map(group => ({
           id: group.id,
           groupName: group.group_name
         }));
       } catch (error) {
-        logger.error(`获取任务关联群组失败，任务ID: ${id}, 错误: ${error.message}`);
+        logger.error(`获取任务关联组信息失败: ${error.message}`);
         formattedTask.groups = [];
       }
     } else {

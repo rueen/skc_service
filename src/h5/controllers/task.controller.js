@@ -48,11 +48,21 @@ async function getList(req, res) {
         if (applicationStatus) {
           task.applicationStatus = applicationStatus;
         }
+        
+        // 确保剩余名额字段存在
+        if (typeof task.remainingQuota === 'undefined') {
+          task.remainingQuota = task.unlimitedQuota ? -1 : Math.max(0, task.quota - (task.submittedCount || 0));
+        }
       });
     } else {
       // 用户未登录，所有任务都标记为未报名
       result.list.forEach(task => {
         task.isApplied = false;
+        
+        // 确保剩余名额字段存在
+        if (typeof task.remainingQuota === 'undefined') {
+          task.remainingQuota = task.unlimitedQuota ? -1 : Math.max(0, task.quota - (task.submittedCount || 0));
+        }
       });
     }
     
@@ -94,6 +104,11 @@ async function getDetail(req, res) {
     // 如果已报名，添加报名状态
     if (application) {
       task.applicationStatus = application.status;
+    }
+    
+    // 确保剩余名额字段存在
+    if (typeof task.remainingQuota === 'undefined') {
+      task.remainingQuota = task.unlimitedQuota ? -1 : Math.max(0, task.quota - (task.submittedCount || 0));
     }
     
     return responseUtil.success(res, task);
@@ -229,6 +244,14 @@ async function submitTask(req, res) {
       return responseUtil.badRequest(res, '您尚未报名该任务，请先报名后再提交');
     }
     
+    // 检查任务是否已满额
+    if (!task.unlimitedQuota && task.remainingQuota <= 0) {
+      return responseUtil.badRequest(res, '该任务已满额，无法提交');
+    }
+    
+    // 先更新任务报名状态为已提交
+    await taskApplicationModel.updateStatusByTaskAndMember(parseInt(id, 10), memberId, 'submitted');
+    
     // 提交任务
     const result = await taskSubmittedModel.create({
       taskId: parseInt(id, 10),
@@ -236,9 +259,6 @@ async function submitTask(req, res) {
       submitContent,
       submitTime: new Date()
     });
-    
-    // 更新任务报名状态为已提交
-    await taskApplicationModel.updateStatusByTaskAndMember(parseInt(id, 10), memberId, 'submitted');
     
     return responseUtil.success(res, result, '任务提交成功，请等待审核');
   } catch (error) {

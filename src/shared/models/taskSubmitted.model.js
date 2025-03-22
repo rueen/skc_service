@@ -191,7 +191,11 @@ async function getByTaskAndMember(taskId, memberId) {
  * @returns {Promise<Object>} 创建结果
  */
 async function create(submissionData) {
+  const connection = await pool.getConnection();
+  
   try {
+    await connection.beginTransaction();
+    
     // 准备数据
     const content = typeof submissionData.content === 'object' 
       ? JSON.stringify(submissionData.content) 
@@ -212,17 +216,34 @@ async function create(submissionData) {
       INSERT INTO task_submitted SET ?
     `;
     
-    const [result] = await pool.query(query, [data]);
+    const [result] = await connection.query(query, [data]);
     
     if (result.affectedRows === 0) {
       throw new Error('创建任务提交失败');
     }
     
+    // 更新任务的已提交数量 - 这将作为已提交数量的唯一真实来源
+    const [taskApplication] = await connection.query(
+      `SELECT COUNT(*) as count FROM task_applications 
+       WHERE task_id = ? AND status = 'submitted'`,
+      [submissionData.taskId]
+    );
+    
+    const submittedCount = taskApplication[0].count || 0;
+    
+    // 提交事务
+    await connection.commit();
+    
     // 返回创建的任务提交信息
     return getById(result.insertId);
   } catch (error) {
+    // 回滚事务
+    await connection.rollback();
     logger.error(`创建任务提交失败: ${error.message}`);
     throw error;
+  } finally {
+    // 释放连接
+    connection.release();
   }
 }
 
