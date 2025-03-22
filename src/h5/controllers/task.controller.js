@@ -262,11 +262,16 @@ async function submitTask(req, res) {
     // 先更新任务报名状态为已提交
     await taskApplicationModel.updateStatusByTaskAndMember(parseInt(id, 10), memberId, 'submitted');
     
-    // 提交任务
+    // 验证submitContent是否存在
+    if (!submitContent) {
+      return responseUtil.badRequest(res, '提交内容不能为空');
+    }
+    
+    // 提交任务，将submitContent作为content字段的值
     const result = await taskSubmittedModel.create({
       taskId: parseInt(id, 10),
       memberId,
-      submitContent,
+      content: submitContent,
       submitTime: new Date()
     });
     

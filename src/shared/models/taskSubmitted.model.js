@@ -20,7 +20,6 @@ function formatSubmission(submission) {
   
   // 格式化时间字段，使用驼峰命名法
   formattedSubmission.submitTime = formatDateTime(submission.submit_time);
-  formattedSubmission.reviewTime = formatDateTime(submission.review_time);
   formattedSubmission.createTime = formatDateTime(submission.create_time);
   formattedSubmission.updateTime = formatDateTime(submission.update_time);
   
@@ -29,22 +28,19 @@ function formatSubmission(submission) {
   formattedSubmission.memberId = submission.member_id;
   formattedSubmission.memberName = submission.member_name;
   formattedSubmission.taskName = submission.task_name;
-  formattedSubmission.reviewStatus = submission.review_status;
-  formattedSubmission.reviewComment = submission.review_comment;
-  formattedSubmission.reviewerId = submission.reviewer_id;
-  formattedSubmission.reviewerName = submission.reviewer_name;
+  formattedSubmission.submitContent = submission.submit_content;
   
   // 安全解析 JSON 字段
   try {
-    if (typeof submission.content === 'string' && submission.content.trim()) {
-      formattedSubmission.content = JSON.parse(submission.content);
-    } else if (typeof submission.content === 'object') {
-      formattedSubmission.content = submission.content;
+    if (typeof submission.submit_content === 'string' && submission.submit_content.trim()) {
+      formattedSubmission.content = JSON.parse(submission.submit_content);
+    } else if (typeof submission.submit_content === 'object') {
+      formattedSubmission.content = submission.submit_content;
     } else {
       formattedSubmission.content = {};
     }
   } catch (error) {
-    logger.error(`解析 content 失败: ${error.message}, 原始值: ${submission.content}`);
+    logger.error(`解析 submit_content 失败: ${error.message}, 原始值: ${submission.submit_content}`);
     formattedSubmission.content = {};
   }
   
@@ -76,18 +72,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.memberId);
     }
     
-    if (filters.reviewStatus !== undefined) {
-      whereClause += ' AND ts.review_status = ?';
-      queryParams.push(filters.reviewStatus);
-    }
-    
-    // 构建查询语句
+    // 构建查询语句 - 移除waiters表的关联
     const query = `
-      SELECT ts.*, t.task_name, m.nickname as member_name, w.nickname as reviewer_name
+      SELECT ts.*, t.task_name, m.member_nickname as member_name
       FROM task_submitted ts
-      LEFT JOIN task t ON ts.task_id = t.id
-      LEFT JOIN member m ON ts.member_id = m.id
-      LEFT JOIN waiter w ON ts.reviewer_id = w.id
+      LEFT JOIN tasks t ON ts.task_id = t.id
+      LEFT JOIN members m ON ts.member_id = m.id
       WHERE ${whereClause}
       ORDER BY ts.create_time DESC
       LIMIT ? OFFSET ?
@@ -134,11 +124,10 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 async function getById(id) {
   try {
     const query = `
-      SELECT ts.*, t.task_name, m.nickname as member_name, w.nickname as reviewer_name
+      SELECT ts.*, t.task_name, m.member_nickname as member_name
       FROM task_submitted ts
-      LEFT JOIN task t ON ts.task_id = t.id
-      LEFT JOIN member m ON ts.member_id = m.id
-      LEFT JOIN waiter w ON ts.reviewer_id = w.id
+      LEFT JOIN tasks t ON ts.task_id = t.id
+      LEFT JOIN members m ON ts.member_id = m.id
       WHERE ts.id = ?
     `;
     
@@ -164,11 +153,10 @@ async function getById(id) {
 async function getByTaskAndMember(taskId, memberId) {
   try {
     const query = `
-      SELECT ts.*, t.task_name, m.nickname as member_name, w.nickname as reviewer_name
+      SELECT ts.*, t.task_name, m.member_nickname as member_name
       FROM task_submitted ts
-      LEFT JOIN task t ON ts.task_id = t.id
-      LEFT JOIN member m ON ts.member_id = m.id
-      LEFT JOIN waiter w ON ts.reviewer_id = w.id
+      LEFT JOIN tasks t ON ts.task_id = t.id
+      LEFT JOIN members m ON ts.member_id = m.id
       WHERE ts.task_id = ? AND ts.member_id = ?
     `;
     
@@ -197,16 +185,32 @@ async function create(submissionData) {
     await connection.beginTransaction();
     
     // 准备数据
-    const content = typeof submissionData.content === 'object' 
-      ? JSON.stringify(submissionData.content) 
-      : submissionData.content;
+    // 无论content是什么类型，都转换为JSON字符串存储
+    let submitContent = submissionData.content;
+    if (typeof submitContent === 'object') {
+      submitContent = JSON.stringify(submitContent);
+    } else if (typeof submitContent === 'string') {
+      // 如果已经是字符串，尝试验证是否是有效的JSON
+      try {
+        JSON.parse(submitContent);
+        // 如果是有效的JSON字符串，直接使用
+      } catch (e) {
+        // 如果不是有效的JSON，则将其转换为JSON格式
+        submitContent = JSON.stringify({ rawContent: submitContent });
+      }
+    } else if (submitContent !== undefined && submitContent !== null) {
+      // 如果是其他类型，则转换为字符串后再存储
+      submitContent = JSON.stringify({ rawContent: String(submitContent) });
+    } else {
+      // 如果content为undefined或null，则存储空对象
+      submitContent = JSON.stringify({});
+    }
     
     const data = {
       task_id: submissionData.taskId,
       member_id: submissionData.memberId,
-      content: content,
+      submit_content: submitContent,
       submit_time: new Date(),
-      review_status: 0, // 待审核
       create_time: new Date(),
       update_time: new Date()
     };
@@ -249,6 +253,7 @@ async function create(submissionData) {
 
 /**
  * 批量审核任务提交
+ * 注意：该功能当前不可用，因为任务提交表中没有审核相关字段
  * @param {Array} ids - 任务提交ID数组
  * @param {number} reviewStatus - 审核状态 (1: 通过, 2: 拒绝)
  * @param {string} reviewComment - 审核评论
@@ -256,6 +261,9 @@ async function create(submissionData) {
  * @returns {Promise<Object>} 审核结果
  */
 async function batchReview(ids, reviewStatus, reviewComment, reviewerId) {
+  throw new Error('该功能当前不可用，任务提交表中没有审核相关字段');
+  // 以下代码保留供将来参考，当数据库表更新后可能会启用
+  /*
   try {
     if (!Array.isArray(ids) || ids.length === 0) {
       throw new Error('任务提交ID数组不能为空');
@@ -291,12 +299,12 @@ async function batchReview(ids, reviewStatus, reviewComment, reviewerId) {
     logger.error(`批量审核任务提交失败: ${error.message}`);
     throw error;
   }
+  */
 }
 
 module.exports = {
   getList,
   getById,
   getByTaskAndMember,
-  create,
-  batchReview
+  create
 }; 

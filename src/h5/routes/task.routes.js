@@ -106,8 +106,6 @@ router.post(
     body('submitContent')
       .notEmpty()
       .withMessage('提交内容不能为空')
-      .isArray()
-      .withMessage('提交内容必须是数组')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.submitTask
