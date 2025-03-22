@@ -21,6 +21,7 @@ function formatTaskApplication(application) {
     memberId: application.member_id,
     taskName: application.task_name || '',
     channelName: application.channel_name || '',
+    channelIcon: application.channel_icon || '',
     reward: application.reward || 0,
     status: application.status || 'applied', // applied: 已报名, submitted: 已提交, completed: 已完成
     applyTime: formatDateTime(application.apply_time),
@@ -39,7 +40,7 @@ function formatTaskApplication(application) {
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
     let baseQuery = `
-      SELECT ta.*, t.task_name, c.name as channel_name, t.reward
+      SELECT ta.*, t.task_name, c.name as channel_name, c.icon as channel_icon, t.reward
       FROM task_applications ta
       JOIN tasks t ON ta.task_id = t.id
       LEFT JOIN channels c ON t.channel_id = c.id
@@ -107,7 +108,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 async function getById(id) {
   try {
     const [rows] = await pool.query(
-      `SELECT ta.*, t.task_name, c.name as channel_name, t.reward
+      `SELECT ta.*, t.task_name, c.name as channel_name, c.icon as channel_icon, t.reward
        FROM task_applications ta
        JOIN tasks t ON ta.task_id = t.id
        LEFT JOIN channels c ON t.channel_id = c.id
@@ -135,7 +136,7 @@ async function getById(id) {
 async function getByTaskAndMember(taskId, memberId) {
   try {
     const [rows] = await pool.query(
-      `SELECT ta.*, t.task_name, c.name as channel_name, t.reward
+      `SELECT ta.*, t.task_name, c.name as channel_name, c.icon as channel_icon, t.reward
        FROM task_applications ta
        JOIN tasks t ON ta.task_id = t.id
        LEFT JOIN channels c ON t.channel_id = c.id
@@ -162,7 +163,7 @@ async function getByTaskAndMember(taskId, memberId) {
 async function getListByMemberId(memberId) {
   try {
     const [rows] = await pool.query(
-      `SELECT ta.*, t.task_name, c.name as channel_name, t.reward
+      `SELECT ta.*, t.task_name, c.name as channel_name, c.icon as channel_icon, t.reward
        FROM task_applications ta
        JOIN tasks t ON ta.task_id = t.id
        LEFT JOIN channels c ON t.channel_id = c.id

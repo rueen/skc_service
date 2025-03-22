@@ -199,6 +199,11 @@ async function getAppliedList(req, res) {
             item.submitTime = submission.submitTime;
           }
         }
+        
+        // 确保channelIcon字段存在
+        if (!item.channelIcon && item.channelIcon !== '') {
+          item.channelIcon = '';
+        }
       }
     }
     
