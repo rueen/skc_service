@@ -2,8 +2,8 @@
  * 冗余字段迁移脚本
  * 用于完全迁移到关联表并删除members表中的冗余字段
  */
-const { pool } = require('./db');
-const logger = require('../config/logger.config');
+const { pool } = require('../db');
+const logger = require('../../config/logger.config');
 
 /**
  * 迁移数据并删除冗余字段

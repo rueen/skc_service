@@ -2,8 +2,8 @@
  * 数据迁移脚本
  * 用于将现有会员的群组信息迁移到新的member_groups关联表
  */
-const { pool } = require('./db');
-const logger = require('../config/logger.config');
+const { pool } = require('../db');
+const logger = require('../../config/logger.config');
 
 /**
  * 迁移会员群组关系数据
