@@ -30,6 +30,7 @@ function formatTask(task) {
   formattedTask.channelId = task.channel_id;
   formattedTask.taskType = task.task_type;
   formattedTask.channelName = task.channel_name;
+  formattedTask.channelIcon = task.channel_icon;
   formattedTask.reward = task.reward;
   formattedTask.category = task.category;
   
@@ -99,7 +100,6 @@ function formatTask(task) {
   delete formattedTask.task_info;
   delete formattedTask.task_status;
   delete formattedTask.channel_name;
-  delete formattedTask.channel_icon;
   delete formattedTask.submitted_count;
   
   return formattedTask;
@@ -253,8 +253,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
           taskName: formattedTask.taskName,
           taskStatus: formattedTask.taskStatus,
           channelId: formattedTask.channelId,
-          channelName: task.channel_name,
-          channelIcon: task.channel_icon,
+          channelName: formattedTask.channelName,
+          channelIcon: formattedTask.channelIcon,
           reward: formattedTask.reward,
           category: formattedTask.category,
           taskType: formattedTask.taskType,

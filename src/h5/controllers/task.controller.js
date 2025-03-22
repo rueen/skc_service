@@ -111,6 +111,11 @@ async function getDetail(req, res) {
       task.remainingQuota = task.unlimitedQuota ? -1 : Math.max(0, task.quota - (task.submittedCount || 0));
     }
     
+    // 确保channelIcon字段存在于响应中
+    if (!task.channelIcon && task.channelIcon !== '') {
+      task.channelIcon = '';
+    }
+    
     return responseUtil.success(res, task);
   } catch (error) {
     logger.error(`获取任务详情失败: ${error.message}`);
