@@ -6,6 +6,7 @@ const systemConfigModel = require('../../shared/models/system.config.model');
 const { SUCCESS, BAD_REQUEST, NOT_FOUND, SERVER_ERROR } = require('../../shared/config/api.config').STATUS_CODES;
 const { MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
+const responseUtil = require('../../shared/utils/response.util');
 
 /**
  * 获取所有系统配置
@@ -16,17 +17,10 @@ async function getAllConfigs(req, res) {
   try {
     const configs = await systemConfigModel.getAllConfigs();
     
-    return res.json({
-      code: SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: configs
-    });
+    return responseUtil.success(res, configs, '获取所有系统配置成功');
   } catch (error) {
     logger.error(`获取所有系统配置失败: ${error.message}`);
-    return res.status(500).json({
-      code: SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, '获取所有系统配置失败，请稍后重试');
   }
 }
 
@@ -39,31 +33,25 @@ async function getConfigByKey(req, res) {
   try {
     const { key } = req.params;
     
+    if (!key) {
+      return responseUtil.badRequest(res, '配置键不能为空');
+    }
+    
     const config = await systemConfigModel.getConfigByKey(key);
     
     if (!config) {
-      return res.status(404).json({
-        code: NOT_FOUND,
-        message: `配置键 "${key}" 不存在`
-      });
+      return responseUtil.notFound(res, '未找到指定的系统配置');
     }
     
-    return res.json({
-      code: SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: config
-    });
+    return responseUtil.success(res, config, '获取系统配置成功');
   } catch (error) {
-    logger.error(`获取指定键的系统配置失败: ${error.message}`);
-    return res.status(500).json({
-      code: SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    logger.error(`获取系统配置失败: ${error.message}`);
+    return responseUtil.serverError(res, '获取系统配置失败，请稍后重试');
   }
 }
 
 /**
- * 更新指定键的系统配置
+ * 更新系统配置
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
  */
@@ -72,29 +60,28 @@ async function updateConfig(req, res) {
     const { key } = req.params;
     const { value, description } = req.body;
     
-    const success = await systemConfigModel.updateConfig(key, value, description);
-    
-    if (!success) {
-      return res.status(404).json({
-        code: NOT_FOUND,
-        message: `配置键 "${key}" 不存在或更新失败`
-      });
+    if (!key) {
+      return responseUtil.badRequest(res, '配置键不能为空');
     }
     
-    // 获取更新后的配置
-    const updatedConfig = await systemConfigModel.getConfigByKey(key);
+    if (value === undefined) {
+      return responseUtil.badRequest(res, '配置值不能为空');
+    }
     
-    return res.json({
-      code: SUCCESS,
-      message: '配置更新成功',
-      data: updatedConfig
-    });
+    // 检查配置是否存在
+    const existingConfig = await systemConfigModel.getConfigByKey(key);
+    
+    if (!existingConfig) {
+      return responseUtil.notFound(res, '未找到指定的系统配置');
+    }
+    
+    // 更新配置
+    const result = await systemConfigModel.updateConfig(key, value, description);
+    
+    return responseUtil.success(res, { success: result }, '更新系统配置成功');
   } catch (error) {
     logger.error(`更新系统配置失败: ${error.message}`);
-    return res.status(400).json({
-      code: BAD_REQUEST,
-      message: error.message || '更新系统配置失败'
-    });
+    return responseUtil.serverError(res, '更新系统配置失败，请稍后重试');
   }
 }
 
@@ -105,103 +92,92 @@ async function updateConfig(req, res) {
  */
 async function updateConfigs(req, res) {
   try {
-    const { configs } = req.body;
+    const configs = req.body;
     
-    if (!configs || typeof configs !== 'object' || Object.keys(configs).length === 0) {
-      return res.status(400).json({
-        code: BAD_REQUEST,
-        message: '配置数据无效或为空'
-      });
+    if (!Array.isArray(configs) || configs.length === 0) {
+      return responseUtil.badRequest(res, '配置数组不能为空');
     }
     
-    await systemConfigModel.updateConfigs(configs);
-    
-    // 获取更新后的所有配置
-    const updatedConfigs = await systemConfigModel.getAllConfigs();
-    
-    return res.status(200).json({
-      code: SUCCESS,
-      message: '系统配置批量更新成功',
-      data: {
-        updatedKeys: Object.keys(configs),
-        configs: updatedConfigs
+    // 验证每个配置项
+    for (const config of configs) {
+      if (!config.key || config.value === undefined) {
+        return responseUtil.badRequest(res, '每个配置项必须包含key和value字段');
       }
-    });
+    }
+    
+    // 批量更新配置
+    const results = await systemConfigModel.updateConfigs(configs);
+    
+    return responseUtil.success(res, results, '批量更新系统配置成功');
   } catch (error) {
     logger.error(`批量更新系统配置失败: ${error.message}`);
-    return res.status(400).json({
-      code: BAD_REQUEST,
-      message: error.message || '批量更新系统配置失败'
-    });
+    return responseUtil.serverError(res, '批量更新系统配置失败，请稍后重试');
   }
 }
 
 /**
- * 获取群组最大成员数
+ * 获取群组最大成员数配置
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
  */
 async function getMaxGroupMembers(req, res) {
   try {
-    const maxMembers = await systemConfigModel.getMaxGroupMembers();
+    const config = await systemConfigModel.getConfigByKey('MAX_GROUP_MEMBERS');
     
-    return res.json({
-      code: SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: { maxMembers }
-    });
+    if (!config) {
+      return responseUtil.notFound(res, '未找到群组最大成员数配置');
+    }
+    
+    return responseUtil.success(res, {
+      maxGroupMembers: parseInt(config.value, 10)
+    }, '获取群组最大成员数成功');
   } catch (error) {
     logger.error(`获取群组最大成员数失败: ${error.message}`);
-    return res.status(500).json({
-      code: SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, '获取群组最大成员数失败，请稍后重试');
   }
 }
 
 /**
- * 获取群主收益率
+ * 获取群主佣金比例配置
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
  */
 async function getGroupOwnerCommissionRate(req, res) {
   try {
-    const rate = await systemConfigModel.getGroupOwnerCommissionRate();
+    const config = await systemConfigModel.getConfigByKey('GROUP_OWNER_COMMISSION_RATE');
     
-    return res.json({
-      code: SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: { rate }
-    });
+    if (!config) {
+      return responseUtil.notFound(res, '未找到群主佣金比例配置');
+    }
+    
+    return responseUtil.success(res, {
+      commissionRate: parseFloat(config.value)
+    }, '获取群主佣金比例成功');
   } catch (error) {
-    logger.error(`获取群主收益率失败: ${error.message}`);
-    return res.status(500).json({
-      code: SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    logger.error(`获取群主佣金比例失败: ${error.message}`);
+    return responseUtil.serverError(res, '获取群主佣金比例失败，请稍后重试');
   }
 }
 
 /**
- * 获取邀请奖励金额
+ * 获取邀请奖励金额配置
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
  */
 async function getInviteRewardAmount(req, res) {
   try {
-    const amount = await systemConfigModel.getInviteRewardAmount();
+    const config = await systemConfigModel.getConfigByKey('INVITE_REWARD_AMOUNT');
     
-    return res.json({
-      code: SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: { amount }
-    });
+    if (!config) {
+      return responseUtil.notFound(res, '未找到邀请奖励金额配置');
+    }
+    
+    return responseUtil.success(res, {
+      rewardAmount: parseFloat(config.value)
+    }, '获取邀请奖励金额成功');
   } catch (error) {
     logger.error(`获取邀请奖励金额失败: ${error.message}`);
-    return res.status(500).json({
-      code: SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, '获取邀请奖励金额失败，请稍后重试');
   }
 }
 

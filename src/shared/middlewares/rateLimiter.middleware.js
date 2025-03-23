@@ -11,6 +11,7 @@
  */
 const rateLimit = require('express-rate-limit');
 const logger = require('../config/logger.config');
+const responseUtil = require('../utils/response.util');
 // 移除环境变量加载代码
 // require('dotenv').config();
 
@@ -48,7 +49,7 @@ const apiLimiter = rateLimit({
   },
   handler: (req, res, next, options) => {
     logger.warn(`IP ${req.ip} 超过请求限制`);
-    res.status(429).json(options.message);
+    responseUtil.error(res, '请求过于频繁，请稍后再试', 4290, 429);
   }
 });
 
@@ -68,7 +69,7 @@ const loginLimiter = rateLimit({
   },
   handler: (req, res, next, options) => {
     logger.warn(`IP ${req.ip} 登录尝试次数过多`);
-    res.status(429).json(options.message);
+    responseUtil.error(res, '登录尝试次数过多，请1小时后再试', 4290, 429);
   }
 });
 

@@ -26,17 +26,10 @@ async function getList(req, res) {
     // 获取任务列表
     const result = await taskModel.getList(filters, page, pageSize);
     
-    return res.json({
-      code: SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: result
-    });
+    return responseUtil.success(res, result, '获取任务列表成功');
   } catch (error) {
     logger.error(`获取任务列表失败: ${error.message}`);
-    return res.status(500).json({
-      code: SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, '获取任务列表失败，请稍后重试');
   }
 }
 
@@ -49,17 +42,20 @@ async function getDetail(req, res) {
   try {
     const { id } = req.params;
     
-    // 获取任务详情
-    const task = await taskModel.getDetail(parseInt(id, 10));
+    if (!id) {
+      return responseUtil.badRequest(res, '任务ID不能为空');
+    }
     
-    if (!task) {
+    const result = await taskModel.getDetail(id);
+    
+    if (!result) {
       return responseUtil.notFound(res, '任务不存在');
     }
     
-    return responseUtil.success(res, task);
+    return responseUtil.success(res, result, '获取任务详情成功');
   } catch (error) {
     logger.error(`获取任务详情失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '获取任务详情失败，请稍后重试');
   }
 }
 
@@ -70,22 +66,25 @@ async function getDetail(req, res) {
  */
 async function create(req, res) {
   try {
-    const taskData = req.body;
+    // 验证必要参数
+    const { taskName, taskDescription, startTime, endTime, reward, channelId } = req.body;
+    
+    if (!taskName || !taskDescription || !startTime || !endTime || !reward || !channelId) {
+      return responseUtil.badRequest(res, '缺少必要参数');
+    }
     
     // 创建任务
-    const result = await taskModel.create(taskData);
+    const result = await taskModel.create(req.body);
     
-    return res.json({
-      code: SUCCESS,
-      message: '创建任务成功',
-      data: result
-    });
+    return responseUtil.success(res, result, '创建任务成功');
   } catch (error) {
     logger.error(`创建任务失败: ${error.message}`);
-    return res.status(400).json({
-      code: BAD_REQUEST,
-      message: error.message || '创建任务失败'
-    });
+    
+    if (error.message.includes('已存在')) {
+      return responseUtil.badRequest(res, error.message);
+    }
+    
+    return responseUtil.serverError(res, '创建任务失败，请稍后重试');
   }
 }
 
@@ -97,31 +96,32 @@ async function create(req, res) {
 async function update(req, res) {
   try {
     const { id } = req.params;
-    const taskData = {
-      ...req.body,
-      id: parseInt(id, 10)
-    };
     
-    // 更新任务
-    const success = await taskModel.update(taskData);
-    
-    if (!success) {
-      return res.status(404).json({
-        code: NOT_FOUND,
-        message: '任务不存在或更新失败'
-      });
+    if (!id) {
+      return responseUtil.badRequest(res, '任务ID不能为空');
     }
     
-    return res.json({
-      code: SUCCESS,
-      message: '更新任务成功'
-    });
+    // 检查任务是否存在
+    const task = await taskModel.getDetail(id);
+    
+    if (!task) {
+      return responseUtil.notFound(res, '任务不存在');
+    }
+    
+    // 验证必要参数
+    const { taskName, taskDescription, startTime, endTime, reward } = req.body;
+    
+    if (!taskName || !taskDescription || !startTime || !endTime || !reward) {
+      return responseUtil.badRequest(res, '缺少必要参数');
+    }
+    
+    // 更新任务
+    const result = await taskModel.update(id, req.body);
+    
+    return responseUtil.success(res, result, '更新任务成功');
   } catch (error) {
     logger.error(`更新任务失败: ${error.message}`);
-    return res.status(400).json({
-      code: BAD_REQUEST,
-      message: error.message || '更新任务失败'
-    });
+    return responseUtil.serverError(res, '更新任务失败，请稍后重试');
   }
 }
 
@@ -134,93 +134,55 @@ async function remove(req, res) {
   try {
     const { id } = req.params;
     
-    // 删除任务
-    const success = await taskModel.remove(parseInt(id, 10));
-    
-    if (!success) {
-      return res.status(404).json({
-        code: NOT_FOUND,
-        message: '任务不存在或删除失败'
-      });
+    if (!id) {
+      return responseUtil.badRequest(res, '任务ID不能为空');
     }
     
-    return res.json({
-      code: SUCCESS,
-      message: '删除任务成功'
-    });
+    // 检查任务是否存在
+    const task = await taskModel.getDetail(id);
+    
+    if (!task) {
+      return responseUtil.notFound(res, '任务不存在');
+    }
+    
+    // 删除任务
+    const result = await taskModel.remove(id);
+    
+    return responseUtil.success(res, { success: result }, '删除任务成功');
   } catch (error) {
     logger.error(`删除任务失败: ${error.message}`);
-    return res.status(400).json({
-      code: BAD_REQUEST,
-      message: error.message || '删除任务失败'
-    });
+    return responseUtil.serverError(res, '删除任务失败，请稍后重试');
   }
 }
 
 /**
- * 导出任务数据
+ * 导出任务列表
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
  */
 async function exportTasks(req, res) {
   try {
-    const { taskName, taskStatus, channelId } = req.query;
+    const { taskName, taskStatus, channelId, startDate, endDate } = req.query;
     
     // 构建筛选条件
     const filters = {};
     if (taskName) filters.taskName = taskName;
     if (taskStatus) filters.taskStatus = taskStatus;
     if (channelId) filters.channelId = parseInt(channelId, 10);
+    if (startDate) filters.startDate = startDate;
+    if (endDate) filters.endDate = endDate;
     
-    // 获取所有符合条件的任务（不分页）
-    const result = await taskModel.getList(filters, 1, 1000);
+    // 导出任务列表
+    const tasks = await taskModel.exportTasks(filters);
     
-    // 构建CSV数据
-    const fields = [
-      { label: '任务ID', value: 'id' },
-      { label: '任务名称', value: 'taskName' },
-      { label: '渠道', value: 'channelName' },
-      { label: '任务状态', value: 'taskStatus' },
-      { label: '创建时间', value: 'createTime' }
-    ];
+    if (!tasks || tasks.length === 0) {
+      return responseUtil.success(res, [], '没有符合条件的任务数据');
+    }
     
-    // 将任务状态转换为中文
-    const taskStatusMap = {
-      'not_started': '未开始',
-      'processing': '进行中',
-      'ended': '已结束'
-    };
-    
-    const csvData = result.list.map(task => ({
-      ...task,
-      taskStatus: taskStatusMap[task.taskStatus] || task.taskStatus
-    }));
-    
-    // 设置响应头
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename=tasks.csv');
-    
-    // 生成CSV头
-    const header = fields.map(field => field.label).join(',') + '\n';
-    res.write(Buffer.from('\uFEFF' + header)); // 添加BOM，解决中文乱码问题
-    
-    // 生成CSV内容
-    csvData.forEach(task => {
-      const row = fields.map(field => {
-        const value = task[field.value] || '';
-        // 如果值包含逗号，用双引号包裹
-        return value.toString().includes(',') ? `"${value}"` : value;
-      }).join(',');
-      res.write(row + '\n');
-    });
-    
-    res.end();
+    return responseUtil.success(res, tasks, '导出任务列表成功');
   } catch (error) {
-    logger.error(`导出任务数据失败: ${error.message}`);
-    return res.status(500).json({
-      code: SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    logger.error(`导出任务列表失败: ${error.message}`);
+    return responseUtil.serverError(res, '导出任务列表失败，请稍后重试');
   }
 }
 

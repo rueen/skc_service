@@ -75,8 +75,12 @@ async function submitTask(req, res) {
     const { submitContent } = req.body;
     const memberId = req.user.id;
     
+    if (!submitContent) {
+      return responseUtil.badRequest(res, '提交内容不能为空');
+    }
+    
     // 获取任务详情
-    const task = await taskModel.getDetail(parseInt(id, 10), memberId);
+    const task = await taskModel.getDetail(parseInt(id, 10));
     
     if (!task) {
       return responseUtil.notFound(res, '任务不存在');
@@ -91,10 +95,7 @@ async function submitTask(req, res) {
     const existingSubmission = await taskSubmittedModel.getByTaskAndMember(parseInt(id, 10), memberId);
     
     if (existingSubmission) {
-      return res.status(400).json({
-        code: STATUS_CODES.BAD_REQUEST,
-        message: '您已提交过该任务'
-      });
+      return responseUtil.badRequest(res, '您已提交过该任务');
     }
     
     // 提交任务

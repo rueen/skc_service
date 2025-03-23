@@ -8,6 +8,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../models/db');
+const responseUtil = require('../utils/response.util');
 
 /**
  * @api {get} /health 健康检查
@@ -24,17 +25,21 @@ const db = require('../models/db');
  * @apiSuccessExample {json} 成功响应:
  *     HTTP/1.1 200 OK
  *     {
- *       "status": "ok",
- *       "db": {
- *         "status": "connected"
- *       },
- *       "timestamp": "2023-05-20T12:34:56.789Z",
- *       "uptime": "1d 2h 3m 4s",
- *       "memory": {
- *         "rss": "50MB",
- *         "heapTotal": "20MB",
- *         "heapUsed": "15MB",
- *         "external": "2MB"
+ *       "code": 0,
+ *       "message": "健康检查成功",
+ *       "data": {
+ *         "status": "ok",
+ *         "db": {
+ *           "status": "connected"
+ *         },
+ *         "timestamp": "2023-05-20T12:34:56.789Z",
+ *         "uptime": "1d 2h 3m 4s",
+ *         "memory": {
+ *           "rss": "50MB",
+ *           "heapTotal": "20MB",
+ *           "heapUsed": "15MB",
+ *           "external": "2MB"
+ *         }
  *       }
  *     }
  */
@@ -61,12 +66,10 @@ router.get('/', async (req, res) => {
     const memoryUsage = process.memoryUsage();
     const formatMemory = (bytes) => `${Math.round(bytes / 1024 / 1024)}MB`;
 
-    // 返回健康状态
-    res.status(200).json({
+    // 构建健康状态数据
+    const healthData = {
       status: dbStatus === 'connected' ? 'ok' : 'degraded',
-      db: {
-        status: dbStatus
-      },
+      db: { status: dbStatus },
       timestamp: new Date().toISOString(),
       uptime: formattedUptime,
       memory: {
@@ -75,14 +78,13 @@ router.get('/', async (req, res) => {
         heapUsed: formatMemory(memoryUsage.heapUsed),
         external: formatMemory(memoryUsage.external)
       }
-    });
+    };
+
+    // 返回健康状态
+    return responseUtil.success(res, healthData, '健康检查成功');
   } catch (error) {
     console.error('健康检查失败:', error);
-    res.status(500).json({
-      status: 'error',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
+    return responseUtil.serverError(res, '健康检查失败：' + error.message);
   }
 });
 
