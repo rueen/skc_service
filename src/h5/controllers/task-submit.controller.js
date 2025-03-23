@@ -154,12 +154,18 @@ async function getMemberSubmittedTasks(req, res) {
       taskAuditStatus
     };
     
+    // 记录日志，包括请求的筛选条件
+    logger.info(`获取会员已提交任务列表 - 会员ID: ${memberId}, 审核状态筛选: ${taskAuditStatus || '全部'}`);
+    
     // 获取提交列表
     const result = await submittedTaskModel.getList(
       filters,
       parseInt(page, 10),
       parseInt(pageSize, 10)
     );
+    
+    // 记录查询结果
+    logger.info(`会员已提交任务列表查询结果 - 会员ID: ${memberId}, 总数: ${result.total}, 当前页数据量: ${result.list.length}`);
     
     return responseUtil.success(res, result, '获取已提交任务列表成功');
   } catch (error) {

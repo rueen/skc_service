@@ -166,9 +166,19 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     }
     
     if (filters.taskAuditStatus) {
-      query += ' AND st.task_audit_status = ?';
-      countQuery += ' AND st.task_audit_status = ?';
-      queryParams.push(filters.taskAuditStatus);
+      // 检查是否有多个状态值（使用|分隔）
+      if (filters.taskAuditStatus.includes('|')) {
+        const statuses = filters.taskAuditStatus.split('|').map(s => s.trim());
+        const placeholders = statuses.map(() => '?').join(', ');
+        query += ` AND st.task_audit_status IN (${placeholders})`;
+        countQuery += ` AND st.task_audit_status IN (${placeholders})`;
+        queryParams.push(...statuses);
+      } else {
+        // 单个状态值
+        query += ' AND st.task_audit_status = ?';
+        countQuery += ' AND st.task_audit_status = ?';
+        queryParams.push(filters.taskAuditStatus);
+      }
     }
     
     if (filters.groupId) {
