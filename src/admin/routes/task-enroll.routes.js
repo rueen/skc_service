@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-23 14:48:17
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-23 15:08:00
+ * @Description: 
+ */
 /**
  * 管理后台任务报名路由
  */
@@ -10,12 +17,12 @@ const authMiddleware = require('../../shared/middlewares/auth.middleware');
 router.use(authMiddleware.verifyToken, authMiddleware.isAdmin);
 
 // 获取任务报名列表
-router.get('/tasks-enrollment', taskEnrollController.getEnrollmentList);
+router.get('/enrolled-tasks', taskEnrollController.getEnrollmentList);
 
 // 删除任务报名记录
-router.delete('/tasks-enrollment/:id', taskEnrollController.deleteEnrollment);
+router.delete('/task-enroll/:id', taskEnrollController.deleteEnrollment);
 
 // 获取任务报名统计信息
-router.get('/tasks/:taskId/enrollment-stats', taskEnrollController.getEnrollmentStats);
+router.get('/tasks/:taskId/enroll-stats', taskEnrollController.getEnrollmentStats);
 
 module.exports = router; 

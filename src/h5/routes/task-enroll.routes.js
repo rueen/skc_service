@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 11:08:17
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-23 14:41:04
+ * @LastEditTime: 2025-03-23 15:04:14
  * @Description: 
  */
 /**
@@ -21,7 +21,7 @@ router.use(authMiddleware.verifyToken);
  * 报名任务
  * 
  * 请求方式: POST
- * 请求路径: /tasks-enroll/:taskId
+ * 请求路径: /task-enroll/:taskId
  * 路径参数:
  *   - taskId: 任务ID
  * 
@@ -35,13 +35,13 @@ router.use(authMiddleware.verifyToken);
  *   - code: 401，用户未登录
  *   - code: 500，服务器内部错误
  */
-router.post('/tasks-enroll/:taskId', taskEnrollController.enrollTask);
+router.post('/task-enroll/:taskId', taskEnrollController.enrollTask);
 
 /**
  * 获取已报名任务列表
  * 
  * 请求方式: GET
- * 请求路径: /tasks-enrolled
+ * 请求路径: /enrolled-tasks
  * 查询参数:
  *   - page: 页码，默认为1
  *   - pageSize: 每页条数，默认为10
@@ -65,7 +65,7 @@ router.get('/enrolled-tasks', taskEnrollController.getEnrolledTasks);
  * 取消任务报名
  * 
  * 请求方式: DELETE
- * 请求路径: /tasks-enroll/:taskId
+ * 请求路径: /task-enroll/:taskId
  * 路径参数:
  *   - taskId: 要取消报名的任务ID
  * 
@@ -79,13 +79,13 @@ router.get('/enrolled-tasks', taskEnrollController.getEnrolledTasks);
  *   - code: 404，任务不存在
  *   - code: 500，服务器内部错误
  */
-router.delete('/tasks-enroll/:taskId', taskEnrollController.cancelEnrollment);
+router.delete('/task-enroll/:taskId', taskEnrollController.cancelEnrollment);
 
 /**
  * 检查是否已报名任务
  * 
  * 请求方式: GET
- * 请求路径: /tasks-enroll/:taskId/check
+ * 请求路径: /task-enroll/:taskId/check
  * 路径参数:
  *   - taskId: 要检查的任务ID
  * 
@@ -101,6 +101,6 @@ router.delete('/tasks-enroll/:taskId', taskEnrollController.cancelEnrollment);
  *   - code: 404，任务不存在
  *   - code: 500，服务器内部错误
  */
-router.get('/tasks-enroll/:taskId/check', taskEnrollController.checkEnrollment);
+router.get('/task-enroll/:taskId/check', taskEnrollController.checkEnrollment);
 
 module.exports = router; 
