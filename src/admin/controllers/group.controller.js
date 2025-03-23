@@ -5,7 +5,7 @@
 const groupModel = require('../../shared/models/group.model');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
-const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 
 /**
  * 获取群组列表
@@ -14,7 +14,7 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, STATUS_CODES, MESSAGES } = require('../
  */
 async function list(req, res) {
   try {
-    const { page = 1, pageSize = 10, groupName, ownerId, memberId, keyword } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, groupName, ownerId, memberId, keyword } = req.query;
     
     // 构建筛选条件
     const filters = {};

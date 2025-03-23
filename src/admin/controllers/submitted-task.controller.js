@@ -5,6 +5,7 @@
 const submittedTaskModel = require('../../shared/models/submitted-task.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 
 /**
  * 获取已提交任务列表
@@ -14,8 +15,8 @@ const responseUtil = require('../../shared/utils/response.util');
 async function getSubmittedTasks(req, res) {
   try {
     const { 
-      page = 1, 
-      pageSize = 10, 
+      page = DEFAULT_PAGE, 
+      pageSize = DEFAULT_PAGE_SIZE, 
       taskName, 
       channelId, 
       taskAuditStatus,

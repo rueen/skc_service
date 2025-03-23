@@ -6,7 +6,6 @@ const waiterModel = require('../../shared/models/waiter.model');
 const authUtil = require('../../shared/utils/auth.util');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
-const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 
 /**
  * 用户登录

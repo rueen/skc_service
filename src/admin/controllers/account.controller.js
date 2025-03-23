@@ -3,8 +3,6 @@
  * 处理管理端账号相关的业务逻辑
  */
 const accountModel = require('../../shared/models/account.model');
-const memberModel = require('../../shared/models/member.model');
-const channelModel = require('../../shared/models/channel.model');
 const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
@@ -144,7 +142,7 @@ async function getAccounts(req, res) {
     });
   } catch (error) {
     logger.error(`获取账号列表失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '获取账号列表失败');
   }
 }
 
@@ -368,7 +366,7 @@ async function batchResolve(req, res) {
     }, `成功审核通过 ${results.success.length} 个账号，${results.failed.length} 个账号审核失败`);
   } catch (error) {
     logger.error(`批量审核通过账号失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '批量审核通过账号失败');
   }
 }
 
@@ -399,7 +397,7 @@ async function batchReject(req, res) {
     return responseUtil.success(res, { success: true }, `成功拒绝 ${ids.length} 个账号`);
   } catch (error) {
     logger.error(`批量审核拒绝账号失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '批量审核拒绝账号失败');
   }
 }
 

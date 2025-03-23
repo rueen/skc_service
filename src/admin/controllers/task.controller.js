@@ -3,10 +3,9 @@
  * 处理任务相关的业务逻辑
  */
 const taskModel = require('../../shared/models/task.model');
-const { SUCCESS, BAD_REQUEST, NOT_FOUND, SERVER_ERROR } = require('../../shared/config/api.config').STATUS_CODES;
-const { MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 
 /**
  * 获取任务列表
@@ -15,7 +14,7 @@ const responseUtil = require('../../shared/utils/response.util');
  */
 async function getList(req, res) {
   try {
-    const { page = 1, pageSize = 10, taskName, taskStatus, channelId } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, taskName, taskStatus, channelId } = req.query;
     
     // 构建筛选条件
     const filters = {};

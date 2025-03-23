@@ -3,8 +3,6 @@
  * 处理系统配置相关的业务逻辑
  */
 const systemConfigModel = require('../../shared/models/system.config.model');
-const { SUCCESS, BAD_REQUEST, NOT_FOUND, SERVER_ERROR } = require('../../shared/config/api.config').STATUS_CODES;
-const { MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 
