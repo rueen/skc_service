@@ -4,7 +4,6 @@
  */
 const taskModel = require('../../shared/models/task.model');
 const taskSubmittedModel = require('../../shared/models/taskSubmitted.model');
-const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 
@@ -38,7 +37,7 @@ async function getList(req, res) {
     return responseUtil.success(res, result, '获取任务列表成功');
   } catch (error) {
     logger.error(`获取任务列表失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '获取任务列表失败');
   }
 }
 
@@ -73,7 +72,7 @@ async function getDetail(req, res) {
     return responseUtil.success(res, task, '获取任务详情成功');
   } catch (error) {
     logger.error(`获取任务详情失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '获取任务详情失败');
   }
 }
 
@@ -122,7 +121,7 @@ async function submitTask(req, res) {
     return responseUtil.success(res, result, '任务提交成功，请等待审核');
   } catch (error) {
     logger.error(`提交任务失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '提交任务失败');
   }
 }
 
@@ -149,7 +148,7 @@ async function getSubmittedList(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取已提交的任务列表失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '获取已提交的任务列表失败');
   }
 }
 

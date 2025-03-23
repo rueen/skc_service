@@ -2,17 +2,11 @@
  * H5端认证控制器
  * 处理H5端用户认证相关的业务逻辑
  */
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const memberModel = require('../../shared/models/member.model');
-const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
+const { STATUS_CODES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const authUtil = require('../../shared/utils/auth.util');
-
-// JWT密钥和过期时间
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 /**
  * 用户注册

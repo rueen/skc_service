@@ -4,7 +4,6 @@
  */
 const memberModel = require('../../shared/models/member.model');
 const accountModel = require('../../shared/models/account.model');
-const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const groupModel = require('../../shared/models/group.model');
@@ -63,7 +62,7 @@ async function updateProfile(req, res) {
     return responseUtil.success(res, updatedMember, '更新个人资料成功');
   } catch (error) {
     logger.error(`更新会员个人资料失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '更新会员个人资料失败');
   }
 }
 
@@ -82,7 +81,7 @@ async function getAccounts(req, res) {
     return responseUtil.success(res, accounts);
   } catch (error) {
     logger.error(`获取会员账号列表失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '获取会员账号列表失败');
   }
 }
 
@@ -144,7 +143,7 @@ async function getAccountDetail(req, res) {
     return responseUtil.success(res, formattedAccount);
   } catch (error) {
     logger.error(`获取账号详情失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '获取账号详情失败');
   }
 }
 
@@ -182,7 +181,7 @@ async function addAccount(req, res) {
     return responseUtil.success(res, newAccount, '添加账号成功，请等待审核');
   } catch (error) {
     logger.error(`添加会员账号失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '添加会员账号失败');
   }
 }
 
@@ -243,7 +242,7 @@ async function updateAccount(req, res) {
     return responseUtil.success(res, { success: true }, '更新账号成功，请等待审核');
   } catch (error) {
     logger.error(`更新账号失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '更新账号失败');
   }
 }
 
@@ -289,7 +288,7 @@ async function deleteAccount(req, res) {
     return responseUtil.success(res, result, '删除账号成功');
   } catch (error) {
     logger.error(`删除账号失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '删除账号失败');
   }
 }
 
@@ -308,7 +307,7 @@ async function getOwnedGroups(req, res) {
     return responseUtil.success(res, groups);
   } catch (error) {
     logger.error(`获取会员群组列表失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '获取会员群组列表失败');
   }
 }
 
@@ -371,7 +370,7 @@ async function getGroupMembers(req, res) {
     return responseUtil.success(res, formattedMembers);
   } catch (error) {
     logger.error(`获取群成员列表失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '获取群成员列表失败');
   }
 }
 

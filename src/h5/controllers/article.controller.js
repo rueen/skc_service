@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-20 21:55:31
+ * @LastEditTime: 2025-03-23 19:30:45
  * @Description: 
  */
 /**
@@ -10,7 +10,6 @@
  * 处理H5端文章相关的业务逻辑
  */
 const articleModel = require('../../shared/models/article.model');
-const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 
@@ -34,7 +33,7 @@ async function getList(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取文章列表失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '获取文章列表失败');
   }
 }
 
@@ -59,7 +58,7 @@ async function getDetail(req, res) {
     return responseUtil.success(res, article);
   } catch (error) {
     logger.error(`获取文章详情失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '获取文章详情失败');
   }
 }
 
@@ -82,7 +81,7 @@ async function getDetailByLocation(req, res) {
     return responseUtil.success(res, article);
   } catch (error) {
     logger.error(`通过位置标识获取文章详情失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res, '通过位置标识获取文章详情失败');
   }
 }
 

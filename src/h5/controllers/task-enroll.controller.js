@@ -4,7 +4,6 @@
  */
 const enrolledTaskModel = require('../../shared/models/enrolled-task.model');
 const logger = require('../../shared/config/logger.config');
-const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 const responseUtil = require('../../shared/utils/response.util');
 
 /**
