@@ -106,9 +106,25 @@ async function create(enrollData) {
 async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
     let query = `
-      SELECT et.*, t.task_name, t.reward, t.task_status
+      SELECT 
+        et.id,
+        et.task_id,
+        et.member_id,
+        et.enroll_time,
+        et.create_time,
+        et.update_time,
+        t.task_name, 
+        t.reward, 
+        t.task_status, 
+        t.start_time, 
+        t.end_time, 
+        t.category,
+        t.task_type,
+        c.name as channel_name,
+        c.icon as channel_icon
       FROM enrolled_tasks et
       LEFT JOIN tasks t ON et.task_id = t.id
+      LEFT JOIN channels c ON t.channel_id = c.id
       WHERE 1=1
     `;
     
@@ -137,7 +153,28 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
     const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
     
     const total = countResult[0].total;
-    const formattedList = rows.map(row => formatEnrolledTask(row));
+    
+    // 格式化任务列表，只保留驼峰命名格式字段
+    const formattedList = rows.map(row => {
+      // 创建只包含驼峰格式字段的对象
+      return {
+        id: row.id,
+        taskId: row.task_id,
+        memberId: row.member_id,
+        enrollTime: formatDateTime(row.enroll_time),
+        createTime: formatDateTime(row.create_time),
+        updateTime: formatDateTime(row.update_time),
+        taskName: row.task_name,
+        reward: row.reward,
+        taskStatus: row.task_status,
+        startTime: formatDateTime(row.start_time),
+        endTime: formatDateTime(row.end_time),
+        category: row.category,
+        taskType: row.task_type,
+        channelName: row.channel_name,
+        channelIcon: row.channel_icon
+      };
+    });
     
     return {
       total,

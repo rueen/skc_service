@@ -27,7 +27,13 @@ async function enrollTask(req, res) {
       memberId
     });
     
-    return responseUtil.success(res, result, '任务报名成功');
+    // 确保响应使用驼峰格式
+    const responseData = {
+      id: result.id,
+      // 其他可能的驼峰字段...
+    };
+    
+    return responseUtil.success(res, responseData, '任务报名成功');
   } catch (error) {
     logger.error(`任务报名失败: ${error.message}`);
     
@@ -53,12 +59,18 @@ async function getEnrolledTasks(req, res) {
     const { page = 1, pageSize = 10, taskId } = req.query;
     const memberId = req.user.id;
     
+    // 添加调试日志，记录用户状态
+    logger.info(`获取已报名任务列表API - 会员ID: ${memberId || '未登录'}`);
+    
     // 获取已报名任务列表
     const result = await enrolledTaskModel.getListByMember(
       { memberId, taskId: taskId ? parseInt(taskId, 10) : undefined },
       parseInt(page, 10),
       parseInt(pageSize, 10)
     );
+    
+    // 添加完整的调试日志，包括返回的任务数量
+    logger.info(`已报名任务列表返回 - 会员ID: ${memberId}, 任务数量: ${result.list.length}`);
     
     return responseUtil.success(res, result, '获取已报名任务列表成功');
   } catch (error) {
@@ -84,6 +96,7 @@ async function cancelEnrollment(req, res) {
     // 取消报名
     const result = await enrolledTaskModel.cancel(parseInt(taskId, 10), memberId);
     
+    // 确保响应使用驼峰格式
     return responseUtil.success(res, { success: result }, '取消任务报名成功');
   } catch (error) {
     logger.error(`取消任务报名失败: ${error.message}`);
@@ -114,6 +127,7 @@ async function checkEnrollment(req, res) {
     // 检查是否已报名
     const enrollment = await enrolledTaskModel.checkEnrollment(parseInt(taskId, 10), memberId);
     
+    // 确保响应使用驼峰格式字段
     return responseUtil.success(
       res, 
       {

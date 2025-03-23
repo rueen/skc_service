@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 11:08:17
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-23 11:36:21
+ * @LastEditTime: 2025-03-23 14:41:04
  * @Description: 
  */
 /**
@@ -59,7 +59,7 @@ router.post('/tasks-enroll/:taskId', taskEnrollController.enrollTask);
  *   - code: 401，用户未登录
  *   - code: 500，服务器内部错误
  */
-router.get('/tasks-enrolled', taskEnrollController.getEnrolledTasks);
+router.get('/enrolled-tasks', taskEnrollController.getEnrolledTasks);
 
 /**
  * 取消任务报名
