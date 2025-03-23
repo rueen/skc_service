@@ -5,6 +5,7 @@
 const submittedTaskModel = require('../../shared/models/submitted-task.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 
 /**
  * 提交任务
@@ -144,7 +145,7 @@ async function checkSubmission(req, res) {
  */
 async function getMemberSubmittedTasks(req, res) {
   try {
-    const { page = 1, pageSize = 10, taskAuditStatus } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, taskAuditStatus } = req.query;
     const memberId = req.user.id;
     
     // 构建筛选条件
