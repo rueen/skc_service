@@ -19,6 +19,7 @@ const memberRoutes = require('./member.routes');
 const taskRoutes = require('./task.routes');
 const accountRoutes = require('./account.routes');
 const systemConfigRoutes = require('./system.config.routes');
+const taskEnrollRoutes = require('./task-enroll.routes');
 
 const router = express.Router();
 
@@ -54,6 +55,9 @@ router.use(`${API_PREFIX}/accounts`, accountRoutes);
 
 // 系统配置路由
 router.use('/api/support/system/configs', systemConfigRoutes);
+
+// 任务报名管理路由
+router.use(`${API_PREFIX}`, taskEnrollRoutes);
 
 // 在这里添加其他路由
 // router.use(`${API_PREFIX}/taskSubmitted`, taskSubmittedRoutes);

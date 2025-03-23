@@ -6,6 +6,7 @@ const taskModel = require('../../shared/models/task.model');
 const { SUCCESS, BAD_REQUEST, NOT_FOUND, SERVER_ERROR } = require('../../shared/config/api.config').STATUS_CODES;
 const { MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
+const responseUtil = require('../../shared/utils/response.util');
 
 /**
  * 获取任务列表
@@ -49,26 +50,16 @@ async function getDetail(req, res) {
     const { id } = req.params;
     
     // 获取任务详情
-    const task = await taskModel.getById(parseInt(id, 10));
+    const task = await taskModel.getDetail(parseInt(id, 10));
     
     if (!task) {
-      return res.status(404).json({
-        code: NOT_FOUND,
-        message: '任务不存在'
-      });
+      return responseUtil.notFound(res, '任务不存在');
     }
     
-    return res.json({
-      code: SUCCESS,
-      message: MESSAGES.SUCCESS,
-      data: task
-    });
+    return responseUtil.success(res, task);
   } catch (error) {
     logger.error(`获取任务详情失败: ${error.message}`);
-    return res.status(500).json({
-      code: SERVER_ERROR,
-      message: error.message || MESSAGES.SERVER_ERROR
-    });
+    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
   }
 }
 

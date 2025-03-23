@@ -58,6 +58,24 @@ CREATE TABLE IF NOT EXISTS task_submitted (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='已提交任务表';
 `;
 
+// 创建已报名任务表
+const createEnrolledTasksTable = `
+CREATE TABLE IF NOT EXISTS enrolled_tasks (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '报名ID',
+  task_id bigint(20) NOT NULL COMMENT '关联任务ID',
+  member_id bigint(20) NOT NULL COMMENT '关联会员ID',
+  enroll_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '报名时间',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_task_member (task_id, member_id) COMMENT '同一会员只能报名同一任务一次',
+  KEY idx_task_id (task_id),
+  KEY idx_member_id (member_id),
+  KEY idx_enroll_time (enroll_time),
+  KEY idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='已报名任务表';
+`;
+
 // 创建账号表
 const createAccountsTable = `
 CREATE TABLE IF NOT EXISTS accounts (
@@ -282,6 +300,7 @@ async function initTables() {
     // 创建所有表
     await connection.query(createTasksTable);
     await connection.query(createTaskSubmittedTable);
+    await connection.query(createEnrolledTasksTable);
     await connection.query(createAccountsTable);
     await connection.query(createMembersTable);
     await connection.query(createChannelsTable);

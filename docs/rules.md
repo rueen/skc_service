@@ -94,16 +94,7 @@ src/
    - DELETE: 删除资源
 
 3. **响应格式**:
-```json
-{
-  "code": 200,
-  "data": {},
-  "message": "操作成功"
-}
-```
-
-4. **错误响应**:
-   - 响应状态码配置在`src/shared/config/api.config.js`文件中
+   - 统一使用响应工具函数 `src/shared/utils/response.util.js`
 
 ## 业务规则
 

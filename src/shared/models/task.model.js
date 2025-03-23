@@ -225,14 +225,15 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 }
 
 /**
- * 根据ID获取任务详情
+ * 获取任务详情
  * @param {number} id - 任务ID
- * @returns {Promise<Object|null>} 任务详情或null
+ * @param {number} memberId - 会员ID (可选)，用于查询是否已报名
+ * @returns {Promise<Object>} 任务详情
  */
-async function getById(id) {
+async function getDetail(id, memberId = null) {
   try {
     const [rows] = await pool.query(
-      `SELECT t.*, c.name as channel_name
+      `SELECT t.*, c.name as channel_name, c.icon as channel_icon
        FROM tasks t
        LEFT JOIN channels c ON t.channel_id = c.id
        WHERE t.id = ?`,
@@ -243,46 +244,49 @@ async function getById(id) {
       return null;
     }
     
-    try {
-      const task = formatTask(rows[0]);
-      
-      // 如果有群组ID，获取群组名称
-      if (task.groupIds && task.groupIds.length > 0) {
-        try {
-          // 修复：使用 MySQL 的 IN 查询时，需要将数组展开为逗号分隔的字符串
-          const placeholders = task.groupIds.map(() => '?').join(',');
-          const [groups] = await pool.query(
-            `SELECT id, group_name FROM \`groups\` WHERE id IN (${placeholders})`,
-            task.groupIds
-          );
-          
-          task.groups = groups.map(group => ({
-            id: group.id,
-            groupName: group.group_name
-          }));
-        } catch (error) {
-          logger.error(`获取任务关联群组失败，任务ID: ${id}, 错误: ${error.message}`);
-          task.groups = [];
-        }
-      } else {
+    const task = formatTask(rows[0]);
+    
+    // 如果有群组ID，获取群组名称
+    if (task.groupIds && task.groupIds.length > 0) {
+      try {
+        // 使用 MySQL 的 IN 查询
+        const placeholders = task.groupIds.map(() => '?').join(',');
+        const [groups] = await pool.query(
+          `SELECT id, group_name FROM \`groups\` WHERE id IN (${placeholders})`,
+          task.groupIds
+        );
+        
+        task.groups = groups.map(group => ({
+          id: group.id,
+          groupName: group.group_name
+        }));
+      } catch (error) {
+        logger.error(`获取任务关联群组失败，任务ID: ${id}, 错误: ${error.message}`);
         task.groups = [];
       }
-      
-      return task;
-    } catch (error) {
-      logger.error(`格式化任务详情失败，任务ID: ${id}, 错误: ${error.message}`);
-      
-      // 返回基本信息，避免完全失败
-      return {
-        id: rows[0].id,
-        taskName: rows[0].task_name,
-        channelId: rows[0].channel_id,
-        channelName: rows[0].channel_name,
-        taskStatus: rows[0].task_status,
-        createTime: formatDateTime(rows[0].create_time),
-        error: '任务详情格式化失败，请联系管理员'
-      };
+    } else {
+      task.groups = [];
     }
+    
+    // 如果提供了会员ID，检查是否已报名
+    if (memberId) {
+      const [enrollResult] = await pool.query(
+        'SELECT id FROM enrolled_tasks WHERE task_id = ? AND member_id = ?',
+        [id, memberId]
+      );
+      task.isEnrolled = enrollResult.length > 0;
+    } else {
+      task.isEnrolled = false;
+    }
+    
+    // 获取报名人数
+    const [enrollCountResult] = await pool.query(
+      'SELECT COUNT(*) as count FROM enrolled_tasks WHERE task_id = ?',
+      [id]
+    );
+    task.enrollCount = enrollCountResult[0].count;
+    
+    return task;
   } catch (error) {
     logger.error(`获取任务详情失败: ${error.message}`);
     throw error;
@@ -723,7 +727,7 @@ async function remove(id) {
 
 module.exports = {
   getList,
-  getById,
+  getDetail,
   create,
   update,
   remove,

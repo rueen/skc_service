@@ -43,9 +43,10 @@ async function getList(req, res) {
 async function getDetail(req, res) {
   try {
     const { id } = req.params;
+    const memberId = req.user ? req.user.id : null;
     
     // 获取任务详情
-    const task = await taskModel.getById(parseInt(id, 10));
+    const task = await taskModel.getDetail(parseInt(id, 10), memberId);
     
     if (!task) {
       return responseUtil.notFound(res, '任务不存在');
@@ -75,7 +76,7 @@ async function submitTask(req, res) {
     const memberId = req.user.id;
     
     // 获取任务详情
-    const task = await taskModel.getById(parseInt(id, 10));
+    const task = await taskModel.getDetail(parseInt(id, 10), memberId);
     
     if (!task) {
       return responseUtil.notFound(res, '任务不存在');
