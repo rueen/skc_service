@@ -152,19 +152,32 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
 }
 
 /**
- * 检查会员是否已报名任务
+ * 检查会员是否已报名任务并返回报名详情
  * @param {number} taskId - 任务ID
  * @param {number} memberId - 会员ID
- * @returns {Promise<boolean>} 是否已报名
+ * @returns {Promise<Object>} 包含是否已报名和报名ID的对象
  */
-async function hasEnrolled(taskId, memberId) {
+async function checkEnrollment(taskId, memberId) {
   try {
+    const parsedTaskId = parseInt(taskId, 10);
+    const parsedMemberId = parseInt(memberId, 10);
+    
+    logger.debug(`检查报名状态 - 任务ID: ${parsedTaskId}, 会员ID: ${parsedMemberId}`);
+    
     const [rows] = await pool.query(
       'SELECT id FROM enrolled_tasks WHERE task_id = ? AND member_id = ?',
-      [taskId, memberId]
+      [parsedTaskId, parsedMemberId]
     );
     
-    return rows.length > 0;
+    const isEnrolled = rows.length > 0;
+    const enrollmentId = isEnrolled ? rows[0].id : null;
+    
+    logger.info(`报名状态检查结果 - 任务ID: ${parsedTaskId}, 会员ID: ${parsedMemberId}, 是否已报名: ${isEnrolled}, 报名ID: ${enrollmentId}`);
+    
+    return {
+      isEnrolled,
+      enrollmentId
+    };
   } catch (error) {
     logger.error(`检查会员是否已报名任务失败: ${error.message}`);
     throw error;
@@ -182,10 +195,13 @@ async function cancel(taskId, memberId) {
   try {
     await connection.beginTransaction();
     
+    const parsedTaskId = parseInt(taskId, 10);
+    const parsedMemberId = parseInt(memberId, 10);
+    
     // 验证是否已报名
     const [enrolls] = await connection.query(
       'SELECT id FROM enrolled_tasks WHERE task_id = ? AND member_id = ?',
-      [taskId, memberId]
+      [parsedTaskId, parsedMemberId]
     );
     
     if (enrolls.length === 0) {
@@ -195,7 +211,7 @@ async function cancel(taskId, memberId) {
     // 删除报名记录
     const [result] = await connection.query(
       'DELETE FROM enrolled_tasks WHERE task_id = ? AND member_id = ?',
-      [taskId, memberId]
+      [parsedTaskId, parsedMemberId]
     );
     
     await connection.commit();
@@ -213,7 +229,7 @@ async function cancel(taskId, memberId) {
 module.exports = {
   create,
   getListByMember,
-  hasEnrolled,
+  checkEnrollment,
   cancel,
   formatEnrolledTask
 }; 

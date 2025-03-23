@@ -36,6 +36,41 @@ const verifyToken = (req, res, next) => {
 };
 
 /**
+ * 可选的令牌验证
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ * @param {Function} next - 下一个中间件函数
+ */
+const optionalVerifyToken = (req, res, next) => {
+  try {
+    // 从请求头中提取令牌
+    const token = authUtil.extractTokenFromHeader(req);
+    if (!token) {
+      // 如果没有提供令牌，继续处理但用户信息为null
+      req.user = null;
+      return next();
+    }
+    
+    // 验证令牌
+    const decoded = authUtil.verifyToken(token);
+    if (!decoded) {
+      // 如果令牌无效，继续处理但用户信息为null
+      req.user = null;
+      return next();
+    }
+    
+    // 将用户信息添加到请求对象
+    req.user = decoded;
+    next();
+  } catch (error) {
+    // 捕获任何错误，记录日志，但仍然继续
+    logger.error(`可选令牌验证失败: ${error.message}`);
+    req.user = null;
+    next();
+  }
+};
+
+/**
  * 限制访问权限
  * @param {Array} roles - 允许访问的角色列表
  * @returns {Function} 中间件函数
@@ -100,6 +135,7 @@ const restrictToOwner = (getResourceOwnerId) => {
 
 module.exports = {
   verifyToken,
+  optionalVerifyToken,
   restrictTo,
   restrictToOwner,
   isAdmin

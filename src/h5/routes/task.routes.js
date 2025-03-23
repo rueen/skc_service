@@ -26,6 +26,7 @@ router.get(
     query('category').optional().isString().withMessage('任务类别必须是字符串')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  authMiddleware.optionalVerifyToken,
   taskController.getList
 );
 
@@ -45,6 +46,7 @@ router.get(
       .withMessage('任务ID必须是整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  authMiddleware.optionalVerifyToken,
   taskController.getDetail
 );
 

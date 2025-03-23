@@ -129,9 +129,10 @@ function formatDateTimeForMySQL(dateTimeString) {
  * @param {Object} filters - 筛选条件
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
- * @returns {Promise<Object>} 任务列表和总数
+ * @param {number} memberId - 会员ID (可选)，用于查询是否已报名
+ * @returns {Promise<Object>} 包含列表、总数、页码、页大小的对象
  */
-async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
+async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberId = null) {
   try {
     let query = `
       SELECT t.*, c.name as channel_name, c.icon as channel_icon
@@ -181,11 +182,37 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const [rows] = await pool.query(query, queryParams);
     const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
     
+    // 提前导入enrolled-task.model
+    const enrolledTaskModel = memberId ? require('./enrolled-task.model') : null;
+    
     // 安全处理每个任务记录
     const formattedList = [];
     for (const task of rows) {
       try {
         const formattedTask = formatTask(task);
+        const taskId = parseInt(task.id, 10);
+        
+        // 初始化报名状态
+        let isEnrolled = false;
+        let enrollmentId = null;
+        
+        // 如果提供了会员ID，使用checkEnrollment检查报名状态
+        if (memberId) {
+          try {
+            // 使用与getDetail相同的方法检查报名状态
+            const enrollmentResult = await enrolledTaskModel.checkEnrollment(taskId, memberId);
+            isEnrolled = enrollmentResult.isEnrolled;
+            enrollmentId = enrollmentResult.enrollmentId;
+            
+            // 记录日志，用于调试报名状态
+            logger.debug(`任务列表项(使用checkEnrollment) - 任务ID: ${taskId}, 会员ID: ${memberId}, 是否已报名: ${isEnrolled}, 报名ID: ${enrollmentId || '无'}`);
+          } catch (error) {
+            logger.error(`检查任务列表项报名状态失败 - 任务ID: ${taskId}, 会员ID: ${memberId}, 错误: ${error.message}`);
+            isEnrolled = false;
+            enrollmentId = null;
+          }
+        }
+        
         // 返回更多的任务信息
         formattedList.push({
           id: formattedTask.id,
@@ -204,7 +231,9 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
           quota: formattedTask.quota,
           groupMode: formattedTask.groupMode,
           groupIds: formattedTask.groupIds,
-          createTime: formattedTask.createTime
+          createTime: formattedTask.createTime,
+          isEnrolled: isEnrolled,
+          enrollmentId: enrollmentId
         });
       } catch (error) {
         logger.error(`格式化任务失败，任务ID: ${task.id}, 错误: ${error.message}`);
@@ -270,13 +299,24 @@ async function getDetail(id, memberId = null) {
     
     // 如果提供了会员ID，检查是否已报名
     if (memberId) {
-      const [enrollResult] = await pool.query(
-        'SELECT id FROM enrolled_tasks WHERE task_id = ? AND member_id = ?',
-        [id, memberId]
-      );
-      task.isEnrolled = enrollResult.length > 0;
+      try {
+        // 直接使用enrolled-task模型的checkEnrollment函数
+        const enrolledTaskModel = require('./enrolled-task.model');
+        const enrollmentResult = await enrolledTaskModel.checkEnrollment(task.id, memberId);
+        
+        task.isEnrolled = enrollmentResult.isEnrolled;
+        task.enrollmentId = enrollmentResult.enrollmentId;
+        
+        // 记录日志，用于调试报名状态
+        logger.info(`任务详情(使用checkEnrollment) - 任务ID: ${id}, 会员ID: ${memberId}, 是否已报名: ${task.isEnrolled}, 报名ID: ${task.enrollmentId}`);
+      } catch (error) {
+        logger.error(`检查任务报名状态失败: ${error.message}`);
+        task.isEnrolled = false;
+        task.enrollmentId = null;
+      }
     } else {
       task.isEnrolled = false;
+      task.enrollmentId = null;
     }
     
     // 获取报名人数
