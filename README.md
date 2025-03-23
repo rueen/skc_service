@@ -165,4 +165,65 @@ docker-compose up -d
 
 ## 许可证
 
-[MIT](LICENSE) 
+[MIT](LICENSE)
+
+# 任务提交模块说明
+
+## 表结构
+
+### 已提交任务表 (submitted_tasks)
+
+| 字段名 | 类型 | 说明 |
+|-------|------|------|
+| id | INT | 自增主键 |
+| task_id | INT | 任务ID |
+| member_id | INT | 会员ID |
+| submit_time | TIMESTAMP | 提交时间 |
+| submit_content | JSON | 提交内容 |
+| task_audit_status | ENUM | 任务审核状态：待审核(pending)、已通过(approved)、已拒绝(rejected) |
+| waiter_id | INT | 审核员ID |
+| reject_reason | TEXT | 拒绝原因 |
+| create_time | TIMESTAMP | 创建时间 |
+| update_time | TIMESTAMP | 更新时间 |
+
+## API 接口
+
+### H5端接口
+
+- `POST /api/h5/task-submit` - 提交任务
+- `GET /api/h5/submitted-tasks/:id` - 获取已提交任务详情
+- `GET /api/h5/task-submit/check/:taskId` - 检查任务提交状态
+- `GET /api/h5/submitted-tasks` - 获取会员已提交任务列表
+
+### Support端接口
+
+- `GET /api/support/submitted-tasks` - 获取已提交任务列表
+- `GET /api/support/submitted-tasks/:id` - 获取已提交任务详情
+- `POST /api/support/submitted-tasks/batch-approve` - 批量审核通过
+- `POST /api/support/submitted-tasks/batch-reject` - 批量审核拒绝
+
+## 业务逻辑说明
+
+1. **任务提交流程**：
+   - 会员必须先报名任务才能提交
+   - 只能提交状态为"进行中"的任务
+   - 任务提交后状态为"待审核"
+   - 已拒绝的任务可以重新提交
+   - 已通过或待审核状态的任务不能重复提交
+
+2. **任务审核流程**：
+   - 管理员可以批量审核通过或拒绝任务
+   - 审核通过后，系统自动创建任务收入账单
+   - 如果设置了群主奖励比例，会同时创建群主奖励账单
+
+3. **查询功能**：
+   - H5端：会员可以查看自己的提交记录
+   - Support端：管理员可以根据任务名称、渠道、审核状态、群组等条件筛选提交记录
+
+## 数据迁移
+
+执行以下命令创建数据表：
+
+```bash
+node src/shared/migrations/create_submitted_tasks_table.js
+``` 

@@ -100,7 +100,7 @@ const isAdmin = (req, res, next) => {
     return responseUtil.unauthorized(res, '未授权');
   }
   
-  if (req.user.role !== 'admin') {
+  if (!req.user.isAdmin) {
     return responseUtil.forbidden(res, '需要管理员权限');
   }
   
