@@ -9,6 +9,8 @@ const healthRoutes = require('../shared/routes/health.routes');
 const { router: sharedRoutes, setAppType } = require('../shared/routes');
 const logger = require('../shared/config/logger.config');
 const errorHandler = require('../shared/middlewares/errorHandler.middleware');
+const { startScheduler } = require('../shared/services/task-scheduler.service');
+const { taskStatusUpdateConfig, schedulerServiceConfig } = require('../shared/config/scheduler.config');
 
 // 加载环境变量
 require('dotenv').config({ path: '.env.admin' });
@@ -64,6 +66,19 @@ async function startServer() {
       
       if (process.env.NODE_ENV !== 'production') {
         logger.info('开发模式: 管理后台API可在 http://localhost:3002/api/support 访问');
+      }
+      
+      // 仅当配置指定管理后台服务负责定时任务时才启动
+      const currentService = 'admin';
+      if (schedulerServiceConfig.taskStatusUpdateService === currentService) {
+        // 启动任务状态更新定时任务
+        const env = process.env.NODE_ENV || 'development';
+        const schedulerConfig = taskStatusUpdateConfig[env] || taskStatusUpdateConfig.development;
+        
+        startScheduler(schedulerConfig);
+        logger.info(`已启动任务状态更新定时任务，环境: ${env}，调度周期: ${schedulerConfig.schedule}`);
+      } else {
+        logger.info(`任务状态更新定时任务配置为在 ${schedulerServiceConfig.taskStatusUpdateService} 服务中运行，不在此实例中启动`);
       }
     });
   } catch (error) {

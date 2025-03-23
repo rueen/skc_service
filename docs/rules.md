@@ -157,3 +157,25 @@ src/
 
 ## 注意事项
    - 时间遵循 'YYYY-MM-DD HH:mm:ss' 格式
+
+## 定时任务
+
+系统包含以下定时任务：
+
+1. **任务状态更新**
+   - 功能：自动根据任务的开始和结束时间更新任务状态
+   - 任务可能状态：未开始(not_started)、进行中(processing)、已结束(ended)
+   - 更新频率：
+     - 开发环境：每3分钟更新一次
+     - 生产环境：每1分钟更新一次
+     - 测试环境：每5分钟更新一次
+   - 配置文件：`src/shared/config/scheduler.config.js`
+   - 服务实例：默认在管理后台(admin)服务中运行，可通过配置修改为在H5(h5)服务中运行
+
+2. **相关API**
+   - 手动触发任务状态更新：POST `/api/task-scheduler/trigger-update`
+   - 重新配置定时任务：POST `/api/task-scheduler/reconfigure`
+   - 获取当前配置：GET `/api/task-scheduler/config`
+   - 设置运行服务实例：POST `/api/task-scheduler/set-service`
+   
+注意：定时任务API仅限管理员使用，需要管理员权限

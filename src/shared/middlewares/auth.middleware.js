@@ -55,6 +55,24 @@ const restrictTo = (roles = []) => {
 };
 
 /**
+ * 限制只有管理员才能访问
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ * @param {Function} next - 下一个中间件函数
+ */
+const isAdmin = (req, res, next) => {
+  if (!req.user) {
+    return responseUtil.unauthorized(res, '未授权');
+  }
+  
+  if (req.user.role !== 'admin') {
+    return responseUtil.forbidden(res, '需要管理员权限');
+  }
+  
+  next();
+};
+
+/**
  * 限制只有资源所有者才能访问
  * @param {Function} getResourceOwnerId - 获取资源所有者ID的函数
  * @returns {Function} 中间件函数
@@ -83,5 +101,6 @@ const restrictToOwner = (getResourceOwnerId) => {
 module.exports = {
   verifyToken,
   restrictTo,
-  restrictToOwner
+  restrictToOwner,
+  isAdmin
 }; 
