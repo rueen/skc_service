@@ -99,6 +99,7 @@ async function create(enrollData) {
  * @param {Object} filters - 筛选条件
  * @param {number} filters.memberId - 会员ID
  * @param {number} filters.taskId - 任务ID (可选)
+ * @param {boolean} filters.excludeSubmitted - 是否排除已提交的任务 (可选，默认false)
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
  * @returns {Promise<Object>} 任务列表和总数
@@ -125,10 +126,28 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
       FROM enrolled_tasks et
       LEFT JOIN tasks t ON et.task_id = t.id
       LEFT JOIN channels c ON t.channel_id = c.id
-      WHERE 1=1
     `;
     
-    let countQuery = 'SELECT COUNT(*) as total FROM enrolled_tasks et WHERE 1=1';
+    // 如果需要排除已提交的任务，添加LEFT JOIN到submitted_tasks表
+    if (filters.excludeSubmitted) {
+      query += `
+        LEFT JOIN submitted_tasks st ON et.task_id = st.task_id AND et.member_id = st.member_id
+      `;
+    }
+    
+    query += ' WHERE 1=1';
+    
+    let countQuery = 'SELECT COUNT(*) as total FROM enrolled_tasks et';
+    
+    // 如果需要排除已提交的任务，添加LEFT JOIN到submitted_tasks表
+    if (filters.excludeSubmitted) {
+      countQuery += `
+        LEFT JOIN submitted_tasks st ON et.task_id = st.task_id AND et.member_id = st.member_id
+      `;
+    }
+    
+    countQuery += ' WHERE 1=1';
+    
     const queryParams = [];
     
     // 添加筛选条件
@@ -142,6 +161,12 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
       query += ' AND et.task_id = ?';
       countQuery += ' AND et.task_id = ?';
       queryParams.push(filters.taskId);
+    }
+    
+    // 如果需要排除已提交的任务
+    if (filters.excludeSubmitted) {
+      query += ' AND st.id IS NULL';
+      countQuery += ' AND st.id IS NULL';
     }
     
     // 添加排序和分页

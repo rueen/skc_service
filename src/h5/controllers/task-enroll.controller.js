@@ -55,21 +55,25 @@ async function enrollTask(req, res) {
  */
 async function getEnrolledTasks(req, res) {
   try {
-    const { page = 1, pageSize = 10, taskId } = req.query;
+    const { page = 1, pageSize = 10, taskId, excludeSubmitted } = req.query;
     const memberId = req.user.id;
     
     // 添加调试日志，记录用户状态
-    logger.info(`获取已报名任务列表API - 会员ID: ${memberId || '未登录'}`);
+    logger.info(`获取已报名任务列表API - 会员ID: ${memberId || '未登录'}, 是否排除已提交: ${excludeSubmitted === 'true'}`);
     
     // 获取已报名任务列表
     const result = await enrolledTaskModel.getListByMember(
-      { memberId, taskId: taskId ? parseInt(taskId, 10) : undefined },
+      { 
+        memberId, 
+        taskId: taskId ? parseInt(taskId, 10) : undefined,
+        excludeSubmitted: excludeSubmitted === 'true' // 将字符串参数转换为布尔值
+      },
       parseInt(page, 10),
       parseInt(pageSize, 10)
     );
     
     // 添加完整的调试日志，包括返回的任务数量
-    logger.info(`已报名任务列表返回 - 会员ID: ${memberId}, 任务数量: ${result.list.length}`);
+    logger.info(`已报名任务列表返回 - 会员ID: ${memberId}, 任务数量: ${result.list.length}, 是否排除已提交: ${excludeSubmitted === 'true'}`);
     
     return responseUtil.success(res, result, '获取已报名任务列表成功');
   } catch (error) {
