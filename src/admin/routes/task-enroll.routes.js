@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 14:48:17
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-23 15:08:00
+ * @LastEditTime: 2025-03-23 16:34:27
  * @Description: 
  */
 /**
@@ -11,7 +11,7 @@
 const express = require('express');
 const router = express.Router();
 const taskEnrollController = require('../controllers/task-enroll.controller');
-const authMiddleware = require('../../shared/middlewares/auth.middleware');
+const authMiddleware = require('../middlewares/auth.middleware');
 
 // 需要先验证管理员身份
 router.use(authMiddleware.verifyToken, authMiddleware.isAdmin);

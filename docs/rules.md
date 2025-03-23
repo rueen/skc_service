@@ -42,6 +42,30 @@ src/
    - API前缀: `/api/h5`
    - 主要功能: 用户登录注册、任务报名、任务提交、提现申请等
 
+### 小二权限说明
+
+系统采用基于账号（小二账号）的权限控制，不同账号拥有不同的权限。管理员账号默认拥有所有权限。
+小二账号权限存放在 waiters 表中的 permissions 字段。管理员默认拥有所有权限
+
+| 权限标识 | 说明 | 功能描述 |
+|---------|------|----------|
+| task:list | 任务管理 | 查看任务列表 |
+| task:create | 创建任务 | 新建任务 |
+| task:edit | 编辑任务 | 修改任务信息 |
+| task:submitted | 已提交任务 | 已提交列表 |
+| task:submittedDetail | 已提交任务详情 | 查看已提交任务详情 |
+| account:list | 账号审核列表 | 查看账号审核列表 |
+| member:list | 会员管理 | 查看会员列表 |
+| member:create | 创建会员 | 新建会员 |
+| member:edit | 编辑会员 | 修改会员信息 |
+| member:view | 查看会员 | 查看会员详情 |
+| channel:list | 渠道管理 | 管理渠道信息 |
+| group:list | 群组管理 | 管理群组信息 |
+| waiter:list | 小二管理 | 管理小二账号 |
+| settlement:withdrawal | 提现账单 | 管理提现申请 |
+| settlement:otherBills | 其他账单 | 管理其他类型账单 |
+| article:list | 文章管理 | 管理系统文章内容 |
+
 ## 数据模型规范
 
 系统使用MySQL数据库，主要数据模型包括:
