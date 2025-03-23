@@ -123,6 +123,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         st.task_audit_status,
         st.waiter_id,
         st.reject_reason,
+        st.submit_content,
         t.task_name,
         t.reward,
         t.channel_id,
@@ -194,6 +195,22 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     // 格式化任务列表，转换为驼峰命名格式
     const formattedList = rows.map(row => {
+      // 解析JSON格式的提交内容
+      let submitContent = {};
+      try {
+        if (row.submit_content) {
+          // 检查是否已经是对象，避免重复解析
+          if (typeof row.submit_content === 'object' && row.submit_content !== null) {
+            submitContent = row.submit_content;
+          } else if (typeof row.submit_content === 'string') {
+            submitContent = JSON.parse(row.submit_content);
+          }
+        }
+      } catch (error) {
+        logger.error(`解析提交内容JSON失败: ${error.message}, 原始内容类型: ${typeof row.submit_content}`);
+        submitContent = {};
+      }
+      
       return {
         id: row.id,
         taskId: row.task_id,
@@ -207,6 +224,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         groupName: row.group_name,
         isGroupOwner: !!row.is_group_owner,
         reward: row.reward,
+        submitContent: submitContent,
         submitTime: formatDateTime(row.submit_time),
         taskAuditStatus: row.task_audit_status,
         waiterId: row.waiter_id,
@@ -258,11 +276,18 @@ async function getById(id) {
     const row = rows[0];
     
     // 解析JSON格式的提交内容
-    let submitContent;
+    let submitContent = {};
     try {
-      submitContent = JSON.parse(row.submit_content);
+      if (row.submit_content) {
+        // 检查是否已经是对象，避免重复解析
+        if (typeof row.submit_content === 'object' && row.submit_content !== null) {
+          submitContent = row.submit_content;
+        } else if (typeof row.submit_content === 'string') {
+          submitContent = JSON.parse(row.submit_content);
+        }
+      }
     } catch (error) {
-      logger.error(`解析提交内容JSON失败: ${error.message}`);
+      logger.error(`解析提交内容JSON失败: ${error.message}, 原始内容类型: ${typeof row.submit_content}`);
       submitContent = {};
     }
     
@@ -433,11 +458,18 @@ async function getByTaskAndMember(taskId, memberId) {
     const row = rows[0];
     
     // 解析JSON格式的提交内容
-    let submitContent;
+    let submitContent = {};
     try {
-      submitContent = JSON.parse(row.submit_content);
+      if (row.submit_content) {
+        // 检查是否已经是对象，避免重复解析
+        if (typeof row.submit_content === 'object' && row.submit_content !== null) {
+          submitContent = row.submit_content;
+        } else if (typeof row.submit_content === 'string') {
+          submitContent = JSON.parse(row.submit_content);
+        }
+      }
     } catch (error) {
-      logger.error(`解析提交内容JSON失败: ${error.message}`);
+      logger.error(`解析提交内容JSON失败: ${error.message}, 原始内容类型: ${typeof row.submit_content}`);
       submitContent = {};
     }
     
