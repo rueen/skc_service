@@ -143,10 +143,16 @@ src/
    - 提交后的任务才可以在后台审核
    - 任务审核状态：待审核(pending)、已通过(approved)、已拒绝(rejected)
 
-6. **账单(Bill)**:
+6. **奖励计算逻辑**
+   - 任务审核通过后，该会员即可获得任务详情配置的任务奖励(reward)
+   - 首次任务：会员第一次审核通过的任务
+   - 邀请奖励：会员完成首次任务后，该会员的邀请人（如果有的话）获得固定金额的奖励，奖励金额配置在系统配置中`invite_reward_amount`
+   - 会员完成非首次任务后，该会员所在群组的群主可以获得任务奖励(reward)的固定比例，群主收益率配置在系统配置中 `group_owner_commission_rate`
+
+7. **账单(Bill)**:
    - 类型: 提现(withdrawal)、任务收入(task_income)、邀请奖励(invite_reward)、群主奖励(group_reward)
 
-7. **提现(Withdrawal)**:
+8. **提现(Withdrawal)**:
    - 状态: 待处理(pending)、提现成功(success)、提现失败(failed)
 
 ## 开发建议

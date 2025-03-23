@@ -332,12 +332,9 @@ async function batchApprove(ids, waiterId) {
     // 获取已通过任务的关联信息，用于生成账单
     const [tasks] = await connection.query(
       `SELECT 
-        st.id, st.task_id, st.member_id, t.reward, 
-        t.group_reward_percent, mg.group_id, g_table.owner_id
+        st.id, st.task_id, st.member_id, t.reward
       FROM submitted_tasks st
       JOIN tasks t ON st.task_id = t.id
-      LEFT JOIN member_groups mg ON st.member_id = mg.member_id
-      LEFT JOIN \`groups\` g_table ON mg.group_id = g_table.id
       WHERE st.id IN (?) AND st.task_audit_status = 'approved'`,
       [ids]
     );
@@ -347,8 +344,8 @@ async function batchApprove(ids, waiterId) {
       // 创建任务完成收入记录
       await connection.query(
         `INSERT INTO bills 
-         (member_id, amount, bill_type, bill_status, related_id, description) 
-         VALUES (?, ?, 'task_income', 'completed', ?, ?)`,
+         (member_id, amount, bill_type, settlement_status, related_id, remark) 
+         VALUES (?, ?, 'task_income', 'settled', ?, ?)`,
         [
           task.member_id,
           task.reward,
@@ -357,25 +354,12 @@ async function batchApprove(ids, waiterId) {
         ]
       );
       
-      // 如果有群组奖励，且会员属于某个群组，且群主不是会员本人
-      if (task.group_reward_percent > 0 && task.group_id && task.owner_id && task.owner_id !== task.member_id) {
-        const groupOwnerReward = Math.floor(task.reward * (task.group_reward_percent / 100));
-        
-        if (groupOwnerReward > 0) {
-          // 创建群主奖励收入记录
-          await connection.query(
-            `INSERT INTO bills 
-             (member_id, amount, bill_type, bill_status, related_id, description) 
-             VALUES (?, ?, 'group_reward', 'completed', ?, ?)`,
-            [
-              task.owner_id,
-              groupOwnerReward,
-              task.id,
-              `群成员[ID:${task.member_id}]完成任务[ID:${task.task_id}]的群主奖励`
-            ]
-          );
-        }
-      }
+      // TODO: 群组奖励计算逻辑（后续补充）
+      // 1. 检查任务是否设置了群组奖励比例
+      // 2. 检查会员是否属于某个群组
+      // 3. 检查群主是否是会员本人
+      // 4. 计算群主奖励金额
+      // 5. 如果有奖励，创建群主奖励记录
     }
     
     await connection.commit();
