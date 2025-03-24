@@ -349,7 +349,7 @@ async function batchApprove(ids, waiterId) {
       [ids]
     );
     
-    // 任务收入账单记录
+    // 任务收益账单记录
     for (const task of tasks) {
       // 创建任务完成收入记录
       await connection.query(

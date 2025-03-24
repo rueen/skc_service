@@ -111,7 +111,7 @@ const WithdrawalStatusLang = {
 // 账单类型枚举
 const BillType = {
   WITHDRAWAL: 'withdrawal',      // 提现
-  TASK_INCOME: 'task_income',    // 任务收入
+  TASK_INCOME: 'task_income',    // 任务收益
   INVITE_REWARD: 'invite_reward', // 邀请奖励
   GROUP_REWARD: 'group_reward'   // 群主奖励
 };
@@ -122,7 +122,7 @@ const BillTypeLang = {
     'en-US': 'Withdrawal'
   },
   [BillType.TASK_INCOME]: {
-    'zh-CN': '任务收入',
+    'zh-CN': '任务收益',
     'en-US': 'Task Income'
   },
   [BillType.INVITE_REWARD]: {

@@ -194,7 +194,7 @@ const createBillsTable = `
 CREATE TABLE IF NOT EXISTS bills (
   id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '账单ID',
   member_id bigint(20) NOT NULL COMMENT '会员ID',
-  bill_type varchar(20) NOT NULL COMMENT '账单类型：withdrawal-提现，task_income-任务收入，invite_reward-邀请奖励，group_reward-群主奖励',
+  bill_type varchar(20) NOT NULL COMMENT '账单类型：withdrawal-提现，task_income-任务收益，invite_reward-邀请奖励，group_reward-群主奖励',
   amount decimal(10,2) NOT NULL COMMENT '金额',
   related_id bigint(20) DEFAULT NULL COMMENT '关联ID',
   settlement_status varchar(20) NOT NULL DEFAULT 'settled' COMMENT '结算状态：settled-已结算，failed-结算失败',
