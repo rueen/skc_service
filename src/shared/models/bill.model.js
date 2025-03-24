@@ -5,6 +5,7 @@
 const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
+const { formatDateTime } = require('../utils/date.util');
 
 /**
  * 获取会员账单列表
@@ -50,17 +51,17 @@ async function getMemberBills(memberId, options = {}) {
     const [rows] = await pool.query(
       `SELECT 
         b.id,
-        b.member_id,
-        b.bill_type,
+        b.member_id as memberId,
+        b.bill_type as billType,
         b.amount,
-        b.settlement_status,
-        b.task_id,
-        b.related_member_id,
-        b.failure_reason,
-        b.create_time,
-        b.update_time,
-        t.task_name,
-        m.member_nickname as related_member_nickname
+        b.settlement_status as settlementStatus,
+        b.task_id as taskId,
+        b.related_member_id as relatedMemberId,
+        b.failure_reason as failureReason,
+        b.create_time as createTime,
+        b.update_time as updateTime,
+        t.task_name as taskName,
+        m.member_nickname as relatedMemberNickname
       FROM bills b
       LEFT JOIN tasks t ON b.task_id = t.id
       LEFT JOIN members m ON b.related_member_id = m.id
@@ -70,11 +71,18 @@ async function getMemberBills(memberId, options = {}) {
       [...params, offset, parseInt(pageSize, 10)]
     );
     
+    // 格式化日期时间
+    const formattedRows = rows.map(row => ({
+      ...row,
+      createTime: formatDateTime(row.createTime),
+      updateTime: formatDateTime(row.updateTime)
+    }));
+    
     return {
       total,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10),
-      list: rows
+      list: formattedRows
     };
   } catch (error) {
     logger.error(`获取会员账单列表失败: ${error.message}`);
@@ -129,18 +137,18 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
     const [rows] = await pool.query(
       `SELECT 
         b.id,
-        b.member_id,
-        m.member_nickname,
-        b.bill_type,
+        b.member_id as memberId,
+        m.member_nickname as memberNickname,
+        b.bill_type as billType,
         b.amount,
-        b.settlement_status,
-        b.task_id,
-        b.related_member_id,
-        b.failure_reason,
-        b.create_time,
-        b.update_time,
-        t.task_name,
-        rm.member_nickname as related_member_nickname
+        b.settlement_status as settlementStatus,
+        b.task_id as taskId,
+        b.related_member_id as relatedMemberId,
+        b.failure_reason as failureReason,
+        b.create_time as createTime,
+        b.update_time as updateTime,
+        t.task_name as taskName,
+        rm.member_nickname as relatedMemberNickname
       FROM bills b
       JOIN members m ON b.member_id = m.id
       LEFT JOIN tasks t ON b.task_id = t.id
@@ -151,11 +159,18 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
       [...params, offset, parseInt(pageSize, 10)]
     );
     
+    // 格式化日期时间
+    const formattedRows = rows.map(row => ({
+      ...row,
+      createTime: formatDateTime(row.createTime),
+      updateTime: formatDateTime(row.updateTime)
+    }));
+    
     return {
       total,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10),
-      list: rows
+      list: formattedRows
     };
   } catch (error) {
     logger.error(`获取所有账单列表失败: ${error.message}`);
