@@ -4,7 +4,7 @@
  */
 
 // API 前缀
-const API_PREFIX = '/api/support';
+const API_PREFIX = '/api/admin';
 const PUBLIC_API_PREFIX = '/api';
 
 // 分页默认值
