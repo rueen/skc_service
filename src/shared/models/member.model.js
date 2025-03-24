@@ -20,6 +20,7 @@ function formatMember(member) {
     id: member.id,
     memberNickname: member.member_nickname,
     memberAccount: member.member_account,
+    password: member.password,
     inviterId: member.inviter_id,
     inviterNickname: member.inviter_nickname,
     occupation: member.occupation,
@@ -181,6 +182,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const formattedMembers = members.map(member => {
       // 使用成员基本信息格式化
       const formattedMember = formatMember(member);
+      // 移除敏感信息
+      delete formattedMember.password;
       
       // 添加群组信息数组
       formattedMember.groups = groupsMap[member.id] || [];
