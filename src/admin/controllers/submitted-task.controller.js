@@ -1,6 +1,6 @@
 /**
  * 已提交任务控制器 - 管理后台
- * 处理Support端任务审核相关业务逻辑
+ * 处理任务审核相关业务逻辑
  */
 const submittedTaskModel = require('../../shared/models/submitted-task.model');
 const logger = require('../../shared/config/logger.config');

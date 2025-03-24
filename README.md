@@ -195,7 +195,7 @@ docker-compose up -d
 - `GET /api/h5/task-submit/check/:taskId` - 检查任务提交状态
 - `GET /api/h5/submitted-tasks` - 获取会员已提交任务列表
 
-### Support端接口
+### admin端接口
 
 - `GET /api/admin/submitted-tasks` - 获取已提交任务列表
 - `GET /api/admin/submitted-tasks/:id` - 获取已提交任务详情
@@ -218,7 +218,7 @@ docker-compose up -d
 
 3. **查询功能**：
    - H5端：会员可以查看自己的提交记录
-   - Support端：管理员可以根据任务名称、渠道、审核状态、群组等条件筛选提交记录
+   - admin端：管理员可以根据任务名称、渠道、审核状态、群组等条件筛选提交记录
 
 ## 数据迁移
 

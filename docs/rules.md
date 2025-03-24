@@ -2,13 +2,13 @@
 
 ## 项目概述
 
-这是一个基于Node.js的社交营销协作服务平台，分为Support端（管理后台）和H5端（用户前端）两个服务。系统支持会员管理、任务管理、群组管理、账单管理等功能。
+这是一个基于Node.js的社交营销协作服务平台，分为admin端（管理后台）和H5端（用户前端）两个服务。系统支持会员管理、任务管理、群组管理、账单管理等功能。
 
 ## 项目结构
 
 ```
 src/
-├── admin/                # Support端（管理后台）代码
+├── admin/                # admin端（管理后台）代码
 │   ├── admin-server.js   # 管理后台服务入口文件
 │   ├── controllers/      # 控制器目录
 │   ├── routes/           # 路由目录
@@ -30,7 +30,7 @@ src/
 
 ## 服务说明
 
-1. **Support端服务 (管理后台)**
+1. **admin端服务 (管理后台)**
    - 入口文件: `src/admin/admin-server.js`
    - 端口: 3002 (默认)
    - API前缀: `/api/admin`
@@ -62,8 +62,8 @@ src/
 | channel:list | 渠道管理 | 管理渠道信息 |
 | group:list | 群组管理 | 管理群组信息 |
 | waiter:list | 小二管理 | 管理小二账号 |
-| settlement:withdrawal | 提现账单 | 管理提现申请 |
-| settlement:otherBills | 其他账单 | 管理其他类型账单 |
+| settlement:withdrawal | 提现管理 | 管理提现申请 |
+| settlement:bills | 结算账单 | 结算账单 |
 | article:list | 文章管理 | 管理系统文章内容 |
 
 ## 数据模型规范
@@ -144,18 +144,12 @@ src/
    - 任务审核状态：待审核(pending)、已通过(approved)、已拒绝(rejected)
 
 6. **奖励计算逻辑**
-
-
-7. **账单(Bill)**:
-   - 类型: 提现(withdrawal)、任务奖励(task_reward)、邀请奖励(invite_reward)、群主收益(group_owner_commission)
-
-8. **提现(Withdrawal)**:
-   - 状态: 待处理(pending)、提现成功(success)、提现失败(failed)
+   - 参考 `docs/reward_calculation.md`
 
 ## 开发建议
 
 1. **添加新功能**:
-   - 先确定是Support端还是H5端功能
+   - 先确定是admin端还是H5端功能
    - 按照MVC模式添加相应的路由、控制器、模型
    - 遵循现有代码风格和命名规范
 
