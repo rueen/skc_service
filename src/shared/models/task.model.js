@@ -29,6 +29,7 @@ function formatTask(task) {
   formattedTask.channelId = task.channel_id;
   formattedTask.taskType = task.task_type;
   formattedTask.channelName = task.channel_name;
+  formattedTask.channelIcon = task.channel_icon;
   formattedTask.reward = task.reward;
   formattedTask.category = task.category;
   
