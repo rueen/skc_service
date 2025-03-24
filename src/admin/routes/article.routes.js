@@ -19,7 +19,7 @@ const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.midd
 const router = express.Router();
 
 /**
- * @route GET /api/support/articles/:id
+ * @route GET /api/admin/articles/:id
  * @desc 获取文章
  * @access Public
  */
@@ -36,7 +36,7 @@ router.get(
 );
 
 /**
- * @route GET /api/support/articles
+ * @route GET /api/admin/articles
  * @desc 获取文章列表
  * @access Private
  */
@@ -54,7 +54,7 @@ router.get(
 );
 
 /**
- * @route POST /api/support/articles
+ * @route POST /api/admin/articles
  * @desc 添加文章
  * @access Private
  */
@@ -81,7 +81,7 @@ router.post(
 );
 
 /**
- * @route PUT /api/support/articles/:id
+ * @route PUT /api/admin/articles/:id
  * @desc 更新文章
  * @access Private
  */
@@ -113,7 +113,7 @@ router.put(
 );
 
 /**
- * @route DELETE /api/support/articles/:id
+ * @route DELETE /api/admin/articles/:id
  * @desc 删除文章
  * @access Private
  */

@@ -23,7 +23,7 @@ router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
- * @route GET /api/support/accounts
+ * @route GET /api/admin/accounts
  * @desc 获取账号列表
  * @access Private - Admin
  */
@@ -33,7 +33,7 @@ router.get(
 );
 
 /**
- * @route POST /api/support/accounts/batchResolve
+ * @route POST /api/admin/accounts/batchResolve
  * @desc 批量审核通过账号
  * @access Private - Admin
  */
@@ -51,7 +51,7 @@ router.post(
 );
 
 /**
- * @route POST /api/support/accounts/batchReject
+ * @route POST /api/admin/accounts/batchReject
  * @desc 批量审核拒绝账号
  * @access Private - Admin
  */

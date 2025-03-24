@@ -16,7 +16,7 @@ router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
- * @route GET /api/support/waiters
+ * @route GET /api/admin/waiters
  * @desc 获取小二列表
  * @access Private (需要 waiter:list 权限)
  */
@@ -27,7 +27,7 @@ router.get(
 );
 
 /**
- * @route POST /api/support/waiters
+ * @route POST /api/admin/waiters
  * @desc 创建小二
  * @access Private (需要管理员权限)
  */
@@ -65,7 +65,7 @@ router.post(
 );
 
 /**
- * @route PUT /api/support/waiters/:id
+ * @route PUT /api/admin/waiters/:id
  * @desc 更新小二信息
  * @access Private (需要管理员权限)
  */
@@ -106,7 +106,7 @@ router.put(
 );
 
 /**
- * @route DELETE /api/support/waiters/:id
+ * @route DELETE /api/admin/waiters/:id
  * @desc 删除小二
  * @access Private (需要管理员权限)
  */

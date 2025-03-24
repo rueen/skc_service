@@ -23,7 +23,7 @@ async function uploadImage(req, res) {
       ? (process.env.ADMIN_PORT || 3002)
       : (process.env.H5_PORT || 3001);
     const BASE_PATH = appType === 'admin'
-      ? (process.env.ADMIN_BASE_URL || '/api/support')
+      ? (process.env.ADMIN_BASE_URL || '/api/admin')
       : (process.env.H5_BASE_URL || '/api/h5');
     
     // 构建完整的图片访问路径

@@ -17,7 +17,7 @@ router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
- * @route GET /api/support/members
+ * @route GET /api/admin/members
  * @desc 获取会员列表
  * @access Private (需要 member:list 权限)
  */
@@ -35,7 +35,7 @@ router.get(
 );
 
 /**
- * @route GET /api/support/members/:id
+ * @route GET /api/admin/members/:id
  * @desc 获取会员详情
  * @access Private (需要 member:view 权限)
  */
@@ -54,7 +54,7 @@ router.get(
 );
 
 /**
- * @route POST /api/support/members
+ * @route POST /api/admin/members
  * @desc 创建会员
  * @access Private (需要 member:create 权限)
  */
@@ -116,7 +116,7 @@ router.post(
 );
 
 /**
- * @route PUT /api/support/members/:id
+ * @route PUT /api/admin/members/:id
  * @desc 更新会员
  * @access Private (需要 member:edit 权限)
  */
@@ -169,7 +169,7 @@ router.put(
 );
 
 /**
- * @route DELETE /api/support/members/:id
+ * @route DELETE /api/admin/members/:id
  * @desc 删除会员
  * @access Private (需要 member:edit 权限)
  */

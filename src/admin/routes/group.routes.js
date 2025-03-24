@@ -16,7 +16,7 @@ router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
- * @route GET /api/support/groups
+ * @route GET /api/admin/groups
  * @desc 获取群组列表
  * @access Private
  */
@@ -35,7 +35,7 @@ router.get(
 );
 
 /**
- * @route GET /api/support/groups/:id
+ * @route GET /api/admin/groups/:id
  * @desc 获取群组详情
  * @access Private
  */
@@ -53,7 +53,7 @@ router.get(
 );
 
 /**
- * @route POST /api/support/groups
+ * @route POST /api/admin/groups
  * @desc 创建群组
  * @access Private
  */
@@ -80,7 +80,7 @@ router.post(
 );
 
 /**
- * @route PUT /api/support/groups/:id
+ * @route PUT /api/admin/groups/:id
  * @desc 更新群组
  * @access Private
  */
@@ -115,7 +115,7 @@ router.put(
 );
 
 /**
- * @route DELETE /api/support/groups/:id
+ * @route DELETE /api/admin/groups/:id
  * @desc 删除群组
  * @access Private
  */

@@ -12,7 +12,7 @@ const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.midd
 const router = express.Router();
 
 /**
- * @route GET /api/support/channels
+ * @route GET /api/admin/channels
  * @desc 获取渠道列表
  * @access Private
  */
@@ -30,7 +30,7 @@ router.get(
 );
 
 /**
- * @route GET /api/support/channels/:id
+ * @route GET /api/admin/channels/:id
  * @desc 获取渠道详情
  * @access Private
  */
@@ -50,7 +50,7 @@ router.get(
 );
 
 /**
- * @route POST /api/support/channels
+ * @route POST /api/admin/channels
  * @desc 添加渠道
  * @access Private
  */
@@ -77,7 +77,7 @@ router.post(
 );
 
 /**
- * @route PUT /api/support/channels/:id
+ * @route PUT /api/admin/channels/:id
  * @desc 更新渠道
  * @access Private
  */
@@ -109,7 +109,7 @@ router.put(
 );
 
 /**
- * @route DELETE /api/support/channels/:id
+ * @route DELETE /api/admin/channels/:id
  * @desc 删除渠道
  * @access Private
  */

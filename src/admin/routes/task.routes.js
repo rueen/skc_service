@@ -16,7 +16,7 @@ router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
- * @route GET /api/support/tasks
+ * @route GET /api/admin/tasks
  * @desc 获取任务列表
  * @access Private (需要 task:list 权限)
  */
@@ -35,7 +35,7 @@ router.get(
 );
 
 /**
- * @route GET /api/support/tasks/export
+ * @route GET /api/admin/tasks/export
  * @desc 导出任务数据
  * @access Private (需要 task:list 权限)
  */
@@ -52,7 +52,7 @@ router.get(
 );
 
 /**
- * @route GET /api/support/tasks/:id
+ * @route GET /api/admin/tasks/:id
  * @desc 获取任务详情
  * @access Private (需要 task:list 权限)
  */
@@ -71,7 +71,7 @@ router.get(
 );
 
 /**
- * @route POST /api/support/tasks
+ * @route POST /api/admin/tasks
  * @desc 创建任务
  * @access Private (需要 task:create 权限)
  */
@@ -180,7 +180,7 @@ router.post(
 );
 
 /**
- * @route PUT /api/support/tasks/:id
+ * @route PUT /api/admin/tasks/:id
  * @desc 更新任务
  * @access Private (需要 task:edit 权限)
  */
@@ -282,7 +282,7 @@ router.put(
 );
 
 /**
- * @route DELETE /api/support/tasks/:id
+ * @route DELETE /api/admin/tasks/:id
  * @desc 删除任务
  * @access Private (需要 task:edit 权限)
  */

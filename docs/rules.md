@@ -33,7 +33,7 @@ src/
 1. **Support端服务 (管理后台)**
    - 入口文件: `src/admin/admin-server.js`
    - 端口: 3002 (默认)
-   - API前缀: `/api/support`
+   - API前缀: `/api/admin`
    - 主要功能: 管理会员、管理任务、审核h5端已提交的任务、管理群组、管理提现等后台操作
 
 2. **H5端服务 (用户前端)**
@@ -108,7 +108,7 @@ src/
 
 1. **URL路径**:
    - RESTful风格
-   - 资源名称使用复数形式, 例如: `/api/support/members`, `/api/h5/tasks`
+   - 资源名称使用复数形式, 例如: `/api/admin/members`, `/api/h5/tasks`
 
 2. **HTTP方法**:
    - GET: 查询资源

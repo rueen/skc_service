@@ -122,14 +122,14 @@ npm run start:all
 
 ### 管理后台API
 
-管理后台API基础路径：`/api/support`
+管理后台API基础路径：`/api/admin`
 
-- 认证相关：`/api/support/users`
-- 任务管理：`/api/support/tasks`
-- 会员管理：`/api/support/members`
-- 渠道管理：`/api/support/channels`
-- 群组管理：`/api/support/groups`
-- 文章管理：`/api/support/articles`
+- 认证相关：`/api/admin/users`
+- 任务管理：`/api/admin/tasks`
+- 会员管理：`/api/admin/members`
+- 渠道管理：`/api/admin/channels`
+- 群组管理：`/api/admin/groups`
+- 文章管理：`/api/admin/articles`
 
 ### H5端API
 
@@ -197,10 +197,10 @@ docker-compose up -d
 
 ### Support端接口
 
-- `GET /api/support/submitted-tasks` - 获取已提交任务列表
-- `GET /api/support/submitted-tasks/:id` - 获取已提交任务详情
-- `POST /api/support/submitted-tasks/batch-approve` - 批量审核通过
-- `POST /api/support/submitted-tasks/batch-reject` - 批量审核拒绝
+- `GET /api/admin/submitted-tasks` - 获取已提交任务列表
+- `GET /api/admin/submitted-tasks/:id` - 获取已提交任务详情
+- `POST /api/admin/submitted-tasks/batch-approve` - 批量审核通过
+- `POST /api/admin/submitted-tasks/batch-reject` - 批量审核拒绝
 
 ## 业务逻辑说明
 

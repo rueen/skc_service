@@ -38,7 +38,7 @@ app.use(sharedRoutes);
 app.use(adminRoutes);
 
 // 注册任务提交相关路由
-app.use('/api/support', submittedTaskRoutes);
+app.use('/api/admin', submittedTaskRoutes);
 
 // 添加404处理中间件
 app.use(errorHandler.notFoundHandler);
@@ -69,7 +69,7 @@ async function startServer() {
       logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
       
       if (process.env.NODE_ENV !== 'production') {
-        logger.info('开发模式: 管理后台API可在 http://localhost:3002/api/support 访问');
+        logger.info('开发模式: 管理后台API可在 http://localhost:3002/api/admin 访问');
       }
       
       // 仅当配置指定管理后台服务负责定时任务时才启动

@@ -24,7 +24,7 @@ router.use(authMiddleware.hasPermission('system:config'));
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
- * @route GET /api/support/system/configs
+ * @route GET /api/admin/system/configs
  * @desc 获取所有系统配置
  * @access Private (需要 system:config 权限)
  */
@@ -34,7 +34,7 @@ router.get(
 );
 
 /**
- * @route GET /api/support/system/configs/:key
+ * @route GET /api/admin/system/configs/:key
  * @desc 获取指定键的系统配置
  * @access Private (需要 system:config 权限)
  */
@@ -52,7 +52,7 @@ router.get(
 );
 
 /**
- * @route PUT /api/support/system/configs/:key
+ * @route PUT /api/admin/system/configs/:key
  * @desc 更新指定键的系统配置
  * @access Private (需要 system:config 权限)
  */
@@ -77,7 +77,7 @@ router.put(
 );
 
 /**
- * @route POST /api/support/system/configs
+ * @route POST /api/admin/system/configs
  * @desc 批量更新系统配置
  * @access Private (需要 system:config 权限)
  */
@@ -97,7 +97,7 @@ router.post(
 // 以下是特殊用途的便捷API，更像是RPC风格的API
 
 /**
- * @route GET /api/support/system/configs/group/max-members
+ * @route GET /api/admin/system/configs/group/max-members
  * @desc 获取群组最大成员数
  * @access Private (需要 system:config 权限)
  */
@@ -107,7 +107,7 @@ router.get(
 );
 
 /**
- * @route GET /api/support/system/configs/group/commission-rate
+ * @route GET /api/admin/system/configs/group/commission-rate
  * @desc 获取群主收益率
  * @access Private (需要 system:config 权限)
  */
@@ -117,7 +117,7 @@ router.get(
 );
 
 /**
- * @route GET /api/support/system/configs/invite/reward-amount
+ * @route GET /api/admin/system/configs/invite/reward-amount
  * @desc 获取邀请奖励金额
  * @access Private (需要 system:config 权限)
  */
