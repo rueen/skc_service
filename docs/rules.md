@@ -178,7 +178,7 @@ src/
    - 邀请人获得：5（如果是首次完成）
 
 7. **账单(Bill)**:
-   - 类型: 提现(withdrawal)、任务奖励(task_income)、邀请奖励(invite_reward)、群主收益(group_reward)
+   - 类型: 提现(withdrawal)、任务奖励(task_reward)、邀请奖励(invite_reward)、群主收益(group_owner_commission)
 
 8. **提现(Withdrawal)**:
    - 状态: 待处理(pending)、提现成功(success)、提现失败(failed)

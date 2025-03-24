@@ -355,7 +355,7 @@ async function batchApprove(ids, waiterId) {
       await connection.query(
         `INSERT INTO bills 
          (member_id, amount, bill_type, settlement_status, related_id, remark) 
-         VALUES (?, ?, 'task_income', 'settled', ?, ?)`,
+         VALUES (?, ?, 'task_reward', 'settled', ?, ?)`,
         [
           task.member_id,
           task.reward,
