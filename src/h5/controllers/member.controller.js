@@ -7,6 +7,9 @@ const accountModel = require('../../shared/models/account.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const groupModel = require('../../shared/models/group.model');
+const memberBalanceModel = require('../../shared/models/member-balance.model');
+const billModel = require('../../shared/models/bill.model');
+const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../../shared/config/api.config');
 
 /**
  * 更新会员个人资料
@@ -374,6 +377,53 @@ async function getGroupMembers(req, res) {
   }
 }
 
+/**
+ * 获取会员账户余额
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getBalance(req, res) {
+  try {
+    const memberId = req.user.id;
+    
+    // 获取会员余额
+    const balance = await memberBalanceModel.getBalance(memberId);
+    
+    // 返回余额信息
+    return responseUtil.success(res, {
+      balance
+    });
+  } catch (error) {
+    logger.error(`获取会员账户余额失败: ${error.message}`);
+    return responseUtil.serverError(res, '获取会员账户余额失败');
+  }
+}
+
+/**
+ * 获取会员账单列表
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getBills(req, res) {
+  try {
+    const memberId = req.user.id;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, billType, settlementStatus } = req.query;
+    
+    // 获取会员账单列表
+    const result = await billModel.getMemberBills(memberId, {
+      page,
+      pageSize,
+      billType,
+      settlementStatus
+    });
+    
+    return responseUtil.success(res, result);
+  } catch (error) {
+    logger.error(`获取会员账单列表失败: ${error.message}`);
+    return responseUtil.serverError(res, '获取会员账单列表失败');
+  }
+}
+
 module.exports = {
   updateProfile,
   getAccounts,
@@ -382,5 +432,7 @@ module.exports = {
   updateAccount,
   deleteAccount,
   getOwnedGroups,
-  getGroupMembers
+  getGroupMembers,
+  getBalance,
+  getBills
 }; 

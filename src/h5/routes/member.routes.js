@@ -206,4 +206,47 @@ router.get(
   memberController.getGroupMembers
 );
 
+/**
+ * @route GET /api/h5/members/balance
+ * @desc 获取会员账户余额
+ * @access Private
+ */
+router.get(
+  '/balance',
+  authMiddleware.verifyToken,
+  rateLimiterMiddleware.apiLimiter,
+  memberController.getBalance
+);
+
+/**
+ * @route GET /api/h5/members/bills
+ * @desc 获取会员账单列表
+ * @access Private
+ */
+router.get(
+  '/bills',
+  authMiddleware.verifyToken,
+  rateLimiterMiddleware.apiLimiter,
+  [
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('页码必须是大于0的整数'),
+    query('pageSize')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('每页数量必须是1-100之间的整数'),
+    query('billType')
+      .optional()
+      .isIn(['withdrawal', 'task_reward', 'invite_reward', 'group_owner_commission'])
+      .withMessage('账单类型无效'),
+    query('settlementStatus')
+      .optional()
+      .isIn(['success', 'failed', 'pending'])
+      .withMessage('结算状态无效')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.getBills
+);
+
 module.exports = router; 
