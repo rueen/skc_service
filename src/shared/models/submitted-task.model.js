@@ -6,6 +6,7 @@ const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
+const rewardModel = require('./reward.model');
 
 /**
  * 创建任务提交记录
@@ -115,7 +116,7 @@ async function create(submitData) {
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
     let query = `
-      SELECT 
+      SELECT DISTINCT 
         st.id,
         st.task_id,
         st.member_id,
@@ -137,17 +138,46 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       LEFT JOIN tasks t ON st.task_id = t.id
       LEFT JOIN channels c ON t.channel_id = c.id
       LEFT JOIN members m ON st.member_id = m.id
-      LEFT JOIN member_groups mg ON st.member_id = mg.member_id
-      LEFT JOIN \`groups\` g_table ON mg.group_id = g_table.id
-      WHERE 1=1
     `;
+
+    // 根据是否有groupId过滤条件，采用不同的JOIN策略
+    if (filters.groupId) {
+      // 如果指定了群组ID，则只关联指定群组
+      query += `
+        LEFT JOIN member_groups mg ON st.member_id = mg.member_id AND mg.group_id = ${parseInt(filters.groupId, 10)}
+        LEFT JOIN \`groups\` g_table ON mg.group_id = g_table.id
+      `;
+    } else {
+      // 如果没有指定群组ID，则关联会员的主要群组（或第一个群组）
+      query += `
+        LEFT JOIN (
+          SELECT member_id, group_id, is_owner
+          FROM member_groups
+          WHERE (member_id, id) IN (
+            SELECT member_id, MIN(id)
+            FROM member_groups
+            GROUP BY member_id
+          )
+        ) mg ON st.member_id = mg.member_id
+        LEFT JOIN \`groups\` g_table ON mg.group_id = g_table.id
+      `;
+    }
+    
+    query += " WHERE 1=1";
     
     let countQuery = 'SELECT COUNT(DISTINCT st.id) as total FROM submitted_tasks st';
     let countJoins = `
       LEFT JOIN tasks t ON st.task_id = t.id
       LEFT JOIN members m ON st.member_id = m.id
-      LEFT JOIN member_groups mg ON st.member_id = mg.member_id
     `;
+    
+    // 同样根据是否有groupId过滤条件，采用不同的JOIN策略
+    if (filters.groupId) {
+      countJoins += `
+        LEFT JOIN member_groups mg ON st.member_id = mg.member_id AND mg.group_id = ${parseInt(filters.groupId, 10)}
+      `;
+    }
+    
     countQuery += countJoins + ' WHERE 1=1';
     
     const queryParams = [];
@@ -339,8 +369,9 @@ async function batchApprove(ids, waiterId) {
       [waiterId, ids]
     );
     
-    // 获取已通过任务的关联信息，用于生成账单
-    const [tasks] = await connection.query(
+    // 获取已通过任务的关联信息
+    // 注意：这里在同一个事务中，所以可以看到刚刚更新的状态
+    const [approvedTasks] = await connection.query(
       `SELECT 
         st.id, st.task_id, st.member_id, t.reward
       FROM submitted_tasks st
@@ -349,34 +380,85 @@ async function batchApprove(ids, waiterId) {
       [ids]
     );
     
-    // 任务奖励账单记录
-    for (const task of tasks) {
-      // 创建任务完成收入记录
-      await connection.query(
-        `INSERT INTO bills 
-         (member_id, amount, bill_type, settlement_status, related_id, remark) 
-         VALUES (?, ?, 'task_reward', 'settled', ?, ?)`,
-        [
-          task.member_id,
-          task.reward,
-          task.id,
-          `完成任务[ID:${task.task_id}]收入`
-        ]
-      );
-      
-      // TODO: 群组奖励计算逻辑（后续补充）
-      // 1. 检查任务是否设置了群组奖励比例
-      // 2. 检查会员是否属于某个群组
-      // 3. 检查群主是否是会员本人
-      // 4. 计算群主收益金额
-      // 5. 如果有奖励，创建群主收益记录
+    // 处理任务奖励
+    const rewardResults = [];
+    for (const task of approvedTasks) {
+      try {
+        // 在同一个事务中处理奖励，确保数据一致性
+        // 由于processTaskCompletion会创建自己的连接，我们需要修改策略
+        // 直接调用相关方法完成奖励处理
+        const taskResult = {
+          taskReward: null,
+          inviteReward: null,
+          groupOwnerCommission: null
+        };
+        
+        // 1. 处理任务奖励
+        taskResult.taskReward = await rewardModel.processTaskReward({
+          submittedTaskId: task.id,
+          taskId: task.task_id,
+          memberId: task.member_id,
+          reward: task.reward
+        }, connection);
+        
+        // 2. 检查是否首次完成任务
+        const isFirstCompletion = await rewardModel.isFirstTaskCompletion(task.member_id, connection);
+        
+        // 如果是首次完成，处理邀请奖励
+        if (isFirstCompletion) {
+          const inviterInfo = await rewardModel.getMemberInviter(task.member_id, connection);
+          if (inviterInfo && inviterInfo.inviterId) {
+            taskResult.inviteReward = await rewardModel.processInviteReward({
+              taskId: task.task_id,
+              memberId: task.member_id,
+              inviterId: inviterInfo.inviterId
+            }, connection);
+          }
+        } 
+        // 如果非首次完成，处理群主收益
+        else {
+          const groupInfo = await rewardModel.getMemberGroupInfo(task.member_id, connection);
+          if (groupInfo && groupInfo.ownerId) {
+            // 如果群主不是会员本人，则处理群主收益
+            if (groupInfo.ownerId !== task.member_id) {
+              taskResult.groupOwnerCommission = await rewardModel.processGroupOwnerCommission({
+                taskId: task.task_id,
+                memberId: task.member_id,
+                ownerId: groupInfo.ownerId,
+                reward: task.reward
+              }, connection);
+            } 
+            // 如果群主是会员本人，则也需要处理群主收益
+            else {
+              taskResult.groupOwnerCommission = await rewardModel.processGroupOwnerCommission({
+                taskId: task.task_id,
+                memberId: task.member_id,
+                ownerId: task.member_id,
+                reward: task.reward
+              }, connection);
+            }
+          }
+        }
+        
+        rewardResults.push({
+          taskId: task.id,
+          result: { success: true, results: taskResult }
+        });
+      } catch (error) {
+        logger.error(`处理任务ID ${task.id} 的奖励失败: ${error.message}`);
+        rewardResults.push({
+          taskId: task.id,
+          error: error.message
+        });
+      }
     }
     
     await connection.commit();
     
     return {
       success: true,
-      updatedCount: result.affectedRows
+      updatedCount: result.affectedRows,
+      rewardResults
     };
   } catch (error) {
     await connection.rollback();
