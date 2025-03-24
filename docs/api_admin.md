@@ -122,7 +122,7 @@ Authorization: Bearer <token>
 #### 结算状态 (settlementStatus)
 | 状态 | 说明 |
 |------|------|
-| settled | 已结算 |
+| success | 结算成功 |
 | failed | 结算失败 |
 
 ### 小二权限说明
@@ -312,7 +312,7 @@ CREATE TABLE `bills` (
   `bill_type` varchar(20) NOT NULL COMMENT '账单类型：withdrawal-提现，task_reward-任务奖励，invite_reward-邀请奖励，group_owner_commission-群主收益',
   `amount` decimal(10,2) NOT NULL COMMENT '金额',
   `related_id` bigint(20) DEFAULT NULL COMMENT '关联ID',
-  `settlement_status` varchar(20) NOT NULL DEFAULT 'settled' COMMENT '结算状态：settled-已结算，failed-结算失败',
+  `settlement_status` varchar(20) NOT NULL DEFAULT 'settled' COMMENT 'success-结算成功，failed-结算失败',
   `remark` varchar(255) DEFAULT NULL COMMENT '备注',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

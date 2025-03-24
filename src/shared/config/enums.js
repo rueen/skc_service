@@ -181,14 +181,14 @@ const GenderTypeLang = {
 
 // 结算状态枚举
 const SettlementStatus = {
-  SETTLED: 'settled',    // 已结算
+  SUCCESS: 'success',    // 结算成功
   FAILED: 'failed'       // 结算失败
 };
 
 const SettlementStatusLang = {
-  [SettlementStatus.SETTLED]: {
-    'zh-CN': '已结算',
-    'en-US': 'Settled'
+  [SettlementStatus.SUCCESS]: {
+    'zh-CN': '结算成功',
+    'en-US': 'Success'
   },
   [SettlementStatus.FAILED]: {
     'zh-CN': '结算失败',
