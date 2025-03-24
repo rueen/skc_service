@@ -349,7 +349,7 @@ async function batchApprove(ids, waiterId) {
       [ids]
     );
     
-    // 任务收益账单记录
+    // 任务奖励账单记录
     for (const task of tasks) {
       // 创建任务完成收入记录
       await connection.query(
@@ -368,8 +368,8 @@ async function batchApprove(ids, waiterId) {
       // 1. 检查任务是否设置了群组奖励比例
       // 2. 检查会员是否属于某个群组
       // 3. 检查群主是否是会员本人
-      // 4. 计算群主奖励金额
-      // 5. 如果有奖励，创建群主奖励记录
+      // 4. 计算群主收益金额
+      // 5. 如果有奖励，创建群主收益记录
     }
     
     await connection.commit();
