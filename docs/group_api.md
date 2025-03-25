@@ -17,11 +17,11 @@
   "data": [
     {
       "id": "群ID",
-      "name": "群名称",
-      "link": "群链接",
-      "isOwner": true/false,
+      "groupName": "群名称",
+      "groupLink": "群链接",
+      "isGroupOwner": true/false,
       "memberCount": 100,
-      "totalEarnings": 1000.00,  // 仅当 isOwner 为 true 时返回
+      "totalEarnings": 1000.00,  // 仅当 isGroupOwner 为 true 时返回
       "createTime": "2024-03-20 10:00:00"
     }
   ]
@@ -130,6 +130,22 @@
    - 来源表：`submitted_tasks`
    - 统计条件：task_audit_status = 'approved'
    - 关联字段：member_id
+
+5. **任务与群组关联**
+   - 报名任务与群组关联：
+     - 来源表：`enrolled_tasks`
+     - 关联字段：related_group_id
+     - 数据来源：会员报名任务时所属的第一个群组ID
+   
+   - 提交任务与群组关联：
+     - 来源表：`submitted_tasks`
+     - 关联字段：related_group_id
+     - 数据来源：会员提交任务时所属的第一个群组ID
+   
+   - 群组统计分析：
+     - 可通过关联上述表格中的related_group_id字段
+     - 统计各群组的任务参与率和完成情况
+     - 用于群组活跃度分析和运营决策支持
 
 ## 注意事项
 
