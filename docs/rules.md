@@ -71,19 +71,274 @@ src/
 系统使用MySQL数据库，主要数据模型包括:
 
 1. **accounts**: 账户表
-2. **articles**: 文章表
-3. **bills**: 账单表
-4. **channels**: 渠道表
-5. **groups**: 群组信息
-6. **member_groups**: 会员群组关联表
-7. **members**: 会员信息
-8. **system_config**: 系统配置表
-9. **tasks**: 任务表
-10. **enrolled_tasks**: 已报名任务表
-11. **submitted_tasks**: 已提交任务表
-12. **waiters**: 管理后台用户表
-13. **withdrawals**: 提现表
 
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+| ------ | ------ | ------ | ------ | ------ |
+| id | bigint(20) | NOT NULL AUTO_INCREMENT | | 账号ID |
+| member_id | bigint(20) | NOT NULL | | 会员ID |
+| channel_id | bigint(20) | NOT NULL | | 渠道ID |
+| account | varchar(100) | NOT NULL | | 账号 |
+| home_url | varchar(255) | | NULL | 主页链接 |
+| fans_count | int(11) | | 0 | 粉丝数量 |
+| friends_count | int(11) | | 0 | 好友数量 |
+| posts_count | int(11) | | 0 | 发布数量 |
+| account_audit_status | varchar(20) | | 'pending' | 账号审核状态：pending-待审核，approved-已通过，rejected-已拒绝 |
+| reject_reason | varchar(255) | | NULL | 拒绝原因 |
+| create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**:
+- PRIMARY KEY (`id`)
+- KEY `idx_member_id` (`member_id`)
+- KEY `idx_channel_id` (`channel_id`)
+- KEY `idx_account_audit_status` (`account_audit_status`)
+
+2. **articles**: 文章表
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+| ------ | ------ | ------ | ------ | ------ |
+| id | bigint(20) | NOT NULL AUTO_INCREMENT | | 文章ID |
+| title | varchar(200) | NOT NULL | | 文章标题 |
+| content | text | NOT NULL | | 文章内容 |
+| location | varchar(50) | NOT NULL | 'help' | 文章位置：privacyPolicy-隐私政策，userAgreement-用户协议 |
+| create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**:
+- PRIMARY KEY (`id`)
+- KEY `idx_location` (`location`)
+
+3. **bills**: 账单表
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+| ------ | ------ | ------ | ------ | ------ |
+| id | bigint(20) | NOT NULL AUTO_INCREMENT | | 账单ID |
+| member_id | bigint(20) | NOT NULL | | 会员ID |
+| bill_type | varchar(50) | NOT NULL | | 账单类型：withdrawal-提现，task_reward-任务奖励，invite_reward-邀请奖励，group_owner_commission-群主收益 |
+| amount | decimal(10,2) | NOT NULL | | 金额 |
+| settlement_status | varchar(20) | NOT NULL | 'pending' | 结算状态：success-结算成功，failed-结算失败，pending-等待结算 |
+| task_id | bigint(20) | | NULL | 关联的任务ID |
+| related_member_id | bigint(20) | | NULL | 关联的会员ID |
+| related_group_id | bigint(20) | | NULL | 关联的群组ID |
+| failure_reason | varchar(255) | | NULL | 结算失败原因 |
+| create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**:
+- PRIMARY KEY (`id`)
+- KEY `idx_member_id` (`member_id`)
+- KEY `idx_bill_type` (`bill_type`)
+- KEY `idx_settlement_status` (`settlement_status`)
+- KEY `idx_task_id` (`task_id`)
+- KEY `idx_related_member_id` (`related_member_id`)
+- KEY `idx_related_group_id` (`related_group_id`)
+- KEY `idx_create_time` (`create_time`)
+
+4. **channels**: 渠道表
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+| ------ | ------ | ------ | ------ | ------ |
+| id | bigint(20) | NOT NULL AUTO_INCREMENT | | 渠道ID |
+| name | varchar(50) | NOT NULL | | 渠道名称 |
+| icon | varchar(255) | | NULL | 渠道图标URL |
+| custom_fields | json | | NULL | 自定义字段配置，JSON格式 |
+| create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**:
+- PRIMARY KEY (`id`)
+- KEY `idx_member_id` (`member_id`)
+- KEY `idx_bill_type` (`bill_type`)
+- KEY `idx_settlement_status` (`settlement_status`)
+- KEY `idx_task_id` (`task_id`)
+- KEY `idx_related_member_id` (`related_member_id`)
+- KEY `idx_related_group_id` (`related_group_id`)
+- KEY `idx_create_time` (`create_time`)
+
+5. **groups**: 群组信息
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+| ------ | ------ | ------ | ------ | ------ |
+| id | bigint(20) | NOT NULL AUTO_INCREMENT | | 群组ID |
+| group_name | varchar(100) | NOT NULL | | 群组名称 |
+| group_link | varchar(255) | | NULL | 群组链接 |
+| owner_id | bigint(20) | | NULL | 群主ID |
+| member_count | int(11) | NOT NULL | 0 | 成员数量 |
+| create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**:
+- PRIMARY KEY (`id`)
+- KEY `idx_owner_id` (`owner_id`)
+- KEY `idx_group_name` (`group_name`)
+
+6. **member_groups**: 会员群组关联表
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+| ------ | ------ | ------ | ------ | ------ |
+| id | bigint(20) | NOT NULL AUTO_INCREMENT | | 关联ID |
+| member_id | bigint(20) | NOT NULL | | 会员ID |
+| group_id | bigint(20) | NOT NULL | | 群组ID |
+| is_owner | tinyint(1) | NOT NULL | 0 | 是否群主：0-否，1-是 |
+| join_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 加入时间 |
+| create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**:
+- PRIMARY KEY (`id`)
+- UNIQUE KEY `uk_member_group` (`member_id`, `group_id`)
+- KEY `idx_member_id` (`member_id`)
+- KEY `idx_group_id` (`group_id`)
+- KEY `idx_is_owner` (`is_owner`)
+
+7. **members**: 会员信息
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+| ------ | ------ | ------ | ------ | ------ |
+| id | bigint(20) | NOT NULL AUTO_INCREMENT | | 会员ID |
+| member_nickname | varchar(50) | NOT NULL | | 会员昵称 |
+| member_account | varchar(50) | NOT NULL | | 会员账号 |
+| password | varchar(255) | NOT NULL | | 密码（加密存储） |
+| inviter_id | bigint(20) | | NULL | 邀请人ID |
+| occupation | varchar(20) | | NULL | 职业：housewife-宝妈，freelancer-自由职业，student-学生 |
+| invite_code | varchar(10) | NOT NULL | | 邀请码 |
+| phone | varchar(20) | | NULL | 手机号 |
+| email | varchar(100) | | NULL | 邮箱 |
+| avatar | varchar(255) | | NULL | 头像URL |
+| gender | tinyint(1) | | 2 | 性别：0-男，1-女，2-保密 |
+| balance | decimal(10,2) | NOT NULL | 0.00 | 账户余额 |
+| telegram | varchar(50) | | NULL | Telegram账号 |
+| create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**:
+- PRIMARY KEY (`id`)
+- UNIQUE KEY `uk_member_account` (`member_account`)
+- UNIQUE KEY `uk_invite_code` (`invite_code`)
+- UNIQUE KEY `uk_phone` (`phone`)
+- KEY `idx_inviter_id` (`inviter_id`)
+- KEY `idx_create_time` (`create_time`)
+
+8. **system_config**: 系统配置表
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+| ------ | ------ | ------ | ------ | ------ |
+| id | bigint(20) | NOT NULL AUTO_INCREMENT | | 配置ID |
+| config_key | varchar(50) | NOT NULL | | 配置键 |
+| config_value | text | NOT NULL | | 配置值 |
+| description | varchar(255) | | NULL | 配置描述 |
+| create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**:
+- PRIMARY KEY (`id`)
+- UNIQUE KEY `uk_config_key` (`config_key`)
+- KEY `idx_create_time` (`create_time`)
+
+9. **tasks**: 任务表
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+| ------ | ------ | ------ | ------ | ------ |
+| id | bigint(20) | NOT NULL AUTO_INCREMENT | | 任务ID |
+| task_name | varchar(100) | NOT NULL | | 任务名称 |
+| channel_id | bigint(20) | NOT NULL | | 渠道ID |
+| category | varchar(50) | | NULL | 任务类别 |
+| task_type | varchar(50) | NOT NULL | | 任务类型 |
+| reward | decimal(10,2) | NOT NULL | | 任务奖励金额 |
+| brand | varchar(100) | | NULL | 品牌名称 |
+| group_ids | json | | NULL | 关联的群组ID列表，JSON格式 |
+| group_mode | varchar(20) | | 'optional' | 群组模式：required-必须加入群组，optional-可选加入群组 |
+| user_range | varchar(20) | | 'all' | 用户范围：all-所有用户，invited-邀请用户 |
+| task_count | int(11) | NOT NULL | 1 | 任务数量 |
+| custom_fields | json | | NULL | 自定义字段，JSON格式 |
+| start_time | datetime | NOT NULL | | 任务开始时间 |
+| end_time | datetime | NOT NULL | | 任务结束时间 |
+| unlimited_quota | tinyint(1) | NOT NULL | 0 | 是否不限制名额：0-限制，1-不限制 |
+| quota | int(11) | | 0 | 任务名额 |
+| fans_required | int(11) | | 0 | 要求粉丝数 |
+| content_requirement | text | | NULL | 内容要求 |
+| task_info | text | NOT NULL | | 任务详情 |
+| notice | text | | NULL | 任务须知 |
+| task_status | varchar(20) | NOT NULL | 'not_started' | 任务状态：not_started-未开始，processing-进行中，ended-已结束 |
+| create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**:
+- PRIMARY KEY (`id`)
+- KEY `idx_channel_id` (`channel_id`)
+- KEY `idx_task_status` (`task_status`)
+- KEY `idx_start_time` (`start_time`)
+- KEY `idx_end_time` (`end_time`)
+- KEY `idx_task_type` (`task_type`)
+- KEY `idx_create_time` (`create_time`)
+
+10. **enrolled_tasks**: 已报名任务表
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+| ------ | ------ | ------ | ------ | ------ |
+| id | bigint(20) | NOT NULL AUTO_INCREMENT | | 报名ID |
+| task_id | bigint(20) | NOT NULL | | 任务ID |
+| member_id | bigint(20) | NOT NULL | | 会员ID |
+| enroll_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 报名时间 |
+| related_group_id | bigint(20) | | NULL | 关联的群组ID |
+| create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**:
+- PRIMARY KEY (`id`)
+- KEY `idx_channel_id` (`channel_id`)
+- KEY `idx_task_status` (`task_status`)
+- KEY `idx_start_time` (`start_time`)
+- KEY `idx_end_time` (`end_time`)
+- KEY `idx_task_type` (`task_type`)
+- KEY `idx_create_time` (`create_time`)
+
+11. **submitted_tasks**: 已提交任务表
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+| ------ | ------ | ------ | ------ | ------ |
+| id | bigint(20) | NOT NULL AUTO_INCREMENT | | 提交ID |
+| task_id | bigint(20) | NOT NULL | | 任务ID |
+| member_id | bigint(20) | NOT NULL | | 会员ID |
+| submit_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 提交时间 |
+| submit_content | text | NOT NULL | | 提交内容 |
+| task_audit_status | varchar(20) | NOT NULL | 'pending' | 审核状态：pending-待审核，approved-已通过，rejected-已拒绝 |
+| waiter_id | bigint(20) | | NULL | 审核小二ID |
+| reject_reason | varchar(255) | | NULL | 拒绝原因 |
+| related_group_id | bigint(20) | | NULL | 关联的群组ID |
+| create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**:
+- PRIMARY KEY (`id`)
+- UNIQUE KEY `uk_task_member` (`task_id`, `member_id`)
+- KEY `idx_task_id` (`task_id`)
+- KEY `idx_member_id` (`member_id`)
+- KEY `idx_task_audit_status` (`task_audit_status`)
+- KEY `idx_waiter_id` (`waiter_id`)
+- KEY `idx_related_group_id` (`related_group_id`)
+- KEY `idx_create_time` (`create_time`)
+
+12. **waiters**: 管理后台用户表
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 说明 |
+| ------ | ------ | ------ | ------ | ------ |
+| id | bigint(20) | NOT NULL AUTO_INCREMENT | | 小二ID |
+| username | varchar(50) | NOT NULL | | 用户名 |
+| password | varchar(255) | NOT NULL | | 密码（加密存储） |
+| is_admin | tinyint(1) | NOT NULL | 0 | 是否管理员：0-否，1-是 |
+| remarks | varchar(255) | | NULL | 备注 |
+| permissions | varchar(255) | | NULL | 权限列表，逗号分隔 |
+| last_login_time | datetime | | NULL | 最后登录时间 |
+| create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+
+**索引**:
+- PRIMARY KEY (`id`)
+- UNIQUE KEY `uk_username` (`username`)
+- KEY `idx_is_admin` (`is_admin`)
+- KEY `idx_create_time` (`create_time`)
+   
 ## 编码规范
 
 ### 命名规范
