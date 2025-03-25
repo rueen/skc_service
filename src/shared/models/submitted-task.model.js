@@ -385,7 +385,7 @@ async function batchApprove(ids, waiterId) {
     // 注意：这里在同一个事务中，所以可以看到刚刚更新的状态
     const [approvedTasks] = await connection.query(
       `SELECT 
-        st.id, st.task_id, st.member_id, t.reward
+        st.id, st.task_id, st.member_id, st.related_group_id, t.reward
       FROM submitted_tasks st
       JOIN tasks t ON st.task_id = t.id
       WHERE st.id IN (?) AND st.task_audit_status = 'approved'`,
@@ -396,9 +396,11 @@ async function batchApprove(ids, waiterId) {
     const rewardResults = [];
     for (const task of approvedTasks) {
       try {
+        // 获取任务提交时记录的群组ID
+        const relatedGroupId = task.related_group_id;
+        logger.info(`处理任务奖励 - 任务ID: ${task.id}, 会员ID: ${task.member_id}, 关联群组ID: ${relatedGroupId}`);
+        
         // 在同一个事务中处理奖励，确保数据一致性
-        // 由于processTaskCompletion会创建自己的连接，我们需要修改策略
-        // 直接调用相关方法完成奖励处理
         const taskResult = {
           taskReward: null,
           inviteReward: null,
@@ -410,7 +412,8 @@ async function batchApprove(ids, waiterId) {
           submittedTaskId: task.id,
           taskId: task.task_id,
           memberId: task.member_id,
-          reward: task.reward
+          reward: task.reward,
+          relatedGroupId: relatedGroupId
         }, connection);
         
         // 2. 检查是否首次完成任务
@@ -423,7 +426,8 @@ async function batchApprove(ids, waiterId) {
             taskResult.inviteReward = await rewardModel.processInviteReward({
               taskId: task.task_id,
               memberId: task.member_id,
-              inviterId: inviterInfo.inviterId
+              inviterId: inviterInfo.inviterId,
+              relatedGroupId: relatedGroupId
             }, connection);
           }
         } 
@@ -437,7 +441,8 @@ async function batchApprove(ids, waiterId) {
                 taskId: task.task_id,
                 memberId: task.member_id,
                 ownerId: groupInfo.ownerId,
-                reward: task.reward
+                reward: task.reward,
+                relatedGroupId: relatedGroupId
               }, connection);
             } 
             // 如果群主是会员本人，则也需要处理群主收益
@@ -446,7 +451,8 @@ async function batchApprove(ids, waiterId) {
                 taskId: task.task_id,
                 memberId: task.member_id,
                 ownerId: task.member_id,
-                reward: task.reward
+                reward: task.reward,
+                relatedGroupId: relatedGroupId
               }, connection);
             }
           }

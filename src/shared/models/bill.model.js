@@ -57,14 +57,17 @@ async function getMemberBills(memberId, options = {}) {
         b.settlement_status as settlementStatus,
         b.task_id as taskId,
         b.related_member_id as relatedMemberId,
+        b.related_group_id as relatedGroupId,
         b.failure_reason as failureReason,
         b.create_time as createTime,
         b.update_time as updateTime,
         t.task_name as taskName,
-        m.member_nickname as relatedMemberNickname
+        m.member_nickname as relatedMemberNickname,
+        g.group_name as relatedGroupName
       FROM bills b
       LEFT JOIN tasks t ON b.task_id = t.id
       LEFT JOIN members m ON b.related_member_id = m.id
+      LEFT JOIN \`groups\` g ON b.related_group_id = g.id
       ${whereClause}
       ORDER BY b.create_time DESC
       LIMIT ?, ?`,
@@ -144,15 +147,18 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
         b.settlement_status as settlementStatus,
         b.task_id as taskId,
         b.related_member_id as relatedMemberId,
+        b.related_group_id as relatedGroupId,
         b.failure_reason as failureReason,
         b.create_time as createTime,
         b.update_time as updateTime,
         t.task_name as taskName,
-        rm.member_nickname as relatedMemberNickname
+        rm.member_nickname as relatedMemberNickname,
+        g.group_name as relatedGroupName
       FROM bills b
       JOIN members m ON b.member_id = m.id
       LEFT JOIN tasks t ON b.task_id = t.id
       LEFT JOIN members rm ON b.related_member_id = rm.id
+      LEFT JOIN \`groups\` g ON b.related_group_id = g.id
       ${whereClause}
       ORDER BY b.create_time DESC
       LIMIT ?, ?`,

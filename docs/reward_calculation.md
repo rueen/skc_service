@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-24 19:12:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-25 10:38:47
+ * @LastEditTime: 2025-03-25 22:05:15
  * @Description: 
 -->
 # 奖励计算逻辑文档
@@ -20,6 +20,7 @@
   - `task_id`: 关联的任务ID
   - `related_member_id`: 关联的会员ID（如邀请奖励关联被邀请人ID，群主收益关联完成任务会员ID）
   - `failure_reason`: 结算失败原因（当settlement_status为failed时记录）
+  - `related_group_id`: 关联的群组ID（获得奖励的会员所属的群组ID，用于数据统计）
 
 ## 二、奖励计算规则
 

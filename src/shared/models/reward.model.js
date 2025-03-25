@@ -16,24 +16,76 @@ const { BillType, SettlementStatus } = require('../config/enums');
  * @param {number} billData.amount - 金额
  * @param {number} billData.taskId - 任务ID
  * @param {number} [billData.relatedMemberId] - 关联会员ID（如邀请关系）
+ * @param {number} [billData.relatedGroupId] - 关联群组ID（用于数据统计）
  * @param {Object} connection - 数据库连接（用于事务）
  * @returns {Promise<Object>} 创建结果
  */
 async function createBill(billData, connection) {
   try {
+    // 日志记录所有传入的账单数据，便于调试
+    logger.info(`创建账单记录 - 会员ID: ${billData.memberId}, 账单类型: ${billData.billType}, 金额: ${billData.amount}, 任务ID: ${billData.taskId}, 关联会员ID: ${billData.relatedMemberId}, 关联群组ID: ${billData.relatedGroupId}`);
+    
+    // 进一步确认related_group_id是一个有效数字
+    let relatedGroupId = null;
+    if (billData.relatedGroupId && !isNaN(parseInt(billData.relatedGroupId, 10))) {
+      relatedGroupId = parseInt(billData.relatedGroupId, 10);
+      
+      // 额外检查群组是否存在
+      const [groups] = await connection.query(
+        'SELECT id FROM `groups` WHERE id = ?',
+        [relatedGroupId]
+      );
+      
+      if (groups.length === 0) {
+        logger.warn(`关联的群组ID ${relatedGroupId} 不存在，将设置为NULL`);
+        relatedGroupId = null;
+      }
+    }
+    
+    // 如果没有有效的群组ID，尝试从会员的第一个群组获取
+    if (!relatedGroupId) {
+      const [groups] = await connection.query(
+        `SELECT group_id 
+         FROM member_groups 
+         WHERE member_id = ? 
+         ORDER BY join_time ASC, id ASC 
+         LIMIT 1`,
+        [billData.memberId]
+      );
+      
+      if (groups.length > 0) {
+        relatedGroupId = groups[0].group_id;
+        logger.info(`未提供有效的群组ID，使用会员的第一个群组: ${relatedGroupId}`);
+      }
+    }
+    
     // 初始化为待结算状态
     const [result] = await connection.query(
       `INSERT INTO bills 
-       (member_id, bill_type, amount, settlement_status, task_id, related_member_id) 
-       VALUES (?, ?, ?, 'pending', ?, ?)`,
+       (member_id, bill_type, amount, settlement_status, task_id, related_member_id, related_group_id) 
+       VALUES (?, ?, ?, 'pending', ?, ?, ?)`,
       [
         billData.memberId,
         billData.billType,
         billData.amount,
         billData.taskId,
-        billData.relatedMemberId || null
+        billData.relatedMemberId || null,
+        relatedGroupId
       ]
     );
+    
+    // 记录插入结果
+    logger.info(`账单记录创建成功 - 账单ID: ${result.insertId}, 关联群组ID: ${relatedGroupId}`);
+    
+    // 验证插入结果
+    const [inserted] = await connection.query(
+      'SELECT related_group_id FROM bills WHERE id = ?',
+      [result.insertId]
+    );
+    
+    if (inserted.length > 0) {
+      logger.info(`验证插入结果 - 账单ID: ${result.insertId}, 实际存储的关联群组ID: ${inserted[0].related_group_id}`);
+    }
     
     return { id: result.insertId };
   } catch (error) {
@@ -133,14 +185,20 @@ async function getMemberGroupInfo(memberId, connection) {
         g.owner_id = mg.member_id as is_group_owner 
        FROM member_groups mg
        JOIN \`groups\` g ON mg.group_id = g.id
-       WHERE mg.member_id = ?`,
+       WHERE mg.member_id = ?
+       LIMIT 1`,  // 添加LIMIT 1确保只返回一条记录
       [memberId]
     );
     
     if (rows.length === 0) {
+      logger.info(`会员ID ${memberId} 没有所属的群组`);
       return null;
     }
     
+    // 记录原始数据库行数据，便于调试
+    logger.info(`会员ID ${memberId} 的群组原始数据: ${JSON.stringify(rows[0])}`);
+    
+    // 将蛇形命名转换为驼峰命名
     return {
       groupId: rows[0].group_id,
       ownerId: rows[0].owner_id,
@@ -183,6 +241,7 @@ async function getMemberInviter(memberId, connection) {
  * @param {number} data.taskId - 任务ID
  * @param {number} data.memberId - 会员ID
  * @param {number} data.reward - 奖励金额
+ * @param {number} [data.relatedGroupId] - 关联群组ID
  * @param {Object} connection - 数据库连接（用于事务）
  * @returns {Promise<Object>} 处理结果
  */
@@ -193,7 +252,8 @@ async function processTaskReward(data, connection) {
       memberId: data.memberId,
       billType: BillType.TASK_REWARD,
       amount: data.reward,
-      taskId: data.taskId
+      taskId: data.taskId,
+      relatedGroupId: data.relatedGroupId
     }, connection);
     
     // 结算账单
@@ -212,6 +272,7 @@ async function processTaskReward(data, connection) {
  * @param {number} data.taskId - 任务ID
  * @param {number} data.memberId - 完成任务的会员ID
  * @param {number} data.inviterId - 邀请人ID
+ * @param {number} [data.relatedGroupId] - 关联群组ID
  * @param {Object} connection - 数据库连接（用于事务）
  * @returns {Promise<Object>} 处理结果
  */
@@ -226,7 +287,8 @@ async function processInviteReward(data, connection) {
       billType: BillType.INVITE_REWARD,
       amount: inviteRewardAmount,
       taskId: data.taskId,
-      relatedMemberId: data.memberId
+      relatedMemberId: data.memberId,
+      relatedGroupId: data.relatedGroupId
     }, connection);
     
     // 结算账单
@@ -246,6 +308,7 @@ async function processInviteReward(data, connection) {
  * @param {number} data.memberId - 完成任务的会员ID
  * @param {number} data.ownerId - 群主ID
  * @param {number} data.reward - 任务奖励金额
+ * @param {number} [data.relatedGroupId] - 关联群组ID
  * @param {Object} connection - 数据库连接（用于事务）
  * @returns {Promise<Object>} 处理结果
  */
@@ -263,7 +326,8 @@ async function processGroupOwnerCommission(data, connection) {
       billType: BillType.GROUP_OWNER_COMMISSION,
       amount: commissionAmount.toFixed(2),
       taskId: data.taskId,
-      relatedMemberId: data.memberId
+      relatedMemberId: data.memberId,
+      relatedGroupId: data.relatedGroupId
     }, connection);
     
     // 结算账单
@@ -289,7 +353,7 @@ async function processTaskCompletion(submittedTaskId) {
     // 获取提交任务的详细信息
     const [tasks] = await connection.query(
       `SELECT 
-        st.id, st.task_id, st.member_id, t.reward
+        st.id, st.task_id, st.member_id, st.related_group_id, t.reward
       FROM submitted_tasks st
       JOIN tasks t ON st.task_id = t.id
       WHERE st.id = ? AND st.task_audit_status = 'approved'`,
@@ -307,12 +371,29 @@ async function processTaskCompletion(submittedTaskId) {
       groupOwnerCommission: null
     };
     
+    // 获取会员所属的群组信息
+    const groupInfo = await getMemberGroupInfo(task.member_id, connection);
+    
+    // 日志记录，便于调试
+    logger.info(`处理任务完成奖励 - 会员ID: ${task.member_id}, 提交任务ID: ${submittedTaskId}, 关联群组ID(from task): ${task.related_group_id}, 会员群组信息: ${JSON.stringify(groupInfo)}`);
+    
+    // 获取提交任务时关联的群组ID，优先使用提交任务时记录的群组ID
+    let relatedGroupId = null;
+    if (task.related_group_id) {
+      relatedGroupId = task.related_group_id;
+    } else if (groupInfo) {
+      relatedGroupId = groupInfo.groupId;
+    }
+    
+    logger.info(`使用的关联群组ID: ${relatedGroupId}`);
+    
     // 1. 处理任务奖励
     results.taskReward = await processTaskReward({
       submittedTaskId,
       taskId: task.task_id,
       memberId: task.member_id,
-      reward: task.reward
+      reward: task.reward,
+      relatedGroupId: relatedGroupId
     }, connection);
     
     // 2. 检查是否首次完成任务
@@ -325,13 +406,13 @@ async function processTaskCompletion(submittedTaskId) {
         results.inviteReward = await processInviteReward({
           taskId: task.task_id,
           memberId: task.member_id,
-          inviterId: inviterInfo.inviterId
+          inviterId: inviterInfo.inviterId,
+          relatedGroupId: relatedGroupId
         }, connection);
       }
     } 
     // 如果非首次完成，处理群主收益
     else {
-      const groupInfo = await getMemberGroupInfo(task.member_id, connection);
       if (groupInfo && groupInfo.ownerId) {
         // 如果群主不是会员本人，则处理群主收益
         if (groupInfo.ownerId !== task.member_id) {
@@ -339,7 +420,8 @@ async function processTaskCompletion(submittedTaskId) {
             taskId: task.task_id,
             memberId: task.member_id,
             ownerId: groupInfo.ownerId,
-            reward: task.reward
+            reward: task.reward,
+            relatedGroupId: relatedGroupId
           }, connection);
         } 
         // 如果群主是会员本人，则也需要处理群主收益
@@ -348,7 +430,8 @@ async function processTaskCompletion(submittedTaskId) {
             taskId: task.task_id,
             memberId: task.member_id,
             ownerId: task.member_id,
-            reward: task.reward
+            reward: task.reward,
+            relatedGroupId: relatedGroupId
           }, connection);
         }
       }
