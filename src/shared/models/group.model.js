@@ -372,32 +372,6 @@ async function remove(id) {
 }
 
 /**
- * 获取会员作为群主的群组列表
- * @param {number} memberId - 会员ID
- * @returns {Promise<Array>} 群组列表
- */
-async function getOwnedByMember(memberId) {
-  try {
-    const query = `
-      SELECT g.*, 
-             m.member_nickname as owner_name,
-             (SELECT COUNT(*) FROM member_groups mg WHERE mg.group_id = g.id) as member_count
-      FROM \`groups\` g 
-      LEFT JOIN members m ON g.owner_id = m.id
-      WHERE g.owner_id = ?
-      ORDER BY g.create_time DESC
-    `;
-    
-    const [rows] = await pool.query(query, [memberId]);
-    
-    return rows.map(formatGroup);
-  } catch (error) {
-    logger.error(`获取会员作为群主的群组列表失败: ${error.message}`);
-    throw error;
-  }
-}
-
-/**
  * 获取系统配置的最大群成员数
  * @returns {Promise<number>} 最大群成员数
  */
@@ -476,7 +450,6 @@ module.exports = {
   create,
   update,
   remove,
-  getOwnedByMember,
   getMaxGroupMembers,
   getGroupOwnerCommissionRate,
   checkGroupLimit

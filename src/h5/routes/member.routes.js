@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-19 14:09:26
+ * @LastEditTime: 2025-03-25 15:35:53
  * @Description: 
  */
 /**
@@ -172,38 +172,6 @@ router.delete(
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.deleteAccount
-);
-
-/**
- * @route GET /api/h5/members/owned-groups
- * @desc 获取当前会员作为群主的群组列表
- * @access Private
- */
-router.get(
-  '/owned-groups',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
-  memberController.getOwnedGroups
-);
-
-/**
- * @route GET /api/h5/members/group-members
- * @desc 获取以该会员为群主的群成员列表
- * @access Private
- */
-router.get(
-  '/group-members',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
-  [
-    query('groupId')
-      .notEmpty()
-      .withMessage('群组ID不能为空')
-      .isInt()
-      .withMessage('群组ID必须是整数')
-  ],
-  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  memberController.getGroupMembers
 );
 
 /**
