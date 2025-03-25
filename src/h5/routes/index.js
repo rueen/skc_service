@@ -11,6 +11,7 @@ const channelRoutes = require('./channel.routes');
 const articleRoutes = require('./article.routes');
 const taskEnrollRoutes = require('./task-enroll.routes');
 const inviteRoutes = require('./invite.routes');
+const groupRoutes = require('./group.routes');
 
 const router = express.Router();
 
@@ -31,6 +32,9 @@ router.use('/members', memberRoutes);
 
 // 邀请相关路由
 router.use('/members/invite', inviteRoutes);
+
+// 群组相关路由
+router.use('/members/groups', groupRoutes);
 
 // 渠道相关路由
 router.use('/channels', channelRoutes);

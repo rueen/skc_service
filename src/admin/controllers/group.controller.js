@@ -164,10 +164,33 @@ async function remove(req, res) {
   }
 }
 
+/**
+ * 获取群主名下群统计信息
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getOwnerGroupStats(req, res) {
+  try {
+    const { memberId } = req.params;
+    
+    if (!memberId) {
+      return responseUtil.badRequest(res, '会员ID不能为空');
+    }
+    
+    const stats = await groupModel.getOwnerGroupStats(parseInt(memberId, 10));
+    
+    return responseUtil.success(res, stats);
+  } catch (error) {
+    logger.error(`获取群主统计信息失败: ${error.message}`);
+    return responseUtil.serverError(res, '获取群组统计信息失败');
+  }
+}
+
 module.exports = {
   list,
   get,
   create,
   update,
-  remove
+  remove,
+  getOwnerGroupStats
 }; 

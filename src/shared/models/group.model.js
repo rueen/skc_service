@@ -470,6 +470,174 @@ async function getMemberFirstGroup(memberId) {
   }
 }
 
+/**
+ * 获取会员所属的群组列表
+ * @param {number} memberId - 会员ID
+ * @returns {Promise<Array>} 群组列表
+ */
+async function getMemberGroups(memberId) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT g.*, mg.is_owner, 
+              (SELECT COUNT(*) FROM member_groups WHERE group_id = g.id) as member_count
+       FROM member_groups mg
+       JOIN \`groups\` g ON mg.group_id = g.id
+       WHERE mg.member_id = ?`,
+      [memberId]
+    );
+
+    // 获取作为群主的群组的收益统计
+    const result = [];
+    for (const row of rows) {
+      const group = formatGroup(row);
+      group.isGroupOwner = row.is_owner === 1;
+
+      // 如果是群主，计算该群的总收益
+      if (group.isGroupOwner) {
+        const [earnings] = await pool.query(
+          `SELECT COALESCE(SUM(amount), 0) as total_earnings
+           FROM bills
+           WHERE bill_type = 'group_owner_commission'
+           AND related_group_id = ?`,
+          [row.id]
+        );
+        group.totalEarnings = parseFloat(earnings[0].total_earnings || 0).toFixed(2);
+      }
+      
+      result.push(group);
+    }
+    
+    return result;
+  } catch (error) {
+    logger.error(`获取会员群组列表失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * 获取会员作为群主的统计信息
+ * @param {number} memberId - 会员ID
+ * @returns {Promise<Object>} 统计信息
+ */
+async function getOwnerGroupStats(memberId) {
+  try {
+    // 获取会员作为群主的群组数量
+    const [groupCount] = await pool.query(
+      `SELECT COUNT(*) as count
+       FROM member_groups mg
+       JOIN \`groups\` g ON mg.group_id = g.id
+       WHERE mg.member_id = ? AND mg.is_owner = 1`,
+      [memberId]
+    );
+    
+    // 获取会员作为群主的总收益
+    const [earnings] = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) as total_earnings
+       FROM bills
+       WHERE bill_type = 'group_owner_commission'
+       AND related_group_id IN (
+         SELECT g.id
+         FROM member_groups mg
+         JOIN \`groups\` g ON mg.group_id = g.id
+         WHERE mg.member_id = ? AND mg.is_owner = 1
+       )`,
+      [memberId]
+    );
+    
+    return {
+      groupCount: groupCount[0].count,
+      totalEarnings: parseFloat(earnings[0].total_earnings || 0).toFixed(2)
+    };
+  } catch (error) {
+    logger.error(`获取群主统计信息失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * 获取群组成员列表
+ * @param {number} groupId - 群组ID
+ * @param {number} page - 页码
+ * @param {number} pageSize - 每页条数
+ * @returns {Promise<Object>} 群组成员列表和总数
+ */
+async function getGroupMembers(groupId, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
+  try {
+    // 验证群组存在
+    const group = await getById(groupId);
+    if (!group) {
+      throw new Error('群组不存在');
+    }
+    
+    // 获取总数
+    const [countResult] = await pool.query(
+      `SELECT COUNT(*) as total
+       FROM member_groups mg
+       WHERE mg.group_id = ?`,
+      [groupId]
+    );
+    
+    const total = countResult[0].total;
+    
+    // 获取成员列表
+    const [rows] = await pool.query(
+      `SELECT m.id, m.member_nickname as nickname, m.member_account as account, 
+              m.avatar, mg.join_time, mg.is_owner
+       FROM member_groups mg
+       JOIN members m ON mg.member_id = m.id
+       WHERE mg.group_id = ?
+       ORDER BY mg.is_owner DESC, mg.join_time DESC
+       LIMIT ? OFFSET ?`,
+      [groupId, parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10)]
+    );
+    
+    // 获取每个成员在该群组中完成的任务数和收益
+    const result = [];
+    for (const member of rows) {
+      // 获取会员在该群组中完成的任务数
+      const [taskCount] = await pool.query(
+        `SELECT COUNT(*) as count
+         FROM submitted_tasks st
+         WHERE st.member_id = ? 
+         AND st.related_group_id = ?
+         AND st.task_audit_status = 'approved'`,
+        [member.id, groupId]
+      );
+      
+      // 获取会员在该群组中的收益
+      const [earnings] = await pool.query(
+        `SELECT COALESCE(SUM(amount), 0) as total_earnings
+         FROM bills
+         WHERE member_id = ?
+         AND related_group_id = ?
+         AND bill_type IN ('task_reward', 'group_owner_commission')`,
+        [member.id, groupId]
+      );
+      
+      result.push({
+        id: member.id,
+        avatar: member.avatar,
+        nickname: member.nickname,
+        account: member.account,
+        joinTime: formatDateTime(member.join_time),
+        isGroupOwner: member.is_owner === 1,
+        taskCount: taskCount[0].count,
+        earnings: parseFloat(earnings[0].total_earnings || 0).toFixed(2)
+      });
+    }
+    
+    return {
+      total,
+      page: parseInt(page, 10),
+      pageSize: parseInt(pageSize, 10),
+      list: result
+    };
+  } catch (error) {
+    logger.error(`获取群组成员列表失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   getList,
   getById,
@@ -479,5 +647,8 @@ module.exports = {
   getMaxGroupMembers,
   getGroupOwnerCommissionRate,
   checkGroupLimit,
-  getMemberFirstGroup
+  getMemberFirstGroup,
+  getMemberGroups,
+  getOwnerGroupStats,
+  getGroupMembers
 }; 

@@ -9,6 +9,7 @@ const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 const { OccupationType } = require('../../shared/config/enums');
+const groupController = require('../controllers/group.controller');
 
 const router = express.Router();
 
@@ -185,6 +186,25 @@ router.delete(
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.remove
+);
+
+/**
+ * @route GET /api/admin/members/:memberId/groups/stats
+ * @desc 获取指定会员作为群主的统计信息
+ * @access Private (需要 member:view 权限)
+ */
+router.get(
+  '/:memberId/groups/stats',
+  authMiddleware.hasPermission('member:view'),
+  [
+    param('memberId')
+      .notEmpty()
+      .withMessage('会员ID不能为空')
+      .isInt()
+      .withMessage('会员ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  groupController.getOwnerGroupStats
 );
 
 module.exports = router; 
