@@ -1,0 +1,49 @@
+/**
+ * H5端邀请路由
+ * 处理邀请相关的路由
+ */
+const express = require('express');
+const { query } = require('express-validator');
+const inviteController = require('../controllers/invite.controller');
+const authMiddleware = require('../../shared/middlewares/auth.middleware');
+const validatorUtil = require('../../shared/utils/validator.util');
+const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
+
+const router = express.Router();
+
+/**
+ * @route GET /api/h5/members/invite/stats
+ * @desc 获取会员邀请数据统计
+ * @access Private
+ */
+router.get(
+  '/stats',
+  authMiddleware.verifyToken,
+  rateLimiterMiddleware.apiLimiter,
+  inviteController.getInviteStats
+);
+
+/**
+ * @route GET /api/h5/members/invite/friends
+ * @desc 获取会员邀请好友列表
+ * @access Private
+ */
+router.get(
+  '/friends',
+  authMiddleware.verifyToken,
+  rateLimiterMiddleware.apiLimiter,
+  [
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('页码必须是大于0的整数'),
+    query('pageSize')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('每页数量必须是1-100之间的整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  inviteController.getInviteFriends
+);
+
+module.exports = router; 

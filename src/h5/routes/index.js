@@ -10,6 +10,7 @@ const memberRoutes = require('./member.routes');
 const channelRoutes = require('./channel.routes');
 const articleRoutes = require('./article.routes');
 const taskEnrollRoutes = require('./task-enroll.routes');
+const inviteRoutes = require('./invite.routes');
 
 const router = express.Router();
 
@@ -27,6 +28,9 @@ router.use('/', taskEnrollRoutes);
 
 // 会员相关路由
 router.use('/members', memberRoutes);
+
+// 邀请相关路由
+router.use('/members/invite', inviteRoutes);
 
 // 渠道相关路由
 router.use('/channels', channelRoutes);
