@@ -6,6 +6,7 @@ const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
+const groupModel = require('./group.model');
 
 /**
  * 格式化已报名任务信息
@@ -76,15 +77,26 @@ async function create(enrollData) {
       throw new Error('已经报名过该任务');
     }
     
-    // 插入报名记录
+    // 获取会员的第一个群组ID
+    let relatedGroupId = null;
+    try {
+      const memberGroup = await groupModel.getMemberFirstGroup(enrollData.memberId);
+      if (memberGroup) {
+        relatedGroupId = memberGroup.groupId;
+      }
+    } catch (error) {
+      logger.warn(`获取会员群组失败，将不记录群组ID: ${error.message}`);
+    }
+    
+    // 插入报名记录，包含关联的群组ID
     const [result] = await connection.query(
-      'INSERT INTO enrolled_tasks (task_id, member_id) VALUES (?, ?)',
-      [enrollData.taskId, enrollData.memberId]
+      'INSERT INTO enrolled_tasks (task_id, member_id, related_group_id) VALUES (?, ?, ?)',
+      [enrollData.taskId, enrollData.memberId, relatedGroupId]
     );
     
     await connection.commit();
     
-    return { id: result.insertId };
+    return { id: result.insertId, relatedGroupId };
   } catch (error) {
     await connection.rollback();
     logger.error(`创建任务报名失败: ${error.message}`);

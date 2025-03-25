@@ -7,6 +7,7 @@ const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 const rewardModel = require('./reward.model');
+const groupModel = require('./group.model');
 
 /**
  * 创建任务提交记录
@@ -61,6 +62,17 @@ async function create(submitData) {
       [submitData.taskId, submitData.memberId]
     );
     
+    // 获取会员的第一个群组ID
+    let relatedGroupId = null;
+    try {
+      const memberGroup = await groupModel.getMemberFirstGroup(submitData.memberId);
+      if (memberGroup) {
+        relatedGroupId = memberGroup.groupId;
+      }
+    } catch (error) {
+      logger.warn(`获取会员群组失败，将不记录群组ID: ${error.message}`);
+    }
+    
     // 如果已提交且状态为 pending 或 approved，则不允许再次提交
     if (existingSubmits.length > 0) {
       const status = existingSubmits[0].task_audit_status;
@@ -69,30 +81,30 @@ async function create(submitData) {
       } else if (status === 'approved') {
         throw new Error('任务已提交并已通过审核');
       } else {
-        // 如果是rejected状态，则更新现有记录
+        // 如果是rejected状态，则更新现有记录，同时更新群组ID
         await connection.query(
           `UPDATE submitted_tasks 
-           SET submit_content = ?, submit_time = NOW(), task_audit_status = 'pending', reject_reason = NULL 
+           SET submit_content = ?, submit_time = NOW(), task_audit_status = 'pending', reject_reason = NULL, related_group_id = ? 
            WHERE id = ?`,
-          [JSON.stringify(submitData.submitContent), existingSubmits[0].id]
+          [JSON.stringify(submitData.submitContent), relatedGroupId, existingSubmits[0].id]
         );
         
         await connection.commit();
-        return { id: existingSubmits[0].id, isResubmit: true };
+        return { id: existingSubmits[0].id, isResubmit: true, relatedGroupId };
       }
     }
     
-    // 插入提交记录
+    // 插入提交记录，包含关联的群组ID
     const [result] = await connection.query(
       `INSERT INTO submitted_tasks 
-       (task_id, member_id, submit_content, task_audit_status) 
-       VALUES (?, ?, ?, 'pending')`,
-      [submitData.taskId, submitData.memberId, JSON.stringify(submitData.submitContent)]
+       (task_id, member_id, submit_content, task_audit_status, related_group_id) 
+       VALUES (?, ?, ?, 'pending', ?)`,
+      [submitData.taskId, submitData.memberId, JSON.stringify(submitData.submitContent), relatedGroupId]
     );
     
     await connection.commit();
     
-    return { id: result.insertId, isResubmit: false };
+    return { id: result.insertId, isResubmit: false, relatedGroupId };
   } catch (error) {
     await connection.rollback();
     logger.error(`创建任务提交失败: ${error.message}`);

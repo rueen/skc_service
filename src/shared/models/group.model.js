@@ -444,6 +444,32 @@ async function checkGroupLimit(groupId) {
   }
 }
 
+/**
+ * 获取会员的第一个群组ID
+ * @param {number} memberId - 会员ID
+ * @returns {Promise<Object>} 包含群组ID的对象，如果没有群组则返回null
+ */
+async function getMemberFirstGroup(memberId) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT mg.group_id 
+       FROM member_groups mg 
+       WHERE mg.member_id = ? 
+       ORDER BY mg.join_time ASC, mg.id ASC 
+       LIMIT 1`,
+      [memberId]
+    );
+    
+    if (rows.length > 0) {
+      return { groupId: rows[0].group_id };
+    }
+    return null;
+  } catch (error) {
+    logger.error(`获取会员第一个群组失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   getList,
   getById,
@@ -452,5 +478,6 @@ module.exports = {
   remove,
   getMaxGroupMembers,
   getGroupOwnerCommissionRate,
-  checkGroupLimit
+  checkGroupLimit,
+  getMemberFirstGroup
 }; 
