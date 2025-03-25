@@ -68,44 +68,71 @@ async function updateTaskStatus() {
  * @param {boolean} options.runImmediately - 是否立即执行一次
  */
 function startScheduler(options = {}) {
-  const { schedule, runImmediately = false } = options;
-  
-  // 如果已存在调度任务，先停止它
-  if (scheduledTask) {
-    scheduledTask.stop();
-    logger.info('已停止之前的任务状态更新定时任务');
-  }
-  
-  // 创建新的定时任务
-  scheduledTask = cron.schedule(schedule, async () => {
-    await updateTaskStatus();
-  });
-  
-  logger.info(`任务状态更新定时任务已启动，调度表达式: ${schedule}`);
-  
-  // 如果需要立即运行一次
-  if (runImmediately) {
-    updateTaskStatus().then(result => {
-      if (result.success) {
-        logger.info('初始任务状态更新完成');
+  try {
+    const { schedule, runImmediately = false } = options;
+    
+    if (!schedule) {
+      logger.error('启动定时任务失败：缺少cron表达式');
+      return null;
+    }
+    
+    // 验证cron表达式
+    if (!cron.validate(schedule)) {
+      logger.error(`启动定时任务失败：无效的cron表达式 "${schedule}"`);
+      return null;
+    }
+    
+    // 如果已存在调度任务，先停止它
+    if (scheduledTask) {
+      scheduledTask.stop();
+      logger.info('已停止之前的任务状态更新定时任务');
+    }
+    
+    // 创建新的定时任务
+    scheduledTask = cron.schedule(schedule, async () => {
+      try {
+        await updateTaskStatus();
+      } catch (error) {
+        logger.error(`定时任务执行失败: ${error.message}`);
       }
     });
+    
+    logger.info(`任务状态更新定时任务已启动，调度表达式: ${schedule}`);
+    
+    // 如果需要立即运行一次
+    if (runImmediately) {
+      updateTaskStatus().then(result => {
+        if (result.success) {
+          logger.info('初始任务状态更新完成');
+        }
+      }).catch(error => {
+        logger.error(`初始任务状态更新失败: ${error.message}`);
+      });
+    }
+    
+    return scheduledTask;
+  } catch (error) {
+    logger.error(`启动定时任务失败: ${error.message}`);
+    return null;
   }
-  
-  return scheduledTask;
 }
 
 /**
  * 停止定时任务调度
  */
 function stopScheduler() {
-  if (scheduledTask) {
-    scheduledTask.stop();
-    scheduledTask = null;
-    logger.info('任务状态更新定时任务已停止');
-    return true;
+  try {
+    if (scheduledTask) {
+      scheduledTask.stop();
+      scheduledTask = null;
+      logger.info('任务状态更新定时任务已停止');
+      return true;
+    }
+    return false;
+  } catch (error) {
+    logger.error(`停止定时任务失败: ${error.message}`);
+    return false;
   }
-  return false;
 }
 
 /**

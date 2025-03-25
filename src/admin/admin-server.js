@@ -79,8 +79,17 @@ async function startServer() {
         const env = process.env.NODE_ENV || 'development';
         const schedulerConfig = taskStatusUpdateConfig[env] || taskStatusUpdateConfig.development;
         
-        startScheduler(schedulerConfig);
-        logger.info(`已启动任务状态更新定时任务，环境: ${env}，调度周期: ${schedulerConfig.schedule}`);
+        logger.info(`尝试启动任务状态定时更新服务，环境: ${env}，调度表达式: ${schedulerConfig.schedule}`);
+        try {
+          const scheduler = startScheduler(schedulerConfig);
+          if (scheduler) {
+            logger.info(`✅ 任务状态更新定时任务已成功启动，环境: ${env}，调度周期: ${schedulerConfig.schedule}`);
+          } else {
+            logger.error(`❌ 任务状态更新定时任务启动失败`);
+          }
+        } catch (error) {
+          logger.error(`❌ 任务状态更新定时任务启动时发生错误: ${error.message}`);
+        }
       } else {
         logger.info(`任务状态更新定时任务配置为在 ${schedulerServiceConfig.taskStatusUpdateService} 服务中运行，不在此实例中启动`);
       }
