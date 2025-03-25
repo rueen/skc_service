@@ -7,6 +7,7 @@
 ## 项目结构
 
 ```
+scripts/                  # 存放所有迁移脚本
 src/
 ├── admin/                # admin端（管理后台）代码
 │   ├── admin-server.js   # 管理后台服务入口文件
