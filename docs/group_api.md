@@ -123,7 +123,7 @@
 
 3. **群主收益**
    - 来源表：`bills`
-   - 关联条件：bill_type = 'group_commission'
+   - 关联条件：bill_type = 'group_owner_commission'
    - 关联字段：related_group_id
 
 4. **会员完成任务次数**
