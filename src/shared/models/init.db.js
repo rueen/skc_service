@@ -294,6 +294,23 @@ CREATE TABLE IF NOT EXISTS withdrawals (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='提现表';
 `;
 
+// 创建余额变动日志表
+const createBalanceLogsTable = `
+CREATE TABLE IF NOT EXISTS balance_logs (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '日志ID',
+  member_id bigint(20) NOT NULL COMMENT '会员ID',
+  amount decimal(10,2) NOT NULL COMMENT '变动金额',
+  before_balance decimal(10,2) NOT NULL COMMENT '变动前余额',
+  after_balance decimal(10,2) NOT NULL COMMENT '变动后余额',
+  transaction_type varchar(50) NOT NULL COMMENT '交易类型',
+  create_time datetime NOT NULL COMMENT '创建时间',
+  PRIMARY KEY (id),
+  KEY idx_member_id (member_id),
+  KEY idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='余额变动日志表';
+`;
+
+
 // 执行所有SQL语句创建表
 async function initTables() {
   const connection = await pool.getConnection();
@@ -317,6 +334,7 @@ async function initTables() {
     await connection.query(createTaskSubmittedTable);
     await connection.query(createWaitersTable);
     await connection.query(createWithdrawalsTable);
+    await connection.query(createBalanceLogsTable);
     
     // 初始化管理员账号
     await connection.query(initAdminUser);
