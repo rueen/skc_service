@@ -226,4 +226,23 @@ router.get(
   memberController.getInviteStats
 );
 
+/**
+ * @route GET /api/admin/members/:memberId/task/stats
+ * @desc 获取指定会员的任务数据统计信息
+ * @access Private (需要 member:view 权限)
+ */
+router.get(
+  '/:memberId/task/stats',
+  authMiddleware.hasPermission('member:view'),
+  [
+    param('memberId')
+      .notEmpty()
+      .withMessage('会员ID不能为空')
+      .isInt()
+      .withMessage('会员ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.getTaskStats
+);
+
 module.exports = router; 
