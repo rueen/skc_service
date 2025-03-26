@@ -746,9 +746,15 @@ async function updateMemberBalance(memberId, amount, remark = '') {
     // 记录余额变动日志
     await connection.query(
       `INSERT INTO balance_logs 
-       (member_id, amount, balance, remark) 
-       VALUES (?, ?, ?, ?)`,
-      [memberId, changeAmount.toFixed(2), newBalance.toFixed(2), remark]
+       (member_id, amount, before_balance, after_balance, transaction_type, create_time) 
+       VALUES (?, ?, ?, ?, ?, NOW())`,
+      [
+        memberId, 
+        changeAmount.toFixed(2), 
+        currentBalance.toFixed(2), 
+        newBalance.toFixed(2),
+        remark || 'balance_change'
+      ]
     );
     
     await connection.commit();
