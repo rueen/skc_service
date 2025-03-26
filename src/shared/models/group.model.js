@@ -591,7 +591,20 @@ async function getGroupMembers(groupId, page = DEFAULT_PAGE, pageSize = DEFAULT_
       [groupId, parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10)]
     );
     
-    // 获取每个成员在该群组中完成的任务数和收益
+    // 获取群主ID
+    const [ownerResult] = await pool.query(
+      `SELECT member_id FROM member_groups 
+       WHERE group_id = ? AND is_owner = 1`,
+      [groupId]
+    );
+    
+    if (ownerResult.length === 0) {
+      throw new Error('群组没有群主');
+    }
+    
+    const ownerId = ownerResult[0].member_id;
+    
+    // 获取每个成员在该群组中完成的任务数和为群主贡献的收益
     const result = [];
     for (const member of rows) {
       // 获取会员在该群组中完成的任务数
@@ -604,14 +617,16 @@ async function getGroupMembers(groupId, page = DEFAULT_PAGE, pageSize = DEFAULT_
         [member.id, groupId]
       );
       
-      // 获取会员在该群组中的收益
+      // 获取会员为群主贡献的收益（群主从该会员获得的佣金）
       const [earnings] = await pool.query(
         `SELECT COALESCE(SUM(amount), 0) as total_earnings
          FROM bills
-         WHERE member_id = ?
-         AND related_group_id = ?
-         AND bill_type IN ('task_reward', 'group_owner_commission')`,
-        [member.id, groupId]
+         WHERE member_id = ?                   /* 群主ID */
+         AND related_member_id = ?             /* 会员ID */
+         AND related_group_id = ?              /* 群组ID */
+         AND bill_type = 'group_owner_commission'
+         AND settlement_status = 'success'`,
+        [ownerId, member.id, groupId]
       );
       
       result.push({
