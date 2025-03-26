@@ -238,9 +238,10 @@ async function batchResolve(req, res) {
       const inviterId = memberRows[0].inviter_id;
       
       if (!inviterId) {
+        const nickname = memberRows[0].member_nickname;
         results.failed.push({
           id,
-          reason: '会员没有邀请人，无法自动分配群组'
+          reason: `会员【${nickname}】没有邀请人，无法自动分配群组`
         });
         continue;
       }
