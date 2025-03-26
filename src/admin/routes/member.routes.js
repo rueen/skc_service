@@ -207,4 +207,23 @@ router.get(
   groupController.getOwnerGroupStats
 );
 
+/**
+ * @route GET /api/admin/members/:memberId/invite/stats
+ * @desc 获取指定会员的邀请数据统计信息
+ * @access Private (需要 member:view 权限)
+ */
+router.get(
+  '/:memberId/invite/stats',
+  authMiddleware.hasPermission('member:view'),
+  [
+    param('memberId')
+      .notEmpty()
+      .withMessage('会员ID不能为空')
+      .isInt()
+      .withMessage('会员ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.getInviteStats
+);
+
 module.exports = router; 

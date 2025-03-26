@@ -8,6 +8,7 @@ const logger = require('../../shared/config/logger.config');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 const { OccupationType } = require('../../shared/config/enums');
 const groupModel = require('../../shared/models/group.model');
+const inviteModel = require('../../shared/models/invite.model');
 /**
  * 获取会员列表
  * @param {Object} req - 请求对象
@@ -308,10 +309,39 @@ async function remove(req, res) {
   }
 }
 
+/**
+ * 获取会员邀请数据统计
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getInviteStats(req, res) {
+  try {
+    const { memberId } = req.params;
+    
+    if (!memberId) {
+      return responseUtil.badRequest(res, '会员ID不能为空');
+    }
+    
+    const member = await memberModel.getById(parseInt(memberId, 10));
+    
+    if (!member) {
+      return responseUtil.notFound(res, '会员不存在');
+    }
+
+    const inviteStats = await inviteModel.getInviteStats(parseInt(memberId, 10));
+    
+    return responseUtil.success(res, inviteStats);
+  } catch (error) {
+    logger.error(`获取会员邀请数据统计失败: ${error.message}`);
+    return responseUtil.serverError(res, '获取会员邀请数据统计失败');
+  }
+}
+
 module.exports = {
   list,
   getDetail,
   create,
   update,
-  remove
+  remove,
+  getInviteStats
 }; 
