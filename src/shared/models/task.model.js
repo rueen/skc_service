@@ -741,7 +741,7 @@ async function remove(id) {
     
     // 检查是否有关联的已提交任务
     const [submitted] = await connection.query(
-      'SELECT COUNT(*) as count FROM task_submitted WHERE task_id = ?',
+      'SELECT COUNT(*) as count FROM submitted_tasks WHERE task_id = ?',
       [id]
     );
     

@@ -3,7 +3,7 @@
  * 处理H5端任务相关的业务逻辑
  */
 const taskModel = require('../../shared/models/task.model');
-const taskSubmittedModel = require('../../shared/models/taskSubmitted.model');
+const submittedTaskModel = require('../../shared/models/submitted-task.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 
@@ -104,14 +104,14 @@ async function submitTask(req, res) {
     }
     
     // 检查是否已提交过该任务
-    const existingSubmission = await taskSubmittedModel.getByTaskAndMember(parseInt(id, 10), memberId);
+    const existingSubmission = await submittedTaskModel.getByTaskAndMember(parseInt(id, 10), memberId);
     
     if (existingSubmission) {
       return responseUtil.badRequest(res, '您已提交过该任务');
     }
     
     // 提交任务
-    const result = await taskSubmittedModel.create({
+    const result = await submittedTaskModel.create({
       taskId: parseInt(id, 10),
       memberId,
       submitContent,
@@ -143,7 +143,7 @@ async function getSubmittedList(req, res) {
     if (taskAuditStatus) filters.taskAuditStatus = taskAuditStatus;
     
     // 获取已提交的任务列表
-    const result = await taskSubmittedModel.getList(filters, page, pageSize);
+    const result = await submittedTaskModel.getList(filters, page, pageSize);
     
     return responseUtil.success(res, result);
   } catch (error) {
