@@ -32,7 +32,8 @@ function formatMember(member) {
     gender: member.gender !== undefined ? member.gender : 2, // 默认为保密
     telegram: member.telegram || '',
     createTime: formatDateTime(member.create_time),
-    updateTime: formatDateTime(member.update_time)
+    updateTime: formatDateTime(member.update_time),
+    balance: member.balance || 0
   };
 }
 
