@@ -8,6 +8,92 @@ const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
 const { formatDateTime } = require('../utils/date.util');
 
 /**
+ * 创建账单记录
+ * @param {Object} billData - 账单数据
+ * @param {number} billData.memberId - 会员ID
+ * @param {string} billData.billType - 账单类型
+ * @param {number} billData.amount - 金额
+ * @param {number} billData.taskId - 任务ID
+ * @param {number} [billData.relatedMemberId] - 关联会员ID（如邀请关系）
+ * @param {number} [billData.relatedGroupId] - 关联群组ID（用于数据统计）
+ * @param {Object} connection - 数据库连接（用于事务）
+ * @returns {Promise<Object>} 创建结果
+ */
+async function createBill(billData, connection) {
+  try {
+    // 日志记录所有传入的账单数据，便于调试
+    logger.info(`创建账单记录 - 会员ID: ${billData.memberId}, 账单类型: ${billData.billType}, 金额: ${billData.amount}, 任务ID: ${billData.taskId}, 关联会员ID: ${billData.relatedMemberId}, 关联群组ID: ${billData.relatedGroupId}`);
+    
+    // 进一步确认related_group_id是一个有效数字
+    let relatedGroupId = null;
+    if (billData.relatedGroupId && !isNaN(parseInt(billData.relatedGroupId, 10))) {
+      relatedGroupId = parseInt(billData.relatedGroupId, 10);
+      
+      // 额外检查群组是否存在
+      const [groups] = await connection.query(
+        'SELECT id FROM `groups` WHERE id = ?',
+        [relatedGroupId]
+      );
+      
+      if (groups.length === 0) {
+        logger.warn(`关联的群组ID ${relatedGroupId} 不存在，将设置为NULL`);
+        relatedGroupId = null;
+      }
+    }
+    
+    // 如果没有有效的群组ID，尝试从会员的第一个群组获取
+    if (!relatedGroupId) {
+      const [groups] = await connection.query(
+        `SELECT group_id 
+         FROM member_groups 
+         WHERE member_id = ? 
+         ORDER BY join_time ASC, id ASC 
+         LIMIT 1`,
+        [billData.memberId]
+      );
+      
+      if (groups.length > 0) {
+        relatedGroupId = groups[0].group_id;
+        logger.info(`未提供有效的群组ID，使用会员的第一个群组: ${relatedGroupId}`);
+      }
+    }
+    
+    // 初始化为待结算状态
+    const [result] = await connection.query(
+      `INSERT INTO bills 
+       (member_id, bill_type, amount, settlement_status, task_id, related_member_id, related_group_id) 
+       VALUES (?, ?, ?, 'pending', ?, ?, ?)`,
+      [
+        billData.memberId,
+        billData.billType,
+        billData.amount,
+        billData.taskId,
+        billData.relatedMemberId || null,
+        relatedGroupId
+      ]
+    );
+    
+    // 记录插入结果
+    logger.info(`账单记录创建成功 - 账单ID: ${result.insertId}, 关联群组ID: ${relatedGroupId}`);
+    
+    // 验证插入结果
+    const [inserted] = await connection.query(
+      'SELECT related_group_id FROM bills WHERE id = ?',
+      [result.insertId]
+    );
+    
+    if (inserted.length > 0) {
+      logger.info(`验证插入结果 - 账单ID: ${result.insertId}, 实际存储的关联群组ID: ${inserted[0].related_group_id}`);
+    }
+    
+    return { id: result.insertId };
+  } catch (error) {
+    logger.error(`创建账单记录失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
  * 获取会员账单列表
  * @param {number} memberId - 会员ID
  * @param {Object} options - 查询选项
@@ -185,6 +271,7 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
 }
 
 module.exports = {
+  createBill,
   getMemberBills,
   getAllBills
 }; 

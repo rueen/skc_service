@@ -7,6 +7,7 @@ const logger = require('../config/logger.config');
 const { WithdrawalStatus } = require('../config/enums');
 const memberModel = require('./member.model');
 const billModel = require('./bill.model');
+const { BillType } = require('../config/enums');
 
 /**
  * 创建提现申请
@@ -39,23 +40,18 @@ async function createWithdrawal(withdrawalData) {
     
     const withdrawalId = result.insertId;
     
-    // 创建账单记录
     await billModel.createBill({
-      member_id,
-      bill_type: 'withdrawal',
+      memberId: member_id,
+      billType: BillType.WITHDRAWAL,
       amount: -amount,
-      settlement_status: 'pending'
+      taskId: null,
+      relatedGroupId: null
     }, connection);
     
     await connection.commit();
     
     return {
       id: withdrawalId,
-      member_id,
-      withdrawal_account_id,
-      amount,
-      withdrawal_status: WithdrawalStatus.PENDING,
-      create_time: new Date()
     };
   } catch (error) {
     await connection.rollback();

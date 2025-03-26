@@ -46,7 +46,7 @@ router.post(
  * @access Private
  */
 router.put(
-  '/:id',
+  '/withdrawal-accounts/:id',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
@@ -75,7 +75,7 @@ router.put(
  * @access Private
  */
 router.get(
-  '/',
+  '/withdrawal-accounts',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   withdrawalController.getWithdrawalAccounts
@@ -87,7 +87,7 @@ router.get(
  * @access Private
  */
 router.delete(
-  '/:id',
+  '/withdrawal-accounts/:id',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
@@ -103,7 +103,7 @@ router.delete(
  * @access Private
  */
 router.post(
-  '/',
+  '/withdrawals',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
@@ -124,7 +124,7 @@ router.post(
  * @access Private
  */
 router.get(
-  '/',
+  '/withdrawals',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [

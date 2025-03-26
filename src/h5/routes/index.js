@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 15:54:14
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-26 17:23:08
+ * @LastEditTime: 2025-03-26 20:59:57
  * @Description: 
  */
 /**
@@ -51,7 +51,6 @@ router.use('/channels', channelRoutes);
 router.use('/articles', articleRoutes);
 
 // 提现账户和提现记录路由（共用一个路由文件）
-router.use('/withdrawal-accounts', withdrawalRoutes);
-router.use('/withdrawals', withdrawalRoutes);
+router.use('/', withdrawalRoutes);
 
 module.exports = router; 
