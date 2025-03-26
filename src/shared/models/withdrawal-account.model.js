@@ -1,0 +1,163 @@
+/**
+ * 提现账户模型
+ * 处理提现账户相关数据操作
+ */
+const { pool } = require('./db');
+const logger = require('../config/logger.config');
+
+/**
+ * 将数据库字段名转换为驼峰命名法
+ * @param {Object} row - 数据库行数据
+ * @returns {Object} - 转换后的对象
+ */
+function convertToCamelCase(row) {
+  if (!row) return null;
+  
+  return {
+    id: row.id,
+    memberId: row.member_id,
+    accountType: row.account_type,
+    account: row.account,
+    name: row.name,
+    createTime: row.create_time,
+    updateTime: row.update_time
+  };
+}
+
+/**
+ * 创建提现账户
+ * @param {Object} accountData - 提现账户数据
+ * @returns {Promise<Object>} - 创建的提现账户对象
+ */
+async function createWithdrawalAccount(accountData) {
+  try {
+    const { memberId, accountType, account, name } = accountData;
+    
+    const [result] = await pool.query(
+      `INSERT INTO withdrawal_accounts 
+      (member_id, account_type, account, name) 
+      VALUES (?, ?, ?, ?)`,
+      [memberId, accountType, account, name]
+    );
+    
+    if (result.affectedRows === 0) {
+      throw new Error('创建提现账户失败');
+    }
+    
+    const createdAccount = {
+      id: result.insertId,
+      member_id: memberId,
+      account_type: accountType,
+      account,
+      name,
+      create_time: new Date()
+    };
+    
+    return convertToCamelCase(createdAccount);
+  } catch (error) {
+    logger.error(`创建提现账户失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * 更新提现账户
+ * @param {number} id - 提现账户ID
+ * @param {Object} accountData - 提现账户数据
+ * @returns {Promise<Object>} - 更新后的提现账户对象
+ */
+async function updateWithdrawalAccount(id, accountData) {
+  try {
+    const { accountType, account, name } = accountData;
+    
+    const [result] = await pool.query(
+      `UPDATE withdrawal_accounts 
+      SET account_type = ?, account = ?, name = ? 
+      WHERE id = ?`,
+      [accountType, account, name, id]
+    );
+    
+    if (result.affectedRows === 0) {
+      throw new Error('更新提现账户失败');
+    }
+    
+    const updatedAccount = {
+      id,
+      account_type: accountType,
+      account,
+      name,
+      update_time: new Date()
+    };
+    
+    return convertToCamelCase(updatedAccount);
+  } catch (error) {
+    logger.error(`更新提现账户失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * 获取会员的提现账户列表
+ * @param {number} memberId - 会员ID
+ * @returns {Promise<Array>} - 提现账户列表
+ */
+async function getWithdrawalAccountsByMemberId(memberId) {
+  try {
+    const [accounts] = await pool.query(
+      `SELECT * FROM withdrawal_accounts WHERE member_id = ? ORDER BY create_time DESC`,
+      [memberId]
+    );
+    
+    return accounts.map(convertToCamelCase);
+  } catch (error) {
+    logger.error(`获取会员提现账户列表失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * 根据ID获取提现账户
+ * @param {number} id - 提现账户ID
+ * @returns {Promise<Object|null>} - 提现账户对象
+ */
+async function getWithdrawalAccountById(id) {
+  try {
+    const [accounts] = await pool.query(
+      `SELECT * FROM withdrawal_accounts WHERE id = ?`,
+      [id]
+    );
+    
+    return convertToCamelCase(accounts[0]);
+  } catch (error) {
+    logger.error(`根据ID获取提现账户失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * 删除提现账户
+ * @param {number} id - 提现账户ID
+ * @param {number} memberId - 会员ID，用于验证账户所有权
+ * @returns {Promise<boolean>} - 删除结果
+ */
+async function deleteWithdrawalAccount(id, memberId) {
+  try {
+    const [result] = await pool.query(
+      `DELETE FROM withdrawal_accounts WHERE id = ? AND member_id = ?`,
+      [id, memberId]
+    );
+    
+    return result.affectedRows > 0;
+  } catch (error) {
+    logger.error(`删除提现账户失败: ${error.message}`);
+    throw error;
+  }
+}
+
+module.exports = {
+  createWithdrawalAccount,
+  updateWithdrawalAccount,
+  getWithdrawalAccountsByMemberId,
+  getWithdrawalAccountById,
+  deleteWithdrawalAccount
+}; 

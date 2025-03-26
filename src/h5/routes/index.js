@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-25 15:54:14
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-26 17:23:08
+ * @Description: 
+ */
 /**
  * H5端路由索引文件
  * 集中管理所有H5端API路由
@@ -12,6 +19,7 @@ const articleRoutes = require('./article.routes');
 const taskEnrollRoutes = require('./task-enroll.routes');
 const inviteRoutes = require('./invite.routes');
 const groupRoutes = require('./group.routes');
+const withdrawalRoutes = require('./withdrawal.routes');
 
 const router = express.Router();
 
@@ -41,5 +49,9 @@ router.use('/channels', channelRoutes);
 
 // 文章相关路由
 router.use('/articles', articleRoutes);
+
+// 提现账户和提现记录路由（共用一个路由文件）
+router.use('/withdrawal-accounts', withdrawalRoutes);
+router.use('/withdrawals', withdrawalRoutes);
 
 module.exports = router; 

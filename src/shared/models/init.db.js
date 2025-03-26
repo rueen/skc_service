@@ -271,27 +271,43 @@ FROM dual
 WHERE NOT EXISTS (SELECT 1 FROM waiters WHERE username = 'admin');
 `;
 
-// 创建提现表
+// 创建提现账户表
+const createWithdrawalAccountsTable = `
+CREATE TABLE IF NOT EXISTS withdrawal_accounts (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '账户ID，主键，自增',
+  member_id bigint(20) NOT NULL COMMENT '会员ID，外键关联members表',
+  account_type varchar(20) NOT NULL COMMENT '账户类型：maya-Maya，gcash-GCash，alipay-Alipay',
+  account varchar(100) NOT NULL COMMENT '账号',
+  name varchar(50) NOT NULL COMMENT '姓名',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  KEY idx_member_id (member_id),
+  KEY idx_account_type (account_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='提现账户表';
+`;
+
+// 创建提现记录表
 const createWithdrawalsTable = `
 CREATE TABLE IF NOT EXISTS withdrawals (
-  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '提现ID',
-  member_id bigint(20) NOT NULL COMMENT '会员ID',
-  amount decimal(10,2) NOT NULL COMMENT '提现金额',
-  withdrawal_status varchar(20) NOT NULL DEFAULT 'pending' COMMENT '提现状态：pending-待处理，processing-处理中，completed-已完成，rejected-已拒绝',
-  payment_method varchar(20) NOT NULL COMMENT '支付方式：alipay-支付宝，wechat-微信，bank-银行卡',
-  payment_account varchar(100) NOT NULL COMMENT '收款账号',
-  payment_name varchar(50) NOT NULL COMMENT '收款人姓名',
-  waiter_id bigint(20) DEFAULT NULL COMMENT '处理小二ID',
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '提现ID，主键，自增',
+  member_id bigint(20) NOT NULL COMMENT '会员ID，外键关联members表',
+  withdrawal_account_id bigint(20) NOT NULL COMMENT '提现账户ID，外键关联withdrawal_accounts表',
+  amount decimal(10,2) NOT NULL COMMENT '申请提现金额',
+  withdrawal_status varchar(20) NOT NULL DEFAULT 'pending' COMMENT '提现状态：pending-待处理，success-已完成，failed-已拒绝',
+  waiter_id bigint(20) DEFAULT NULL COMMENT '审核员ID，外键关联waiters表',
   reject_reason varchar(255) DEFAULT NULL COMMENT '拒绝原因',
+  remark varchar(255) DEFAULT NULL COMMENT '备注',
   process_time datetime DEFAULT NULL COMMENT '处理时间',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
   KEY idx_member_id (member_id),
+  KEY idx_withdrawal_account_id (withdrawal_account_id),
   KEY idx_withdrawal_status (withdrawal_status),
   KEY idx_waiter_id (waiter_id),
   KEY idx_create_time (create_time)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='提现表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='提现记录表';
 `;
 
 // 创建余额变动日志表
@@ -333,6 +349,7 @@ async function initTables() {
     await connection.query(createEnrolledTasksTable);
     await connection.query(createTaskSubmittedTable);
     await connection.query(createWaitersTable);
+    await connection.query(createWithdrawalAccountsTable);
     await connection.query(createWithdrawalsTable);
     await connection.query(createBalanceLogsTable);
     

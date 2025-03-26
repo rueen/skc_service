@@ -108,6 +108,28 @@ const WithdrawalStatusLang = {
   }
 };
 
+// 提现账户类型枚举
+const WithdrawalAccountType = {
+  MAYA: 'maya',       // Maya
+  GCASH: 'gcash',     // GCash
+  ALIPAY: 'alipay'    // 支付宝
+};
+
+const WithdrawalAccountTypeLang = {
+  [WithdrawalAccountType.MAYA]: {
+    'zh-CN': 'Maya',
+    'en-US': 'Maya'
+  },
+  [WithdrawalAccountType.GCASH]: {
+    'zh-CN': 'GCash',
+    'en-US': 'GCash'
+  },
+  [WithdrawalAccountType.ALIPAY]: {
+    'zh-CN': '支付宝',
+    'en-US': 'Alipay'
+  }
+};
+
 // 账单类型枚举
 const BillType = {
   WITHDRAWAL: 'withdrawal',      // 提现
@@ -208,6 +230,8 @@ module.exports = {
   AccountAuditStatusLang,
   WithdrawalStatus,
   WithdrawalStatusLang,
+  WithdrawalAccountType,
+  WithdrawalAccountTypeLang,
   BillType,
   BillTypeLang,
   OccupationType,

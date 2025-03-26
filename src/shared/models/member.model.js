@@ -702,6 +702,66 @@ async function checkGroupExists(groupId) {
   }
 }
 
+/**
+ * 更新会员余额
+ * @param {number} memberId - 会员ID
+ * @param {number} amount - 变动金额（正数增加，负数减少）
+ * @param {string} [remark] - 变动备注
+ * @returns {Promise<boolean>} 更新是否成功
+ */
+async function updateMemberBalance(memberId, amount, remark = '') {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 检查会员是否存在并获取当前余额
+    const [member] = await connection.query(
+      'SELECT id, balance FROM members WHERE id = ?',
+      [memberId]
+    );
+    
+    if (member.length === 0) {
+      throw new Error('会员不存在');
+    }
+    
+    // 确保金额是数字类型
+    const currentBalance = parseFloat(member[0].balance) || 0;
+    const changeAmount = parseFloat(amount);
+    const newBalance = currentBalance + changeAmount;
+    
+    if (newBalance < 0) {
+      throw new Error('余额不足');
+    }
+    
+    // 更新会员余额，使用 toFixed(2) 确保保留两位小数
+    const [result] = await connection.query(
+      'UPDATE members SET balance = ? WHERE id = ?',
+      [newBalance.toFixed(2), memberId]
+    );
+    
+    if (result.affectedRows === 0) {
+      throw new Error('更新会员余额失败');
+    }
+    
+    // 记录余额变动日志
+    await connection.query(
+      `INSERT INTO balance_logs 
+       (member_id, amount, balance, remark) 
+       VALUES (?, ?, ?, ?)`,
+      [memberId, changeAmount.toFixed(2), newBalance.toFixed(2), remark]
+    );
+    
+    await connection.commit();
+    return true;
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`更新会员余额失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   getList,
   getById,
@@ -709,5 +769,6 @@ module.exports = {
   create,
   update,
   remove,
-  checkGroupExists
+  checkGroupExists,
+  updateMemberBalance
 }; 
