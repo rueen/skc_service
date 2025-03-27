@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-24 21:46:07
+ * @LastEditTime: 2025-03-27 18:06:04
  * @Description: 
  */
 /**
@@ -10,32 +10,42 @@
  * 处理任务审核相关路由配置
  */
 const express = require('express');
-const router = express.Router();
 const submittedTaskController = require('../controllers/submitted-task.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
+const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
+
+const router = express.Router();
+
+// 应用中间件
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
 
 // 获取已提交任务列表
-router.get('/submitted-tasks', [
-  authMiddleware.verifyToken, 
-  authMiddleware.checkPermission('task:submitted')
-], submittedTaskController.getSubmittedTasks);
+router.get(
+  '/',
+  authMiddleware.checkPermission('task:submitted'),
+  submittedTaskController.getSubmittedTasks
+);
 
 // 获取已提交任务详情
-router.get('/submitted-tasks/:id', [
-  authMiddleware.verifyToken, 
-  authMiddleware.checkPermission('task:submittedDetail')
-], submittedTaskController.getSubmittedTaskDetail);
+router.get(
+  '/:id',
+  authMiddleware.checkPermission('task:submittedDetail'),
+  submittedTaskController.getSubmittedTaskDetail
+);
 
 // 批量审核通过
-router.post('/submitted-tasks/batch-approve', [
-  authMiddleware.verifyToken, 
-  authMiddleware.checkPermission('task:submitted')
-], submittedTaskController.batchApproveSubmissions);
+router.post(
+  '/batch-approve',
+  authMiddleware.checkPermission('task:submitted'),
+  submittedTaskController.batchApproveSubmissions
+);
 
 // 批量拒绝
-router.post('/submitted-tasks/batch-reject', [
-  authMiddleware.verifyToken, 
-  authMiddleware.checkPermission('task:submitted')
-], submittedTaskController.batchRejectSubmissions);
+router.post(
+  '/batch-reject',
+  authMiddleware.checkPermission('task:submitted'),
+  submittedTaskController.batchRejectSubmissions
+);
 
 module.exports = router; 

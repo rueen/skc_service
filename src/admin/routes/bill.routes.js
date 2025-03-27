@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-24 20:43:21
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-24 20:54:34
+ * @LastEditTime: 2025-03-27 17:44:25
  * @Description: 
  */
 /**
@@ -21,6 +21,7 @@ const router = express.Router();
 // 应用中间件
 router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
+router.use(authMiddleware.hasPermission('settlement:bills'));
 
 /**
  * @route GET /api/admin/bills
@@ -29,7 +30,6 @@ router.use(rateLimiterMiddleware.apiLimiter);
  */
 router.get(
   '/',
-  authMiddleware.hasPermission('settlement:bills'),
   [
     query('page')
       .optional()

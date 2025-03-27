@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-26 16:57:36
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-27 17:45:55
+ * @Description: 
+ */
 /**
  * Admin端提现路由
  * 处理提现相关的路由
@@ -8,8 +15,14 @@ const withdrawalController = require('../controllers/withdrawal.controller');
 const authMiddleware = require('../../shared/middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const { WithdrawalStatus } = require('../../shared/config/enums');
+const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
+
+// 应用中间件
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
+router.use(authMiddleware.hasPermission('finance:withdrawal'));
 
 /**
  * @route GET /api/admin/withdrawals
@@ -18,8 +31,6 @@ const router = express.Router();
  */
 router.get(
   '/',
-  authMiddleware.verifyToken,
-  authMiddleware.checkPermission('finance:withdrawal'),
   [
     query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
     query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
@@ -42,8 +53,6 @@ router.get(
  */
 router.put(
   '/batchResolve',
-  authMiddleware.verifyToken,
-  authMiddleware.checkPermission('finance:withdrawal'),
   [
     body('ids').isArray().withMessage('ids必须是数组'),
     body('ids.*').isInt().withMessage('提现ID必须是整数'),
@@ -60,8 +69,6 @@ router.put(
  */
 router.put(
   '/batchReject',
-  authMiddleware.verifyToken,
-  authMiddleware.checkPermission('finance:withdrawal'),
   [
     body('ids').isArray().withMessage('ids必须是数组'),
     body('ids.*').isInt().withMessage('提现ID必须是整数'),

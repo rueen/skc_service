@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-25 18:15:53
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-27 17:53:24
+ * @Description: 
+ */
 /**
  * 管理后台服务入口文件
  */
@@ -11,7 +18,6 @@ const logger = require('../shared/config/logger.config');
 const errorHandler = require('../shared/middlewares/errorHandler.middleware');
 const { startScheduler } = require('../shared/services/task-scheduler.service');
 const { taskStatusUpdateConfig, schedulerServiceConfig } = require('../shared/config/scheduler.config');
-const submittedTaskRoutes = require('./routes/submitted-task.routes');
 
 // 加载环境变量
 require('dotenv').config({ path: '.env.admin' });
@@ -36,9 +42,6 @@ app.use(sharedRoutes);
 
 // 注册管理后台路由
 app.use(adminRoutes);
-
-// 注册任务提交相关路由
-app.use('/api/admin', submittedTaskRoutes);
 
 // 添加404处理中间件
 app.use(errorHandler.notFoundHandler);

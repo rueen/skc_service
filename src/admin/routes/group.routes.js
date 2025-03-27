@@ -14,6 +14,7 @@ const router = express.Router();
 // 所有群组路由都需要认证
 router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
+router.use(authMiddleware.hasPermission('group:list'));
 
 /**
  * @route GET /api/admin/groups

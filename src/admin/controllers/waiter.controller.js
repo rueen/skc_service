@@ -7,6 +7,7 @@ const authUtil = require('../../shared/utils/auth.util');
 const validatorUtil = require('../../shared/utils/validator.util');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 
 /**
  * 获取小二列表
@@ -15,7 +16,7 @@ const logger = require('../../shared/config/logger.config');
  */
 async function getList(req, res) {
   try {
-    const { page = 1, pageSize = 10, keyword } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, keyword } = req.query;
     
     // 获取小二列表
     const result = await waiterModel.getList({ keyword }, page, pageSize);

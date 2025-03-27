@@ -5,6 +5,7 @@
 const withdrawalModel = require('../../shared/models/withdrawal.model');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 
 /**
  * 获取提现记录列表
@@ -13,7 +14,7 @@ const logger = require('../../shared/config/logger.config');
  */
 async function getWithdrawals(req, res) {
   try {
-    const { page, pageSize, withdrawalStatus, memberId, startTime, endTime } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, withdrawalStatus, memberId, startTime, endTime } = req.query;
     
     const options = {
       page: parseInt(page) || 1,

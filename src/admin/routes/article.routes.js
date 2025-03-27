@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-12 14:28:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-20 21:25:52
+ * @LastEditTime: 2025-03-27 17:46:52
  * @Description: 
  */
 /**
@@ -17,6 +17,9 @@ const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
+router.use(authMiddleware.hasPermission('article:list'));
 
 /**
  * @route GET /api/admin/articles/:id
@@ -42,8 +45,6 @@ router.get(
  */
 router.get(
   '/',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
     query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
@@ -60,8 +61,6 @@ router.get(
  */
 router.post(
   '/',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     body('title')
       .notEmpty()
@@ -87,8 +86,6 @@ router.post(
  */
 router.put(
   '/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()
@@ -119,8 +116,6 @@ router.put(
  */
 router.delete(
   '/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()

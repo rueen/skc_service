@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-20 20:57:30
+ * @LastEditTime: 2025-03-27 16:41:15
  * @Description: 
  */
 /**
@@ -21,6 +21,7 @@ const router = express.Router();
 // 应用中间件
 router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
+router.use(authMiddleware.hasPermission('account:list'));
 
 /**
  * @route GET /api/admin/accounts
