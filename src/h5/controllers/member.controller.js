@@ -306,10 +306,12 @@ async function getBalance(req, res) {
     
     // 获取会员余额
     const balance = await memberBalanceModel.getBalance(memberId);
+    const withdrawalAmount = await memberBalanceModel.getWithdrawalAmount(memberId);
     
     // 返回余额信息
     return responseUtil.success(res, {
-      balance
+      balance,
+      withdrawalAmount
     });
   } catch (error) {
     logger.error(`获取会员账户余额失败: ${error.message}`);

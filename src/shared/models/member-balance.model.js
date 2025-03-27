@@ -44,6 +44,26 @@ async function updateMembersTableAddBalance() {
 }
 
 /**
+ * 获取会员已提现金额
+ * @param {number} memberId - 会员ID
+ * @returns {Promise<number>} 提现金额
+ */
+async function getWithdrawalAmount(memberId) {
+  try {
+    const [withdrawalRows] = await pool.query(
+      `SELECT COALESCE(SUM(ABS(amount)), 0) as withdrawalAmount 
+      FROM bills 
+      WHERE member_id = ? AND bill_type = 'withdrawal' AND (settlement_status = 'success' OR withdrawal_status = 'success')`,
+    [memberId]
+    );
+    return withdrawalRows[0].withdrawalAmount || 0;
+  } catch (error) {
+    logger.error(`获取会员已提现金额失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
  * 获取会员账户余额
  * @param {number} memberId - 会员ID
  * @returns {Promise<number>} 账户余额
@@ -197,5 +217,6 @@ async function init() {
 module.exports = {
   init,
   getBalance,
+  getWithdrawalAmount,
   updateBalance
 }; 
