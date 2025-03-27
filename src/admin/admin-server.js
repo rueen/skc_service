@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 18:15:53
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 17:53:24
+ * @LastEditTime: 2025-03-27 18:12:38
  * @Description: 
  */
 /**
@@ -41,7 +41,7 @@ app.use(setAppType('admin'));
 app.use(sharedRoutes);
 
 // 注册管理后台路由
-app.use(adminRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 添加404处理中间件
 app.use(errorHandler.notFoundHandler);

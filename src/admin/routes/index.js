@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 18:08:47
+ * @LastEditTime: 2025-03-27 18:12:34
  * @Description: 
  */
 /**
@@ -25,42 +25,39 @@ const submittedTaskRoutes = require('./submitted-task.routes');
 
 const router = express.Router();
 
-// API前缀
-const { API_PREFIX } = require('../../shared/config/api.config');
-
 // 用户认证路由
-router.use(`${API_PREFIX}/auth`, authRoutes);
+router.use(`/auth`, authRoutes);
 
 // 任务管理路由
-router.use(`${API_PREFIX}/tasks`, taskRoutes);
+router.use(`/tasks`, taskRoutes);
 // 已提交任务
-router.use(`${API_PREFIX}/submitted-tasks`, submittedTaskRoutes);
+router.use(`/submitted-tasks`, submittedTaskRoutes);
 
 // 账号管理路由
-router.use(`${API_PREFIX}/accounts`, accountRoutes);
+router.use(`/accounts`, accountRoutes);
 
 // 会员管理路由
-router.use(`${API_PREFIX}/members`, memberRoutes);
+router.use(`/members`, memberRoutes);
 
 // 渠道管理路由
-router.use(`${API_PREFIX}/channels`, channelRoutes);
+router.use(`/channels`, channelRoutes);
 
 // 群组管理路由
-router.use(`${API_PREFIX}/groups`, groupRoutes);
+router.use(`/groups`, groupRoutes);
 
 // 提现管理路由
-router.use(`${API_PREFIX}/withdrawals`, withdrawalRoutes);
+router.use(`/withdrawals`, withdrawalRoutes);
 
 // 账单管理路由
-router.use(`${API_PREFIX}/bills`, billRoutes);
+router.use(`/bills`, billRoutes);
 
 // 小二管理路由
-router.use(`${API_PREFIX}/waiters`, waiterRoutes);
+router.use(`/waiters`, waiterRoutes);
 
 // 文章管理路由
-router.use(`${API_PREFIX}/articles`, articleRoutes);
+router.use(`/articles`, articleRoutes);
 
 // 系统配置路由
-router.use(`${API_PREFIX}/system-configs`, systemConfigRoutes);
+router.use(`/system-configs`, systemConfigRoutes);
 
 module.exports = router; 

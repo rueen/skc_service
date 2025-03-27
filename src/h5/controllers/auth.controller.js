@@ -3,7 +3,6 @@
  * 处理H5端用户认证相关的业务逻辑
  */
 const memberModel = require('../../shared/models/member.model');
-const { STATUS_CODES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const authUtil = require('../../shared/utils/auth.util');
@@ -179,17 +178,17 @@ async function login(req, res) {
     } else {
       // 验证密码
       if (!member.hasPassword) {
-        return responseUtil.error(res, '账号密码未设置，请联系管理员', STATUS_CODES.BAD_REQUEST, STATUS_CODES.BAD_REQUEST);
+        return responseUtil.error(res, '账号密码未设置，请联系管理员');
       }
       
       const isMatch = await authUtil.comparePassword(password, member.password);
       if (!isMatch) {
-        return responseUtil.error(res, '密码错误', STATUS_CODES.BAD_REQUEST, STATUS_CODES.BAD_REQUEST);
+        return responseUtil.error(res, '密码错误');
       }
       
       // 检查用户状态
       if (member.status === 0) {
-        return responseUtil.error(res, '用户已被禁用', STATUS_CODES.FORBIDDEN, STATUS_CODES.FORBIDDEN);
+        return responseUtil.error(res, '用户已被禁用');
       }
       
       // 生成JWT令牌
