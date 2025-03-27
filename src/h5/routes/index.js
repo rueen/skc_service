@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 15:54:14
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-26 20:59:57
+ * @LastEditTime: 2025-03-27 18:50:34
  * @Description: 
  */
 /**
@@ -20,6 +20,7 @@ const taskEnrollRoutes = require('./task-enroll.routes');
 const inviteRoutes = require('./invite.routes');
 const groupRoutes = require('./group.routes');
 const withdrawalRoutes = require('./withdrawal.routes');
+const taskSubmitRoutes = require('./task-submit.routes');
 
 const router = express.Router();
 
@@ -32,8 +33,11 @@ router.use('/user', userRoutes);
 // 任务相关路由
 router.use('/tasks', taskRoutes);
 
+// 任务提交相关路由
+router.use('/task-submit', taskSubmitRoutes);
+
 // 任务报名相关路由
-router.use('/', taskEnrollRoutes);
+router.use('/task-enroll', taskEnrollRoutes);
 
 // 会员相关路由
 router.use('/members', memberRoutes);
@@ -51,6 +55,6 @@ router.use('/channels', channelRoutes);
 router.use('/articles', articleRoutes);
 
 // 提现账户和提现记录路由（共用一个路由文件）
-router.use('/', withdrawalRoutes);
+router.use('/withdrawal', withdrawalRoutes);
 
 module.exports = router; 

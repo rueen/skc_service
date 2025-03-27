@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-25 10:15:13
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-27 18:50:24
+ * @Description: 
+ */
 /**
  * H5端服务入口文件
  */
@@ -10,7 +17,6 @@ const logger = require('../shared/config/logger.config');
 const errorHandler = require('../shared/middlewares/errorHandler.middleware');
 const { startScheduler } = require('../shared/services/task-scheduler.service');
 const { taskStatusUpdateConfig, schedulerServiceConfig } = require('../shared/config/scheduler.config');
-const taskSubmitRoutes = require('./routes/task-submit.routes');
 
 // 加载环境变量
 require('dotenv').config({ path: '.env.h5' });
@@ -35,7 +41,6 @@ app.use(sharedRoutes);
 
 // 注册H5端路由
 app.use('/api/h5', h5Routes);
-app.use('/api/h5', taskSubmitRoutes);
 
 // 添加404处理中间件
 app.use(errorHandler.notFoundHandler);

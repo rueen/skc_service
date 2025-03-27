@@ -13,12 +13,12 @@ const { WithdrawalAccountType, WithdrawalStatus } = require('../../shared/config
 const router = express.Router();
 
 /**
- * @route POST /api/h5/withdrawal-accounts
+ * @route POST /api/h5/withdrawal/accounts
  * @desc 创建提现账户
  * @access Private
  */
 router.post(
-  '/withdrawal-accounts',
+  '/accounts',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
@@ -41,12 +41,12 @@ router.post(
 );
 
 /**
- * @route PUT /api/h5/withdrawal-accounts/:id
+ * @route PUT /api/h5/withdrawal/accounts/:id
  * @desc 更新提现账户
  * @access Private
  */
 router.put(
-  '/withdrawal-accounts/:id',
+  '/accounts/:id',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
@@ -70,24 +70,24 @@ router.put(
 );
 
 /**
- * @route GET /api/h5/withdrawal-accounts
+ * @route GET /api/h5/withdrawal/accounts
  * @desc 获取提现账户列表
  * @access Private
  */
 router.get(
-  '/withdrawal-accounts',
+  '/accounts',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   withdrawalController.getWithdrawalAccounts
 );
 
 /**
- * @route DELETE /api/h5/withdrawal-accounts/:id
+ * @route DELETE /api/h5/withdrawal/accounts/:id
  * @desc 删除提现账户
  * @access Private
  */
 router.delete(
-  '/withdrawal-accounts/:id',
+  '/accounts/:id',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
@@ -98,12 +98,12 @@ router.delete(
 );
 
 /**
- * @route POST /api/h5/withdrawals
+ * @route POST /api/h5/withdrawal
  * @desc 申请提现
  * @access Private
  */
 router.post(
-  '/withdrawals',
+  '/',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
@@ -119,12 +119,12 @@ router.post(
 );
 
 /**
- * @route GET /api/h5/withdrawals
+ * @route GET /api/h5/withdrawal
  * @desc 获取提现记录
  * @access Private
  */
 router.get(
-  '/withdrawals',
+  '/',
   authMiddleware.verifyToken,
   rateLimiterMiddleware.apiLimiter,
   [
