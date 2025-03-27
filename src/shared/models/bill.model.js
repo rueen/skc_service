@@ -253,7 +253,7 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
       LEFT JOIN members rm ON b.related_member_id = rm.id
       LEFT JOIN \`groups\` g ON b.related_group_id = g.id
       ${whereClause}
-      ORDER BY b.create_time DESC
+      ORDER BY b.update_time DESC
       LIMIT ?, ?`,
       [...params, offset, parseInt(pageSize, 10)]
     );
