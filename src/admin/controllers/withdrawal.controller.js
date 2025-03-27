@@ -104,8 +104,40 @@ async function batchRejectWithdrawals(req, res) {
   }
 }
 
+/**
+ * 导出提现数据
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function exportWithdrawals(req, res) {
+  try {
+    const { memberNickname, withdrawalStatus, billNo, startDate, endDate } = req.query;
+    
+    // 构建筛选条件
+    const filters = {};
+    if (memberNickname) filters.memberNickname = memberNickname;
+    if (withdrawalStatus) filters.withdrawalStatus = withdrawalStatus;
+    if (billNo) filters.billNo = billNo;
+    if (startDate) filters.startDate = startDate;
+    if (endDate) filters.endDate = endDate;
+    
+    // 导出提现列表
+    const withdrawals = await withdrawalModel.exportWithdrawals(filters);
+    
+    if (!withdrawals || withdrawals.length === 0) {
+      return responseUtil.success(res, [], '没有符合条件的提现数据');
+    }
+    
+    return responseUtil.success(res, withdrawals, '导出提现数据成功');
+  } catch (error) {
+    logger.error(`导出提现数据失败: ${error.message}`);
+    return responseUtil.serverError(res, '导出提现数据失败，请稍后重试');
+  }
+}
+
 module.exports = {
   getWithdrawals,
   batchResolveWithdrawals,
-  batchRejectWithdrawals
+  batchRejectWithdrawals,
+  exportWithdrawals
 }; 

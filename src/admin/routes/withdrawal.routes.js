@@ -83,4 +83,25 @@ router.post(
   withdrawalController.batchRejectWithdrawals
 );
 
+/**
+ * @route GET /api/admin/withdrawals/export
+ * @desc 导出提现数据
+ * @access Private (需要 finance:withdrawal 权限)
+ */
+router.get(
+  '/export',
+  [
+    query('memberNickname').optional().isString().withMessage('会员昵称必须是字符串'),
+    query('withdrawalStatus')
+      .optional()
+      .isIn(Object.values(WithdrawalStatus))
+      .withMessage('无效的提现状态'),
+    query('billNo').optional().isString().withMessage('账单编号必须是字符串'),
+    query('startDate').optional().isString().withMessage('开始日期格式不正确'),
+    query('endDate').optional().isString().withMessage('结束日期格式不正确')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  withdrawalController.exportWithdrawals
+);
+
 module.exports = router; 

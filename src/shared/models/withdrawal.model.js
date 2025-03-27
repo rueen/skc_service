@@ -8,6 +8,31 @@ const { WithdrawalStatus } = require('../config/enums');
 const memberModel = require('./member.model');
 const billModel = require('./bill.model');
 const { BillType } = require('../config/enums');
+const { formatDateTime } = require('../utils/date.util');
+
+/**
+ * 格式化提现记录，转换字段为驼峰命名
+ * @param {Object} withdrawal - 提现记录
+ * @returns {Object} 格式化后的提现记录
+ */
+function formatWithdrawal(withdrawal) {
+  if (!withdrawal) return null;
+  
+  return {
+    id: withdrawal.id,
+    memberId: withdrawal.member_id,
+    withdrawalAccountId: withdrawal.withdrawal_account_id,
+    amount: withdrawal.amount,
+    withdrawalStatus: withdrawal.withdrawal_status,
+    billNo: withdrawal.bill_no,
+    rejectReason: withdrawal.reject_reason,
+    waiterId: withdrawal.waiter_id,
+    processTime: formatDateTime(withdrawal.process_time),
+    remark: withdrawal.remark,
+    createTime: formatDateTime(withdrawal.create_time),
+    updateTime: formatDateTime(withdrawal.update_time)
+  };
+}
 
 /**
  * 创建提现申请
@@ -292,10 +317,97 @@ async function batchRejectWithdrawals(ids, rejectReason, waiterId, remark = null
   }
 }
 
+/**
+ * 导出提现列表数据（不分页，用于导出）
+ * @param {Object} filters - 筛选条件
+ * @param {number} filters.memberId - 会员ID
+ * @param {string} filters.memberNickname - 会员昵称
+ * @param {number} filters.withdrawalStatus - 提现状态
+ * @param {string} filters.billNo - 账单编号
+ * @param {string} filters.startDate - 开始日期
+ * @param {string} filters.endDate - 结束日期
+ * @returns {Promise<Array>} 提现记录列表
+ */
+async function exportWithdrawals(filters = {}) {
+  try {
+    let baseQuery = `
+      SELECT w.*, 
+             m.member_nickname,
+             wa.account_type as withdrawal_account_type,
+             wa.account as withdrawal_account,
+             wa.name as withdrawal_name
+      FROM withdrawals w
+      LEFT JOIN members m ON w.member_id = m.id
+      LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
+    `;
+    
+    const queryParams = [];
+    const conditions = [];
+
+    // 添加筛选条件
+    if (filters.memberId) {
+      conditions.push('w.member_id = ?');
+      queryParams.push(filters.memberId);
+    }
+    
+    if (filters.memberNickname) {
+      conditions.push('m.member_nickname LIKE ?');
+      queryParams.push(`%${filters.memberNickname}%`);
+    }
+    
+    if (filters.withdrawalStatus) {
+      conditions.push('w.withdrawal_status = ?');
+      queryParams.push(filters.withdrawalStatus);
+    }
+    
+    if (filters.billNo) {
+      conditions.push('w.bill_no LIKE ?');
+      queryParams.push(`%${filters.billNo}%`);
+    }
+    
+    // 日期范围过滤
+    if (filters.startDate) {
+      conditions.push('w.create_time >= ?');
+      queryParams.push(`${filters.startDate} 00:00:00`);
+    }
+    
+    if (filters.endDate) {
+      conditions.push('w.create_time <= ?');
+      queryParams.push(`${filters.endDate} 23:59:59`);
+    }
+
+    // 组合查询条件
+    if (conditions.length > 0) {
+      baseQuery += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    // 添加排序
+    baseQuery += ' ORDER BY w.create_time DESC';
+
+    // 执行查询
+    const [withdrawals] = await pool.query(baseQuery, queryParams);
+    
+    // 格式化提现记录
+    const formattedWithdrawals = withdrawals.map(withdrawal => ({
+      ...formatWithdrawal(withdrawal),
+      memberNickname: withdrawal.member_nickname,
+      withdrawalAccountType: withdrawal.withdrawal_account_type,
+      withdrawalAccount: withdrawal.withdrawal_account,
+      withdrawalName: withdrawal.withdrawal_name
+    }));
+    
+    return formattedWithdrawals;
+  } catch (error) {
+    logger.error(`导出提现列表失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   createWithdrawal,
   getWithdrawalsByMemberId,
   getAllWithdrawals,
   batchApproveWithdrawals,
-  batchRejectWithdrawals
+  batchRejectWithdrawals,
+  exportWithdrawals
 }; 
