@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-26 17:16:21
+ * @LastEditTime: 2025-03-27 16:02:52
  * @Description: 
  */
 /**
@@ -30,9 +30,6 @@ const { API_PREFIX, PUBLIC_API_PREFIX } = require('../../shared/config/api.confi
 // 用户认证路由
 router.use(`${API_PREFIX}/auth`, authRoutes);
 
-// 用户信息路由
-router.use(`${API_PREFIX}/user`, authRoutes);
-
 // 会员管理路由
 router.use(`${API_PREFIX}/members`, memberRoutes);
 
@@ -43,7 +40,7 @@ router.use(`${API_PREFIX}/tasks`, taskRoutes);
 router.use(`${API_PREFIX}/channels`, channelRoutes);
 
 // 系统配置路由
-router.use(`${API_PREFIX}/system/configs`, systemConfigRoutes);
+router.use(`${API_PREFIX}/systemConfigs`, systemConfigRoutes);
 
 // 小二管理路由
 router.use(`${API_PREFIX}/waiters`, waiterRoutes);

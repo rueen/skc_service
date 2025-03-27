@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 15:56:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-20 19:27:38
+ * @LastEditTime: 2025-03-27 16:21:36
  * @Description: 
  */
 /**
@@ -24,7 +24,7 @@ router.use(authMiddleware.hasPermission('system:config'));
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
- * @route GET /api/admin/system/configs
+ * @route GET /api/admin/systemConfigs
  * @desc 获取所有系统配置
  * @access Private (需要 system:config 权限)
  */
@@ -34,7 +34,7 @@ router.get(
 );
 
 /**
- * @route GET /api/admin/system/configs/:key
+ * @route GET /api/admin/systemConfigs/:key
  * @desc 获取指定键的系统配置
  * @access Private (需要 system:config 权限)
  */
@@ -52,7 +52,7 @@ router.get(
 );
 
 /**
- * @route PUT /api/admin/system/configs/:key
+ * @route PUT /api/admin/systemConfigs/:key
  * @desc 更新指定键的系统配置
  * @access Private (需要 system:config 权限)
  */
@@ -77,7 +77,7 @@ router.put(
 );
 
 /**
- * @route POST /api/admin/system/configs
+ * @route POST /api/admin/systemConfigs
  * @desc 批量更新系统配置
  * @access Private (需要 system:config 权限)
  */
@@ -87,8 +87,6 @@ router.post(
     body('configs')
       .notEmpty()
       .withMessage('配置数据不能为空')
-      .isObject()
-      .withMessage('配置数据必须是对象格式')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   systemConfigController.updateConfigs
@@ -97,7 +95,7 @@ router.post(
 // 以下是特殊用途的便捷API，更像是RPC风格的API
 
 /**
- * @route GET /api/admin/system/configs/group/max-members
+ * @route GET /api/admin/systemConfigs/group/max-members
  * @desc 获取群组最大成员数
  * @access Private (需要 system:config 权限)
  */
@@ -107,7 +105,7 @@ router.get(
 );
 
 /**
- * @route GET /api/admin/system/configs/group/commission-rate
+ * @route GET /api/admin/systemConfigs/group/commission-rate
  * @desc 获取群主收益率
  * @access Private (需要 system:config 权限)
  */
@@ -117,7 +115,7 @@ router.get(
 );
 
 /**
- * @route GET /api/admin/system/configs/invite/reward-amount
+ * @route GET /api/admin/systemConfigs/invite/reward-amount
  * @desc 获取邀请奖励金额
  * @access Private (需要 system:config 权限)
  */

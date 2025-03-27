@@ -11,6 +11,11 @@ const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.midd
 
 const router = express.Router();
 
+// 所有任务路由都需要认证
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
+router.use(authMiddleware.hasPermission('channel:list'));
+
 /**
  * @route GET /api/admin/channels
  * @desc 获取渠道列表
@@ -18,8 +23,6 @@ const router = express.Router();
  */
 router.get(
   '/',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
     query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
@@ -36,8 +39,6 @@ router.get(
  */
 router.get(
   '/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()
@@ -56,8 +57,6 @@ router.get(
  */
 router.post(
   '/',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     body('name')
       .notEmpty()
@@ -83,8 +82,6 @@ router.post(
  */
 router.put(
   '/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()
@@ -115,8 +112,6 @@ router.put(
  */
 router.delete(
   '/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()

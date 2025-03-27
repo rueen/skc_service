@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-25 10:15:13
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-27 15:55:34
+ * @Description: 
+ */
 /**
  * 认证路由
  * 处理用户登录和认证相关的路由
@@ -49,12 +56,12 @@ router.post(
 );
 
 /**
- * @route GET /api/admin/user/info
+ * @route GET /api/admin/userInfo
  * @desc 获取当前用户信息
  * @access Private
  */
 router.get(
-  '/info',
+  '/userInfo',
   authMiddleware.verifyToken,
   authController.getCurrentUser
 );

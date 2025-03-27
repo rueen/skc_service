@@ -90,26 +90,18 @@ async function updateConfig(req, res) {
  */
 async function updateConfigs(req, res) {
   try {
-    const configs = req.body;
+    const { configs } = req.body;
     
-    if (!Array.isArray(configs) || configs.length === 0) {
-      return responseUtil.badRequest(res, '配置数组不能为空');
+    if (!configs || typeof configs !== 'object' || Object.keys(configs).length === 0) {
+      return responseUtil.badRequest(res, '配置数据无效或为空');
     }
     
-    // 验证每个配置项
-    for (const config of configs) {
-      if (!config.key || config.value === undefined) {
-        return responseUtil.badRequest(res, '每个配置项必须包含key和value字段');
-      }
-    }
+    await systemConfigModel.updateConfigs(configs);
     
-    // 批量更新配置
-    const results = await systemConfigModel.updateConfigs(configs);
-    
-    return responseUtil.success(res, results, '批量更新系统配置成功');
+    return responseUtil.success(res, null, '批量更新系统配置成功');
   } catch (error) {
     logger.error(`批量更新系统配置失败: ${error.message}`);
-    return responseUtil.serverError(res, '批量更新系统配置失败，请稍后重试');
+    return responseUtil.serverError(res, error.message || '批量更新系统配置失败');
   }
 }
 
