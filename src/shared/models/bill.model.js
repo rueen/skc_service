@@ -58,15 +58,21 @@ async function createBill(billData, connection) {
       }
     }
     
-    // 初始化为待结算状态
+    // 根据账单类型初始化不同的状态字段
+    const isWithdrawal = billData.billType === 'withdrawal';
+    const statusField = isWithdrawal ? 'withdrawal_status' : 'settlement_status';
+    const statusValue = 'pending'; // 使用字符串状态值
+    
+    // 构建插入语句
     const [result] = await connection.query(
       `INSERT INTO bills 
-       (member_id, bill_type, amount, settlement_status, task_id, related_member_id, related_group_id) 
-       VALUES (?, ?, ?, 'pending', ?, ?, ?)`,
+       (member_id, bill_type, amount, ${statusField}, task_id, related_member_id, related_group_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         billData.memberId,
         billData.billType,
         billData.amount,
+        statusValue,
         billData.taskId,
         billData.relatedMemberId || null,
         relatedGroupId
@@ -74,7 +80,7 @@ async function createBill(billData, connection) {
     );
     
     // 记录插入结果
-    logger.info(`账单记录创建成功 - 账单ID: ${result.insertId}, 关联群组ID: ${relatedGroupId}`);
+    logger.info(`账单记录创建成功 - 账单ID: ${result.insertId}, 关联群组ID: ${relatedGroupId}, 状态字段: ${statusField}, 状态值: ${statusValue}`);
     
     // 验证插入结果
     const [inserted] = await connection.query(
