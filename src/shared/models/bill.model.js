@@ -231,6 +231,7 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
         b.bill_type as billType,
         b.amount,
         b.settlement_status as settlementStatus,
+        b.withdrawal_status as withdrawalStatus,
         b.task_id as taskId,
         b.related_member_id as relatedMemberId,
         b.related_group_id as relatedGroupId,

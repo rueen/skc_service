@@ -215,12 +215,12 @@ async function batchApproveWithdrawals(ids, waiterId, remark = null) {
       if (withdrawalRecords.length > 0) {
         const withdrawal = withdrawalRecords[0];
         
-        // 更新关联的账单状态
+        // 更新关联的账单提现状态
         await connection.query(
           `UPDATE bills 
-           SET settlement_status = 'success' 
-           WHERE member_id = ? AND bill_type = 'withdrawal' AND amount = ?`,
-          [withdrawal.member_id, -withdrawal.amount]
+           SET withdrawal_status = ? 
+           WHERE member_id = ? AND bill_type = ? AND amount = ?`,
+          [WithdrawalStatus.SUCCESS, withdrawal.member_id, BillType.WITHDRAWAL, -withdrawal.amount]
         );
       }
     }
@@ -271,12 +271,12 @@ async function batchRejectWithdrawals(ids, rejectReason, waiterId, remark = null
       // 退还余额
       await memberModel.updateMemberBalance(withdrawal.member_id, withdrawal.amount);
       
-      // 更新关联的账单状态
+      // 更新关联的账单提现状态
       await connection.query(
         `UPDATE bills 
-         SET settlement_status = 'failed', failure_reason = ? 
-         WHERE member_id = ? AND bill_type = 'withdrawal' AND amount = ?`,
-        [rejectReason, withdrawal.member_id, -withdrawal.amount]
+         SET withdrawal_status = ?, failure_reason = ? 
+         WHERE member_id = ? AND bill_type = ? AND amount = ?`,
+        [WithdrawalStatus.FAILED, rejectReason, withdrawal.member_id, BillType.WITHDRAWAL, -withdrawal.amount]
       );
     }
     
