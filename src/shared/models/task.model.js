@@ -766,11 +766,117 @@ async function remove(id) {
   }
 }
 
+/**
+ * 导出任务列表（不分页，包含更多字段）
+ * @param {Object} filters - 筛选条件
+ * @param {string} filters.taskName - 任务名称
+ * @param {string} filters.taskStatus - 任务状态
+ * @param {number} filters.channelId - 渠道ID
+ * @param {string} filters.startDate - 开始日期
+ * @param {string} filters.endDate - 结束日期
+ * @returns {Promise<Array>} 任务列表
+ */
+async function exportTasks(filters = {}) {
+  try {
+    let query = `
+      SELECT t.*, c.name as channel_name, c.icon as channel_icon
+      FROM tasks t
+      LEFT JOIN channels c ON t.channel_id = c.id
+    `;
+    
+    const queryParams = [];
+    const conditions = [];
+
+    // 添加筛选条件
+    if (filters.taskName) {
+      conditions.push('t.task_name LIKE ?');
+      queryParams.push(`%${filters.taskName}%`);
+    }
+    
+    if (filters.taskStatus) {
+      conditions.push('t.task_status = ?');
+      queryParams.push(filters.taskStatus);
+    }
+    
+    if (filters.channelId) {
+      conditions.push('t.channel_id = ?');
+      queryParams.push(filters.channelId);
+    }
+    
+    // 日期范围过滤
+    if (filters.startDate) {
+      conditions.push('t.create_time >= ?');
+      queryParams.push(formatDateTimeForMySQL(filters.startDate + ' 00:00:00'));
+    }
+    
+    if (filters.endDate) {
+      conditions.push('t.create_time <= ?');
+      queryParams.push(formatDateTimeForMySQL(filters.endDate + ' 23:59:59'));
+    }
+
+    // 组合查询条件
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    // 添加排序
+    query += ' ORDER BY t.create_time DESC';
+
+    // 执行查询
+    const [rows] = await pool.query(query, queryParams);
+    
+    // 安全处理每个任务记录
+    const formattedList = [];
+    for (const task of rows) {
+      try {
+        const formattedTask = formatTask(task);
+        
+        // 返回完整的任务信息用于导出
+        formattedList.push({
+          id: formattedTask.id,
+          taskName: formattedTask.taskName,
+          taskStatus: formattedTask.taskStatus,
+          channelId: formattedTask.channelId,
+          channelName: task.channel_name,
+          channelIcon: task.channel_icon,
+          reward: formattedTask.reward,
+          category: formattedTask.category,
+          taskType: formattedTask.taskType,
+          brand: formattedTask.brand,
+          fansRequired: formattedTask.fansRequired,
+          startTime: formattedTask.startTime,
+          endTime: formattedTask.endTime,
+          unlimitedQuota: formattedTask.unlimitedQuota,
+          quota: formattedTask.quota,
+          taskCount: formattedTask.taskCount,
+          groupMode: formattedTask.groupMode,
+          userRange: formattedTask.userRange,
+          groupIds: formattedTask.groupIds,
+          contentRequirement: formattedTask.contentRequirement,
+          taskInfo: formattedTask.taskInfo,
+          notice: formattedTask.notice,
+          createTime: formattedTask.createTime,
+          updateTime: formattedTask.updateTime
+        });
+      } catch (error) {
+        logger.error(`格式化任务失败，任务ID: ${task.id}, 错误: ${error.message}`);
+        // 跳过这条记录，继续处理其他记录
+      }
+    }
+    
+    return formattedList;
+  } catch (error) {
+    logger.error(`导出任务列表失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   getList,
   getDetail,
   create,
   update,
   remove,
-  formatTask
+  formatTask,
+  exportTasks
 }; 
