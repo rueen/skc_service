@@ -175,10 +175,53 @@ async function exportTasks(req, res) {
     const tasks = await taskModel.exportTasks(filters);
     
     if (!tasks || tasks.length === 0) {
-      return responseUtil.success(res, [], '没有符合条件的任务数据');
+      return res.status(404).send('没有符合条件的任务数据');
     }
     
-    return responseUtil.success(res, tasks, '导出任务列表成功');
+    // 设置响应头，指定为 CSV 文件下载
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename=tasks.csv');
+    
+    // CSV 表头
+    const headers = [
+      'ID', '任务名称', '任务状态', '渠道ID', '渠道名称', '奖励金额', 
+      '分类', '任务类型', '品牌', '粉丝要求', '开始时间', '结束时间',
+      '无限名额', '名额数', '任务数量', '群组模式', '用户范围', 
+      '内容要求', '创建时间', '更新时间'
+    ];
+    
+    // 写入表头，添加BOM标记以确保Excel正确识别中文
+    res.write('\ufeff' + headers.join(',') + '\n');
+    
+    // 写入数据行
+    tasks.forEach(item => {
+      const values = [
+        item.id || '',
+        (item.taskName || '').replace(/,/g, '，'), // 替换逗号防止影响 CSV 格式
+        (item.taskStatus || '').replace(/,/g, '，'),
+        item.channelId || '',
+        (item.channelName || '').replace(/,/g, '，'),
+        item.reward || '',
+        (item.category || '').replace(/,/g, '，'),
+        (item.taskType || '').replace(/,/g, '，'),
+        (item.brand || '').replace(/,/g, '，'),
+        item.fansRequired || '',
+        (item.startTime || '').replace(/,/g, '，'),
+        (item.endTime || '').replace(/,/g, '，'),
+        item.unlimitedQuota ? '是' : '否',
+        item.quota || '',
+        item.taskCount || '',
+        (item.groupMode || '').replace(/,/g, '，'),
+        (item.userRange || '').replace(/,/g, '，'),
+        (item.contentRequirement || '').replace(/,/g, '，'),
+        (item.createTime || '').replace(/,/g, '，'),
+        (item.updateTime || '').replace(/,/g, '，')
+      ];
+      
+      res.write(values.join(',') + '\n');
+    });
+    
+    return res.end();
   } catch (error) {
     logger.error(`导出任务列表失败: ${error.message}`);
     return responseUtil.serverError(res, '导出任务列表失败，请稍后重试');

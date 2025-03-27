@@ -125,10 +125,47 @@ async function exportWithdrawals(req, res) {
     const withdrawals = await withdrawalModel.exportWithdrawals(filters);
     
     if (!withdrawals || withdrawals.length === 0) {
-      return responseUtil.success(res, [], '没有符合条件的提现数据');
+      return res.status(404).send('没有符合条件的提现数据');
     }
     
-    return responseUtil.success(res, withdrawals, '导出提现数据成功');
+    // 设置响应头，指定为 CSV 文件下载
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename=withdrawals.csv');
+    
+    // CSV 表头
+    const headers = [
+      'ID', '会员ID', '会员昵称', '金额', '提现状态', '账单编号', 
+      '提现账户类型', '提现账户', '提现账户姓名', '拒绝原因', '审核员ID', 
+      '处理时间', '备注', '创建时间', '更新时间'
+    ];
+    
+    // 写入表头
+    res.write('\ufeff' + headers.join(',') + '\n');
+    
+    // 写入数据行
+    withdrawals.forEach(item => {
+      const values = [
+        item.id || '',
+        item.memberId || '',
+        (item.memberNickname || '').replace(/,/g, '，'), // 替换逗号防止影响 CSV 格式
+        item.amount || '',
+        (item.withdrawalStatus || '').replace(/,/g, '，'),
+        (item.billNo || '').replace(/,/g, '，'),
+        (item.withdrawalAccountType || '').replace(/,/g, '，'),
+        (item.withdrawalAccount || '').replace(/,/g, '，'),
+        (item.withdrawalName || '').replace(/,/g, '，'),
+        (item.rejectReason || '').replace(/,/g, '，'),
+        item.waiterId || '',
+        (item.processTime || '').replace(/,/g, '，'),
+        (item.remark || '').replace(/,/g, '，'),
+        (item.createTime || '').replace(/,/g, '，'),
+        (item.updateTime || '').replace(/,/g, '，')
+      ];
+      
+      res.write(values.join(',') + '\n');
+    });
+    
+    return res.end();
   } catch (error) {
     logger.error(`导出提现数据失败: ${error.message}`);
     return responseUtil.serverError(res, '导出提现数据失败，请稍后重试');
