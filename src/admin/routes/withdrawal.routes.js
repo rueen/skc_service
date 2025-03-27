@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 18:34:08
+ * @LastEditTime: 2025-03-27 19:32:41
  * @Description: 
  */
 /**
@@ -47,12 +47,12 @@ router.get(
 );
 
 /**
- * @route PUT /api/admin/withdrawal/batchResolve
+ * @route POST /api/admin/withdrawal/batch-approve
  * @desc 批量审核通过提现申请
  * @access Private (需要 finance:withdrawal 权限)
  */
-router.put(
-  '/batchResolve',
+router.post(
+  '/batch-approve',
   [
     body('ids').isArray().withMessage('ids必须是数组'),
     body('ids.*').isInt().withMessage('提现ID必须是整数'),
@@ -63,12 +63,12 @@ router.put(
 );
 
 /**
- * @route PUT /api/admin/withdrawal/batchReject
+ * @route POST /api/admin/withdrawal/batch-reject
  * @desc 批量拒绝提现申请
  * @access Private (需要 finance:withdrawal 权限)
  */
-router.put(
-  '/batchReject',
+router.post(
+  '/batch-reject',
   [
     body('ids').isArray().withMessage('ids必须是数组'),
     body('ids.*').isInt().withMessage('提现ID必须是整数'),

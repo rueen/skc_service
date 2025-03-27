@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 16:41:15
+ * @LastEditTime: 2025-03-27 19:32:38
  * @Description: 
  */
 /**
@@ -34,12 +34,12 @@ router.get(
 );
 
 /**
- * @route POST /api/admin/accounts/batchResolve
+ * @route POST /api/admin/accounts/batch-approve
  * @desc 批量审核通过账号
  * @access Private - Admin
  */
 router.post(
-  '/batchResolve',
+  '/batch-approve',
   [
     body('ids')
       .isArray()
@@ -52,12 +52,12 @@ router.post(
 );
 
 /**
- * @route POST /api/admin/accounts/batchReject
+ * @route POST /api/admin/accounts/batch-reject
  * @desc 批量审核拒绝账号
  * @access Private - Admin
  */
 router.post(
-  '/batchReject',
+  '/batch-reject',
   [
     body('ids')
       .isArray()
