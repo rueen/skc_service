@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-25 10:15:13
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-27 19:07:13
+ * @Description: 
+ */
 /**
  * H5端任务控制器
  * 处理H5端任务相关的业务逻辑
@@ -62,9 +69,9 @@ async function getDetail(req, res) {
     }
     
     // 检查任务是否已结束
-    if (task.taskStatus === 'ended') {
-      return responseUtil.badRequest(res, '该任务已结束');
-    }
+    // if (task.taskStatus === 'ended') {
+    //   return responseUtil.badRequest(res, '该任务已结束');
+    // }
     
     // 添加完整的调试日志，包括报名状态
     logger.info(`任务详情返回 - 任务ID: ${id}, 会员ID: ${memberId || '未登录'}, 报名状态: ${task.isEnrolled}, 报名ID: ${task.enrollmentId || '无'}`);
