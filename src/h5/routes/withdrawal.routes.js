@@ -5,7 +5,7 @@
 const express = require('express');
 const { body, param, query } = require('express-validator');
 const withdrawalController = require('../controllers/withdrawal.controller');
-const authMiddleware = require('../../shared/middlewares/auth.middleware');
+const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 const { WithdrawalAccountType, WithdrawalStatus } = require('../../shared/config/enums');

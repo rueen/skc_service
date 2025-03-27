@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-25 10:15:13
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-27 18:35:30
+ * @Description: 
+ */
 /**
  * H5端任务路由
  * 处理任务相关的路由
@@ -5,7 +12,7 @@
 const express = require('express');
 const { body, query, param } = require('express-validator');
 const taskController = require('../controllers/task.controller');
-const authMiddleware = require('../../shared/middlewares/auth.middleware');
+const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 

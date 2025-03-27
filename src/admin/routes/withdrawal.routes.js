@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 17:45:55
+ * @LastEditTime: 2025-03-27 18:34:08
  * @Description: 
  */
 /**
@@ -12,7 +12,7 @@
 const express = require('express');
 const { body, query } = require('express-validator');
 const withdrawalController = require('../controllers/withdrawal.controller');
-const authMiddleware = require('../../shared/middlewares/auth.middleware');
+const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const { WithdrawalStatus } = require('../../shared/config/enums');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');

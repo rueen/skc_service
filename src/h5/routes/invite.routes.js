@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-25 16:57:00
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-27 18:35:02
+ * @Description: 
+ */
 /**
  * H5端邀请路由
  * 处理邀请相关的路由
@@ -5,7 +12,7 @@
 const express = require('express');
 const { query } = require('express-validator');
 const inviteController = require('../controllers/invite.controller');
-const authMiddleware = require('../../shared/middlewares/auth.middleware');
+const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 

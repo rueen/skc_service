@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 21:21:23
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-25 21:33:41
+ * @LastEditTime: 2025-03-27 18:34:51
  * @Description: 
  */
 /**
@@ -12,7 +12,7 @@
 const express = require('express');
 const { query, param } = require('express-validator');
 const groupController = require('../controllers/group.controller');
-const authMiddleware = require('../../shared/middlewares/auth.middleware');
+const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 

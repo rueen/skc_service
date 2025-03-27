@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 11:08:17
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-23 15:04:14
+ * @LastEditTime: 2025-03-27 18:35:18
  * @Description: 
  */
 /**
@@ -12,7 +12,7 @@
 const express = require('express');
 const router = express.Router();
 const taskEnrollController = require('../controllers/task-enroll.controller');
-const authMiddleware = require('../../shared/middlewares/auth.middleware');
+const authMiddleware = require('../middlewares/auth.middleware');
 
 // 需要先验证用户身份
 router.use(authMiddleware.verifyToken);

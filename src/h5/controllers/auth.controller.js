@@ -8,67 +8,6 @@ const responseUtil = require('../../shared/utils/response.util');
 const authUtil = require('../../shared/utils/auth.util');
 
 /**
- * 用户注册
- * @param {Object} req - 请求对象
- * @param {Object} res - 响应对象
- */
-async function register(req, res) {
-  try {
-    const { memberAccount, password, memberNickname, inviteCode, loginType } = req.body;
-    
-    // 检查账号是否已存在
-    const existingMember = await memberModel.getByAccount(memberAccount);
-    if (existingMember) {
-      return responseUtil.badRequest(res, '账号已存在');
-    }
-    
-    // 加密密码
-    const hashedPassword = await authUtil.hashPassword(password);
-    
-    // 创建会员
-    const memberData = {
-      memberAccount,
-      password: hashedPassword,
-      memberNickname,
-      inviteCode
-    };
-    
-    // 根据登录类型设置 phone 或 email 字段
-    const actualLoginType = loginType || 'phone'; // 默认为手机号登录类型
-    if (actualLoginType === 'phone') {
-      memberData.phone = memberAccount;
-    } else if (actualLoginType === 'email') {
-      memberData.email = memberAccount;
-    }
-    
-    const newMember = await memberModel.create(memberData);
-    
-    // 生成JWT令牌
-    const token = authUtil.generateToken({
-      id: newMember.id, 
-      account: memberAccount,
-      loginType: actualLoginType
-    });
-    
-    return responseUtil.success(res, {
-      token,
-      userInfo: {
-        id: newMember.id,
-        nickname: memberNickname,
-        avatar: '',
-        loginType: actualLoginType,
-        memberAccount: memberAccount,
-        phone: actualLoginType === 'phone' ? memberAccount : '',
-        email: actualLoginType === 'email' ? memberAccount : ''
-      }
-    }, '注册成功');
-  } catch (error) {
-    logger.error(`用户注册失败: ${error.message}`);
-    return responseUtil.serverError(res, '注册失败，请稍后重试');
-  }
-}
-
-/**
  * 用户登录
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
@@ -349,7 +288,6 @@ async function changePassword(req, res) {
 }
 
 module.exports = {
-  register,
   login,
   getUserInfo,
   logout,
