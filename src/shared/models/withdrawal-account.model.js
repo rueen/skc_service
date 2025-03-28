@@ -4,24 +4,18 @@
  */
 const { pool } = require('./db');
 const logger = require('../config/logger.config');
+const { convertToCamelCase } = require('../utils/data.util');
 
-/**
- * 将数据库字段名转换为驼峰命名法
- * @param {Object} row - 数据库行数据
- * @returns {Object} - 转换后的对象
- */
-function convertToCamelCase(row) {
-  if (!row) return null;
-  
-  return {
-    id: row.id,
-    memberId: row.member_id,
-    accountType: row.account_type,
-    account: row.account,
-    name: row.name,
-    createTime: row.create_time,
-    updateTime: row.update_time
-  };
+function formatWithdrawalAccount(withdrawalAccount) {
+  if (!withdrawalAccount) return null;
+
+  // 转换字段名称为驼峰命名法
+  const formattedWithdrawalAccount = convertToCamelCase({
+    ...withdrawalAccount,
+    createTime: formatDateTime(withdrawalAccount.create_time),
+    updateTime: formatDateTime(withdrawalAccount.update_time)
+  })
+  return formattedWithdrawalAccount;
 }
 
 /**
@@ -53,7 +47,7 @@ async function createWithdrawalAccount(accountData) {
       create_time: new Date()
     };
     
-    return convertToCamelCase(createdAccount);
+    return formatWithdrawalAccount(createdAccount);
   } catch (error) {
     logger.error(`创建提现账户失败: ${error.message}`);
     throw error;
@@ -89,7 +83,7 @@ async function updateWithdrawalAccount(id, accountData) {
       update_time: new Date()
     };
     
-    return convertToCamelCase(updatedAccount);
+    return formatWithdrawalAccount(updatedAccount);
   } catch (error) {
     logger.error(`更新提现账户失败: ${error.message}`);
     throw error;
@@ -108,7 +102,7 @@ async function getWithdrawalAccountsByMemberId(memberId) {
       [memberId]
     );
     
-    return accounts.map(convertToCamelCase);
+    return accounts.map(formatWithdrawalAccount);
   } catch (error) {
     logger.error(`获取会员提现账户列表失败: ${error.message}`);
     throw error;
@@ -127,7 +121,7 @@ async function getWithdrawalAccountById(id) {
       [id]
     );
     
-    return convertToCamelCase(accounts[0]);
+    return formatWithdrawalAccount(accounts[0]);
   } catch (error) {
     logger.error(`根据ID获取提现账户失败: ${error.message}`);
     throw error;

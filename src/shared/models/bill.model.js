@@ -6,6 +6,25 @@ const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
 const { formatDateTime } = require('../utils/date.util');
+const { convertToCamelCase } = require('../utils/data.util');
+
+/**
+ * 格式化账单信息
+ * @param {Object} bill - 账单信息
+ * @returns {Object} 格式化后的账单信息
+ */
+function formatBill(bill) {
+  if (!bill) return null;
+  
+  // 转换字段名称为驼峰命名法
+  const formattedBill = convertToCamelCase({
+    ...bill,
+    createTime: formatDateTime(bill.create_time),
+    updateTime: formatDateTime(bill.update_time),
+  });
+  
+  return formattedBill;
+}
 
 /**
  * 创建账单记录
@@ -142,20 +161,10 @@ async function getMemberBills(memberId, options = {}) {
     // 获取账单列表
     const [rows] = await pool.query(
       `SELECT 
-        b.id,
-        b.member_id as memberId,
-        b.bill_type as billType,
-        b.amount,
-        b.settlement_status as settlementStatus,
-        b.task_id as taskId,
-        b.related_member_id as relatedMemberId,
-        b.related_group_id as relatedGroupId,
-        b.failure_reason as failureReason,
-        b.create_time as createTime,
-        b.update_time as updateTime,
-        t.task_name as taskName,
-        m.member_nickname as relatedMemberNickname,
-        g.group_name as relatedGroupName
+        b.*,
+        t.task_name,
+        m.member_nickname as related_member_nickname,
+        g.group_name as related_group_name
       FROM bills b
       LEFT JOIN tasks t ON b.task_id = t.id
       LEFT JOIN members m ON b.related_member_id = m.id
@@ -166,18 +175,14 @@ async function getMemberBills(memberId, options = {}) {
       [...params, offset, parseInt(pageSize, 10)]
     );
     
-    // 格式化日期时间
-    const formattedRows = rows.map(row => ({
-      ...row,
-      createTime: formatDateTime(row.createTime),
-      updateTime: formatDateTime(row.updateTime)
-    }));
+    // 格式化账单列表
+    const formattedList = rows.map(row => formatBill(row));
     
     return {
       total,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10),
-      list: formattedRows
+      list: formattedList
     };
   } catch (error) {
     logger.error(`获取会员账单列表失败: ${error.message}`);
@@ -231,22 +236,11 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
     // 获取账单列表
     const [rows] = await pool.query(
       `SELECT 
-        b.id,
-        b.member_id as memberId,
-        m.member_nickname as memberNickname,
-        b.bill_type as billType,
-        b.amount,
-        b.settlement_status as settlementStatus,
-        b.withdrawal_status as withdrawalStatus,
-        b.task_id as taskId,
-        b.related_member_id as relatedMemberId,
-        b.related_group_id as relatedGroupId,
-        b.failure_reason as failureReason,
-        b.create_time as createTime,
-        b.update_time as updateTime,
-        t.task_name as taskName,
-        rm.member_nickname as relatedMemberNickname,
-        g.group_name as relatedGroupName
+        b.*,
+        m.member_nickname,
+        t.task_name,
+        rm.member_nickname as related_member_nickname,
+        g.group_name as related_group_name
       FROM bills b
       JOIN members m ON b.member_id = m.id
       LEFT JOIN tasks t ON b.task_id = t.id
@@ -258,18 +252,14 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
       [...params, offset, parseInt(pageSize, 10)]
     );
     
-    // 格式化日期时间
-    const formattedRows = rows.map(row => ({
-      ...row,
-      createTime: formatDateTime(row.createTime),
-      updateTime: formatDateTime(row.updateTime)
-    }));
+    // 格式化账单列表
+    const formattedList = rows.map(row => formatBill(row));
     
     return {
       total,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10),
-      list: formattedRows
+      list: formattedList
     };
   } catch (error) {
     logger.error(`获取所有账单列表失败: ${error.message}`);

@@ -7,6 +7,7 @@ const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 const groupModel = require('./group.model');
+const { convertToCamelCase } = require('../utils/data.util');
 
 /**
  * 格式化已报名任务信息
@@ -16,19 +17,15 @@ const groupModel = require('./group.model');
 function formatEnrolledTask(enrolledTask) {
   if (!enrolledTask) return null;
   
-  // 提取基本字段
-  const formattedTask = { ...enrolledTask };
-  
-  // 格式化时间字段，使用驼峰命名法
-  formattedTask.enrollTime = formatDateTime(enrolledTask.enroll_time);
-  formattedTask.createTime = formatDateTime(enrolledTask.create_time);
-  formattedTask.updateTime = formatDateTime(enrolledTask.update_time);
-  
   // 转换字段名称为驼峰命名法
-  formattedTask.taskId = enrolledTask.task_id;
-  formattedTask.memberId = enrolledTask.member_id;
+  const formattedEnrolledTask = convertToCamelCase({
+    ...enrolledTask,
+    enrollTime: formatDateTime(enrolledTask.enroll_time),
+    createTime: formatDateTime(enrolledTask.create_time),
+    updateTime: formatDateTime(enrolledTask.update_time),
+  });
   
-  return formattedTask;
+  return formattedEnrolledTask;
 }
 
 /**
@@ -120,12 +117,7 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
   try {
     let query = `
       SELECT 
-        et.id,
-        et.task_id,
-        et.member_id,
-        et.enroll_time,
-        et.create_time,
-        et.update_time,
+        et.*,
         t.task_name, 
         t.reward, 
         t.task_status, 
@@ -191,27 +183,8 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
     
     const total = countResult[0].total;
     
-    // 格式化任务列表，只保留驼峰命名格式字段
-    const formattedList = rows.map(row => {
-      // 创建只包含驼峰格式字段的对象
-      return {
-        id: row.id,
-        taskId: row.task_id,
-        memberId: row.member_id,
-        enrollTime: formatDateTime(row.enroll_time),
-        createTime: formatDateTime(row.create_time),
-        updateTime: formatDateTime(row.update_time),
-        taskName: row.task_name,
-        reward: row.reward,
-        taskStatus: row.task_status,
-        startTime: formatDateTime(row.start_time),
-        endTime: formatDateTime(row.end_time),
-        category: row.category,
-        taskType: row.task_type,
-        channelName: row.channel_name,
-        channelIcon: row.channel_icon
-      };
-    });
+    // 使用 formatEnrolledTask 方法格式化每一行数据
+    const formattedList = rows.map(row => formatEnrolledTask(row));
     
     return {
       total,

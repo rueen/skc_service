@@ -6,6 +6,7 @@ const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
+const { convertToCamelCase } = require('../utils/data.util');
 
 /**
  * 格式化渠道信息
@@ -28,14 +29,14 @@ function formatChannel(channel) {
     logger.error(`解析渠道自定义字段失败: ${error.message}`);
   }
   
-  return {
-    id: channel.id,
-    name: channel.name,
-    icon: channel.icon,
+  const formattedChannel = convertToCamelCase({
+    ...channel,
     customFields: customFields,
     createTime: formatDateTime(channel.create_time),
     updateTime: formatDateTime(channel.update_time)
-  };
+  });
+  
+  return formattedChannel;
 }
 
 /**

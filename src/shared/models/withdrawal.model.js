@@ -9,6 +9,7 @@ const memberModel = require('./member.model');
 const billModel = require('./bill.model');
 const { BillType } = require('../config/enums');
 const { formatDateTime } = require('../utils/date.util');
+const { convertToCamelCase } = require('../utils/data.util');
 
 /**
  * 格式化提现记录，转换字段为驼峰命名
@@ -17,21 +18,16 @@ const { formatDateTime } = require('../utils/date.util');
  */
 function formatWithdrawal(withdrawal) {
   if (!withdrawal) return null;
-  
-  return {
-    id: withdrawal.id,
-    memberId: withdrawal.member_id,
-    withdrawalAccountId: withdrawal.withdrawal_account_id,
-    amount: withdrawal.amount,
-    withdrawalStatus: withdrawal.withdrawal_status,
-    billNo: withdrawal.bill_no,
-    rejectReason: withdrawal.reject_reason,
-    waiterId: withdrawal.waiter_id,
+
+  // 转换字段名称为驼峰命名法
+  const formattedWithdrawal = convertToCamelCase({
+    ...withdrawal,
     processTime: formatDateTime(withdrawal.process_time),
-    remark: withdrawal.remark,
     createTime: formatDateTime(withdrawal.create_time),
     updateTime: formatDateTime(withdrawal.update_time)
-  };
+  });
+  
+  return formattedWithdrawal;
 }
 
 /**
@@ -124,11 +120,14 @@ async function getWithdrawalsByMemberId(memberId, options = {}) {
       [...queryParams, offset, parseInt(pageSize)]
     );
     
+    // 使用 formatWithdrawal 方法格式化列表数据
+    const formattedList = withdrawals.map(withdrawal => formatWithdrawal(withdrawal));
+    
     return {
       total,
       page: parseInt(page),
       pageSize: parseInt(pageSize),
-      list: withdrawals
+      list: formattedList
     };
   } catch (error) {
     logger.error(`获取会员提现记录列表失败: ${error.message}`);
@@ -195,11 +194,14 @@ async function getAllWithdrawals(options = {}) {
       [...queryParams, offset, parseInt(pageSize)]
     );
     
+    // 使用 formatWithdrawal 方法格式化列表数据
+    const formattedList = withdrawals.map(withdrawal => formatWithdrawal(withdrawal));
+    
     return {
       total,
       page: parseInt(page),
       pageSize: parseInt(pageSize),
-      list: withdrawals
+      list: formattedList
     };
   } catch (error) {
     logger.error(`获取所有提现记录失败: ${error.message}`);
@@ -387,14 +389,8 @@ async function exportWithdrawals(filters = {}) {
     // 执行查询
     const [withdrawals] = await pool.query(baseQuery, queryParams);
     
-    // 格式化提现记录
-    const formattedWithdrawals = withdrawals.map(withdrawal => ({
-      ...formatWithdrawal(withdrawal),
-      memberNickname: withdrawal.member_nickname,
-      withdrawalAccountType: withdrawal.withdrawal_account_type,
-      withdrawalAccount: withdrawal.withdrawal_account,
-      withdrawalName: withdrawal.withdrawal_name
-    }));
+    // 使用 formatWithdrawal 方法格式化提现记录
+    const formattedWithdrawals = withdrawals.map(withdrawal => formatWithdrawal(withdrawal));
     
     return formattedWithdrawals;
   } catch (error) {

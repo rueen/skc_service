@@ -7,6 +7,9 @@ const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 const crypto = require('crypto');
+const { convertToCamelCase } = require('../utils/data.util');
+const groupModel = require('./group.model');
+const accountModel = require('./account.model');
 
 /**
  * 格式化会员信息
@@ -15,26 +18,15 @@ const crypto = require('crypto');
  */
 function formatMember(member) {
   if (!member) return null;
-  
-  return {
-    id: member.id,
-    memberNickname: member.member_nickname,
-    memberAccount: member.member_account,
-    password: member.password,
-    inviterId: member.inviter_id,
-    inviterNickname: member.inviter_nickname,
-    occupation: member.occupation,
-    inviteCode: member.invite_code,
-    hasPassword: !!member.password,
-    phone: member.phone || '',
-    email: member.email || '',
-    avatar: member.avatar || '',
+
+  const formattedMember = convertToCamelCase({
+    ...member,
     gender: member.gender !== undefined ? member.gender : 2, // 默认为保密
-    telegram: member.telegram || '',
     createTime: formatDateTime(member.create_time),
     updateTime: formatDateTime(member.update_time),
-    balance: member.balance || 0
-  };
+  });
+  
+  return formattedMember;
 }
 
 /**
@@ -138,12 +130,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         groupsMap[group.member_id] = [];
       }
       
-      groupsMap[group.member_id].push({
-        groupId: group.group_id,
-        groupName: group.group_name,
-        groupLink: group.group_link,
-        isGroupOwner: group.is_owner === 1
-      });
+      groupsMap[group.member_id].push(groupModel.formatGroup(group));
     });
     
     // 获取每个会员的账号列表
@@ -250,27 +237,10 @@ async function getById(id) {
     const member = formatMember(rows[0]);
     
     // 添加群组数组
-    member.groups = memberGroups.map(group => ({
-      groupId: group.group_id,
-      groupName: group.group_name,
-      groupLink: group.group_link,
-      isGroupOwner: group.is_owner === 1
-    }));
+    member.groups = memberGroups.map(group => (groupModel.formatGroup(group)));
     
     // 添加账号列表
-    member.accountList = accounts.map(account => ({
-      id: account.id,
-      channelId: account.channel_id,
-      channelName: account.channel_name,
-      channelIcon: account.channel_icon,
-      account: account.account,
-      homeUrl: account.home_url,
-      fansCount: account.fans_count,
-      friendsCount: account.friends_count,
-      postsCount: account.posts_count,
-      accountAuditStatus: account.account_audit_status,
-      createTime: formatDateTime(account.create_time)
-    }));
+    member.accountList = accounts.map(account => (accountModel.formatAccount(account)));
     
     return member;
   } catch (error) {
@@ -314,12 +284,7 @@ async function getByAccount(account) {
     const member = formatMember(rows[0]);
     
     // 添加群组数组
-    member.groups = memberGroups.map(group => ({
-      groupId: group.group_id,
-      groupName: group.group_name,
-      groupLink: group.group_link,
-      isGroupOwner: group.is_owner === 1
-    }));
+    member.groups = memberGroups.map(group => (groupModel.formatGroup(group)));
     
     return member;
   } catch (error) {

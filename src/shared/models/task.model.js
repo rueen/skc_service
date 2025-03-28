@@ -6,6 +6,7 @@ const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
+const { convertToCamelCase } = require('../utils/data.util');
 
 /**
  * 格式化任务信息
@@ -14,24 +15,15 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
  */
 function formatTask(task) {
   if (!task) return null;
-  
-  // 提取基本字段
-  const formattedTask = { ...task };
-  
-  // 格式化时间字段，使用驼峰命名法
-  formattedTask.startTime = formatDateTime(task.start_time);
-  formattedTask.endTime = formatDateTime(task.end_time);
-  formattedTask.createTime = formatDateTime(task.create_time);
-  formattedTask.updateTime = formatDateTime(task.update_time);
-  
+
   // 转换字段名称为驼峰命名法
-  formattedTask.taskName = task.task_name;
-  formattedTask.channelId = task.channel_id;
-  formattedTask.taskType = task.task_type;
-  formattedTask.channelName = task.channel_name;
-  formattedTask.channelIcon = task.channel_icon;
-  formattedTask.reward = task.reward;
-  formattedTask.category = task.category;
+  const formattedTask = convertToCamelCase({
+    ...task,
+    startTime: formatDateTime(task.start_time),
+    endTime: formatDateTime(task.end_time),
+    createTime: formatDateTime(task.create_time),
+    updateTime: formatDateTime(task.update_time),
+  });
   
   // 安全解析 JSON 字段
   try {
@@ -47,11 +39,6 @@ function formatTask(task) {
     logger.error(`解析 group_ids 失败: ${error.message}, 原始值: ${task.group_ids}`);
     formattedTask.groupIds = [];
   }
-  
-  // 将 groupMode 保持为数字类型，与入参保持一致
-  formattedTask.groupMode = task.group_mode;
-  formattedTask.userRange = task.user_range;
-  formattedTask.taskCount = task.task_count;
   
   // 安全解析 JSON 字段
   try {
@@ -69,33 +56,6 @@ function formatTask(task) {
   }
   
   formattedTask.unlimitedQuota = task.unlimited_quota === 1;
-  formattedTask.quota = task.quota || 0;
-  formattedTask.fansRequired = task.fans_required;
-  formattedTask.contentRequirement = task.content_requirement;
-  formattedTask.taskInfo = task.task_info;
-  formattedTask.taskStatus = task.task_status;
-  
-  // 删除原始字段
-  delete formattedTask.start_time;
-  delete formattedTask.end_time;
-  delete formattedTask.create_time;
-  delete formattedTask.update_time;
-  delete formattedTask.task_name;
-  delete formattedTask.channel_id;
-  delete formattedTask.task_type;
-  delete formattedTask.group_ids;
-  delete formattedTask.group_mode;
-  delete formattedTask.user_range;
-  delete formattedTask.task_count;
-  delete formattedTask.custom_fields;
-  delete formattedTask.unlimited_quota;
-  delete formattedTask.fans_required;
-  delete formattedTask.content_requirement;
-  delete formattedTask.task_info;
-  delete formattedTask.task_status;
-  delete formattedTask.channel_name;
-  delete formattedTask.channel_icon;
-  
   return formattedTask;
 }
 
@@ -877,6 +837,5 @@ module.exports = {
   create,
   update,
   remove,
-  formatTask,
   exportTasks
 }; 

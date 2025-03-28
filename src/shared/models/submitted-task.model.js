@@ -8,6 +8,20 @@ const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 const rewardModel = require('./reward.model');
 const groupModel = require('./group.model');
+const { convertToCamelCase } = require('../utils/data.util');
+
+function formatSubmittedTask(submittedTask) {
+  if (!submittedTask) return null;
+  
+  // 转换字段名称为驼峰命名法
+  const formattedSubmittedTask = convertToCamelCase({
+    ...submittedTask,
+    submitTime: formatDateTime(submittedTask.submit_time),
+    createTime: formatDateTime(submittedTask.create_time),
+    updateTime: formatDateTime(submittedTask.update_time)
+  });
+  return formattedSubmittedTask;
+}
 
 /**
  * 创建任务提交记录
@@ -129,14 +143,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
   try {
     let query = `
       SELECT DISTINCT 
-        st.id,
-        st.task_id,
-        st.member_id,
-        st.submit_time,
-        st.task_audit_status,
-        st.waiter_id,
-        st.reject_reason,
-        st.submit_content,
+        st.*,
         t.task_name,
         t.reward,
         t.channel_id,
@@ -245,43 +252,31 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     const total = countResult[0].total;
     
-    // 格式化任务列表，转换为驼峰命名格式
+    // 使用 formatSubmittedTask 方法格式化结果
     const formattedList = rows.map(row => {
       // 解析JSON格式的提交内容
-      let submitContent = {};
-      try {
-        if (row.submit_content) {
+      if (row.submit_content) {
+        try {
           // 检查是否已经是对象，避免重复解析
-          if (typeof row.submit_content === 'object' && row.submit_content !== null) {
-            submitContent = row.submit_content;
-          } else if (typeof row.submit_content === 'string') {
-            submitContent = JSON.parse(row.submit_content);
+          if (typeof row.submit_content === 'string') {
+            row.submit_content = JSON.parse(row.submit_content);
           }
+        } catch (error) {
+          logger.error(`解析提交内容JSON失败: ${error.message}, 原始内容类型: ${typeof row.submit_content}`);
+          row.submit_content = {};
         }
-      } catch (error) {
-        logger.error(`解析提交内容JSON失败: ${error.message}, 原始内容类型: ${typeof row.submit_content}`);
-        submitContent = {};
       }
       
-      return {
-        id: row.id,
-        taskId: row.task_id,
-        taskName: row.task_name,
-        channelId: row.channel_id,
-        channelName: row.channel_name,
-        channelIcon: row.channel_icon,
-        memberId: row.member_id,
-        memberNickname: row.member_nickname,
-        groupId: row.group_id,
-        groupName: row.group_name,
-        isGroupOwner: !!row.is_group_owner,
-        reward: row.reward,
-        submitContent: submitContent,
-        submitTime: formatDateTime(row.submit_time),
-        taskAuditStatus: row.task_audit_status,
-        waiterId: row.waiter_id,
-        rejectReason: row.reject_reason
-      };
+      const formattedItem = formatSubmittedTask(row);
+      // 添加列表中特有的字段
+      formattedItem.channelName = row.channel_name;
+      formattedItem.channelIcon = row.channel_icon;
+      formattedItem.memberNickname = row.member_nickname;
+      formattedItem.groupId = row.group_id;
+      formattedItem.groupName = row.group_name;
+      formattedItem.isGroupOwner = !!row.is_group_owner;
+      
+      return formattedItem;
     });
     
     return {
@@ -305,14 +300,7 @@ async function getById(id) {
   try {
     const [rows] = await pool.query(
       `SELECT 
-        st.id,
-        st.task_id,
-        st.member_id,
-        st.submit_content,
-        st.submit_time,
-        st.task_audit_status,
-        st.waiter_id,
-        st.reject_reason,
+        st.*,
         t.task_name,
         t.reward
       FROM submitted_tasks st
@@ -328,34 +316,25 @@ async function getById(id) {
     const row = rows[0];
     
     // 解析JSON格式的提交内容
-    let submitContent = {};
-    try {
-      if (row.submit_content) {
+    if (row.submit_content) {
+      try {
         // 检查是否已经是对象，避免重复解析
-        if (typeof row.submit_content === 'object' && row.submit_content !== null) {
-          submitContent = row.submit_content;
-        } else if (typeof row.submit_content === 'string') {
-          submitContent = JSON.parse(row.submit_content);
+        if (typeof row.submit_content === 'string') {
+          row.submit_content = JSON.parse(row.submit_content);
         }
+      } catch (error) {
+        logger.error(`解析提交内容JSON失败: ${error.message}, 原始内容类型: ${typeof row.submit_content}`);
+        row.submit_content = {};
       }
-    } catch (error) {
-      logger.error(`解析提交内容JSON失败: ${error.message}, 原始内容类型: ${typeof row.submit_content}`);
-      submitContent = {};
     }
     
-    // 格式化为驼峰命名格式
-    return {
-      id: row.id,
-      taskId: row.task_id,
-      taskName: row.task_name,
-      memberId: row.member_id,
-      submitContent,
-      submitTime: formatDateTime(row.submit_time),
-      taskAuditStatus: row.task_audit_status,
-      waiterId: row.waiter_id,
-      rejectReason: row.reject_reason,
-      reward: row.reward
-    };
+    // 使用 formatSubmittedTask 格式化数据
+    const formattedTask = formatSubmittedTask(row);
+    // 添加额外字段
+    formattedTask.taskName = row.task_name;
+    formattedTask.reward = row.reward;
+    
+    return formattedTask;
   } catch (error) {
     logger.error(`获取已提交任务详情失败: ${error.message}`);
     throw error;
@@ -531,17 +510,7 @@ async function batchReject(ids, reason, waiterId) {
 async function getByTaskAndMember(taskId, memberId) {
   try {
     const [rows] = await pool.query(
-      `SELECT 
-        id,
-        task_id,
-        member_id,
-        submit_content,
-        submit_time,
-        task_audit_status,
-        waiter_id,
-        reject_reason
-      FROM submitted_tasks 
-      WHERE task_id = ? AND member_id = ?`,
+      `SELECT * FROM submitted_tasks WHERE task_id = ? AND member_id = ?`,
       [taskId, memberId]
     );
     
@@ -552,32 +521,20 @@ async function getByTaskAndMember(taskId, memberId) {
     const row = rows[0];
     
     // 解析JSON格式的提交内容
-    let submitContent = {};
-    try {
-      if (row.submit_content) {
+    if (row.submit_content) {
+      try {
         // 检查是否已经是对象，避免重复解析
-        if (typeof row.submit_content === 'object' && row.submit_content !== null) {
-          submitContent = row.submit_content;
-        } else if (typeof row.submit_content === 'string') {
-          submitContent = JSON.parse(row.submit_content);
+        if (typeof row.submit_content === 'string') {
+          row.submit_content = JSON.parse(row.submit_content);
         }
+      } catch (error) {
+        logger.error(`解析提交内容JSON失败: ${error.message}, 原始内容类型: ${typeof row.submit_content}`);
+        row.submit_content = {};
       }
-    } catch (error) {
-      logger.error(`解析提交内容JSON失败: ${error.message}, 原始内容类型: ${typeof row.submit_content}`);
-      submitContent = {};
     }
     
-    // 格式化为驼峰命名格式
-    return {
-      id: row.id,
-      taskId: row.task_id,
-      memberId: row.member_id,
-      submitContent,
-      submitTime: formatDateTime(row.submit_time),
-      taskAuditStatus: row.task_audit_status,
-      waiterId: row.waiter_id,
-      rejectReason: row.reject_reason
-    };
+    // 使用 formatSubmittedTask 格式化数据
+    return formatSubmittedTask(row);
   } catch (error) {
     logger.error(`根据会员ID和任务ID获取任务提交失败: ${error.message}`);
     throw error;

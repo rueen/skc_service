@@ -5,6 +5,7 @@
 const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
+const { convertToCamelCase } = require('../utils/data.util');
 
 /**
  * 格式化小二信息
@@ -14,18 +15,13 @@ const { formatDateTime } = require('../utils/date.util');
 function formatWaiter(waiter) {
   if (!waiter) return null;
   
-  // 提取基本字段
-  const formattedWaiter = { ...waiter };
-  
-  // 格式化时间字段，使用驼峰命名法
-  formattedWaiter.lastLoginTime = formatDateTime(waiter.last_login_time);
-  formattedWaiter.createTime = formatDateTime(waiter.create_time);
-  formattedWaiter.updateTime = formatDateTime(waiter.update_time);
-  
-  // 删除原始字段
-  delete formattedWaiter.last_login_time;
-  delete formattedWaiter.create_time;
-  delete formattedWaiter.update_time;
+  // 转换字段名称为驼峰命名法
+  const formattedWaiter = convertToCamelCase({
+    ...waiter,
+    lastLoginTime: formatDateTime(waiter.last_login_time),
+    createTime: formatDateTime(waiter.create_time),
+    updateTime: formatDateTime(waiter.update_time)
+  });
   
   return formattedWaiter;
 }

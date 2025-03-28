@@ -5,6 +5,19 @@
 const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
+const { convertToCamelCase } = require('../utils/data.util');
+
+function formatConfig(config) {
+  if (!config) return null;
+  
+  // 转换字段名称为驼峰命名法
+  const formattedConfig = convertToCamelCase({
+    ...config,
+    createTime: formatDateTime(config.create_time),
+    updateTime: formatDateTime(config.update_time)
+  });
+  return formattedConfig;
+}
 
 /**
  * 获取所有系统配置
@@ -14,14 +27,7 @@ async function getAllConfigs() {
   try {
     const [rows] = await pool.query('SELECT * FROM system_config ORDER BY config_key');
     
-    return rows.map(config => ({
-      id: config.id,
-      key: config.config_key,
-      value: config.config_value,
-      description: config.description,
-      createTime: formatDateTime(config.create_time),
-      updateTime: formatDateTime(config.update_time)
-    }));
+    return rows.map(config => formatConfig(config));
   } catch (error) {
     logger.error(`获取所有系统配置失败: ${error.message}`);
     throw error;
@@ -44,15 +50,7 @@ async function getConfigByKey(key) {
       return null;
     }
     
-    const config = rows[0];
-    return {
-      id: config.id,
-      key: config.config_key,
-      value: config.config_value,
-      description: config.description,
-      createTime: formatDateTime(config.create_time),
-      updateTime: formatDateTime(config.update_time)
-    };
+    return formatConfig(rows[0]);
   } catch (error) {
     logger.error(`根据键获取配置失败: ${error.message}`);
     throw error;

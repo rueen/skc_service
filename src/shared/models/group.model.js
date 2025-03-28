@@ -6,6 +6,7 @@ const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
+const { convertToCamelCase } = require('../utils/data.util');
 
 /**
  * 格式化群组信息
@@ -14,17 +15,17 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
  */
 function formatGroup(group) {
   if (!group) return null;
-  return {
-    id: group.id,
-    groupName: group.group_name,
-    groupLink: group.group_link,
-    ownerId: group.owner_id,
-    ownerName: group.owner_name,
-    memberCount: group.member_count,
+  
+  // 转换字段名称为驼峰命名法
+  const formattedGroup = convertToCamelCase({
+    ...group,
     createTime: formatDateTime(group.create_time),
     updateTime: formatDateTime(group.update_time)
-  };
+  });
+  
+  return formattedGroup;
 }
+
 
 /**
  * 获取群组列表
@@ -654,6 +655,7 @@ async function getGroupMembers(groupId, page = DEFAULT_PAGE, pageSize = DEFAULT_
 }
 
 module.exports = {
+  formatGroup,
   getList,
   getById,
   create,

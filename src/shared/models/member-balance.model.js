@@ -6,44 +6,6 @@ const { pool } = require('./db');
 const logger = require('../config/logger.config');
 
 /**
- * 更新会员账户表结构，添加余额字段
- * @returns {Promise<boolean>} 操作结果
- */
-async function updateMembersTableAddBalance() {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-    
-    // 检查余额字段是否存在
-    const [columns] = await connection.query(
-      "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'members' AND COLUMN_NAME = 'balance'",
-      [process.env.DB_DATABASE]
-    );
-    
-    // 如果余额字段不存在，添加它
-    if (columns.length === 0) {
-      logger.info('members表中不存在balance字段，将添加该字段');
-      await connection.query(`
-        ALTER TABLE members 
-        ADD COLUMN balance decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT '账户余额' AFTER gender
-      `);
-      logger.info('balance字段添加成功');
-    } else {
-      logger.info('balance字段已存在');
-    }
-    
-    await connection.commit();
-    return true;
-  } catch (error) {
-    await connection.rollback();
-    logger.error(`更新members表结构失败: ${error.message}`);
-    return false;
-  } finally {
-    connection.release();
-  }
-}
-
-/**
  * 获取会员已提现金额
  * @param {number} memberId - 会员ID
  * @returns {Promise<number>} 提现金额
@@ -155,67 +117,7 @@ async function updateBalance(memberId, amount, options = {}) {
   }
 }
 
-/**
- * 创建余额变动日志表
- * @returns {Promise<boolean>} 操作结果
- */
-async function createBalanceLogsTable() {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-    
-    // 检查表是否存在
-    const [tables] = await connection.query(
-      "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'balance_logs'",
-      [process.env.DB_DATABASE]
-    );
-    
-    if (tables.length === 0) {
-      logger.info('balance_logs表不存在，将创建该表');
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS balance_logs (
-          id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '日志ID',
-          member_id bigint(20) NOT NULL COMMENT '会员ID',
-          amount decimal(10,2) NOT NULL COMMENT '变动金额',
-          before_balance decimal(10,2) NOT NULL COMMENT '变动前余额',
-          after_balance decimal(10,2) NOT NULL COMMENT '变动后余额',
-          transaction_type varchar(50) NOT NULL COMMENT '交易类型',
-          create_time datetime NOT NULL COMMENT '创建时间',
-          PRIMARY KEY (id),
-          KEY idx_member_id (member_id),
-          KEY idx_create_time (create_time)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='余额变动日志表';
-      `);
-      logger.info('balance_logs表创建成功');
-    } else {
-      logger.info('balance_logs表已存在');
-    }
-    
-    await connection.commit();
-    return true;
-  } catch (error) {
-    await connection.rollback();
-    logger.error(`创建balance_logs表失败: ${error.message}`);
-    return false;
-  } finally {
-    connection.release();
-  }
-}
-
-// 初始化必要的表结构
-async function init() {
-  try {
-    await updateMembersTableAddBalance();
-    await createBalanceLogsTable();
-    return true;
-  } catch (error) {
-    logger.error(`初始化余额相关表结构失败: ${error.message}`);
-    return false;
-  }
-}
-
 module.exports = {
-  init,
   getBalance,
   getWithdrawalAmount,
   updateBalance

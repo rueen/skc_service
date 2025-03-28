@@ -6,6 +6,7 @@ const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
+const { convertToCamelCase } = require('../utils/data.util');
 
 /**
  * 格式化账户信息
@@ -15,24 +16,13 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 function formatAccount(account) {
   if (!account) return null;
   
-  // 创建一个只包含需要的驼峰命名字段的对象
-  return {
-    id: account.id,
-    account: account.account,
-    memberId: account.member_id,
-    channelId: account.channel_id,
-    channelName: account.channel_name,
-    channelIcon: account.channel_icon,
-    homeUrl: account.home_url,
-    fansCount: account.fans_count,
-    friendsCount: account.friends_count,
-    postsCount: account.posts_count,
-    accountAuditStatus: account.account_audit_status,
-    rejectReason: account.reject_reason,
-    memberNickname: account.member_name,
+  // 转换字段名称为驼峰命名法
+  const formattedAccount = convertToCamelCase({
+    ...account,
     createTime: formatDateTime(account.create_time),
     updateTime: formatDateTime(account.update_time)
-  };
+  });
+  return formattedAccount;
 }
 
 /**
@@ -337,6 +327,7 @@ async function remove(id) {
 }
 
 module.exports = {
+  formatAccount,
   getList,
   getByMemberId,
   getByMemberAndChannel,
