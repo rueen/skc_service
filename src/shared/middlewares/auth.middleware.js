@@ -71,25 +71,6 @@ const optionalVerifyToken = (req, res, next) => {
 };
 
 /**
- * 限制访问权限
- * @param {Array} roles - 允许访问的角色列表
- * @returns {Function} 中间件函数
- */
-const restrictTo = (roles = []) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return responseUtil.unauthorized(res, '未授权');
-    }
-    
-    if (!roles.includes(req.user.role)) {
-      return responseUtil.forbidden(res, '无权访问此资源');
-    }
-    
-    next();
-  };
-};
-
-/**
  * 限制只有管理员才能访问
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
@@ -112,7 +93,7 @@ const isAdmin = (req, res, next) => {
  * @param {string|string[]} permissionCode - 权限代码或权限代码数组
  * @returns {Function} 中间件函数
  */
-const checkPermission = (permissionCode) => {
+const hasPermission = (permissionCode) => {
   return (req, res, next) => {
     try {
       if (!req.user) {
@@ -159,41 +140,9 @@ const checkPermission = (permissionCode) => {
   };
 };
 
-/**
- * 限制只有资源所有者才能访问
- * @param {Function} getResourceOwnerId - 获取资源所有者ID的函数
- * @returns {Function} 中间件函数
- */
-const restrictToOwner = (getResourceOwnerId) => {
-  return async (req, res, next) => {
-    try {
-      if (!req.user) {
-        return responseUtil.unauthorized(res, '未授权');
-      }
-      
-      const ownerId = await getResourceOwnerId(req);
-      
-      if (req.user.id !== ownerId) {
-        return responseUtil.forbidden(res, '无权访问此资源');
-      }
-      
-      next();
-    } catch (error) {
-      logger.error(`验证资源所有权失败: ${error.message}`);
-      return responseUtil.serverError(res, '验证资源所有权失败');
-    }
-  };
-};
-
-// 为了向后兼容，暴露hasPermission作为checkPermission的别名
-const hasPermission = checkPermission;
-
 module.exports = {
   verifyToken,
   optionalVerifyToken,
-  restrictTo,
-  restrictToOwner,
   isAdmin,
-  checkPermission,
   hasPermission // 导出别名以保持兼容性
 }; 
