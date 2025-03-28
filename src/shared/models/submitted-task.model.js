@@ -334,6 +334,64 @@ async function getById(id) {
     formattedTask.taskName = row.task_name;
     formattedTask.reward = row.reward;
     
+    // 获取所有待审核任务的ID列表，按提交时间降序排列（与待审核任务列表页展示一致）
+    const [pendingTasks] = await pool.query(
+      `SELECT id, submit_time FROM submitted_tasks 
+       WHERE task_audit_status = 'pending' 
+       ORDER BY submit_time DESC`
+    );
+    
+    // 初始化前后任务ID为null
+    formattedTask.prevTaskId = null;
+    formattedTask.nextTaskId = null;
+    
+    if (pendingTasks.length > 0) {
+      // 将所有待审核任务ID转为数组
+      const pendingTaskIds = pendingTasks.map(task => task.id);
+      
+      if (row.task_audit_status === 'pending') {
+        // 如果当前任务是待审核状态，找出它在列表中的位置
+        const currentIndex = pendingTaskIds.findIndex(taskId => taskId === Number(id));
+        
+        if (currentIndex !== -1) {
+          // 前一个任务是列表中的前一个索引（较新的任务）
+          if (currentIndex > 0) {
+            formattedTask.prevTaskId = pendingTaskIds[currentIndex - 1];
+          }
+          
+          // 后一个任务是列表中的后一个索引（较旧的任务）
+          if (currentIndex + 1 < pendingTaskIds.length) {
+            formattedTask.nextTaskId = pendingTaskIds[currentIndex + 1];
+          }
+        }
+      } else {
+        // 如果当前任务不是待审核状态，查找Submit Time最接近当前任务的待审核任务
+        const currentSubmitTime = new Date(row.submit_time).getTime();
+        
+        // 查找提交时间比当前任务更新的第一个待审核任务（前一个任务）
+        const newerTask = pendingTasks.find(task => 
+          new Date(task.submit_time).getTime() > currentSubmitTime
+        );
+        
+        // 查找提交时间比当前任务更旧的第一个待审核任务（后一个任务）
+        const olderTask = pendingTasks.find(task => 
+          new Date(task.submit_time).getTime() < currentSubmitTime
+        );
+        
+        // 设置前一个和后一个任务ID
+        if (newerTask) {
+          formattedTask.prevTaskId = newerTask.id;
+        } else if (pendingTasks.length > 0) {
+          // 如果没有更新的任务，返回最新的待审核任务
+          formattedTask.prevTaskId = pendingTaskIds[0];
+        }
+        
+        if (olderTask) {
+          formattedTask.nextTaskId = olderTask.id;
+        }
+      }
+    }
+    
     return formattedTask;
   } catch (error) {
     logger.error(`获取已提交任务详情失败: ${error.message}`);
