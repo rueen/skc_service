@@ -96,7 +96,8 @@ function formatDateTimeForMySQL(dateTimeString) {
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberId = null) {
   try {
     let query = `
-      SELECT t.*, c.name as channel_name, c.icon as channel_icon
+      SELECT t.*, c.name as channel_name, c.icon as channel_icon,
+        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id) as submitted_count
       FROM tasks t
       LEFT JOIN channels c ON t.channel_id = c.id
     `;
@@ -194,7 +195,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
           groupIds: formattedTask.groupIds,
           createTime: formattedTask.createTime,
           isEnrolled: isEnrolled,
-          enrollmentId: enrollmentId
+          enrollmentId: enrollmentId,
+          submittedCount: parseInt(task.submitted_count || 0, 10)
         });
       } catch (error) {
         logger.error(`格式化任务失败，任务ID: ${task.id}, 错误: ${error.message}`);
