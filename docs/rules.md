@@ -248,8 +248,8 @@ src/
 | reward | decimal(10,2) | NOT NULL | | 任务奖励金额 |
 | brand | varchar(100) | | NULL | 品牌名称 |
 | group_ids | json | | NULL | 关联的群组ID列表，JSON格式 |
-| group_mode | varchar(20) | | 'optional' | 群组模式：required-必须加入群组，optional-可选加入群组 |
-| user_range | varchar(20) | | 'all' | 用户范围：all-所有用户，invited-邀请用户 |
+| group_mode | tinyint(1) | | 0 | 群组模式：0-不指定，1-指定群组 |
+| user_range | tinyint(1) | | 0 | 用户范围：0-全部用户，1-完成任务次数 |
 | task_count | int(11) | NOT NULL | 1 | 任务数量 |
 | custom_fields | json | | NULL | 自定义字段，JSON格式 |
 | start_time | datetime | NOT NULL | | 任务开始时间 |
