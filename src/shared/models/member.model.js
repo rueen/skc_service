@@ -21,6 +21,7 @@ function formatMember(member) {
 
   const formattedMember = convertToCamelCase({
     ...member,
+    hasPassword: !!member.password,
     gender: member.gender !== undefined ? member.gender : 2, // 默认为保密
     createTime: formatDateTime(member.create_time),
     updateTime: formatDateTime(member.update_time),
