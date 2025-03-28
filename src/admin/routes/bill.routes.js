@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-24 20:43:21
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 17:44:25
+ * @LastEditTime: 2025-03-28 18:20:58
  * @Description: 
  */
 /**
@@ -21,7 +21,7 @@ const router = express.Router();
 // 应用中间件
 router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
-router.use(authMiddleware.hasPermission('settlement:bills'));
+router.use(authMiddleware.hasPermission('finance:bills'));
 
 /**
  * @route GET /api/admin/bills

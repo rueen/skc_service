@@ -63,8 +63,8 @@ src/
 | channel:list | 渠道管理 | 管理渠道信息 |
 | group:list | 群组管理 | 管理群组信息 |
 | waiter:list | 小二管理 | 管理小二账号 |
-| settlement:withdrawal | 提现管理 | 管理提现申请 |
-| settlement:bills | 结算账单 | 结算账单 |
+| finance:withdrawal | 提现管理 | 管理提现申请 |
+| finance:bills | 结算账单 | 结算账单 |
 | article:list | 文章管理 | 管理系统文章内容 |
 
 ## 数据模型规范

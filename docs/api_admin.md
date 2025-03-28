@@ -144,8 +144,8 @@ Authorization: Bearer <token>
 | channel:list | 渠道管理 | 管理渠道信息 |
 | group:list | 群组管理 | 管理群组信息 |
 | waiter:list | 小二管理 | 管理小二账号 |
-| settlement:withdrawal | 提现账单 | 管理提现申请 |
-| settlement:otherBills | 其他账单 | 管理其他类型账单 |
+| finance:withdrawal | 提现账单 | 管理提现申请 |
+| finance:otherBills | 其他账单 | 管理其他类型账单 |
 | article:list | 文章管理 | 管理系统文章内容 |
 
 ## 数据库表结构
