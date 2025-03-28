@@ -68,7 +68,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     // 构建查询语句
     const query = `
       SELECT a.*, 
-             m.member_nickname as member_name,
+             m.member_nickname,
              c.name as channel_name,
              c.icon as channel_icon,
              c.custom_fields as channel_custom_fields
@@ -137,11 +137,9 @@ async function getByMemberId(memberId) {
   try {
     const query = `
       SELECT a.*, 
-             m.member_nickname as member_name,
-             c.name as channel_name,
-             c.icon as channel_icon
+         c.name as channel_name,
+         c.icon as channel_icon
       FROM accounts a
-      LEFT JOIN members m ON a.member_id = m.id
       LEFT JOIN channels c ON a.channel_id = c.id
       WHERE a.member_id = ?
       ORDER BY a.channel_id
@@ -167,11 +165,9 @@ async function getByMemberAndChannel(memberId, channelId) {
   try {
     const query = `
       SELECT a.*,
-             m.member_nickname as member_name,
              c.name as channel_name,
              c.icon as channel_icon
       FROM accounts a
-      LEFT JOIN members m ON a.member_id = m.id
       LEFT JOIN channels c ON a.channel_id = c.id
       WHERE a.member_id = ? AND a.channel_id = ?
       LIMIT 1
@@ -226,11 +222,9 @@ async function create(accountData) {
     // 查询新创建的账号(包含渠道信息)
     const newAccountQuery = `
       SELECT a.*, 
-             m.member_nickname as member_name,
              c.name as channel_name,
              c.icon as channel_icon
       FROM accounts a
-      LEFT JOIN members m ON a.member_id = m.id
       LEFT JOIN channels c ON a.channel_id = c.id
       WHERE a.id = ?
     `;
