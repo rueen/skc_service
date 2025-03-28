@@ -139,7 +139,7 @@ async function remove(req, res) {
     }
     
     // 不允许删除管理员账号
-    if (waiter.is_admin === 1) {
+    if (waiter.isAdmin) {
       return responseUtil.forbidden(res, '不允许删除管理员账号');
     }
     

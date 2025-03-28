@@ -35,7 +35,7 @@ async function login(req, res) {
     const token = authUtil.generateToken({
       id: waiter.id,
       username: waiter.username,
-      isAdmin: waiter.is_admin === 1,
+      isAdmin: waiter.isAdmin,
       permissions: waiter.permissions
     });
 
@@ -45,7 +45,7 @@ async function login(req, res) {
       user: {
         id: waiter.id,
         username: waiter.username,
-        isAdmin: waiter.is_admin === 1,
+        isAdmin: waiter.isAdmin,
         permissions: waiter.permissions
       }
     }, '登录成功');
@@ -74,7 +74,7 @@ async function getCurrentUser(req, res) {
     return responseUtil.success(res, {
       id: waiter.id,
       username: waiter.username,
-      isAdmin: waiter.is_admin === 1,
+      isAdmin: waiter.isAdmin,
       permissions: waiter.permissions,
       lastLoginTime: waiter.last_login_time
     });
