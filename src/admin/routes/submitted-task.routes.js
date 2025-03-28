@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 18:06:04
+ * @LastEditTime: 2025-03-28 20:28:33
  * @Description: 
  */
 /**
@@ -23,28 +23,28 @@ router.use(rateLimiterMiddleware.apiLimiter);
 // 获取已提交任务列表
 router.get(
   '/',
-  authMiddleware.checkPermission('task:submitted'),
+  authMiddleware.hasPermission('task:submitted'),
   submittedTaskController.getSubmittedTasks
 );
 
 // 获取已提交任务详情
 router.get(
   '/:id',
-  authMiddleware.checkPermission('task:submittedDetail'),
+  authMiddleware.hasPermission('task:submittedDetail'),
   submittedTaskController.getSubmittedTaskDetail
 );
 
 // 批量审核通过
 router.post(
   '/batch-approve',
-  authMiddleware.checkPermission('task:submitted'),
+  authMiddleware.hasPermission('task:submitted'),
   submittedTaskController.batchApproveSubmissions
 );
 
 // 批量拒绝
 router.post(
   '/batch-reject',
-  authMiddleware.checkPermission('task:submitted'),
+  authMiddleware.hasPermission('task:submitted'),
   submittedTaskController.batchRejectSubmissions
 );
 
