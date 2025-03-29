@@ -5,6 +5,7 @@
 const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { convertToCamelCase } = require('../utils/data.util');
+const { formatDateTime } = require('../utils/date.util');
 
 function formatWithdrawalAccount(withdrawalAccount) {
   if (!withdrawalAccount) return null;
