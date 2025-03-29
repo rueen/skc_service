@@ -2,7 +2,7 @@
  * 账号管理控制器
  * 处理管理端账号相关的业务逻辑
  */
-const accountModel = require('../models/account.model');
+const accountModel = require('../../shared/models/account.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
