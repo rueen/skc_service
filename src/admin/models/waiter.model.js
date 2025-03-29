@@ -2,10 +2,10 @@
  * 小二模型
  * 处理小二相关的数据库操作
  */
-const { pool } = require('./db');
-const logger = require('../config/logger.config');
-const { formatDateTime } = require('../utils/date.util');
-const { convertToCamelCase } = require('../utils/data.util');
+const { pool } = require('../../shared/models/db');
+const logger = require('../../shared/config/logger.config');
+const { formatDateTime } = require('../../shared/utils/date.util');
+const { convertToCamelCase } = require('../../shared/utils/data.util');
 
 /**
  * 格式化小二信息
