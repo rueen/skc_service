@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 19:07:13
+ * @LastEditTime: 2025-03-29 18:59:26
  * @Description: 
  */
 /**
@@ -10,9 +10,9 @@
  * 处理H5端任务相关的业务逻辑
  */
 const taskModel = require('../../shared/models/task.model');
-const submittedTaskModel = require('../../shared/models/submitted-task.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
+const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../../shared/config/api.config');
 
 /**
  * 获取任务列表
@@ -21,7 +21,7 @@ const responseUtil = require('../../shared/utils/response.util');
  */
 async function getList(req, res) {
   try {
-    const { page = 1, pageSize = 10, channelId, category } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, channelId, category } = req.query;
     const memberId = req.user ? req.user.id : null;
     
     // 添加调试日志，记录用户状态

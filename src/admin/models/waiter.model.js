@@ -6,6 +6,7 @@ const { pool } = require('../../shared/models/db');
 const logger = require('../../shared/config/logger.config');
 const { formatDateTime } = require('../../shared/utils/date.util');
 const { convertToCamelCase } = require('../../shared/utils/data.util');
+const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../../shared/config/api.config');
 
 /**
  * 格式化小二信息
@@ -69,7 +70,7 @@ async function findById(id) {
  * @param {number} pageSize - 每页条数
  * @returns {Promise<Object>} 小二列表和总数
  */
-async function getList(filters = {}, page = 1, pageSize = 10) {
+async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
     let query = 'SELECT id, username, is_admin, remarks, permissions, last_login_time, create_time, update_time FROM waiters';
     let countQuery = 'SELECT COUNT(*) as total FROM waiters';

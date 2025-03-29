@@ -10,6 +10,7 @@ const billModel = require('./bill.model');
 const { BillType } = require('../config/enums');
 const { formatDateTime } = require('../utils/date.util');
 const { convertToCamelCase } = require('../utils/data.util');
+const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
 
 /**
  * 格式化提现记录，转换字段为驼峰命名
@@ -91,7 +92,7 @@ async function createWithdrawal(withdrawalData) {
  */
 async function getWithdrawalsByMemberId(memberId, options = {}) {
   try {
-    const { page = 1, pageSize = 10, withdrawalStatus } = options;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, withdrawalStatus } = options;
     const offset = (page - 1) * pageSize;
     
     let whereClause = 'WHERE w.member_id = ?';
@@ -143,8 +144,8 @@ async function getWithdrawalsByMemberId(memberId, options = {}) {
 async function getAllWithdrawals(options = {}) {
   try {
     const { 
-      page = 1, 
-      pageSize = 10, 
+      page = DEFAULT_PAGE, 
+      pageSize = DEFAULT_PAGE_SIZE, 
       withdrawalStatus, 
       memberId,
       startTime,

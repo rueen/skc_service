@@ -5,6 +5,7 @@
 const enrolledTaskModel = require('../../shared/models/enrolled-task.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
+const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../../shared/config/api.config');
 
 /**
  * 报名任务
@@ -55,7 +56,7 @@ async function enrollTask(req, res) {
  */
 async function getEnrolledTasks(req, res) {
   try {
-    const { page = 1, pageSize = 10, taskId, excludeSubmitted } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, taskId, excludeSubmitted } = req.query;
     const memberId = req.user.id;
     
     // 添加调试日志，记录用户状态
