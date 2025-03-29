@@ -151,19 +151,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         if (!accountsMap[account.member_id]) {
           accountsMap[account.member_id] = [];
         }
-        accountsMap[account.member_id].push({
-          id: account.id,
-          account: account.account,
-          homeUrl: account.home_url,
-          channelId: account.channel_id,
-          channelName: account.channel_name,
-          channelIcon: account.channel_icon,
-          fansCount: account.fans_count,
-          friendsCount: account.friends_count,
-          postsCount: account.posts_count,
-          accountAuditStatus: account.account_audit_status,
-          createTime: formatDateTime(account.create_time)
-        });
+        accountsMap[account.member_id].push(accountModel.formatAccount(account));
       });
     }
     
