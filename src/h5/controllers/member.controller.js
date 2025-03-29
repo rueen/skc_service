@@ -104,9 +104,8 @@ async function getAccountDetail(req, res) {
     
     // 只查询账号表，不关联渠道表
     const query = `
-      SELECT a.*, m.member_nickname as member_name
+      SELECT a.*
       FROM accounts a
-      LEFT JOIN members m ON a.member_id = m.id
       WHERE a.id = ?
       LIMIT 1
     `;
@@ -125,25 +124,7 @@ async function getAccountDetail(req, res) {
       return responseUtil.forbidden(res, '无权查看此账号');
     }
     
-    // 格式化结果
-    const { formatDateTime } = require('../../shared/utils/date.util');
-    const formattedAccount = {
-      id: account.id,
-      account: account.account,
-      memberId: account.member_id,
-      channelId: account.channel_id,
-      homeUrl: account.home_url,
-      fansCount: account.fans_count,
-      friendsCount: account.friends_count,
-      postsCount: account.posts_count,
-      accountAuditStatus: account.account_audit_status,
-      rejectReason: account.reject_reason || '',
-      memberName: account.member_name,
-      createTime: formatDateTime(account.create_time),
-      updateTime: formatDateTime(account.update_time)
-    };
-    
-    return responseUtil.success(res, formattedAccount);
+    return responseUtil.success(res, accountModel.formatAccount(account));
   } catch (error) {
     logger.error(`获取账号详情失败: ${error.message}`);
     return responseUtil.serverError(res, '获取账号详情失败');
