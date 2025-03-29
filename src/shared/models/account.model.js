@@ -5,7 +5,6 @@
 const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
-const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 const { convertToCamelCase } = require('../utils/data.util');
 
 /**
@@ -23,109 +22,6 @@ function formatAccount(account) {
     updateTime: formatDateTime(account.update_time)
   });
   return formattedAccount;
-}
-
-/**
- * 获取账户列表
- * @param {Object} filters - 筛选条件
- * @param {number} page - 页码
- * @param {number} pageSize - 每页数量
- * @returns {Promise<Object>} 账户列表和总数
- */
-async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
-  try {
-    const offset = (page - 1) * pageSize;
-    
-    // 构建查询条件
-    let whereClause = '1=1';
-    const queryParams = [];
-    
-    if (filters.memberId) {
-      whereClause += ' AND a.member_id = ?';
-      queryParams.push(filters.memberId);
-    }
-    
-    if (filters.channelId) {
-      whereClause += ' AND a.channel_id = ?';
-      queryParams.push(filters.channelId);
-    }
-    
-    if (filters.accountAuditStatus) {
-      whereClause += ' AND a.account_audit_status = ?';
-      queryParams.push(filters.accountAuditStatus);
-    }
-    
-    if (filters.account) {
-      whereClause += ' AND a.account LIKE ?';
-      queryParams.push(`%${filters.account}%`);
-    }
-    
-    if (filters.groupId) {
-      whereClause += ' AND EXISTS (SELECT 1 FROM member_groups mg WHERE mg.member_id = a.member_id AND mg.group_id = ?)';
-      queryParams.push(filters.groupId);
-    }
-    
-    // 构建查询语句
-    const query = `
-      SELECT a.*, 
-             m.nickname as member_nickname,
-             c.name as channel_name,
-             c.icon as channel_icon,
-             c.custom_fields as channel_custom_fields
-      FROM accounts a
-      LEFT JOIN members m ON a.member_id = m.id
-      LEFT JOIN channels c ON a.channel_id = c.id
-      WHERE ${whereClause}
-      ORDER BY a.create_time DESC
-      LIMIT ? OFFSET ?
-    `;
-    
-    // 添加分页参数
-    queryParams.push(parseInt(pageSize, 10), offset);
-    
-    // 执行查询
-    const [rows] = await pool.query(query, queryParams);
-    
-    // 获取总数
-    const countQuery = `
-      SELECT COUNT(*) as total
-      FROM accounts a
-      WHERE ${whereClause}
-    `;
-    
-    const [countRows] = await pool.query(countQuery, queryParams.slice(0, -2));
-    const total = countRows[0].total;
-    
-    // 处理渠道自定义字段
-    const formattedRows = rows.map(row => {
-      const formattedAccount = formatAccount(row);
-      
-      // 处理渠道自定义字段
-      if (row.channel_custom_fields) {
-        try {
-          formattedAccount.channelCustomFields = JSON.parse(row.channel_custom_fields);
-        } catch (e) {
-          formattedAccount.channelCustomFields = [];
-        }
-      } else {
-        formattedAccount.channelCustomFields = [];
-      }
-      
-      return formattedAccount;
-    });
-    
-    return {
-      list: formattedRows,
-      pagination: {
-        total,
-        page: parseInt(page, 10),
-        pageSize: parseInt(pageSize, 10)
-      }
-    };
-  } catch (error) {
-    logger.error(`获取账户列表失败: ${error.message}`);
-    throw error;
-  }
 }
 
 /**
@@ -322,7 +218,6 @@ async function remove(id) {
 
 module.exports = {
   formatAccount,
-  getList,
   getByMemberId,
   getByMemberAndChannel,
   create,
