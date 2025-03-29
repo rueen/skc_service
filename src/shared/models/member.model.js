@@ -262,7 +262,7 @@ async function getByAccount(account) {
       `SELECT m.*, inv.member_nickname as inviter_nickname
        FROM members m
        LEFT JOIN members inv ON m.inviter_id = inv.id
-       WHERE m.member_account = ?`,
+       WHERE m.account = ?`,
       [account]
     );
     

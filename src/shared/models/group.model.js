@@ -582,7 +582,7 @@ async function getGroupMembers(groupId, page = DEFAULT_PAGE, pageSize = DEFAULT_
     
     // 获取成员列表
     const [rows] = await pool.query(
-      `SELECT m.id, m.nickname as nickname, m.member_account as account, 
+      `SELECT m.id, m.nickname, m.account, 
               m.avatar, mg.join_time, mg.is_owner
        FROM member_groups mg
        JOIN members m ON mg.member_id = m.id

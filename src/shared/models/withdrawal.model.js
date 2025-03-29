@@ -184,7 +184,7 @@ async function getAllWithdrawals(options = {}) {
     
     // 查询提现记录列表
     const [withdrawals] = await pool.query(
-      `SELECT w.*, wa.account_type, wa.account, wa.name, m.nickname, m.member_account
+      `SELECT w.*, wa.account_type, wa.account, wa.name, m.nickname, m.account
        FROM withdrawals w
        LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
        LEFT JOIN members m ON w.member_id = m.id
