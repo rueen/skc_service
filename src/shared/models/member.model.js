@@ -335,8 +335,8 @@ async function create(memberData) {
     // 创建会员
     const [result] = await connection.query(
       `INSERT INTO members 
-       (nickname, account, password, inviter_id, occupation, invite_code, phone, email, avatar, gender, telegram)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (nickname, account, password, inviter_id, occupation, invite_code, phone, email, avatar, gender, telegram, register_source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         memberData.memberNickname,
         memberData.memberAccount,
@@ -348,7 +348,8 @@ async function create(memberData) {
         memberData.email || null,
         memberData.avatar || null,
         memberData.gender !== undefined ? memberData.gender : 2, // 默认为保密
-        memberData.telegram || null
+        memberData.telegram || null,
+        memberData.registerSource || 'h5' // 默认为h5端注册
       ]
     );
     
@@ -482,6 +483,11 @@ async function update(memberData) {
     if (memberData.occupation !== undefined) {
       updateFields.push('occupation = ?');
       params.push(memberData.occupation);
+    }
+    
+    if (memberData.registerSource !== undefined) {
+      updateFields.push('register_source = ?');
+      params.push(memberData.registerSource);
     }
     
     if (updateFields.length > 0) {

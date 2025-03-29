@@ -55,7 +55,8 @@ async function login(req, res) {
       const memberData = {
         memberNickname: randomNickname,
         memberAccount: memberAccount,
-        password: hashedPassword
+        password: hashedPassword,
+        registerSource: 'h5' // 标识为 h5 端注册
       };
       
       // 处理邀请码

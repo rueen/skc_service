@@ -138,7 +138,8 @@ async function create(req, res) {
       email: actualEmail,
       avatar: actualAvatar,
       gender: gender !== undefined ? Number(gender) : 2, // 默认为保密
-      telegram
+      telegram,
+      registerSource: 'admin' // 标识为管理端添加
     });
 
     return responseUtil.success(res, result, '创建会员成功');

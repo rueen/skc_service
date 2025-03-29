@@ -147,6 +147,7 @@ CREATE TABLE IF NOT EXISTS members (
   gender tinyint(1) DEFAULT 2 COMMENT '性别：0-男，1-女，2-保密',
   balance decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT '账户余额',
   telegram varchar(50) DEFAULT NULL COMMENT 'Telegram账号',
+  register_source varchar(20) NOT NULL DEFAULT 'h5' COMMENT '注册来源：admin-管理端添加，h5-H5端注册',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
@@ -154,7 +155,8 @@ CREATE TABLE IF NOT EXISTS members (
   UNIQUE KEY uk_invite_code (invite_code),
   UNIQUE KEY uk_phone (phone),
   KEY idx_inviter_id (inviter_id),
-  KEY idx_create_time (create_time)
+  KEY idx_create_time (create_time),
+  KEY idx_register_source (register_source)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员信息表';
 `;
 
