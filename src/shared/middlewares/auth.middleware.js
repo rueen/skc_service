@@ -144,5 +144,5 @@ module.exports = {
   verifyToken,
   optionalVerifyToken,
   isAdmin,
-  hasPermission // 导出别名以保持兼容性
+  hasPermission
 }; 
