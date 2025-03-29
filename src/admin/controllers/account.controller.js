@@ -158,7 +158,7 @@ async function batchResolve(req, res) {
       
       // 获取邀请人的群组信息
       const [inviterGroupRows] = await pool.query(
-        'SELECT mg.*, g.group_name, g.owner_id FROM member_groups mg JOIN `groups` g ON mg.group_id = g.id WHERE mg.member_id = ?',
+        'SELECT mg.*, g.group_name, g.group_link, g.owner_id FROM member_groups mg JOIN `groups` g ON mg.group_id = g.id WHERE mg.member_id = ?',
         [inviterId]
       );
       
@@ -233,7 +233,7 @@ async function batchResolve(req, res) {
         
         // 查找群主名下的其他未满群组
         const [ownerGroupsRows] = await pool.query(
-          `SELECT g.id, g.group_name, COUNT(mg.member_id) as member_count 
+          `SELECT g.id, g.group_name, g.group_link, COUNT(mg.member_id) as member_count 
            FROM \`groups\` g 
            LEFT JOIN member_groups mg ON g.id = mg.group_id 
            WHERE g.owner_id = ? 
