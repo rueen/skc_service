@@ -271,7 +271,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       // 添加列表中特有的字段
       formattedItem.channelName = row.channel_name;
       formattedItem.channelIcon = row.channel_icon;
-      formattedItem.memberNickname = row.member_nickname;
+      formattedItem.memberNickname = row.nickname;
       formattedItem.groupId = row.group_id;
       formattedItem.groupName = row.group_name;
       formattedItem.isGroupOwner = !!row.is_group_owner;

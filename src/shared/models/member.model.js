@@ -62,7 +62,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     // 修改基础查询，不再直接关联群组表
     let baseQuery = `
       SELECT m.*, 
-             inv.member_nickname as inviter_nickname
+             inv.nickname as inviter_nickname
       FROM members m
       LEFT JOIN members inv ON m.inviter_id = inv.id
     `;
@@ -204,7 +204,7 @@ async function getById(id) {
   try {
     // 获取会员基本信息
     const [rows] = await pool.query(
-      `SELECT m.*, inv.member_nickname as inviter_nickname
+      `SELECT m.*, inv.nickname as inviter_nickname
        FROM members m
        LEFT JOIN members inv ON m.inviter_id = inv.id
        WHERE m.id = ?`,
@@ -259,7 +259,7 @@ async function getByAccount(account) {
   try {
     // 获取会员基本信息
     const [rows] = await pool.query(
-      `SELECT m.*, inv.member_nickname as inviter_nickname
+      `SELECT m.*, inv.nickname as inviter_nickname
        FROM members m
        LEFT JOIN members inv ON m.inviter_id = inv.id
        WHERE m.account = ?`,
@@ -306,7 +306,7 @@ async function create(memberData) {
     
     // 检查会员账号是否已存在
     const [existingAccount] = await connection.query(
-      'SELECT id FROM members WHERE member_account = ?',
+      'SELECT id FROM members WHERE account = ?',
       [memberData.memberAccount]
     );
     
@@ -347,7 +347,7 @@ async function create(memberData) {
     // 创建会员
     const [result] = await connection.query(
       `INSERT INTO members 
-       (member_nickname, member_account, password, inviter_id, occupation, invite_code, phone, email, avatar, gender, telegram)
+       (nickname, account, password, inviter_id, occupation, invite_code, phone, email, avatar, gender, telegram)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         memberData.memberNickname,
@@ -421,7 +421,7 @@ async function update(memberData) {
     // 检查会员账号是否已被其他会员使用
     if (memberData.memberAccount) {
       const [existingAccount] = await connection.query(
-        'SELECT id FROM members WHERE member_account = ? AND id != ?',
+        'SELECT id FROM members WHERE account = ? AND id != ?',
         [memberData.memberAccount, memberData.id]
       );
       
@@ -447,12 +447,12 @@ async function update(memberData) {
     const params = [];
     
     if (memberData.memberNickname !== undefined) {
-      updateFields.push('member_nickname = ?');
+      updateFields.push('nickname = ?');
       params.push(memberData.memberNickname);
     }
     
     if (memberData.memberAccount !== undefined) {
-      updateFields.push('member_account = ?');
+      updateFields.push('account = ?');
       params.push(memberData.memberAccount);
     }
     
