@@ -237,7 +237,7 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
     const [rows] = await pool.query(
       `SELECT 
         b.*,
-        m.nickname,
+        m.nickname as member_nickname,
         t.task_name,
         rm.nickname as related_member_nickname,
         g.group_name as related_group_name
