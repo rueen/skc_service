@@ -6,7 +6,6 @@ const memberModel = require('../../shared/models/member.model');
 const accountModel = require('../../shared/models/account.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
-const groupModel = require('../../shared/models/group.model');
 const memberBalanceModel = require('../../shared/models/member-balance.model');
 const billModel = require('../../shared/models/bill.model');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../../shared/config/api.config');
