@@ -41,6 +41,21 @@ CREATE TABLE IF NOT EXISTS articles (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章表';
 `;
 
+// 初始化文章
+const initUserAgreement = `
+INSERT INTO articles (title, content, location) 
+SELECT '用户协议', '用户协议内容', 'userAgreement'
+FROM dual 
+WHERE NOT EXISTS (SELECT 1 FROM articles WHERE location = 'userAgreement')
+`;
+
+const initPrivacyPolicy = `
+INSERT INTO articles (title, content, location) 
+SELECT '隐私政策', '隐私政策内容', 'privacyPolicy'
+FROM dual 
+WHERE NOT EXISTS (SELECT 1 FROM articles WHERE location = 'privacyPolicy')
+`;
+
 // 创建账单表
 const createBillsTable = `
 CREATE TABLE IF NOT EXISTS bills (
@@ -135,7 +150,7 @@ CREATE TABLE IF NOT EXISTS members (
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_member_account (member_account),
+  UNIQUE KEY uk_account (account),
   UNIQUE KEY uk_invite_code (invite_code),
   UNIQUE KEY uk_phone (phone),
   KEY idx_inviter_id (inviter_id),
@@ -359,6 +374,9 @@ async function initTables() {
     await connection.query(initAdminUser);
     // 初始化系统配置
     await connection.query(initSystemConfig);
+    // 初始化文章
+    await connection.query(initUserAgreement);
+    await connection.query(initPrivacyPolicy);
     
     // 提交事务
     await connection.commit();
