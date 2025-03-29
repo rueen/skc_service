@@ -2,7 +2,7 @@
  * 小二控制器
  * 处理小二管理相关的请求
  */
-const waiterModel = require('../models/waiter.model');
+const waiterModel = require('../../shared/models/waiter.model');
 const authUtil = require('../../shared/utils/auth.util');
 const validatorUtil = require('../../shared/utils/validator.util');
 const responseUtil = require('../../shared/utils/response.util');

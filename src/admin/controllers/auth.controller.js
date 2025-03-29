@@ -2,7 +2,7 @@
  * 认证控制器
  * 处理用户登录和认证相关的请求
  */
-const waiterModel = require('../models/waiter.model');
+const waiterModel = require('../../shared/models/waiter.model');
 const authUtil = require('../../shared/utils/auth.util');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
