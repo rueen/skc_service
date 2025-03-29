@@ -120,8 +120,8 @@ CREATE TABLE IF NOT EXISTS member_groups (
 const createMembersTable = `
 CREATE TABLE IF NOT EXISTS members (
   id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '会员ID',
-  member_nickname varchar(50) NOT NULL COMMENT '会员昵称',
-  member_account varchar(50) NOT NULL COMMENT '会员账号',
+  nickname varchar(50) NOT NULL COMMENT '会员昵称',
+  account varchar(50) NOT NULL COMMENT '会员账号',
   password varchar(255) NOT NULL COMMENT '密码（加密存储）',
   inviter_id bigint(20) DEFAULT NULL COMMENT '邀请人ID',
   occupation varchar(20) DEFAULT NULL COMMENT '职业：housewife-宝妈，freelancer-自由职业，student-学生',

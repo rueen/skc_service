@@ -38,7 +38,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
   try {
     let query = `
       SELECT g.*, 
-             m.member_nickname as owner_name,
+             m.nickname as owner_name,
              (SELECT COUNT(*) FROM member_groups mg WHERE mg.group_id = g.id) as member_count
       FROM \`groups\` g 
       LEFT JOIN members m ON g.owner_id = m.id
@@ -48,7 +48,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     if (filters.memberId) {
       query = `
         SELECT g.*, 
-               m.member_nickname as owner_name,
+               m.nickname as owner_name,
                (SELECT COUNT(*) FROM member_groups mg WHERE mg.group_id = g.id) as member_count
         FROM \`groups\` g 
         LEFT JOIN members m ON g.owner_id = m.id
@@ -88,7 +88,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     // 添加关键词搜索
     if (filters.keyword) {
-      conditions.push('(g.group_name LIKE ? OR m.member_nickname LIKE ? OR g.group_link LIKE ?)');
+      conditions.push('(g.group_name LIKE ? OR m.nickname LIKE ? OR g.group_link LIKE ?)');
       queryParams.push(`%${filters.keyword}%`, `%${filters.keyword}%`, `%${filters.keyword}%`);
     }
 
@@ -128,7 +128,7 @@ async function getById(id) {
   try {
     const [rows] = await pool.query(
       `SELECT g.*, 
-              m.member_nickname as owner_name,
+              m.nickname as owner_name,
               (SELECT COUNT(*) FROM member_groups mg WHERE mg.group_id = g.id) as member_count
        FROM \`groups\` g 
        LEFT JOIN members m ON g.owner_id = m.id 
@@ -582,7 +582,7 @@ async function getGroupMembers(groupId, page = DEFAULT_PAGE, pageSize = DEFAULT_
     
     // 获取成员列表
     const [rows] = await pool.query(
-      `SELECT m.id, m.member_nickname as nickname, m.member_account as account, 
+      `SELECT m.id, m.nickname as nickname, m.member_account as account, 
               m.avatar, mg.join_time, mg.is_owner
        FROM member_groups mg
        JOIN members m ON mg.member_id = m.id

@@ -77,7 +77,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 
     // 添加筛选条件
     if (filters.memberNickname) {
-      conditions.push('m.member_nickname LIKE ?');
+      conditions.push('m.nickname LIKE ?');
       queryParams.push(`%${filters.memberNickname}%`);
     }
     

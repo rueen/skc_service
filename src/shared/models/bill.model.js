@@ -163,7 +163,7 @@ async function getMemberBills(memberId, options = {}) {
       `SELECT 
         b.*,
         t.task_name,
-        m.member_nickname as related_member_nickname,
+        m.nickname as related_member_nickname,
         g.group_name as related_group_name
       FROM bills b
       LEFT JOIN tasks t ON b.task_id = t.id
@@ -206,7 +206,7 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
   let whereClause = 'WHERE 1=1';
   
   if (memberNickname) {
-    whereClause += ' AND m.member_nickname LIKE ?';
+    whereClause += ' AND m.nickname LIKE ?';
     params.push(`%${memberNickname}%`);
   }
   
@@ -237,9 +237,9 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
     const [rows] = await pool.query(
       `SELECT 
         b.*,
-        m.member_nickname,
+        m.nickname,
         t.task_name,
-        rm.member_nickname as related_member_nickname,
+        rm.nickname as related_member_nickname,
         g.group_name as related_group_name
       FROM bills b
       JOIN members m ON b.member_id = m.id

@@ -76,7 +76,7 @@ async function getInviteFriends(memberId, options = {}) {
     const [invitedMembers] = await pool.query(
       `SELECT 
         m.id, 
-        m.member_nickname as nickname, 
+        m.nickname as nickname, 
         m.member_account as account,
         m.avatar,
         m.create_time as inviteTime

@@ -149,7 +149,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         t.channel_id,
         c.name as channel_name,
         c.icon as channel_icon,
-        m.member_nickname,
+        m.nickname,
         mg.group_id,
         g_table.group_name,
         g_table.owner_id = m.id as is_group_owner

@@ -68,7 +68,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     // 构建查询语句
     const query = `
       SELECT a.*, 
-             m.member_nickname,
+             m.nickname,
              c.name as channel_name,
              c.icon as channel_icon,
              c.custom_fields as channel_custom_fields
