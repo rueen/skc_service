@@ -21,6 +21,7 @@ const inviteRoutes = require('./invite.routes');
 const groupRoutes = require('./group.routes');
 const withdrawalRoutes = require('./withdrawal.routes');
 const taskSubmitRoutes = require('./task-submit.routes');
+const notificationRoutes = require('./notification.routes');
 
 const router = express.Router();
 
@@ -56,5 +57,8 @@ router.use('/articles', articleRoutes);
 
 // 提现账户和提现记录路由（共用一个路由文件）
 router.use('/withdrawal', withdrawalRoutes);
+
+// 通知相关路由
+router.use('/notifications', notificationRoutes);
 
 module.exports = router; 

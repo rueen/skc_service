@@ -5,6 +5,7 @@
 const accountModel = require('../../shared/models/account.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
+const notificationModel = require('../../shared/models/notification.model');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 
 /**
@@ -126,6 +127,7 @@ async function batchResolve(req, res) {
           groupName: memberGroupRows[0].group_name,
           message: '会员已有群组，审核通过'
         });
+        // 会员已有群组，不触发通知
         continue;
       }
       
@@ -205,6 +207,18 @@ async function batchResolve(req, res) {
           groupName: inviterGroup.group_name,
           message: '分配到邀请人的群组'
         });
+        
+        // 发送账号审核通过通知
+        try {
+          await notificationModel.createAccountApprovedNotification(
+            memberId, 
+            account.account, 
+            inviterGroup.group_name, 
+            inviterGroup.group_link || ''
+          );
+        } catch (notificationError) {
+          logger.error(`发送账号审核通过通知失败: ${notificationError.message}`);
+        }
       } else {
         // 邀请人的群组已满，查找该群主名下的其他未满群组
         const ownerId = inviterGroup.owner_id;
@@ -264,6 +278,18 @@ async function batchResolve(req, res) {
           groupName: targetGroup.group_name,
           message: '邀请人所在群组已满，分配到群主名下的其他群组'
         });
+        
+        // 发送账号审核通过通知
+        try {
+          await notificationModel.createAccountApprovedNotification(
+            memberId, 
+            account.account, 
+            targetGroup.group_name, 
+            targetGroup.group_link || ''
+          );
+        } catch (notificationError) {
+          logger.error(`发送账号审核通过通知失败: ${notificationError.message}`);
+        }
       }
     }
     
@@ -292,6 +318,13 @@ async function batchReject(req, res) {
       return responseUtil.badRequest(res, '账号ID列表不能为空');
     }
     
+    // 获取账号详情，包含会员ID和账号信息
+    const { pool } = require('../../shared/models/db');
+    const [accountsInfo] = await pool.query(
+      'SELECT id, member_id, account FROM accounts WHERE id IN (?)',
+      [ids]
+    );
+    
     // 执行批量拒绝操作
     const updatePromises = ids.map(id => {
       return accountModel.update({
@@ -302,6 +335,19 @@ async function batchReject(req, res) {
     });
     
     await Promise.all(updatePromises);
+    
+    // 发送账号审核拒绝通知
+    const notificationPromises = accountsInfo.map(accountInfo => {
+      return notificationModel.createAccountRejectedNotification(
+        accountInfo.member_id,
+        accountInfo.account,
+        rejectReason || '审核未通过'
+      ).catch(error => {
+        logger.error(`发送账号审核拒绝通知失败: ${error.message}`);
+      });
+    });
+    
+    await Promise.all(notificationPromises);
     
     return responseUtil.success(res, { success: true }, `成功拒绝 ${ids.length} 个账号`);
   } catch (error) {
