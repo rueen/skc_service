@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-12 14:28:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 17:46:52
+ * @LastEditTime: 2025-03-29 18:32:55
  * @Description: 
  */
 /**
@@ -20,23 +20,6 @@ const router = express.Router();
 router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 router.use(authMiddleware.hasPermission('article:list'));
-
-/**
- * @route GET /api/admin/articles/:id
- * @desc 获取文章
- * @access Public
- */
-router.get(
-  '/:id',
-  [
-    param('id')
-      .optional()
-      .isInt()
-      .withMessage('文章ID必须是整数')
-  ],
-  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  articleController.get
-);
 
 /**
  * @route GET /api/admin/articles

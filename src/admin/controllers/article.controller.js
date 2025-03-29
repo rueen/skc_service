@@ -8,28 +8,6 @@ const logger = require('../../shared/config/logger.config');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 
 /**
- * 获取文章
- * @param {Object} req - Express请求对象
- * @param {Object} res - Express响应对象
- */
-async function get(req, res) {
-  try {
-    const { location } = req.query;
-    
-    if (!location) {
-      return responseUtil.badRequest(res, '文章位置标识不能为空');
-    }
-    
-    // 获取文章
-    const article = await articleModel.getByLocation(location);
-    return responseUtil.success(res, article || null);
-  } catch (error) {
-    logger.error(`获取文章失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取文章失败');
-  }
-}
-
-/**
  * 获取文章列表
  * @param {Object} req - Express请求对象
  * @param {Object} res - Express响应对象
@@ -146,7 +124,6 @@ async function remove(req, res) {
 }
 
 module.exports = {
-  get,
   list,
   add,
   edit,

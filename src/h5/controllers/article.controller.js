@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-23 19:30:45
+ * @LastEditTime: 2025-03-29 18:35:27
  * @Description: 
  */
 /**
@@ -14,35 +14,11 @@ const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 
 /**
- * 获取文章列表
- * @param {Object} req - 请求对象
- * @param {Object} res - 响应对象
- */
-async function getList(req, res) {
-  try {
-    const { page = 1, pageSize = 10, category } = req.query;
-    
-    // 构建筛选条件
-    const filters = {};
-    
-    if (category) filters.category = category;
-    
-    // 获取文章列表
-    const result = await articleModel.getList(filters, page, pageSize);
-    
-    return responseUtil.success(res, result);
-  } catch (error) {
-    logger.error(`获取文章列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取文章列表失败');
-  }
-}
-
-/**
  * 获取文章详情
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
  */
-async function getDetail(req, res) {
+async function getDetailById(req, res) {
   try {
     const { id } = req.params;
     
@@ -86,7 +62,6 @@ async function getDetailByLocation(req, res) {
 }
 
 module.exports = {
-  getList,
-  getDetail,
+  getDetailById,
   getDetailByLocation
 }; 

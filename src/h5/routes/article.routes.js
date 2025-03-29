@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-20 21:58:45
+ * @LastEditTime: 2025-03-29 18:36:26
  * @Description: 
  */
 /**
@@ -10,7 +10,7 @@
  * 处理文章相关的路由
  */
 const express = require('express');
-const { param, query } = require('express-validator');
+const { param } = require('express-validator');
 const articleController = require('../controllers/article.controller');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
@@ -52,7 +52,7 @@ router.get(
       .withMessage('文章ID必须是整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  articleController.getDetail
+  articleController.getDetailById
 );
 
 module.exports = router; 
