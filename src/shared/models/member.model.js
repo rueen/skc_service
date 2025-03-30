@@ -448,6 +448,9 @@ async function update(memberData) {
     if (memberData.password !== undefined) {
       updateFields.push('password = ?');
       params.push(memberData.password);
+      
+      // 密码变更时，更新密码修改时间字段
+      updateFields.push('password_changed_time = NOW()');
     }
     
     if (memberData.phone !== undefined) {
