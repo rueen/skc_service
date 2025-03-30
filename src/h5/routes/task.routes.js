@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-30 11:26:43
+ * @LastEditTime: 2025-03-30 16:22:44
  * @Description: 
  */
 /**
@@ -17,15 +17,16 @@ const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
  * @route GET /api/h5/tasks
  * @desc 获取任务列表
- * @access Public
+ * @access Private
  */
 router.get(
   '/',
-  rateLimiterMiddleware.apiLimiter,
   [
     query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
     query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
@@ -40,11 +41,10 @@ router.get(
 /**
  * @route GET /api/h5/tasks/:id
  * @desc 获取任务详情
- * @access Public
+ * @access Private
  */
 router.get(
   '/:id',
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()

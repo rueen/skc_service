@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 22:03:25
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 18:35:36
+ * @LastEditTime: 2025-03-30 16:23:23
  * @Description: 
  */
 /**
@@ -12,8 +12,12 @@
 const express = require('express');
 const authController = require('../controllers/auth.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
+const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
+
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
  * @route GET /api/h5/user/info
@@ -22,7 +26,6 @@ const router = express.Router();
  */
 router.get(
   '/info',
-  authMiddleware.verifyToken,
   authController.getUserInfo
 );
 

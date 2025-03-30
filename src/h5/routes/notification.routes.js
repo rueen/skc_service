@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-29 21:03:45
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-03-30 16:22:06
+ * @Description: 
+ */
 /**
  * 通知路由
  */
@@ -5,6 +12,10 @@ const express = require('express');
 const router = express.Router();
 const notificationController = require('../controllers/notification.controller');
 const authMiddleware = require('../../shared/middlewares/auth.middleware');
+const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
+
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
  * @route   GET /api/h5/notifications
@@ -13,7 +24,6 @@ const authMiddleware = require('../../shared/middlewares/auth.middleware');
  */
 router.get(
   '/',
-  authMiddleware.verifyToken,
   notificationController.getUnreadNotifications
 );
 
@@ -24,7 +34,6 @@ router.get(
  */
 router.put(
   '/:id/read',
-  authMiddleware.verifyToken,
   notificationController.markNotificationAsRead
 );
 

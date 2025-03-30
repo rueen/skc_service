@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 18:35:12
+ * @LastEditTime: 2025-03-30 16:21:36
  * @Description: 
  */
 /**
@@ -17,6 +17,8 @@ const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
  * @route PUT /api/h5/members/profile
@@ -25,8 +27,6 @@ const router = express.Router();
  */
 router.put(
   '/profile',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     body('memberNickname')
       .optional()
@@ -48,8 +48,6 @@ router.put(
  */
 router.get(
   '/accounts',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   memberController.getAccounts
 );
 
@@ -60,8 +58,6 @@ router.get(
  */
 router.post(
   '/accounts',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     body('channelId')
       .notEmpty()
@@ -101,8 +97,6 @@ router.post(
  */
 router.get(
   '/accounts/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()
@@ -121,8 +115,6 @@ router.get(
  */
 router.put(
   '/accounts/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()
@@ -161,8 +153,6 @@ router.put(
  */
 router.delete(
   '/accounts/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()
@@ -181,8 +171,6 @@ router.delete(
  */
 router.get(
   '/balance',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   memberController.getBalance
 );
 
@@ -193,8 +181,6 @@ router.get(
  */
 router.get(
   '/bills',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     query('page')
       .optional()

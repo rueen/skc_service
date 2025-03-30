@@ -11,6 +11,8 @@ const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.midd
 const { WithdrawalAccountType, WithdrawalStatus } = require('../../shared/config/enums');
 
 const router = express.Router();
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
  * @route POST /api/h5/withdrawal/accounts
@@ -19,8 +21,6 @@ const router = express.Router();
  */
 router.post(
   '/accounts',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     body('accountType')
       .isIn(Object.values(WithdrawalAccountType))
@@ -47,8 +47,6 @@ router.post(
  */
 router.put(
   '/accounts/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id').isInt().withMessage('无效的账户ID'),
     body('accountType')
@@ -76,8 +74,6 @@ router.put(
  */
 router.get(
   '/accounts',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   withdrawalController.getWithdrawalAccounts
 );
 
@@ -88,8 +84,6 @@ router.get(
  */
 router.delete(
   '/accounts/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id').isInt().withMessage('无效的账户ID')
   ],
@@ -104,8 +98,6 @@ router.delete(
  */
 router.post(
   '/',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     body('withdrawalAccountId')
       .isInt()
@@ -125,8 +117,6 @@ router.post(
  */
 router.get(
   '/',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
     query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),

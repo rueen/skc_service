@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 21:21:23
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 18:34:51
+ * @LastEditTime: 2025-03-30 16:19:36
  * @Description: 
  */
 /**
@@ -20,6 +20,7 @@ const router = express.Router();
 
 // 所有路由都需要认证
 router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
  * @route GET /api/h5/members/groups
@@ -28,7 +29,6 @@ router.use(authMiddleware.verifyToken);
  */
 router.get(
   '/',
-  rateLimiterMiddleware.apiLimiter,
   groupController.getMemberGroups
 );
 
@@ -39,7 +39,6 @@ router.get(
  */
 router.get(
   '/stats',
-  rateLimiterMiddleware.apiLimiter,
   groupController.getOwnerGroupStats
 );
 
@@ -66,7 +65,6 @@ router.get(
       .withMessage('每页条数必须是1-100之间的整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  rateLimiterMiddleware.apiLimiter,
   groupController.getGroupMembers
 );
 

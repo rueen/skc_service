@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 16:57:00
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 18:35:02
+ * @LastEditTime: 2025-03-30 16:20:09
  * @Description: 
  */
 /**
@@ -17,6 +17,8 @@ const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
  * @route GET /api/h5/members/invite/stats
@@ -25,8 +27,6 @@ const router = express.Router();
  */
 router.get(
   '/stats',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   inviteController.getInviteStats
 );
 
@@ -37,8 +37,6 @@ router.get(
  */
 router.get(
   '/friends',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     query('page')
       .optional()
