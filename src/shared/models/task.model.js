@@ -342,9 +342,32 @@ async function getDetail(id, memberId = null) {
         task.isEnrolled = false;
         task.enrollmentId = null;
       }
+      
+      // 检查任务是否已提交
+      try {
+        const [submittedResult] = await pool.query(
+          'SELECT id, task_audit_status FROM submitted_tasks WHERE task_id = ? AND member_id = ?',
+          [id, memberId]
+        );
+        
+        task.isSubmitted = submittedResult.length > 0;
+        task.submittedId = task.isSubmitted ? submittedResult[0].id : null;
+        task.taskAuditStatus = task.isSubmitted ? submittedResult[0].task_audit_status : null;
+        
+        // 记录日志，用于调试提交状态
+        logger.info(`任务详情(提交状态) - 任务ID: ${id}, 会员ID: ${memberId}, 是否已提交: ${task.isSubmitted}, 提交ID: ${task.submittedId || '无'}`);
+      } catch (error) {
+        logger.error(`检查任务提交状态失败: ${error.message}`);
+        task.isSubmitted = false;
+        task.submittedId = null;
+        task.taskAuditStatus = null;
+      }
     } else {
       task.isEnrolled = false;
       task.enrollmentId = null;
+      task.isSubmitted = false;
+      task.submittedId = null;
+      task.taskAuditStatus = null;
     }
     
     // 获取报名人数
