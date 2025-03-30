@@ -337,7 +337,6 @@ async function batchReject(req, res) {
     await Promise.all(updatePromises);
     
     // 发送账号审核拒绝通知
-    /*
     const notificationPromises = accountsInfo.map(accountInfo => {
       return notificationModel.createAccountRejectedNotification(
         accountInfo.member_id,
@@ -349,7 +348,6 @@ async function batchReject(req, res) {
     });
     
     await Promise.all(notificationPromises);
-    */
     
     return responseUtil.success(res, { success: true }, `成功拒绝 ${ids.length} 个账号`);
   } catch (error) {
