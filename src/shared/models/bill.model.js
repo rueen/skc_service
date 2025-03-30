@@ -23,6 +23,11 @@ function formatBill(bill) {
     updateTime: formatDateTime(bill.update_time),
   });
   
+  // 确保submittedId字段被正确返回
+  if (bill.submitted_id !== undefined) {
+    formattedBill.submittedId = bill.submitted_id;
+  }
+  
   return formattedBill;
 }
 
@@ -240,12 +245,14 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
         m.nickname as member_nickname,
         t.task_name,
         rm.nickname as related_member_nickname,
-        g.group_name as related_group_name
+        g.group_name as related_group_name,
+        st.id as submitted_id
       FROM bills b
       JOIN members m ON b.member_id = m.id
       LEFT JOIN tasks t ON b.task_id = t.id
       LEFT JOIN members rm ON b.related_member_id = rm.id
       LEFT JOIN \`groups\` g ON b.related_group_id = g.id
+      LEFT JOIN submitted_tasks st ON (b.task_id = st.task_id AND b.member_id = st.member_id)
       ${whereClause}
       ORDER BY b.update_time DESC
       LIMIT ?, ?`,
