@@ -115,7 +115,10 @@ async function update(req, res) {
     }
     
     // 更新任务
-    const result = await taskModel.update(id, req.body);
+    const result = await taskModel.update({
+      id,
+      ...req.body
+    });
     
     return responseUtil.success(res, result, '更新任务成功');
   } catch (error) {
