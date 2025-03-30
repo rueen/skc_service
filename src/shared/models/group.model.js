@@ -654,6 +654,35 @@ async function getGroupMembers(groupId, page = DEFAULT_PAGE, pageSize = DEFAULT_
   }
 }
 
+/**
+ * 检查会员是否在指定群组列表中
+ * @param {number} memberId - 会员ID
+ * @param {Array<number>} groupIds - 群组ID数组
+ * @returns {Promise<boolean>} 是否在指定群组中
+ */
+async function isMemberInGroups(memberId, groupIds) {
+  try {
+    if (!memberId || !groupIds || !Array.isArray(groupIds) || groupIds.length === 0) {
+      return false;
+    }
+    
+    // 查询会员是否在指定的群组列表中
+    const placeholders = groupIds.map(() => '?').join(',');
+    const [rows] = await pool.query(
+      `SELECT COUNT(*) as count 
+       FROM member_groups 
+       WHERE member_id = ? AND group_id IN (${placeholders})`,
+      [memberId, ...groupIds]
+    );
+    
+    return rows[0].count > 0;
+  } catch (error) {
+    logger.error(`检查会员是否在指定群组中失败: ${error.message}`);
+    // 发生错误时默认返回false，以保证安全
+    return false;
+  }
+}
+
 module.exports = {
   formatGroup,
   getList,
@@ -667,5 +696,6 @@ module.exports = {
   getMemberFirstGroup,
   getMemberGroups,
   getOwnerGroupStats,
-  getGroupMembers
+  getGroupMembers,
+  isMemberInGroups
 }; 

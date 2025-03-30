@@ -42,7 +42,7 @@ async function create(enrollData) {
     
     // 验证任务是否存在且状态为进行中
     const [tasks] = await connection.query(
-      'SELECT id, task_status, user_range, task_count FROM tasks WHERE id = ?',
+      'SELECT id, task_status, user_range, task_count, group_mode, group_ids FROM tasks WHERE id = ?',
       [enrollData.taskId]
     );
     
@@ -89,6 +89,30 @@ async function create(enrollData) {
         // 普通任务：只允许完成次数不超过taskCount的会员报名
         if (completedTaskCount > tasks[0].task_count) {
           throw new Error(`该任务限已完成${tasks[0].task_count}次任务的会员可报名`);
+        }
+      }
+    }
+    
+    // 检查指定群组的任务，验证会员是否在指定群组中
+    if (tasks[0].group_mode === 1) {
+      // 解析group_ids
+      let groupIds = [];
+      try {
+        groupIds = JSON.parse(tasks[0].group_ids || '[]');
+      } catch (err) {
+        logger.error(`解析任务群组IDs失败 - 任务ID: ${enrollData.taskId}, 错误: ${err.message}`);
+        groupIds = [];
+      }
+      
+      // 如果任务有指定群组
+      if (groupIds.length > 0) {
+        // 检查会员是否在这些群组中
+        const groupModel = require('./group.model');
+        const isMemberInGroups = await groupModel.isMemberInGroups(enrollData.memberId, groupIds);
+        
+        if (!isMemberInGroups) {
+          // 会员不在指定群组中，不能报名
+          throw new Error('该任务仅限指定群组的会员可报名');
         }
       }
     }

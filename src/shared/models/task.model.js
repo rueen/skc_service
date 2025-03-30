@@ -153,9 +153,10 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const [rows] = await pool.query(query, queryParams);
     const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
     
-    // 提前导入enrolled-task.model和task-stats.model
+    // 导入相关模型
     const enrolledTaskModel = memberId ? require('./enrolled-task.model') : null;
     const taskStatsModel = memberId ? require('./task-stats.model') : null;
+    const groupModel = memberId ? require('./group.model') : null;
     
     // 如果有会员ID，获取会员完成任务次数
     let memberCompletedTaskCount = null;
@@ -177,7 +178,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       try {
         // 使用formatTask格式化任务数据
         const formattedTask = formatTask(task);
-        const taskId = task.id;
+        const taskId = formattedTask.id;
         
         // 根据userRange和taskCount判断是否显示给当前会员
         // userRange=1表示需要根据会员完成任务次数做显示限制
@@ -198,6 +199,31 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
               filteredOutCount++;
               continue;
             }
+          }
+        }
+        
+        // 检查指定群组的任务，如果不在相应群组则隐藏
+        if (memberId && formattedTask.groupMode === 1 && groupModel) {
+          try {
+            let groupIds = formattedTask.groupIds;
+
+            // 如果任务有指定群组
+            if (groupIds.length > 0) {
+              // 检查会员是否在这些群组中
+              const isMemberInGroups = await groupModel.isMemberInGroups(memberId, groupIds);
+              
+              if (!isMemberInGroups) {
+                // 会员不在指定群组中，跳过该任务
+                filteredOutCount++;
+                logger.debug(`会员不在指定群组中 - 会员ID: ${memberId}, 任务ID: ${taskId}`);
+                continue;
+              }
+            }
+          } catch (error) {
+            logger.error(`检查会员是否在指定群组中失败 - 会员ID: ${memberId}, 任务ID: ${taskId}, 错误: ${error.message}`);
+            // 发生错误时默认跳过该任务，以保证安全
+            filteredOutCount++;
+            continue;
           }
         }
         
@@ -322,6 +348,27 @@ async function getDetail(id, memberId = null) {
       // 如果不符合条件，添加提示信息
       if (!task.eligibleToEnroll) {
         task.ineligibleReason = `该任务限已完成${task.taskCount}次任务的会员可报名`;
+      }
+    }
+    
+    // 检查指定群组的任务，判断会员是否有资格报名
+    if (memberId && task.groupMode === 1 && task.groupIds && task.groupIds.length > 0) {
+      try {
+        const groupModel = require('./group.model');
+        // 检查会员是否在这些群组中
+        const isMemberInGroups = await groupModel.isMemberInGroups(memberId, task.groupIds);
+        
+        if (!isMemberInGroups) {
+          // 会员不在指定群组中，不能报名
+          task.eligibleToEnroll = false;
+          task.ineligibleReason = '该任务仅限指定群组的会员可报名';
+          logger.debug(`会员不在指定群组中 - 会员ID: ${memberId}, 任务ID: ${id}`);
+        }
+      } catch (error) {
+        logger.error(`检查会员是否在指定群组中失败 - 会员ID: ${memberId}, 任务ID: ${id}, 错误: ${error.message}`);
+        // 发生错误时默认不可报名，以保证安全
+        task.eligibleToEnroll = false;
+        task.ineligibleReason = '无法验证群组信息，请稍后再试';
       }
     }
     
