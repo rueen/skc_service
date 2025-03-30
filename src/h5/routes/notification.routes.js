@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-29 21:03:45
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-30 16:22:06
+ * @LastEditTime: 2025-03-30 19:43:39
  * @Description: 
  */
 /**
@@ -35,6 +35,16 @@ router.get(
 router.put(
   '/:id/read',
   notificationController.markNotificationAsRead
+);
+
+/**
+ * @route   POST /api/h5/notifications/batch-read
+ * @desc    批量标记通知为已读
+ * @access  Private
+ */
+router.post(
+  '/batch-read',
+  notificationController.batchMarkNotificationsAsRead
 );
 
 module.exports = router; 

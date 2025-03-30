@@ -51,7 +51,38 @@ const markNotificationAsRead = async (req, res) => {
   }
 };
 
+/**
+ * 批量标记通知为已读
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ * @returns {Promise<void>}
+ */
+const batchMarkNotificationsAsRead = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    const { id: memberId } = req.user;
+    
+    // 验证参数
+    if (!Array.isArray(ids)) {
+      return responseUtil.badRequest(res, 'ids参数必须是数组格式');
+    }
+    
+    // 批量标记通知为已读
+    const affectedCount = await notificationModel.batchMarkAsRead(ids, memberId);
+    
+    return responseUtil.success(
+      res, 
+      { success: true, affectedCount }, 
+      `成功标记${affectedCount}条通知为已读`
+    );
+  } catch (error) {
+    logger.error(`批量标记通知为已读失败: ${error.message}`);
+    return responseUtil.serverError(res, '批量标记通知为已读失败');
+  }
+};
+
 module.exports = {
   getUnreadNotifications,
-  markNotificationAsRead
+  markNotificationAsRead,
+  batchMarkNotificationsAsRead
 }; 

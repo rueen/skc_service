@@ -136,6 +136,38 @@ const markAsRead = async (id, memberId) => {
 };
 
 /**
+ * 批量将通知标记为已读
+ * @param {Array<number>} ids - 通知ID数组
+ * @param {string} memberId - 会员ID
+ * @returns {Promise<number>} - 成功标记的通知数量
+ */
+const batchMarkAsRead = async (ids, memberId) => {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return 0;
+  }
+  
+  const connection = await pool.getConnection();
+  try {
+    // 构建IN查询的参数占位符
+    const placeholders = ids.map(() => '?').join(',');
+    
+    // 确保只有通知的接收者可以标记为已读
+    const [result] = await connection.query(
+      `UPDATE notifications SET is_read = 1, update_time = NOW() 
+      WHERE id IN (${placeholders}) AND (member_id = ? OR member_id = '*')`,
+      [...ids, memberId]
+    );
+    
+    return result.affectedRows;
+  } catch (error) {
+    logger.error(`批量标记通知为已读失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
+/**
  * 创建账号审核通过通知
  * @param {string} memberId - 会员ID
  * @param {string} account - 账号
@@ -181,6 +213,7 @@ module.exports = {
   create,
   getUnreadByMemberId,
   markAsRead,
+  batchMarkAsRead,
   createAccountApprovedNotification,
   createAccountRejectedNotification
 }; 
