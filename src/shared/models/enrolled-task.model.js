@@ -42,7 +42,7 @@ async function create(enrollData) {
     
     // 验证任务是否存在且状态为进行中
     const [tasks] = await connection.query(
-      'SELECT id, task_status FROM tasks WHERE id = ?',
+      'SELECT id, task_status, user_range, task_count FROM tasks WHERE id = ?',
       [enrollData.taskId]
     );
     
@@ -72,6 +72,25 @@ async function create(enrollData) {
     
     if (existingEnrolls.length > 0) {
       throw new Error('已经报名过该任务');
+    }
+    
+    // 检查会员是否符合任务完成次数要求
+    if (tasks[0].user_range === 1) {
+      // 获取会员完成任务次数
+      const taskStatsModel = require('./task-stats.model');
+      const completedTaskCount = await taskStatsModel.getMemberCompletedTaskCount(enrollData.memberId);
+      
+      if (tasks[0].task_count === 0) {
+        // 新人任务：只允许从未完成过任务的会员报名
+        if (completedTaskCount > 0) {
+          throw new Error(`该任务限未完成过任务的会员可报名`);
+        }
+      } else {
+        // 普通任务：只允许完成次数不超过taskCount的会员报名
+        if (completedTaskCount > tasks[0].task_count) {
+          throw new Error(`该任务限已完成${tasks[0].task_count}次任务的会员可报名`);
+        }
+      }
     }
     
     // 获取会员的第一个群组ID

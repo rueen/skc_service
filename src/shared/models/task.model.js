@@ -153,16 +153,53 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const [rows] = await pool.query(query, queryParams);
     const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
     
-    // 提前导入enrolled-task.model
+    // 提前导入enrolled-task.model和task-stats.model
     const enrolledTaskModel = memberId ? require('./enrolled-task.model') : null;
+    const taskStatsModel = memberId ? require('./task-stats.model') : null;
+    
+    // 如果有会员ID，获取会员完成任务次数
+    let memberCompletedTaskCount = null;
+    if (memberId && taskStatsModel) {
+      try {
+        memberCompletedTaskCount = await taskStatsModel.getMemberCompletedTaskCount(memberId);
+        logger.debug(`会员已完成任务次数 - 会员ID: ${memberId}, 完成次数: ${memberCompletedTaskCount}`);
+      } catch (error) {
+        logger.error(`获取会员完成任务次数失败 - 会员ID: ${memberId}, 错误: ${error.message}`);
+        memberCompletedTaskCount = 0;
+      }
+    }
     
     // 安全处理每个任务记录
     const formattedList = [];
+    let filteredOutCount = 0; // 记录被过滤掉的任务数量
+    
     for (const task of rows) {
       try {
         // 使用formatTask格式化任务数据
         const formattedTask = formatTask(task);
-        const taskId = formattedTask.id;
+        const taskId = task.id;
+        
+        // 根据userRange和taskCount判断是否显示给当前会员
+        // userRange=1表示需要根据会员完成任务次数做显示限制
+        if (memberId && formattedTask.userRange === 1 && memberCompletedTaskCount !== null) {
+          // taskCount=0表示只有从未完成过任务的会员可以看到
+          // taskCount>0表示完成次数<=taskCount的会员可以看到
+          if (formattedTask.taskCount === 0) {
+            // 新人任务：只有未完成任务的新会员可以查看
+            if (memberCompletedTaskCount > 0) {
+              // 会员已完成过任务，不符合条件，跳过该任务
+              filteredOutCount++;
+              continue;
+            }
+          } else {
+            // 普通任务：只有完成次数不超过taskCount的会员可以查看
+            if (memberCompletedTaskCount > formattedTask.taskCount) {
+              // 会员完成任务次数超出限制，跳过该任务
+              filteredOutCount++;
+              continue;
+            }
+          }
+        }
         
         // 初始化报名状态
         let isEnrolled = false;
@@ -185,9 +222,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
           }
         }
         
-        // 添加渠道相关信息和报名状态
-        formattedTask.channelName = task.channel_name;
-        formattedTask.channelIcon = task.channel_icon;
         formattedTask.isEnrolled = isEnrolled;
         formattedTask.enrollmentId = enrollmentId;
         formattedTask.submittedCount = parseInt(task.submitted_count || 0, 10);
@@ -199,9 +233,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       }
     }
     
+    // 计算调整后的总数
+    const adjustedTotal = countResult[0].total - filteredOutCount;
+    
     return {
       list: formattedList,
-      total: countResult[0].total,
+      total: adjustedTotal,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
     };
@@ -254,6 +291,38 @@ async function getDetail(id, memberId = null) {
       }
     } else {
       task.groups = [];
+    }
+    
+    // 如果提供了会员ID，获取会员完成任务次数
+    let memberCompletedTaskCount = null;
+    if (memberId) {
+      try {
+        const taskStatsModel = require('./task-stats.model');
+        memberCompletedTaskCount = await taskStatsModel.getMemberCompletedTaskCount(memberId);
+        logger.debug(`会员已完成任务次数 - 会员ID: ${memberId}, 完成次数: ${memberCompletedTaskCount}`);
+      } catch (error) {
+        logger.error(`获取会员完成任务次数失败 - 会员ID: ${memberId}, 错误: ${error.message}`);
+        memberCompletedTaskCount = 0;
+      }
+    }
+    
+    // 添加会员是否符合任务条件
+    task.eligibleToEnroll = true; // 默认可以报名
+    
+    // 如果是限制任务且有会员ID，判断是否符合条件
+    if (memberId && task.userRange === 1 && memberCompletedTaskCount !== null) {
+      if (task.taskCount === 0) {
+        // 新人任务：只有未完成任务的新会员可以报名
+        task.eligibleToEnroll = memberCompletedTaskCount === 0;
+      } else {
+        // 普通任务：只有完成次数不超过taskCount的会员可以报名
+        task.eligibleToEnroll = memberCompletedTaskCount <= task.taskCount;
+      }
+      
+      // 如果不符合条件，添加提示信息
+      if (!task.eligibleToEnroll) {
+        task.ineligibleReason = `该任务限已完成${task.taskCount}次任务的会员可报名`;
+      }
     }
     
     // 如果提供了会员ID，检查是否已报名

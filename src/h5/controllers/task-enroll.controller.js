@@ -41,7 +41,8 @@ async function enrollTask(req, res) {
     if (error.message === '任务不存在' || 
         error.message === '只能报名进行中的任务' || 
         error.message === '会员不存在' || 
-        error.message === '已经报名过该任务') {
+        error.message === '已经报名过该任务' ||
+        error.message.includes('该任务限')) { // 处理任务次数限制相关错误
       return responseUtil.badRequest(res, error.message);
     }
     
