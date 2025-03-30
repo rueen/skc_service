@@ -4,20 +4,8 @@
  */
 const { pool } = require('./db');
 const logger = require('../config/logger.config');
-const { formatDateTime } = require('../utils/date.util');
-const { convertToCamelCase } = require('../utils/data.util');
 
-function formatConfig(config) {
-  if (!config) return null;
-  
-  // 转换字段名称为驼峰命名法
-  const formattedConfig = convertToCamelCase({
-    ...config,
-    createTime: formatDateTime(config.create_time),
-    updateTime: formatDateTime(config.update_time)
-  });
-  return formattedConfig;
-}
+// 系统配置不需要格式化
 
 /**
  * 获取所有系统配置
@@ -27,7 +15,7 @@ async function getAllConfigs() {
   try {
     const [rows] = await pool.query('SELECT * FROM system_config ORDER BY config_key');
     
-    return rows.map(config => formatConfig(config));
+    return rows;
   } catch (error) {
     logger.error(`获取所有系统配置失败: ${error.message}`);
     throw error;
@@ -50,7 +38,7 @@ async function getConfigByKey(key) {
       return null;
     }
     
-    return formatConfig(rows[0]);
+    return rows[0];
   } catch (error) {
     logger.error(`根据键获取配置失败: ${error.message}`);
     throw error;
@@ -117,24 +105,11 @@ async function updateConfig(key, value, description) {
 async function getMaxGroupMembers() {
   try {
     const config = await getConfigByKey('max_group_members');
-    return config ? parseInt(config.value, 10) : 200; // 默认200
+    return config ? parseInt(config.config_value, 10) : 200; // 默认200
   } catch (error) {
     logger.error(`获取最大群成员数失败: ${error.message}`);
     return 200; // 出错时返回默认值
   }
-}
-
-/**
- * 设置群组最大成员数
- * @param {number} maxMembers - 最大成员数
- * @returns {Promise<boolean>} 是否设置成功
- */
-async function setMaxGroupMembers(maxMembers) {
-  if (!Number.isInteger(Number(maxMembers)) || Number(maxMembers) <= 0) {
-    throw new Error('最大成员数必须是大于0的整数');
-  }
-  
-  return await updateConfig('max_group_members', String(maxMembers), '群组最大成员数');
 }
 
 /**
@@ -144,29 +119,11 @@ async function setMaxGroupMembers(maxMembers) {
 async function getGroupOwnerCommissionRate() {
   try {
     const config = await getConfigByKey('group_owner_commission_rate');
-    return config ? parseFloat(config.value) : 0.1; // 默认10%
+    return config ? parseFloat(config.config_value) : 0.1; // 默认10%
   } catch (error) {
     logger.error(`获取群主收益率配置失败: ${error.message}`);
     return 0.1; // 出错时返回默认值
   }
-}
-
-/**
- * 设置群主收益率
- * @param {number} rate - 收益率（0-1之间的小数）
- * @returns {Promise<boolean>} 是否设置成功
- */
-async function setGroupOwnerCommissionRate(rate) {
-  if (typeof rate !== 'number' && typeof rate !== 'string') {
-    throw new Error('收益率必须是数字类型');
-  }
-  
-  const rateNum = parseFloat(rate);
-  if (isNaN(rateNum) || rateNum < 0 || rateNum > 1) {
-    throw new Error('收益率必须是0-1之间的小数');
-  }
-  
-  return await updateConfig('group_owner_commission_rate', String(rateNum), '群主收益率（0-1之间的小数）');
 }
 
 /**
@@ -176,30 +133,13 @@ async function setGroupOwnerCommissionRate(rate) {
 async function getInviteRewardAmount() {
   try {
     const config = await getConfigByKey('invite_reward_amount');
-    return config ? parseFloat(config.value) : 5.00; // 默认5元
+    return config ? parseFloat(config.config_value) : 5.00; // 默认5元
   } catch (error) {
     logger.error(`获取邀请奖励金额配置失败: ${error.message}`);
     return 5.00; // 出错时返回默认值
   }
 }
 
-/**
- * 设置邀请奖励金额
- * @param {number} amount - 奖励金额（大于等于0的数字）
- * @returns {Promise<boolean>} 是否设置成功
- */
-async function setInviteRewardAmount(amount) {
-  if (typeof amount !== 'number' && typeof amount !== 'string') {
-    throw new Error('奖励金额必须是数字类型');
-  }
-  
-  const amountNum = parseFloat(amount);
-  if (isNaN(amountNum) || amountNum < 0) {
-    throw new Error('奖励金额必须是大于等于0的数字');
-  }
-  
-  return await updateConfig('invite_reward_amount', String(amountNum.toFixed(2)), '邀请奖励金额（元）');
-}
 
 /**
  * 批量更新系统配置
@@ -251,9 +191,6 @@ module.exports = {
   updateConfig,
   updateConfigs,
   getMaxGroupMembers,
-  setMaxGroupMembers,
   getGroupOwnerCommissionRate,
-  setGroupOwnerCommissionRate,
   getInviteRewardAmount,
-  setInviteRewardAmount
 }; 
