@@ -45,7 +45,8 @@ async function submitTask(req, res) {
         error.message === '会员不存在' || 
         error.message === '请先报名任务' || 
         error.message === '任务已提交，正在审核中' || 
-        error.message === '任务已提交并已通过审核') {
+        error.message === '任务已提交并已通过审核' ||
+        error.message === '任务名额已满，无法提交') {
       return responseUtil.badRequest(res, error.message);
     }
     

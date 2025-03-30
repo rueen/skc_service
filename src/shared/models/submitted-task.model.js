@@ -36,9 +36,9 @@ async function create(submitData) {
   try {
     await connection.beginTransaction();
     
-    // 验证任务是否存在
+    // 验证任务是否存在，并使用 FOR UPDATE 锁定行防止并发问题
     const [tasks] = await connection.query(
-      'SELECT id, task_status FROM tasks WHERE id = ?',
+      'SELECT id, task_status, unlimited_quota, quota FROM tasks WHERE id = ? FOR UPDATE',
       [submitData.taskId]
     );
     
@@ -46,8 +46,26 @@ async function create(submitData) {
       throw new Error('任务不存在');
     }
     
-    if (tasks[0].task_status !== 'processing') {
+    const task = tasks[0];
+    
+    if (task.task_status !== 'processing') {
       throw new Error('只能提交进行中的任务');
+    }
+    
+    // 检查任务名额
+    if (task.unlimited_quota !== 1) {  // 如果不是无限名额
+      // 获取当前有效提交数量
+      const [submitCount] = await connection.query(
+        'SELECT COUNT(*) as count FROM submitted_tasks WHERE task_id = ? AND task_audit_status != "rejected"',
+        [submitData.taskId]
+      );
+      
+      const currentSubmitCount = submitCount[0].count;
+      
+      // 如果已达到名额上限，则拒绝提交
+      if (currentSubmitCount >= task.quota) {
+        throw new Error('任务名额已满，无法提交');
+      }
     }
     
     // 验证会员是否存在

@@ -56,6 +56,15 @@ function formatTask(task) {
   }
   
   formattedTask.unlimitedQuota = task.unlimited_quota === 1;
+  
+  // 计算剩余名额
+  if (formattedTask.unlimitedQuota) {
+    formattedTask.remainingQuota = null; // 无限名额
+  } else if (task.submitted_count !== undefined) {
+    // 剩余名额 = 总名额 - 已提交数量
+    formattedTask.remainingQuota = Math.max(0, formattedTask.quota - task.submitted_count);
+  }
+  
   return formattedTask;
 }
 
@@ -97,7 +106,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
   try {
     let query = `
       SELECT t.*, c.name as channel_name, c.icon as channel_icon,
-        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id) as submitted_count
+        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND st.task_audit_status != 'rejected') as submitted_count
       FROM tasks t
       LEFT JOIN channels c ON t.channel_id = c.id
     `;
@@ -151,8 +160,9 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const formattedList = [];
     for (const task of rows) {
       try {
+        // 使用formatTask格式化任务数据
         const formattedTask = formatTask(task);
-        const taskId = parseInt(task.id, 10);
+        const taskId = formattedTask.id;
         
         // 初始化报名状态
         let isEnrolled = false;
@@ -175,29 +185,14 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
           }
         }
         
-        // 返回更多的任务信息
-        formattedList.push({
-          id: formattedTask.id,
-          taskName: formattedTask.taskName,
-          taskStatus: formattedTask.taskStatus,
-          channelId: formattedTask.channelId,
-          channelName: task.channel_name,
-          channelIcon: task.channel_icon,
-          reward: formattedTask.reward,
-          category: formattedTask.category,
-          taskType: formattedTask.taskType,
-          fansRequired: formattedTask.fansRequired,
-          startTime: formattedTask.startTime,
-          endTime: formattedTask.endTime,
-          unlimitedQuota: formattedTask.unlimitedQuota,
-          quota: formattedTask.quota,
-          groupMode: formattedTask.groupMode,
-          groupIds: formattedTask.groupIds,
-          createTime: formattedTask.createTime,
-          isEnrolled: isEnrolled,
-          enrollmentId: enrollmentId,
-          submittedCount: parseInt(task.submitted_count || 0, 10)
-        });
+        // 添加渠道相关信息和报名状态
+        formattedTask.channelName = task.channel_name;
+        formattedTask.channelIcon = task.channel_icon;
+        formattedTask.isEnrolled = isEnrolled;
+        formattedTask.enrollmentId = enrollmentId;
+        formattedTask.submittedCount = parseInt(task.submitted_count || 0, 10);
+        
+        formattedList.push(formattedTask);
       } catch (error) {
         logger.error(`格式化任务失败，任务ID: ${task.id}, 错误: ${error.message}`);
         // 跳过这条记录，继续处理其他记录
@@ -225,7 +220,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 async function getDetail(id, memberId = null) {
   try {
     const [rows] = await pool.query(
-      `SELECT t.*, c.name as channel_name, c.icon as channel_icon
+      `SELECT t.*, c.name as channel_name, c.icon as channel_icon,
+        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND st.task_audit_status != 'rejected') as submitted_count
        FROM tasks t
        LEFT JOIN channels c ON t.channel_id = c.id
        WHERE t.id = ?`,
