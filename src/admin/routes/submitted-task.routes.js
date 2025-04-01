@@ -45,32 +45,6 @@ router.get(
 );
 
 /**
- * @route GET /api/admin/submitted-tasks/export
- * @desc 导出已提交任务列表为CSV
- * @access Private (需要 task:submitted 权限)
- */
-router.get(
-  '/export',
-  [
-    query('submitStartTime')
-      .optional()
-      .isISO8601()
-      .withMessage('提交开始时间格式不正确，应为ISO8601格式(如:2025-03-01T00:00:00Z)'),
-    query('submitEndTime')
-      .optional()
-      .isISO8601()
-      .withMessage('提交结束时间格式不正确，应为ISO8601格式(如:2025-03-31T23:59:59Z)'),
-    query('completedTaskCount')
-      .optional()
-      .isInt({ min: 0 })
-      .withMessage('已完成任务次数必须是非负整数')
-  ],
-  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  authMiddleware.hasPermission('task:submitted'),
-  submittedTaskController.exportSubmittedTasks
-);
-
-/**
  * @route GET /api/admin/submitted-tasks/:id
  * @desc 获取已提交任务详情
  * @access Private (需要 task:submittedDetail 权限)
