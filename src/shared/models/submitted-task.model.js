@@ -156,6 +156,7 @@ async function create(submitData) {
  * @param {number} filters.groupId - 群组ID
  * @param {string} filters.submitStartTime - 提交开始时间
  * @param {string} filters.submitEndTime - 提交结束时间
+ * @param {number} filters.completedTaskCount - 已完成任务次数筛选条件
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
  * @returns {Promise<Object>} 任务列表和总数
@@ -173,7 +174,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         m.nickname,
         mg.group_id,
         g_table.group_name,
-        g_table.owner_id = m.id as is_group_owner
+        g_table.owner_id = m.id as is_group_owner,
+        (SELECT COUNT(*) FROM submitted_tasks WHERE member_id = st.member_id AND task_audit_status = 'approved') as completed_task_count
       FROM submitted_tasks st
       LEFT JOIN tasks t ON st.task_id = t.id
       LEFT JOIN channels c ON t.channel_id = c.id
@@ -276,6 +278,16 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.submitEndTime);
     }
     
+    if (filters.completedTaskCount) {
+      // completedTaskCount 是非负整数
+      const count = parseInt(filters.completedTaskCount, 10);
+      if (!isNaN(count) && count >= 0) {
+        query += ` AND (SELECT COUNT(*) FROM submitted_tasks WHERE member_id = st.member_id AND task_audit_status = 'approved') = ?`;
+        countQuery += ` AND (SELECT COUNT(*) FROM submitted_tasks WHERE member_id = st.member_id AND task_audit_status = 'approved') = ?`;
+        queryParams.push(count);
+      }
+    }
+    
     // 添加排序和分页
     query += ' ORDER BY st.submit_time DESC LIMIT ? OFFSET ?';
     queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
@@ -309,6 +321,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       formattedItem.groupId = row.group_id;
       formattedItem.groupName = row.group_name;
       formattedItem.isGroupOwner = !!row.is_group_owner;
+      formattedItem.completedTaskCount = parseInt(row.completed_task_count || 0, 10);
       
       return formattedItem;
     });
