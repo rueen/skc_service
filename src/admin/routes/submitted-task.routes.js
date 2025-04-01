@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-01 16:46:41
+ * @LastEditTime: 2025-04-01 18:46:25
  * @Description: 
  */
 /**
@@ -22,7 +22,11 @@ const router = express.Router();
 router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 
-// 获取已提交任务列表
+/**
+ * @route GET /api/admin/submitted-tasks
+ * @desc 获取已提交任务列表
+ * @access Private (需要 task:submitted 权限)
+ */
 router.get(
   '/',
   [
@@ -40,21 +44,33 @@ router.get(
   submittedTaskController.getSubmittedTasks
 );
 
-// 获取已提交任务详情
+/**
+ * @route GET /api/admin/submitted-tasks/:id
+ * @desc 获取已提交任务详情
+ * @access Private (需要 task:submittedDetail 权限)
+ */
 router.get(
   '/:id',
   authMiddleware.hasPermission('task:submittedDetail'),
   submittedTaskController.getSubmittedTaskDetail
 );
 
-// 批量审核通过
+/**
+ * @route POST /api/admin/submitted-tasks/batch-approve
+ * @desc 批量审核通过
+ * @access Private (需要 task:submitted 权限)
+ */
 router.post(
   '/batch-approve',
   authMiddleware.hasPermission('task:submitted'),
   submittedTaskController.batchApproveSubmissions
 );
 
-// 批量拒绝
+/**
+ * @route POST /api/admin/submitted-tasks/batch-reject
+ * @desc 批量拒绝
+ * @access Private (需要 task:submitted 权限)
+ */
 router.post(
   '/batch-reject',
   authMiddleware.hasPermission('task:submitted'),
