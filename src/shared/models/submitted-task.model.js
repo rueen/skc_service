@@ -153,6 +153,8 @@ async function create(submitData) {
  * @param {number} filters.channelId - 渠道ID
  * @param {string} filters.taskAuditStatus - 审核状态
  * @param {number} filters.groupId - 群组ID
+ * @param {string} filters.submitStartTime - 提交开始时间
+ * @param {string} filters.submitEndTime - 提交结束时间
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
  * @returns {Promise<Object>} 任务列表和总数
@@ -258,6 +260,19 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       query += ' AND st.member_id = ?';
       countQuery += ' AND st.member_id = ?';
       queryParams.push(filters.memberId);
+    }
+    
+    // 添加提交时间范围筛选
+    if (filters.submitStartTime) {
+      query += ' AND st.submit_time >= ?';
+      countQuery += ' AND st.submit_time >= ?';
+      queryParams.push(filters.submitStartTime);
+    }
+    
+    if (filters.submitEndTime) {
+      query += ' AND st.submit_time <= ?';
+      countQuery += ' AND st.submit_time <= ?';
+      queryParams.push(filters.submitEndTime);
     }
     
     // 添加排序和分页

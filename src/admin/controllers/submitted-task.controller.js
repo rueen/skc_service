@@ -20,7 +20,9 @@ async function getSubmittedTasks(req, res) {
       taskName, 
       channelId, 
       taskAuditStatus,
-      groupId 
+      groupId,
+      submitStartTime,
+      submitEndTime
     } = req.query;
     
     // 构建筛选条件
@@ -30,6 +32,8 @@ async function getSubmittedTasks(req, res) {
     if (channelId) filters.channelId = parseInt(channelId, 10);
     if (taskAuditStatus) filters.taskAuditStatus = taskAuditStatus;
     if (groupId) filters.groupId = parseInt(groupId, 10);
+    if (submitStartTime) filters.submitStartTime = submitStartTime;
+    if (submitEndTime) filters.submitEndTime = submitEndTime;
     
     // 获取已提交任务列表
     const result = await submittedTaskModel.getList(
