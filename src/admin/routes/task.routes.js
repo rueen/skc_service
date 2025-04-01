@@ -35,23 +35,6 @@ router.get(
 );
 
 /**
- * @route GET /api/admin/tasks/export
- * @desc 导出任务数据
- * @access Private (需要 task:list 权限)
- */
-router.get(
-  '/export',
-  authMiddleware.hasPermission('task:list'),
-  [
-    query('taskName').optional().isString().withMessage('任务名称必须是字符串'),
-    query('taskStatus').optional().isIn(['not_started', 'processing', 'ended']).withMessage('任务状态值无效'),
-    query('channelId').optional().isInt().withMessage('渠道ID必须是整数')
-  ],
-  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  taskController.exportTasks
-);
-
-/**
  * @route GET /api/admin/tasks/:id
  * @desc 获取任务详情
  * @access Private (需要 task:list 权限)
