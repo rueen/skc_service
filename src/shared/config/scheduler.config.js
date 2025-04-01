@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-26 21:24:52
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-01 19:38:51
+ * @Description: 
+ */
 /**
  * 定时任务配置
  */
@@ -14,7 +21,7 @@ const taskStatusUpdateConfig = {
   // 开发环境配置：3分钟更新一次
   development: {
     // cron表达式：每3分钟执行一次（分钟位置为 0,3,6,9,...,57）
-    schedule: '0 */3 * * * *',
+    schedule: '0 */1 * * * *',
     runImmediately: true
   },
   // 生产环境配置：1分钟更新一次
@@ -26,7 +33,7 @@ const taskStatusUpdateConfig = {
   // 测试环境配置：5分钟更新一次
   test: {
     // cron表达式：每5分钟执行一次
-    schedule: '0 */5 * * * *',
+    schedule: '0 */1 * * * *',
     runImmediately: true
   }
 };
