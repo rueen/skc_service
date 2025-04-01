@@ -731,6 +731,68 @@ async function updateMemberBalance(memberId, amount, remark = '') {
   }
 }
 
+/**
+ * 更新会员新人状态为非新人
+ * @param {number} memberId - 会员ID
+ * @param {Object} connection - 数据库连接（可选，用于事务）
+ * @returns {Promise<boolean>} 更新是否成功
+ */
+async function updateIsNewStatus(memberId, connection) {
+  const conn = connection || await pool.getConnection();
+  const shouldRelease = !connection; // 如果是外部传入的连接，则不需要释放
+  
+  try {
+    if (shouldRelease) {
+      await conn.beginTransaction();
+    }
+    
+    // 更新会员新人状态为非新人
+    const [result] = await conn.query(
+      'UPDATE members SET is_new = 0 WHERE id = ? AND is_new = 1',
+      [memberId]
+    );
+    
+    if (shouldRelease) {
+      await conn.commit();
+    }
+    
+    return result.affectedRows > 0;
+  } catch (error) {
+    if (shouldRelease) {
+      await conn.rollback();
+    }
+    logger.error(`更新会员新人状态失败: ${error.message}`);
+    throw error;
+  } finally {
+    if (shouldRelease) {
+      conn.release();
+    }
+  }
+}
+
+/**
+ * 获取会员是否为新人
+ * @param {number} memberId - 会员ID
+ * @returns {Promise<boolean>} 是否为新人
+ */
+async function isNewMember(memberId) {
+  try {
+    const [rows] = await pool.query(
+      'SELECT is_new FROM members WHERE id = ?',
+      [memberId]
+    );
+    
+    if (rows.length === 0) {
+      throw new Error('会员不存在');
+    }
+    
+    return rows[0].is_new === 1;
+  } catch (error) {
+    logger.error(`获取会员新人状态失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   getList,
   getById,
@@ -739,5 +801,7 @@ module.exports = {
   update,
   remove,
   checkGroupExists,
-  updateMemberBalance
+  updateMemberBalance,
+  updateIsNewStatus,
+  isNewMember
 }; 

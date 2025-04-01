@@ -148,6 +148,7 @@ CREATE TABLE IF NOT EXISTS members (
   balance decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT '账户余额',
   telegram varchar(50) DEFAULT NULL COMMENT 'Telegram账号',
   register_source varchar(20) NOT NULL DEFAULT 'h5' COMMENT '注册来源：admin-管理端添加，h5-H5端注册',
+  is_new tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否新人：0-否，1-是',
   password_changed_time datetime DEFAULT NULL COMMENT '密码最后修改时间',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -157,7 +158,8 @@ CREATE TABLE IF NOT EXISTS members (
   UNIQUE KEY uk_phone (phone),
   KEY idx_inviter_id (inviter_id),
   KEY idx_create_time (create_time),
-  KEY idx_register_source (register_source)
+  KEY idx_register_source (register_source),
+  KEY idx_is_new (is_new)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员信息表';
 `;
 

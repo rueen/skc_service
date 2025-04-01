@@ -9,6 +9,7 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 const rewardModel = require('./reward.model');
 const groupModel = require('./group.model');
 const { convertToCamelCase } = require('../utils/data.util');
+const memberModel = require('./member.model');
 
 function formatSubmittedTask(submittedTask) {
   if (!submittedTask) return null;
@@ -487,7 +488,7 @@ async function batchApprove(ids, waiterId) {
         }, connection);
         
         // 2. 检查是否首次完成任务
-        const isFirstCompletion = await rewardModel.isFirstTaskCompletion(task.member_id, connection);
+        const isFirstCompletion = await memberModel.isNewMember(task.member_id);
         
         // 如果是首次完成，处理邀请奖励
         if (isFirstCompletion) {
@@ -500,6 +501,10 @@ async function batchApprove(ids, waiterId) {
               relatedGroupId: relatedGroupId
             }, connection);
           }
+          
+          // 更新会员的新人状态为非新人
+          await memberModel.updateIsNewStatus(task.member_id, connection);
+          logger.info(`更新会员新人状态 - 会员ID: ${task.member_id} 已不再是新人`);
         } 
         // 如果非首次完成，处理群主收益
         else {

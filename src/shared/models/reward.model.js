@@ -64,28 +64,6 @@ async function processBillSettlement(billId, connection) {
 }
 
 /**
- * 检查会员是否首次完成任务
- * @param {number} memberId - 会员ID
- * @param {Object} connection - 数据库连接（用于事务）
- * @returns {Promise<boolean>} 是否首次完成
- */
-async function isFirstTaskCompletion(memberId, connection) {
-  try {
-    const [rows] = await connection.query(
-      `SELECT COUNT(*) as count FROM submitted_tasks 
-       WHERE member_id = ? AND task_audit_status = 'approved'`,
-      [memberId]
-    );
-    
-    // 如果之前已经有通过的任务，则不是首次完成
-    return rows[0].count <= 1; // 小于等于1是因为当前任务也被计算在内
-  } catch (error) {
-    logger.error(`检查会员是否首次完成任务失败: ${error.message}`);
-    throw error;
-  }
-}
-
-/**
  * 获取会员所属的群组信息
  * @param {number} memberId - 会员ID
  * @param {Object} connection - 数据库连接（用于事务）
@@ -257,7 +235,6 @@ async function processGroupOwnerCommission(data, connection) {
 
 module.exports = {
   processBillSettlement,
-  isFirstTaskCompletion,
   getMemberGroupInfo,
   getMemberInviter,
   processTaskReward,
