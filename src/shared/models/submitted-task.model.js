@@ -176,11 +176,13 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         mg.group_id,
         g_table.group_name,
         g_table.owner_id = m.id as is_group_owner,
-        (SELECT COUNT(*) FROM submitted_tasks WHERE member_id = st.member_id AND task_audit_status = 'approved') as completed_task_count
+        (SELECT COUNT(*) FROM submitted_tasks WHERE member_id = st.member_id AND task_audit_status = 'approved') as completed_task_count,
+        w.username as waiter_name
       FROM submitted_tasks st
       LEFT JOIN tasks t ON st.task_id = t.id
       LEFT JOIN channels c ON t.channel_id = c.id
       LEFT JOIN members m ON st.member_id = m.id
+      LEFT JOIN waiters w ON st.waiter_id = w.id
     `;
 
     // 根据是否有groupId过滤条件，采用不同的JOIN策略
@@ -328,6 +330,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       formattedItem.groupName = row.group_name;
       formattedItem.isGroupOwner = !!row.is_group_owner;
       formattedItem.completedTaskCount = parseInt(row.completed_task_count || 0, 10);
+      formattedItem.waiterName = row.waiter_name || '';
       
       return formattedItem;
     });
@@ -355,9 +358,11 @@ async function getById(id) {
       `SELECT 
         st.*,
         t.task_name,
-        t.reward
+        t.reward,
+        w.username as waiter_name
       FROM submitted_tasks st
       LEFT JOIN tasks t ON st.task_id = t.id
+      LEFT JOIN waiters w ON st.waiter_id = w.id
       WHERE st.id = ?`,
       [id]
     );
@@ -386,6 +391,7 @@ async function getById(id) {
     // 添加额外字段
     formattedTask.taskName = row.task_name;
     formattedTask.reward = row.reward;
+    formattedTask.waiterName = row.waiter_name || '';
     
     // 获取所有待审核任务的ID列表，按提交时间降序排列（与待审核任务列表页展示一致）
     const [pendingTasks] = await pool.query(
