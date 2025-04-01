@@ -18,12 +18,14 @@ CREATE TABLE IF NOT EXISTS accounts (
   posts_count int(11) DEFAULT 0 COMMENT '发布数量',
   account_audit_status varchar(20) DEFAULT 'pending' COMMENT '账号审核状态：pending-待审核，approved-已通过，rejected-已拒绝',
   reject_reason varchar(255) DEFAULT NULL COMMENT '拒绝原因',
+  waiter_id bigint(20) DEFAULT NULL COMMENT '审核小二ID',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
   KEY idx_member_id (member_id),
   KEY idx_channel_id (channel_id),
-  KEY idx_account_audit_status (account_audit_status)
+  KEY idx_account_audit_status (account_audit_status),
+  KEY idx_waiter_id (waiter_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='账户表';
 `;
 

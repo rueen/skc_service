@@ -63,6 +63,7 @@ async function getAccounts(req, res) {
 async function batchResolve(req, res) {
   try {
     const { ids } = req.body;
+    const waiterId = req.user.id;
     
     if (!Array.isArray(ids) || ids.length === 0) {
       return responseUtil.badRequest(res, '账号ID列表不能为空');
@@ -116,10 +117,7 @@ async function batchResolve(req, res) {
       
       if (memberGroupRows.length > 0) {
         // 会员已有群组，直接审核通过
-        await pool.query(
-          'UPDATE accounts SET account_audit_status = "approved", update_time = NOW() WHERE id = ?',
-          [id]
-        );
+        await accountModel.batchApprove([id], waiterId);
         results.success.push({
           id,
           memberId,
@@ -189,10 +187,7 @@ async function batchResolve(req, res) {
         );
         
         // 审核通过账号
-        await pool.query(
-          'UPDATE accounts SET account_audit_status = "approved", update_time = NOW() WHERE id = ?',
-          [id]
-        );
+        await accountModel.batchApprove([id], waiterId);
         
         // 更新群组成员计数
         await pool.query(
@@ -260,10 +255,7 @@ async function batchResolve(req, res) {
         );
         
         // 审核通过账号
-        await pool.query(
-          'UPDATE accounts SET account_audit_status = "approved", update_time = NOW() WHERE id = ?',
-          [id]
-        );
+        await accountModel.batchApprove([id], waiterId);
         
         // 更新群组成员计数
         await pool.query(
@@ -313,6 +305,7 @@ async function batchResolve(req, res) {
 async function batchReject(req, res) {
   try {
     const { ids, rejectReason } = req.body;
+    const waiterId = req.user.id;
     
     if (!Array.isArray(ids) || ids.length === 0) {
       return responseUtil.badRequest(res, '账号ID列表不能为空');
@@ -326,15 +319,7 @@ async function batchReject(req, res) {
     );
     
     // 执行批量拒绝操作
-    const updatePromises = ids.map(id => {
-      return accountModel.update({
-        id,
-        accountAuditStatus: 'rejected',
-        rejectReason: rejectReason || '审核未通过'
-      });
-    });
-    
-    await Promise.all(updatePromises);
+    const result = await accountModel.batchReject(ids, rejectReason || '审核未通过', waiterId);
     
     // 发送账号审核拒绝通知
     const notificationPromises = accountsInfo.map(accountInfo => {
@@ -349,7 +334,10 @@ async function batchReject(req, res) {
     
     await Promise.all(notificationPromises);
     
-    return responseUtil.success(res, { success: true }, `成功拒绝 ${ids.length} 个账号`);
+    return responseUtil.success(res, { 
+      success: true,
+      updatedCount: result.updatedCount 
+    }, `成功拒绝 ${result.updatedCount} 个账号`);
   } catch (error) {
     logger.error(`批量审核拒绝账号失败: ${error.message}`);
     return responseUtil.serverError(res, '批量审核拒绝账号失败');

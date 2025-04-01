@@ -47,10 +47,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
              m.nickname as member_nickname,
              c.name as channel_name,
              c.icon as channel_icon,
-             c.custom_fields as channel_custom_fields
+             c.custom_fields as channel_custom_fields,
+             w.username as waiter_name
       FROM accounts a
       LEFT JOIN members m ON a.member_id = m.id
       LEFT JOIN channels c ON a.channel_id = c.id
+      LEFT JOIN waiters w ON a.waiter_id = w.id
       WHERE ${whereClause}
       ORDER BY a.create_time DESC
       LIMIT ? OFFSET ?
@@ -352,6 +354,75 @@ async function remove(id) {
   }
 }
 
+/**
+ * 批量审核通过账号
+ * @param {Array<number>} ids - 账号ID数组
+ * @param {number} waiterId - 审核员ID
+ * @returns {Promise<Object>} 操作结果
+ */
+async function batchApprove(ids, waiterId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 更新账号状态为已通过
+    const [result] = await connection.query(
+      `UPDATE accounts 
+       SET account_audit_status = 'approved', waiter_id = ? 
+       WHERE id IN (?) AND account_audit_status = 'pending'`,
+      [waiterId, ids]
+    );
+    
+    await connection.commit();
+    
+    return {
+      success: true,
+      updatedCount: result.affectedRows
+    };
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`批量审核通过账号失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * 批量拒绝账号
+ * @param {Array<number>} ids - 账号ID数组
+ * @param {string} reason - 拒绝原因
+ * @param {number} waiterId - 审核员ID
+ * @returns {Promise<Object>} 操作结果
+ */
+async function batchReject(ids, reason, waiterId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 更新账号状态为已拒绝
+    const [result] = await connection.query(
+      `UPDATE accounts 
+       SET account_audit_status = 'rejected', reject_reason = ?, waiter_id = ? 
+       WHERE id IN (?) AND account_audit_status = 'pending'`,
+      [reason, waiterId, ids]
+    );
+    
+    await connection.commit();
+    
+    return {
+      success: true,
+      updatedCount: result.affectedRows
+    };
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`批量拒绝账号失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   getList,
   formatAccount,
@@ -359,5 +430,7 @@ module.exports = {
   getByMemberAndChannel,
   create,
   update,
-  remove
+  remove,
+  batchApprove,
+  batchReject
 }; 
