@@ -37,11 +37,7 @@ router.get(
     query('submitEndTime')
       .optional()
       .isISO8601()
-      .withMessage('提交结束时间格式不正确，应为ISO8601格式(如:2025-03-31T23:59:59Z)'),
-    query('completedTaskCount')
-      .optional()
-      .isInt({ min: 0 })
-      .withMessage('已完成任务次数必须是非负整数')
+      .withMessage('提交结束时间格式不正确，应为ISO8601格式(如:2025-03-31T23:59:59Z)')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:submitted'),

@@ -156,7 +156,6 @@ async function create(submitData) {
  * @param {number} filters.groupId - 群组ID
  * @param {string} filters.submitStartTime - 提交开始时间
  * @param {string} filters.submitEndTime - 提交结束时间
- * @param {number} filters.completedTaskCount - 会员已完成任务数量
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
  * @returns {Promise<Object>} 任务列表和总数
@@ -175,16 +174,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         mg.group_id,
         g_table.group_name,
         g_table.owner_id = m.id as is_group_owner
-    `;
-    
-    // 如果筛选条件中包含已完成任务数量，添加子查询计算每个会员的已完成任务数
-    if (filters.completedTaskCount !== undefined) {
-      query += `,
-        (SELECT COUNT(*) FROM submitted_tasks WHERE member_id = st.member_id AND task_audit_status = 'approved') as completed_task_count
-      `;
-    }
-    
-    query += `
       FROM submitted_tasks st
       LEFT JOIN tasks t ON st.task_id = t.id
       LEFT JOIN channels c ON t.channel_id = c.id
@@ -216,37 +205,20 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     query += " WHERE 1=1";
     
-    // 计算总数的查询
-    let countQuery = `
-      SELECT COUNT(DISTINCT st.id) as total 
-      FROM submitted_tasks st
+    let countQuery = 'SELECT COUNT(DISTINCT st.id) as total FROM submitted_tasks st';
+    let countJoins = `
       LEFT JOIN tasks t ON st.task_id = t.id
-      LEFT JOIN channels c ON t.channel_id = c.id
       LEFT JOIN members m ON st.member_id = m.id
     `;
     
-    // 对于计数查询也需要相同的JOIN逻辑
+    // 同样根据是否有groupId过滤条件，采用不同的JOIN策略
     if (filters.groupId) {
-      countQuery += `
+      countJoins += `
         LEFT JOIN member_groups mg ON st.member_id = mg.member_id AND mg.group_id = ${parseInt(filters.groupId, 10)}
-        LEFT JOIN \`groups\` g_table ON mg.group_id = g_table.id
-      `;
-    } else {
-      countQuery += `
-        LEFT JOIN (
-          SELECT member_id, group_id, is_owner
-          FROM member_groups
-          WHERE (member_id, id) IN (
-            SELECT member_id, MIN(id)
-            FROM member_groups
-            GROUP BY member_id
-          )
-        ) mg ON st.member_id = mg.member_id
-        LEFT JOIN \`groups\` g_table ON mg.group_id = g_table.id
       `;
     }
     
-    countQuery += " WHERE 1=1";
+    countQuery += countJoins + ' WHERE 1=1';
     
     const queryParams = [];
     
@@ -264,15 +236,31 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     }
     
     if (filters.taskAuditStatus) {
-      query += ' AND st.task_audit_status = ?';
-      countQuery += ' AND st.task_audit_status = ?';
-      queryParams.push(filters.taskAuditStatus);
+      // 检查是否有多个状态值（使用|分隔）
+      if (filters.taskAuditStatus.includes('|')) {
+        const statuses = filters.taskAuditStatus.split('|').map(s => s.trim());
+        const placeholders = statuses.map(() => '?').join(', ');
+        query += ` AND st.task_audit_status IN (${placeholders})`;
+        countQuery += ` AND st.task_audit_status IN (${placeholders})`;
+        queryParams.push(...statuses);
+      } else {
+        // 单个状态值
+        query += ' AND st.task_audit_status = ?';
+        countQuery += ' AND st.task_audit_status = ?';
+        queryParams.push(filters.taskAuditStatus);
+      }
     }
     
     if (filters.groupId) {
       query += ' AND mg.group_id = ?';
       countQuery += ' AND mg.group_id = ?';
       queryParams.push(filters.groupId);
+    }
+    
+    if (filters.memberId) {
+      query += ' AND st.member_id = ?';
+      countQuery += ' AND st.member_id = ?';
+      queryParams.push(filters.memberId);
     }
     
     // 添加提交时间范围筛选
@@ -288,37 +276,13 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.submitEndTime);
     }
     
-    // 添加会员已完成任务数量筛选
-    if (filters.completedTaskCount !== undefined) {
-      query += ' HAVING completed_task_count = ?';
-      // 在计数查询中，需要使用子查询来筛选
-      countQuery += ` AND st.member_id IN (
-                        SELECT member_id 
-                        FROM submitted_tasks 
-                        WHERE task_audit_status = 'approved' 
-                        GROUP BY member_id 
-                        HAVING COUNT(*) = ?
-                      )`;
-      queryParams.push(filters.completedTaskCount);
-    }
-    
     // 添加排序和分页
     query += ' ORDER BY st.submit_time DESC LIMIT ? OFFSET ?';
     queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
     
-    // 为计数查询添加相同参数（除了分页参数）
-    const countQueryParams = [...queryParams];
-    if (filters.completedTaskCount !== undefined) {
-      // 计数查询中的参数需要去除最后两个分页参数
-      countQueryParams.splice(-2, 2);
-    } else {
-      // 如果没有completedTaskCount参数，正常去除分页参数
-      countQueryParams.splice(-2, 2);
-    }
-    
     // 执行查询
     const [rows] = await pool.query(query, queryParams);
-    const [countResult] = await pool.query(countQuery, countQueryParams);
+    const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
     
     const total = countResult[0].total;
     
@@ -345,11 +309,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       formattedItem.groupId = row.group_id;
       formattedItem.groupName = row.group_name;
       formattedItem.isGroupOwner = !!row.is_group_owner;
-      
-      // 如果查询了已完成任务数量，则添加该字段到结果中
-      if (filters.completedTaskCount !== undefined) {
-        formattedItem.completedTaskCount = row.completed_task_count;
-      }
       
       return formattedItem;
     });
