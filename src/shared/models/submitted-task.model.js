@@ -157,6 +157,7 @@ async function create(submitData) {
  * @param {string} filters.submitStartTime - 提交开始时间
  * @param {string} filters.submitEndTime - 提交结束时间
  * @param {number} filters.completedTaskCount - 已完成任务次数筛选条件
+ * @param {boolean} filters.exportMode - 是否为导出模式，为true时不使用分页
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
  * @returns {Promise<Object>} 任务列表和总数
@@ -289,12 +290,17 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     }
     
     // 添加排序和分页
-    query += ' ORDER BY st.submit_time DESC LIMIT ? OFFSET ?';
-    queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
+    query += ' ORDER BY st.submit_time DESC';
+    
+    // 如果不是导出模式，则应用分页
+    if (!filters.exportMode) {
+      query += ' LIMIT ? OFFSET ?';
+      queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
+    }
     
     // 执行查询
     const [rows] = await pool.query(query, queryParams);
-    const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
+    const [countResult] = await pool.query(countQuery, queryParams.slice(0, filters.exportMode ? queryParams.length : -2));
     
     const total = countResult[0].total;
     
