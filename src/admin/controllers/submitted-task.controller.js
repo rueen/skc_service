@@ -184,7 +184,7 @@ async function exportSubmittedTasks(req, res) {
     const headers = [
       'ID', '任务ID', '任务名称', '会员ID', '会员昵称', '渠道ID', '渠道名称', 
       '群组ID', '群组名称', '是否群主', '奖励金额', '审核状态', '拒绝原因',
-      '提交时间', '已完成任务次数', '创建时间', '更新时间'
+      '提交时间', '已完成任务次数', '审核员', '创建时间', '更新时间'
     ];
     
     // 写入表头 (添加BOM以确保Excel正确识别UTF-8)
@@ -214,6 +214,7 @@ async function exportSubmittedTasks(req, res) {
         (task.rejectReason || '').replace(/,/g, '，'),
         (task.submitTime || '').replace(/,/g, '，'),
         task.completedTaskCount || 0,
+        (task.waiterName || '').replace(/,/g, '，'),
         (task.createTime || '').replace(/,/g, '，'),
         (task.updateTime || '').replace(/,/g, '，')
       ];
