@@ -400,11 +400,32 @@ async function exportWithdrawals(filters = {}) {
   }
 }
 
+/**
+ * 检查会员是否有待处理的提现申请
+ * @param {number} memberId - 会员ID
+ * @returns {Promise<boolean>} - 是否有待处理的提现申请
+ */
+async function hasPendingWithdrawal(memberId) {
+  try {
+    const [result] = await pool.query(
+      'SELECT COUNT(*) as count FROM withdrawals WHERE member_id = ? AND withdrawal_status = ?',
+      [memberId, WithdrawalStatus.PENDING]
+    );
+    
+    return result[0].count > 0;
+  } catch (error) {
+    logger.error(`检查会员待处理提现申请失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
+  formatWithdrawal,
   createWithdrawal,
   getWithdrawalsByMemberId,
   getAllWithdrawals,
   batchApproveWithdrawals,
   batchRejectWithdrawals,
-  exportWithdrawals
+  exportWithdrawals,
+  hasPendingWithdrawal
 }; 

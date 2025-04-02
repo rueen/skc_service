@@ -135,6 +135,12 @@ async function createWithdrawal(req, res) {
       return responseUtil.badRequest(res, '提现金额必须大于0');
     }
     
+    // 检查用户是否有待处理的提现申请
+    const hasPending = await withdrawalModel.hasPendingWithdrawal(memberId);
+    if (hasPending) {
+      return responseUtil.badRequest(res, '您有待处理的提现申请，请等待处理完成后再申请');
+    }
+    
     const withdrawalData = {
       member_id: memberId,
       withdrawal_account_id: withdrawalAccountId,
