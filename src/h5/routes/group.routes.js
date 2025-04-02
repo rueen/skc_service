@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 21:21:23
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-30 16:19:36
+ * @LastEditTime: 2025-04-02 17:17:51
  * @Description: 
  */
 /**
@@ -40,6 +40,35 @@ router.get(
 router.get(
   '/stats',
   groupController.getOwnerGroupStats
+);
+
+/**
+ * @route GET /api/h5/members/groups/commission-tasks
+ * @desc 获取为群主带来收益的任务列表
+ * @access Private
+ */
+router.get(
+  '/commission-tasks',
+  [
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('页码必须是大于等于1的整数'),
+    query('pageSize')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('每页条数必须是1-100之间的整数'),
+    query('startDate')
+      .optional()
+      .isDate()
+      .withMessage('开始日期格式必须为YYYY-MM-DD'),
+    query('endDate')
+      .optional()
+      .isDate()
+      .withMessage('结束日期格式必须为YYYY-MM-DD')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  groupController.getOwnerCommissionTasks
 );
 
 /**

@@ -531,23 +531,43 @@ async function getOwnerGroupStats(memberId) {
       [memberId]
     );
     
+    // 获取所有群成员数
+    const [memberCount] = await pool.query(
+      `SELECT COUNT(*) as count
+       FROM member_groups mg
+       WHERE mg.group_id IN (
+         SELECT g.id
+         FROM member_groups mg2
+         JOIN \`groups\` g ON mg2.group_id = g.id
+         WHERE mg2.member_id = ? AND mg2.is_owner = 1
+       )`,
+      [memberId]
+    );
+    
     // 获取会员作为群主的总收益
     const [earnings] = await pool.query(
       `SELECT COALESCE(SUM(amount), 0) as total_earnings
        FROM bills
        WHERE bill_type = 'group_owner_commission'
-       AND related_group_id IN (
-         SELECT g.id
-         FROM member_groups mg
-         JOIN \`groups\` g ON mg.group_id = g.id
-         WHERE mg.member_id = ? AND mg.is_owner = 1
-       )`,
+       AND member_id = ?`,
+      [memberId]
+    );
+    
+    // 获取为该群主带来收益的任务总数
+    const [taskCount] = await pool.query(
+      `SELECT COUNT(DISTINCT task_id) as count
+       FROM bills
+       WHERE bill_type = 'group_owner_commission'
+       AND member_id = ?
+       AND task_id IS NOT NULL`,
       [memberId]
     );
     
     return {
       groupCount: groupCount[0].count,
-      totalEarnings: parseFloat(earnings[0].total_earnings || 0).toFixed(2)
+      memberCount: memberCount[0].count,
+      totalCommission: parseFloat(earnings[0].total_earnings || 0).toFixed(2),
+      taskCount: taskCount[0].count
     };
   } catch (error) {
     logger.error(`获取群主统计信息失败: ${error.message}`);
@@ -683,6 +703,100 @@ async function isMemberInGroups(memberId, groupIds) {
   }
 }
 
+/**
+ * 获取为群主带来收益的任务列表
+ * @param {number} memberId - 群主会员ID
+ * @param {Object} options - 查询选项
+ * @param {number} options.page - 页码
+ * @param {number} options.pageSize - 每页条数
+ * @param {string} options.startDate - 开始日期 (YYYY-MM-DD)
+ * @param {string} options.endDate - 结束日期 (YYYY-MM-DD)
+ * @returns {Promise<Object>} 任务列表和统计信息
+ */
+async function getOwnerCommissionTasks(memberId, options = {}) {
+  try {
+    const { 
+      page = DEFAULT_PAGE, 
+      pageSize = DEFAULT_PAGE_SIZE,
+      startDate,
+      endDate
+    } = options;
+    
+    const offset = (page - 1) * pageSize;
+    let whereClause = 'WHERE b.member_id = ? AND b.bill_type = ? AND b.task_id IS NOT NULL';
+    const params = [memberId, 'group_owner_commission'];
+    
+    // 添加日期筛选
+    if (startDate) {
+      whereClause += ' AND DATE(b.create_time) >= ?';
+      params.push(startDate);
+    }
+    
+    if (endDate) {
+      whereClause += ' AND DATE(b.create_time) <= ?';
+      params.push(endDate);
+    }
+    
+    // 获取任务列表
+    const query = `
+      SELECT 
+        t.id AS task_id,
+        t.task_name,
+        t.channel_id,
+        c.name AS channel_name,
+        t.reward,
+        COUNT(DISTINCT b.related_member_id) AS participant_count,
+        SUM(b.amount) AS commission,
+        MAX(b.create_time) AS latest_commission_time
+      FROM 
+        bills b
+        JOIN tasks t ON b.task_id = t.id
+        LEFT JOIN channels c ON t.channel_id = c.id
+      ${whereClause}
+      GROUP BY 
+        t.id
+      ORDER BY 
+        latest_commission_time DESC
+      LIMIT ?, ?
+    `;
+    
+    const [rows] = await pool.query(query, [...params, offset, parseInt(pageSize, 10)]);
+    
+    // 获取总数
+    const countQuery = `
+      SELECT COUNT(DISTINCT t.id) AS total
+      FROM bills b
+      JOIN tasks t ON b.task_id = t.id
+      ${whereClause}
+    `;
+    
+    const [countResult] = await pool.query(countQuery, params);
+    const total = countResult[0].total;
+    
+    // 格式化结果
+    const formattedList = rows.map(row => ({
+      taskId: row.task_id,
+      taskName: row.task_name,
+      channelId: row.channel_id,
+      channelName: row.channel_name,
+      rewardAmount: parseFloat(row.reward || 0).toFixed(2),
+      participantCount: row.participant_count,
+      commission: parseFloat(row.commission || 0).toFixed(2),
+      createTime: formatDateTime(row.latest_commission_time)
+    }));
+    
+    return {
+      total,
+      page: parseInt(page, 10),
+      pageSize: parseInt(pageSize, 10),
+      list: formattedList
+    };
+  } catch (error) {
+    logger.error(`获取群主收益任务列表失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   formatGroup,
   getList,
@@ -697,5 +811,6 @@ module.exports = {
   getMemberGroups,
   getOwnerGroupStats,
   getGroupMembers,
-  isMemberInGroups
+  isMemberInGroups,
+  getOwnerCommissionTasks
 }; 

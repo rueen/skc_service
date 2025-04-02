@@ -539,7 +539,67 @@ PUT /api/h5/accounts/{id}
 #### 获取我的群组
 
 ```
-GET /api/h5/member/groups
+GET /api/h5/members/groups
+```
+
+#### 获取群主名下群组统计信息
+
+```
+GET /api/h5/members/groups/stats
+```
+
+响应数据：
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "groupCount": 3,           // 群主拥有的群组数量
+    "memberCount": 150,         // 群主名下所有群成员总数
+    "totalCommission": 326.50,  // 群主累计获得的佣金总额
+    "taskCount": 42            // 为群主带来收益的任务总数
+  }
+}
+```
+
+#### 获取为群主带来收益的任务列表
+
+```
+GET /api/h5/members/groups/commission-tasks
+```
+
+参数：
+
+- `page`: 页码，默认1
+- `pageSize`: 每页条数，默认10
+- `startDate`: 开始日期，可选，格式：YYYY-MM-DD
+- `endDate`: 结束日期，可选，格式：YYYY-MM-DD
+
+响应数据：
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "total": 42,
+    "page": 1,
+    "pageSize": 10,
+    "list": [
+      {
+        "taskId": 101,
+        "taskName": "抖音点赞任务",
+        "channelId": 1,
+        "channelName": "抖音",
+        "rewardAmount": 10.00,     // 任务奖励金额
+        "participantCount": 5,      // 群成员参与人数
+        "commission": 5.00,         // 该任务为群主带来的佣金总额
+        "createTime": "2023-06-01 10:00:00"  // 最近获得佣金的时间
+      }
+    ]
+  }
+}
 ```
 
 #### 加入群组

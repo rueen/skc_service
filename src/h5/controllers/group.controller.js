@@ -72,8 +72,43 @@ async function getGroupMembers(req, res) {
   }
 }
 
+/**
+ * 获取为群主带来收益的任务列表
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getOwnerCommissionTasks(req, res) {
+  try {
+    const memberId = req.user.id;
+    const { page, pageSize, startDate, endDate } = req.query;
+    
+    // 构建查询选项
+    const options = {
+      page: parseInt(page) || DEFAULT_PAGE,
+      pageSize: parseInt(pageSize) || DEFAULT_PAGE_SIZE
+    };
+    
+    if (startDate) {
+      options.startDate = startDate;
+    }
+    
+    if (endDate) {
+      options.endDate = endDate;
+    }
+    
+    // 获取任务列表
+    const result = await groupModel.getOwnerCommissionTasks(memberId, options);
+    
+    return responseUtil.success(res, result);
+  } catch (error) {
+    logger.error(`获取群主任务收益列表失败: ${error.message}`);
+    return responseUtil.serverError(res, '获取群主任务收益列表失败');
+  }
+}
+
 module.exports = {
   getMemberGroups,
   getOwnerGroupStats,
-  getGroupMembers
+  getGroupMembers,
+  getOwnerCommissionTasks
 }; 
