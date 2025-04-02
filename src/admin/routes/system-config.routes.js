@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 15:56:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-30 21:21:21
+ * @LastEditTime: 2025-04-02 10:21:34
  * @Description: 
  */
 /**
@@ -11,7 +11,7 @@
  */
 const express = require('express');
 const { body, param } = require('express-validator');
-const systemConfigController = require('../controllers/system.config.controller');
+const systemConfigController = require('../controllers/system-config.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');

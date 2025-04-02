@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 18:12:34
+ * @LastEditTime: 2025-04-02 10:22:18
  * @Description: 
  */
 /**
@@ -14,7 +14,7 @@ const authRoutes = require('./auth.routes');
 const memberRoutes = require('./member.routes');
 const taskRoutes = require('./task.routes');
 const channelRoutes = require('./channel.routes');
-const systemConfigRoutes = require('./system.config.routes');
+const systemConfigRoutes = require('./system-config.routes');
 const waiterRoutes = require('./waiter.routes');
 const accountRoutes = require('./account.routes');
 const articleRoutes = require('./article.routes');

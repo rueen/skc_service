@@ -185,7 +185,8 @@ INSERT INTO system_config (config_key, config_value, description)
 VALUES 
 ('max_group_members', '200', '群组最大成员数'),
 ('group_owner_commission_rate', '0.1', '群主收益率（0-1之间的小数）'),
-('invite_reward_amount', '5.00', '邀请奖励金额（元）')
+('invite_reward_amount', '5.00', '邀请奖励金额（元）'),
+('withdrawal_threshold', '50', '提现门槛（元）')
 ON DUPLICATE KEY UPDATE update_time = NOW();
 `;
 
