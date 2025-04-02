@@ -170,6 +170,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         t.task_name,
         t.reward,
         t.channel_id,
+        t.task_type,
+        t.fans_required,
         c.name as channel_name,
         c.icon as channel_icon,
         m.nickname,

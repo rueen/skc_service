@@ -168,6 +168,7 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
         t.end_time, 
         t.category,
         t.task_type,
+        t.fans_required,
         c.name as channel_name,
         c.icon as channel_icon
       FROM enrolled_tasks et
