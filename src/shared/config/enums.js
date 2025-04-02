@@ -64,6 +64,28 @@ const TaskAuditStatusLang = {
   }
 };
 
+// 任务预审状态枚举
+const TaskPreAuditStatus = {
+  PENDING: 'pending',     // 待审核
+  APPROVED: 'approved',   // 已通过
+  REJECTED: 'rejected'    // 已拒绝
+};
+
+const TaskPreAuditStatusLang = {
+  [TaskPreAuditStatus.PENDING]: {
+    'zh-CN': '待审核',
+    'en-US': 'Pending'
+  },
+  [TaskPreAuditStatus.APPROVED]: {
+    'zh-CN': '已通过',
+    'en-US': 'Approved'
+  },
+  [TaskPreAuditStatus.REJECTED]: {
+    'zh-CN': '已拒绝',
+    'en-US': 'Rejected'
+  }
+};
+
 // 账号审核状态枚举
 const AccountAuditStatus = {
   PENDING: 'pending',     // 待审核
@@ -226,6 +248,8 @@ module.exports = {
   TaskTypeLang,
   TaskAuditStatus,
   TaskAuditStatusLang,
+  TaskPreAuditStatus,
+  TaskPreAuditStatusLang,
   AccountAuditStatus,
   AccountAuditStatusLang,
   WithdrawalStatus,

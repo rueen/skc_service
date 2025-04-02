@@ -80,6 +80,9 @@ async function getSubmittedTaskDetail(req, res) {
       return responseUtil.forbidden(res, '无权查看此提交记录');
     }
     
+    // 获取综合审核状态
+    const effectiveStatus = getEffectiveAuditStatus(task.taskPreAuditStatus, task.taskAuditStatus);
+    
     // 转换为前端需要的格式
     const responseData = {
       id: task.id,
@@ -87,7 +90,9 @@ async function getSubmittedTaskDetail(req, res) {
       taskName: task.taskName,
       submitContent: task.submitContent,
       submitTime: task.submitTime,
+      taskPreAuditStatus: task.taskPreAuditStatus,
       taskAuditStatus: task.taskAuditStatus,
+      effectiveStatus: effectiveStatus,
       rejectReason: task.rejectReason
     };
     
@@ -125,18 +130,45 @@ async function checkSubmission(req, res) {
       }, '获取任务提交状态成功');
     }
     
+    // 获取综合审核状态
+    const effectiveStatus = getEffectiveAuditStatus(submission.taskPreAuditStatus, submission.taskAuditStatus);
+    
     // 返回提交状态
     return responseUtil.success(res, {
       isSubmitted: true,
       id: submission.id,
       submitTime: submission.submitTime,
+      taskPreAuditStatus: submission.taskPreAuditStatus,
       taskAuditStatus: submission.taskAuditStatus,
+      effectiveStatus: effectiveStatus,
       rejectReason: submission.rejectReason
     }, '获取任务提交状态成功');
   } catch (error) {
     logger.error(`获取任务提交状态失败: ${error.message}`);
     return responseUtil.serverError(res, '获取任务提交状态失败，请稍后重试');
   }
+}
+
+/**
+ * 获取综合审核状态
+ * 规则：
+ * 1. 如果初审状态是rejected，返回rejected
+ * 2. 如果正式审核状态是approved或rejected，返回该状态
+ * 3. 其他情况返回pending
+ * @param {string} preAuditStatus - 初审状态
+ * @param {string} auditStatus - 正式审核状态
+ * @returns {string} 综合审核状态
+ */
+function getEffectiveAuditStatus(preAuditStatus, auditStatus) {
+  if (preAuditStatus === 'rejected') {
+    return 'rejected';
+  }
+  
+  if (auditStatus === 'approved' || auditStatus === 'rejected') {
+    return auditStatus;
+  }
+  
+  return 'pending';
 }
 
 /**

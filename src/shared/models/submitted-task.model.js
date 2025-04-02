@@ -18,6 +18,8 @@ function formatSubmittedTask(submittedTask) {
   const formattedSubmittedTask = convertToCamelCase({
     ...submittedTask,
     submitTime: formatDateTime(submittedTask.submit_time),
+    taskPreAuditStatus: submittedTask.task_pre_audit_status,
+    taskAuditStatus: submittedTask.task_audit_status,
     createTime: formatDateTime(submittedTask.create_time),
     updateTime: formatDateTime(submittedTask.update_time)
   });
@@ -91,7 +93,7 @@ async function create(submitData) {
     
     // 检查是否已经提交过
     const [existingSubmits] = await connection.query(
-      'SELECT id, task_audit_status FROM submitted_tasks WHERE task_id = ? AND member_id = ?',
+      'SELECT id, task_audit_status, task_pre_audit_status FROM submitted_tasks WHERE task_id = ? AND member_id = ?',
       [submitData.taskId, submitData.memberId]
     );
     
@@ -106,18 +108,38 @@ async function create(submitData) {
       logger.warn(`获取会员群组失败，将不记录群组ID: ${error.message}`);
     }
     
-    // 如果已提交且状态为 pending 或 approved，则不允许再次提交
+    // 如果已提交，检查状态来决定是否允许重新提交
     if (existingSubmits.length > 0) {
-      const status = existingSubmits[0].task_audit_status;
-      if (status === 'pending') {
-        throw new Error('任务已提交，正在审核中');
-      } else if (status === 'approved') {
+      const auditStatus = existingSubmits[0].task_audit_status;
+      const preAuditStatus = existingSubmits[0].task_pre_audit_status;
+      
+      // 如果正式审核已通过，不允许重新提交
+      if (auditStatus === 'approved') {
         throw new Error('任务已提交并已通过审核');
-      } else {
-        // 如果是rejected状态，则更新现有记录，同时更新群组ID
+      } 
+      // 如果正式审核状态为pending，但初审被拒绝，允许重新提交
+      else if (auditStatus === 'pending' && preAuditStatus === 'rejected') {
+        // 允许重新提交，更新现有记录
         await connection.query(
           `UPDATE submitted_tasks 
-           SET submit_content = ?, submit_time = NOW(), task_audit_status = 'pending', reject_reason = NULL, related_group_id = ? 
+           SET submit_content = ?, submit_time = NOW(), task_audit_status = 'pending', task_pre_audit_status = 'pending', reject_reason = NULL, related_group_id = ? 
+           WHERE id = ?`,
+          [JSON.stringify(submitData.submitContent), relatedGroupId, existingSubmits[0].id]
+        );
+        
+        await connection.commit();
+        return { id: existingSubmits[0].id, isResubmit: true, relatedGroupId };
+      }
+      // 如果正式审核状态为pending，初审状态不是rejected，不允许重新提交
+      else if (auditStatus === 'pending' && preAuditStatus !== 'rejected') {
+        throw new Error('任务已提交，正在审核中');
+      }
+      // 如果正式审核状态为rejected，允许重新提交
+      else if (auditStatus === 'rejected') {
+        // 允许重新提交，更新现有记录
+        await connection.query(
+          `UPDATE submitted_tasks 
+           SET submit_content = ?, submit_time = NOW(), task_audit_status = 'pending', task_pre_audit_status = 'pending', reject_reason = NULL, related_group_id = ? 
            WHERE id = ?`,
           [JSON.stringify(submitData.submitContent), relatedGroupId, existingSubmits[0].id]
         );
@@ -130,8 +152,8 @@ async function create(submitData) {
     // 插入提交记录，包含关联的群组ID
     const [result] = await connection.query(
       `INSERT INTO submitted_tasks 
-       (task_id, member_id, submit_content, task_audit_status, related_group_id) 
-       VALUES (?, ?, ?, 'pending', ?)`,
+       (task_id, member_id, submit_content, task_audit_status, task_pre_audit_status, related_group_id) 
+       VALUES (?, ?, ?, 'pending', 'pending', ?)`,
       [submitData.taskId, submitData.memberId, JSON.stringify(submitData.submitContent), relatedGroupId]
     );
     
@@ -153,6 +175,7 @@ async function create(submitData) {
  * @param {string} filters.taskName - 任务名称
  * @param {number} filters.channelId - 渠道ID
  * @param {string} filters.taskAuditStatus - 审核状态
+ * @param {string} filters.taskPreAuditStatus - 预审状态
  * @param {number} filters.groupId - 群组ID
  * @param {string} filters.submitStartTime - 提交开始时间
  * @param {string} filters.submitEndTime - 提交结束时间
@@ -164,39 +187,129 @@ async function create(submitData) {
  */
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
-    let query = `
-      SELECT DISTINCT 
+    // 构建 WHERE 子句
+    let whereClause = '1 = 1';
+    const queryParams = [];
+    
+    // 添加筛选条件
+    if (filters.taskName) {
+      whereClause += ' AND t.task_name LIKE ?';
+      queryParams.push(`%${filters.taskName}%`);
+    }
+    
+    if (filters.channelId) {
+      whereClause += ' AND t.channel_id = ?';
+      queryParams.push(filters.channelId);
+    }
+    
+    if (filters.taskAuditStatus) {
+      // 处理可能的多状态条件 (例如 'pending|rejected')
+      if (filters.taskAuditStatus.includes('|')) {
+        const statuses = filters.taskAuditStatus.split('|').map(s => s.trim());
+        
+        // 构建复杂的WHERE条件，考虑初审和正式审核两个维度
+        let statusConditions = [];
+        
+        if (statuses.includes('approved')) {
+          // 已通过：只看正式审核通过的
+          statusConditions.push(`st.task_audit_status = 'approved'`);
+        }
+        
+        if (statuses.includes('rejected')) {
+          // 已拒绝：初审拒绝或正式审核拒绝
+          statusConditions.push(`(st.task_pre_audit_status = 'rejected' OR st.task_audit_status = 'rejected')`);
+        }
+        
+        if (statuses.includes('pending')) {
+          // 待审核：不是初审拒绝，也不是正式审核已通过或已拒绝
+          statusConditions.push(`(st.task_pre_audit_status != 'rejected' AND st.task_audit_status = 'pending')`);
+        }
+        
+        if (statusConditions.length > 0) {
+          whereClause += ` AND (${statusConditions.join(' OR ')})`;
+        }
+      } else {
+        // 单一状态处理
+        if (filters.taskAuditStatus === 'approved') {
+          // 已通过：只看正式审核通过的
+          whereClause += ` AND st.task_audit_status = 'approved'`;
+        } else if (filters.taskAuditStatus === 'rejected') {
+          // 已拒绝：初审拒绝或正式审核拒绝
+          whereClause += ` AND (st.task_pre_audit_status = 'rejected' OR st.task_audit_status = 'rejected')`;
+        } else if (filters.taskAuditStatus === 'pending') {
+          // 待审核：不是初审拒绝，也不是正式审核已通过或已拒绝
+          whereClause += ` AND st.task_pre_audit_status != 'rejected' AND st.task_audit_status = 'pending'`;
+        } else {
+          // 处理其他可能的状态
+          whereClause += ` AND st.task_audit_status = ?`;
+          queryParams.push(filters.taskAuditStatus);
+        }
+      }
+    }
+    
+    if (filters.taskPreAuditStatus) {
+      whereClause += ' AND st.task_pre_audit_status = ?';
+      queryParams.push(filters.taskPreAuditStatus);
+    }
+    
+    if (filters.groupId) {
+      whereClause += ' AND st.related_group_id = ?';
+      queryParams.push(filters.groupId);
+    }
+    
+    if (filters.submitStartTime) {
+      whereClause += ' AND st.submit_time >= ?';
+      queryParams.push(filters.submitStartTime);
+    }
+    
+    if (filters.submitEndTime) {
+      whereClause += ' AND st.submit_time <= ?';
+      queryParams.push(filters.submitEndTime);
+    }
+    
+    // 添加已完成任务次数筛选条件
+    let completedTaskWhere = '';
+    if (filters.completedTaskCount) {
+      const count = parseInt(filters.completedTaskCount, 10);
+      if (!isNaN(count) && count >= 0) {
+        completedTaskWhere = ` AND (
+          SELECT COUNT(*) 
+          FROM submitted_tasks sub
+          JOIN tasks tt ON sub.task_id = tt.id
+          WHERE sub.member_id = st.member_id 
+          AND sub.task_audit_status = 'approved'
+        ) = ${count}`;
+        // 这里不再需要添加到queryParams，因为count已经直接内联到SQL语句中
+      }
+    }
+    
+    // 基本查询，包含统计信息
+    const query = `
+      SELECT 
         st.*,
         t.task_name,
-        t.reward,
         t.channel_id,
-        t.task_type,
-        t.fans_required,
-        c.name as channel_name,
-        c.icon as channel_icon,
+        t.reward,
+        c.name AS channel_name,
+        c.icon AS channel_icon,
         m.nickname,
-        mg.group_id,
-        g_table.group_name,
-        g_table.owner_id = m.id as is_group_owner,
-        (SELECT COUNT(*) FROM submitted_tasks WHERE member_id = st.member_id AND task_audit_status = 'approved') as completed_task_count,
-        w.username as waiter_name
-      FROM submitted_tasks st
-      LEFT JOIN tasks t ON st.task_id = t.id
-      LEFT JOIN channels c ON t.channel_id = c.id
-      LEFT JOIN members m ON st.member_id = m.id
-      LEFT JOIN waiters w ON st.waiter_id = w.id
-    `;
-
-    // 根据是否有groupId过滤条件，采用不同的JOIN策略
-    if (filters.groupId) {
-      // 如果指定了群组ID，则只关联指定群组
-      query += `
-        LEFT JOIN member_groups mg ON st.member_id = mg.member_id AND mg.group_id = ${parseInt(filters.groupId, 10)}
-        LEFT JOIN \`groups\` g_table ON mg.group_id = g_table.id
-      `;
-    } else {
-      // 如果没有指定群组ID，则关联会员的主要群组（或第一个群组）
-      query += `
+        g.id AS group_id,
+        g.group_name,
+        mg.is_owner,
+        pre_w.username AS pre_waiter_name,
+        w.username AS waiter_name,
+        (
+          SELECT COUNT(*) 
+          FROM submitted_tasks sub
+          JOIN tasks tt ON sub.task_id = tt.id
+          WHERE sub.member_id = st.member_id 
+          AND sub.task_audit_status = 'approved'
+        ) AS completed_task_count
+      FROM 
+        submitted_tasks st
+        JOIN tasks t ON st.task_id = t.id
+        JOIN members m ON st.member_id = m.id
+        LEFT JOIN channels c ON t.channel_id = c.id
         LEFT JOIN (
           SELECT member_id, group_id, is_owner
           FROM member_groups
@@ -206,105 +319,48 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
             GROUP BY member_id
           )
         ) mg ON st.member_id = mg.member_id
-        LEFT JOIN \`groups\` g_table ON mg.group_id = g_table.id
-      `;
-    }
-    
-    query += " WHERE 1=1";
-    
-    let countQuery = 'SELECT COUNT(DISTINCT st.id) as total FROM submitted_tasks st';
-    let countJoins = `
-      LEFT JOIN tasks t ON st.task_id = t.id
-      LEFT JOIN members m ON st.member_id = m.id
+        LEFT JOIN \`groups\` g ON mg.group_id = g.id
+        LEFT JOIN waiters pre_w ON st.pre_waiter_id = pre_w.id
+        LEFT JOIN waiters w ON st.waiter_id = w.id
+      WHERE ${whereClause} ${completedTaskWhere}
+      ORDER BY st.submit_time DESC
     `;
     
-    // 同样根据是否有groupId过滤条件，采用不同的JOIN策略
-    if (filters.groupId) {
-      countJoins += `
-        LEFT JOIN member_groups mg ON st.member_id = mg.member_id AND mg.group_id = ${parseInt(filters.groupId, 10)}
-      `;
-    }
+    // 计算总数的查询
+    const countQuery = `
+      SELECT COUNT(*) AS total FROM (
+        SELECT 
+          st.id
+        FROM 
+          submitted_tasks st
+          JOIN tasks t ON st.task_id = t.id
+          JOIN members m ON st.member_id = m.id
+          LEFT JOIN channels c ON t.channel_id = c.id
+          LEFT JOIN (
+            SELECT member_id, group_id, is_owner
+            FROM member_groups
+            WHERE (member_id, id) IN (
+              SELECT member_id, MIN(id)
+              FROM member_groups
+              GROUP BY member_id
+            )
+          ) mg ON st.member_id = mg.member_id
+          LEFT JOIN \`groups\` g ON mg.group_id = g.id
+        WHERE ${whereClause} ${completedTaskWhere}
+      ) AS subquery
+    `;
     
-    countQuery += countJoins + ' WHERE 1=1';
+    // 执行查询，添加分页
+    let finalQuery = query;
     
-    const queryParams = [];
-    
-    // 添加筛选条件
-    if (filters.taskName) {
-      query += ' AND t.task_name LIKE ?';
-      countQuery += ' AND t.task_name LIKE ?';
-      queryParams.push(`%${filters.taskName}%`);
-    }
-    
-    if (filters.channelId) {
-      query += ' AND t.channel_id = ?';
-      countQuery += ' AND t.channel_id = ?';
-      queryParams.push(filters.channelId);
-    }
-    
-    if (filters.taskAuditStatus) {
-      // 检查是否有多个状态值（使用|分隔）
-      if (filters.taskAuditStatus.includes('|')) {
-        const statuses = filters.taskAuditStatus.split('|').map(s => s.trim());
-        const placeholders = statuses.map(() => '?').join(', ');
-        query += ` AND st.task_audit_status IN (${placeholders})`;
-        countQuery += ` AND st.task_audit_status IN (${placeholders})`;
-        queryParams.push(...statuses);
-      } else {
-        // 单个状态值
-        query += ' AND st.task_audit_status = ?';
-        countQuery += ' AND st.task_audit_status = ?';
-        queryParams.push(filters.taskAuditStatus);
-      }
-    }
-    
-    if (filters.groupId) {
-      query += ' AND mg.group_id = ?';
-      countQuery += ' AND mg.group_id = ?';
-      queryParams.push(filters.groupId);
-    }
-    
-    if (filters.memberId) {
-      query += ' AND st.member_id = ?';
-      countQuery += ' AND st.member_id = ?';
-      queryParams.push(filters.memberId);
-    }
-    
-    // 添加提交时间范围筛选
-    if (filters.submitStartTime) {
-      query += ' AND st.submit_time >= ?';
-      countQuery += ' AND st.submit_time >= ?';
-      queryParams.push(filters.submitStartTime);
-    }
-    
-    if (filters.submitEndTime) {
-      query += ' AND st.submit_time <= ?';
-      countQuery += ' AND st.submit_time <= ?';
-      queryParams.push(filters.submitEndTime);
-    }
-    
-    if (filters.completedTaskCount) {
-      // completedTaskCount 是非负整数
-      const count = parseInt(filters.completedTaskCount, 10);
-      if (!isNaN(count) && count >= 0) {
-        query += ` AND (SELECT COUNT(*) FROM submitted_tasks WHERE member_id = st.member_id AND task_audit_status = 'approved') = ?`;
-        countQuery += ` AND (SELECT COUNT(*) FROM submitted_tasks WHERE member_id = st.member_id AND task_audit_status = 'approved') = ?`;
-        queryParams.push(count);
-      }
-    }
-    
-    // 添加排序和分页
-    query += ' ORDER BY st.submit_time DESC';
-    
-    // 如果不是导出模式，则应用分页
+    // 仅在非导出模式下添加分页限制
     if (!filters.exportMode) {
-      query += ' LIMIT ? OFFSET ?';
-      queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
+      finalQuery += ' LIMIT ?, ?';
+      queryParams.push((page - 1) * pageSize, parseInt(pageSize, 10));
     }
     
-    // 执行查询
-    const [rows] = await pool.query(query, queryParams);
-    const [countResult] = await pool.query(countQuery, queryParams.slice(0, filters.exportMode ? queryParams.length : -2));
+    const [rows] = await pool.query(finalQuery, queryParams);
+    const [countResult] = await pool.query(countQuery, queryParams);
     
     const total = countResult[0].total;
     
@@ -332,6 +388,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       formattedItem.groupName = row.group_name;
       formattedItem.isGroupOwner = !!row.is_group_owner;
       formattedItem.completedTaskCount = parseInt(row.completed_task_count || 0, 10);
+      formattedItem.preWaiterName = row.pre_waiter_name || '';
       formattedItem.waiterName = row.waiter_name || '';
       
       return formattedItem;
@@ -350,6 +407,43 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 }
 
 /**
+ * 获取预审已通过的任务列表
+ * @param {Object} filters - 筛选条件
+ * @param {string} filters.taskName - 任务名称
+ * @param {number} filters.channelId - 渠道ID
+ * @param {string} filters.taskAuditStatus - 审核状态
+ * @param {number} filters.groupId - 群组ID
+ * @param {string} filters.submitStartTime - 提交开始时间
+ * @param {string} filters.submitEndTime - 提交结束时间
+ * @param {number} filters.completedTaskCount - 已完成任务次数筛选条件
+ * @param {boolean} filters.exportMode - 是否为导出模式，为true时不使用分页
+ * @param {number} page - 页码
+ * @param {number} pageSize - 每页条数
+ * @returns {Promise<Object>} 任务列表和总数
+ */
+async function getPreAuditedList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
+  // 创建一个新的筛选条件对象，避免修改原始对象
+  const newFilters = { ...filters };
+  
+  // 添加预审已通过的筛选条件
+  newFilters.taskPreAuditStatus = 'approved';
+  
+  // 调用getList方法获取数据
+  const result = await getList(newFilters, page, pageSize);
+  
+  // 确保导出时显示正确的预审状态文本
+  if (result && result.list) {
+    result.list.forEach(item => {
+      if (item.taskPreAuditStatus === 'approved') {
+        item.taskPreAuditStatusText = '预审通过';
+      }
+    });
+  }
+  
+  return result;
+}
+
+/**
  * 获取已提交任务详情
  * @param {number} id - 提交ID
  * @returns {Promise<Object>} 任务提交详情
@@ -361,9 +455,11 @@ async function getById(id) {
         st.*,
         t.task_name,
         t.reward,
+        pre_w.username as pre_waiter_name,
         w.username as waiter_name
       FROM submitted_tasks st
       LEFT JOIN tasks t ON st.task_id = t.id
+      LEFT JOIN waiters pre_w ON st.pre_waiter_id = pre_w.id
       LEFT JOIN waiters w ON st.waiter_id = w.id
       WHERE st.id = ?`,
       [id]
@@ -393,6 +489,7 @@ async function getById(id) {
     // 添加额外字段
     formattedTask.taskName = row.task_name;
     formattedTask.reward = row.reward;
+    formattedTask.preWaiterName = row.pre_waiter_name || '';
     formattedTask.waiterName = row.waiter_name || '';
     
     // 获取所有待审核任务的ID列表，按提交时间降序排列（与待审核任务列表页展示一致）
@@ -633,7 +730,16 @@ async function batchReject(ids, reason, waiterId) {
 async function getByTaskAndMember(taskId, memberId) {
   try {
     const [rows] = await pool.query(
-      `SELECT * FROM submitted_tasks WHERE task_id = ? AND member_id = ?`,
+      `SELECT 
+         st.*,
+         t.task_name,
+         pre_w.username as pre_waiter_name,
+         w.username as waiter_name
+       FROM submitted_tasks st
+       LEFT JOIN tasks t ON st.task_id = t.id
+       LEFT JOIN waiters pre_w ON st.pre_waiter_id = pre_w.id
+       LEFT JOIN waiters w ON st.waiter_id = w.id
+       WHERE st.task_id = ? AND st.member_id = ?`,
       [taskId, memberId]
     );
     
@@ -657,18 +763,97 @@ async function getByTaskAndMember(taskId, memberId) {
     }
     
     // 使用 formatSubmittedTask 格式化数据
-    return formatSubmittedTask(row);
+    const formattedTask = formatSubmittedTask(row);
+    
+    // 添加额外字段
+    formattedTask.taskName = row.task_name;
+    formattedTask.preWaiterName = row.pre_waiter_name || '';
+    formattedTask.waiterName = row.waiter_name || '';
+    
+    return formattedTask;
   } catch (error) {
     logger.error(`根据会员ID和任务ID获取任务提交失败: ${error.message}`);
     throw error;
   }
 }
 
+/**
+ * 批量预审通过任务
+ * @param {Array<number>} ids - 提交ID数组
+ * @param {number} waiterId - 审核员ID
+ * @returns {Promise<Object>} 操作结果
+ */
+async function batchPreApprove(ids, waiterId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 更新任务预审状态为已通过
+    const [result] = await connection.query(
+      `UPDATE submitted_tasks 
+       SET task_pre_audit_status = 'approved', pre_waiter_id = ? 
+       WHERE id IN (?) AND task_pre_audit_status = 'pending'`,
+      [waiterId, ids]
+    );
+    
+    await connection.commit();
+    
+    return {
+      success: true,
+      updatedCount: result.affectedRows
+    };
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`批量预审通过任务失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * 批量预审拒绝任务
+ * @param {Array<number>} ids - 提交ID数组
+ * @param {string} reason - 拒绝原因
+ * @param {number} waiterId - 审核员ID
+ * @returns {Promise<Object>} 操作结果
+ */
+async function batchPreReject(ids, reason, waiterId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 更新任务预审状态为已拒绝
+    const [result] = await connection.query(
+      `UPDATE submitted_tasks 
+       SET task_pre_audit_status = 'rejected', reject_reason = ?, pre_waiter_id = ? 
+       WHERE id IN (?) AND task_pre_audit_status = 'pending'`,
+      [reason, waiterId, ids]
+    );
+    
+    await connection.commit();
+    
+    return {
+      success: true,
+      updatedCount: result.affectedRows
+    };
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`批量预审拒绝任务失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   create,
   getList,
+  getPreAuditedList,
   getById,
   batchApprove,
   batchReject,
+  batchPreApprove,
+  batchPreReject,
   getByTaskAndMember
 }; 
