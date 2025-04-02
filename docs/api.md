@@ -364,13 +364,13 @@ POST /api/admin/withdrawals/{id}/audit
 #### 获取系统配置
 
 ```
-GET /api/admin/system-config
+GET /api/admin/system-configs
 ```
 
 #### 更新系统配置
 
 ```
-PUT /api/admin/system-config
+PUT /api/admin/system-configs
 ```
 
 请求参数：
@@ -402,6 +402,41 @@ GET /api/h5/member/profile
 
 ```
 PUT /api/h5/member/profile
+```
+
+### 系统配置
+
+#### 获取系统配置
+
+```
+GET /api/h5/system-configs
+```
+
+响应数据：
+
+```json
+{
+  "code": 200,
+  "message": "获取所有系统配置成功",
+  "data": [
+    {
+      "id": 1,
+      "config_key": "max_group_members",
+      "config_value": "200",
+      "description": "群组最大成员数",
+      "create_time": "2023-01-01T00:00:00.000Z",
+      "update_time": "2023-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "config_key": "invite_reward_amount",
+      "config_value": "5.00",
+      "description": "邀请奖励金额（元）",
+      "create_time": "2023-01-01T00:00:00.000Z",
+      "update_time": "2023-01-01T00:00:00.000Z"
+    }
+  ]
+}
 ```
 
 ### 任务相关

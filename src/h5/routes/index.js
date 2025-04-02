@@ -22,6 +22,7 @@ const groupRoutes = require('./group.routes');
 const withdrawalRoutes = require('./withdrawal.routes');
 const taskSubmitRoutes = require('./task-submit.routes');
 const notificationRoutes = require('./notification.routes');
+const systemConfigRoutes = require('./system-config.routes');
 
 const router = express.Router();
 
@@ -60,5 +61,8 @@ router.use('/withdrawal', withdrawalRoutes);
 
 // 通知相关路由
 router.use('/notifications', notificationRoutes);
+
+// 系统配置路由
+router.use('/system-configs', systemConfigRoutes);
 
 module.exports = router; 
