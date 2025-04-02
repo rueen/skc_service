@@ -177,6 +177,7 @@ async function create(submitData) {
  * @param {string} filters.taskAuditStatus - 审核状态
  * @param {string} filters.taskPreAuditStatus - 预审状态
  * @param {number} filters.groupId - 群组ID
+ * @param {number} filters.memberId - 会员ID
  * @param {string} filters.submitStartTime - 提交开始时间
  * @param {string} filters.submitEndTime - 提交结束时间
  * @param {number} filters.completedTaskCount - 已完成任务次数筛选条件
@@ -200,6 +201,11 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     if (filters.channelId) {
       whereClause += ' AND t.channel_id = ?';
       queryParams.push(filters.channelId);
+    }
+    
+    if (filters.memberId) {
+      whereClause += ' AND st.member_id = ?';
+      queryParams.push(filters.memberId);
     }
     
     if (filters.taskAuditStatus) {
@@ -446,9 +452,10 @@ async function getPreAuditedList(filters = {}, page = DEFAULT_PAGE, pageSize = D
 /**
  * 获取已提交任务详情
  * @param {number} id - 提交ID
- * @returns {Promise<Object>} 任务提交详情
+ * @param {string} auditType - 审核类型 ('confirm' 或 'pre')
+ * @returns {Promise<Object>} 任务详情
  */
-async function getById(id) {
+async function getById(id, auditType = 'confirm') {
   try {
     const [rows] = await pool.query(
       `SELECT 
@@ -492,12 +499,24 @@ async function getById(id) {
     formattedTask.preWaiterName = row.pre_waiter_name || '';
     formattedTask.waiterName = row.waiter_name || '';
     
-    // 获取所有待审核任务的ID列表，按提交时间降序排列（与待审核任务列表页展示一致）
-    const [pendingTasks] = await pool.query(
-      `SELECT id, submit_time FROM submitted_tasks 
-       WHERE task_audit_status = 'pending' 
-       ORDER BY submit_time DESC`
-    );
+    // 根据审核类型设置审核状态
+    formattedTask.auditStatus = auditType === 'pre' ? formattedTask.taskPreAuditStatus : formattedTask.taskAuditStatus;
+    
+    // 获取对应审核类型的待审核任务ID列表，按提交时间降序排列
+    let pendingTasksQuery = '';
+    if (auditType === 'pre') {
+      // 预审：获取所有预审状态为pending的任务
+      pendingTasksQuery = `SELECT id, submit_time FROM submitted_tasks 
+                          WHERE task_pre_audit_status = 'pending' 
+                          ORDER BY submit_time DESC`;
+    } else {
+      // 复审：获取所有预审已通过且复审状态为pending的任务
+      pendingTasksQuery = `SELECT id, submit_time FROM submitted_tasks 
+                          WHERE task_audit_status = 'pending' AND task_pre_audit_status = 'approved' 
+                          ORDER BY submit_time DESC`;
+    }
+    
+    const [pendingTasks] = await pool.query(pendingTasksQuery);
     
     // 初始化前后任务ID为null
     formattedTask.prevTaskId = null;
@@ -507,7 +526,11 @@ async function getById(id) {
       // 将所有待审核任务ID转为数组
       const pendingTaskIds = pendingTasks.map(task => task.id);
       
-      if (row.task_audit_status === 'pending') {
+      // 根据审核类型判断当前任务是否在待审核状态
+      const isCurrentTaskPending = (auditType === 'pre' && row.task_pre_audit_status === 'pending') || 
+                                  (auditType === 'confirm' && row.task_audit_status === 'pending' && row.task_pre_audit_status === 'approved');
+      
+      if (isCurrentTaskPending) {
         // 如果当前任务是待审核状态，找出它在列表中的位置
         const currentIndex = pendingTaskIds.findIndex(taskId => taskId === Number(id));
         

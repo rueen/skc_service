@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-02 21:52:42
+ * @LastEditTime: 2025-04-02 22:51:52
  * @Description: 
  */
 /**
@@ -141,6 +141,13 @@ router.get(
  */
 router.get(
   '/:id',
+  [
+    query('auditType')
+      .optional()
+      .isIn(['confirm', 'pre'])
+      .withMessage('审核类型值无效，有效值为 confirm 或 pre')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:submittedDetail'),
   submittedTaskController.getSubmittedTaskDetail
 );

@@ -105,13 +105,14 @@ async function getPreAuditedTasks(req, res) {
 async function getSubmittedTaskDetail(req, res) {
   try {
     const { id } = req.params;
+    const { auditType = 'confirm' } = req.query; // 默认为 'confirm'
     
     if (!id) {
       return responseUtil.badRequest(res, '提交ID不能为空');
     }
     
     // 获取提交详情
-    const task = await submittedTaskModel.getById(parseInt(id, 10));
+    const task = await submittedTaskModel.getById(parseInt(id, 10), auditType);
     
     if (!task) {
       return responseUtil.notFound(res, '未找到提交记录');
