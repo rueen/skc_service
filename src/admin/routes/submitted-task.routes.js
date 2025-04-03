@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-02 22:51:52
+ * @LastEditTime: 2025-04-03 16:13:46
  * @Description: 
  */
 /**
@@ -49,7 +49,7 @@ router.get(
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:preAudit'),
-  submittedTaskController.getSubmittedTasks
+  submittedTaskController.getPreAuditTasks
 );
 
 /**
@@ -75,7 +75,7 @@ router.get(
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:confirmAudit'),
-  submittedTaskController.getPreAuditedTasks
+  submittedTaskController.getConfirmAuditedTasks
 );
 
 /**
@@ -105,7 +105,7 @@ router.get(
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:preAudit'),
-  submittedTaskController.exportSubmittedTasks
+  submittedTaskController.exportPreAuditTasks
 );
 
 /**
@@ -131,7 +131,7 @@ router.get(
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:confirmAudit'),
-  submittedTaskController.exportPreAuditedTasks
+  submittedTaskController.exportConfirmAuditedTasks
 );
 
 /**

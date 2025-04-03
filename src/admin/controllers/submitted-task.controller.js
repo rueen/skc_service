@@ -8,11 +8,11 @@ const responseUtil = require('../../shared/utils/response.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 
 /**
- * 获取已提交任务列表
+ * 获取预审任务列表
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
  */
-async function getSubmittedTasks(req, res) {
+async function getPreAuditTasks(req, res) {
   try {
     const { 
       page = DEFAULT_PAGE, 
@@ -54,11 +54,11 @@ async function getSubmittedTasks(req, res) {
 }
 
 /**
- * 获取预审已通过的任务列表
+ * 获取初审已通过的任务列表
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
  */
-async function getPreAuditedTasks(req, res) {
+async function getConfirmAuditedTasks(req, res) {
   try {
     const { 
       page = DEFAULT_PAGE, 
@@ -190,7 +190,7 @@ async function batchRejectSubmissions(req, res) {
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
  */
-async function exportSubmittedTasks(req, res) {
+async function exportPreAuditTasks(req, res) {
   try {
     const { 
       taskName, 
@@ -268,7 +268,7 @@ async function exportSubmittedTasks(req, res) {
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
  */
-async function exportPreAuditedTasks(req, res) {
+async function exportConfirmAuditedTasks(req, res) {
   try {
     const { 
       taskName, 
@@ -421,11 +421,11 @@ function getPreAuditStatusText(status) {
 }
 
 module.exports = {
-  getSubmittedTasks,
-  getPreAuditedTasks,
+  getPreAuditTasks,
+  getConfirmAuditedTasks, 
   getSubmittedTaskDetail,
-  exportSubmittedTasks,
-  exportPreAuditedTasks,
+  exportPreAuditTasks,
+  exportConfirmAuditedTasks,
   batchApproveSubmissions,
   batchRejectSubmissions,
   batchPreApproveSubmissions,
