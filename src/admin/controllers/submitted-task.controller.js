@@ -58,7 +58,7 @@ async function getPreAuditTasks(req, res) {
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
  */
-async function getConfirmAuditedTasks(req, res) {
+async function getConfirmAuditTasks(req, res) {
   try {
     const { 
       page = DEFAULT_PAGE, 
@@ -268,7 +268,7 @@ async function exportPreAuditTasks(req, res) {
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
  */
-async function exportConfirmAuditedTasks(req, res) {
+async function exportConfirmAuditTasks(req, res) {
   try {
     const { 
       taskName, 
@@ -422,10 +422,10 @@ function getPreAuditStatusText(status) {
 
 module.exports = {
   getPreAuditTasks,
-  getConfirmAuditedTasks, 
+  getConfirmAuditTasks, 
   getSubmittedTaskDetail,
   exportPreAuditTasks,
-  exportConfirmAuditedTasks,
+  exportConfirmAuditTasks,
   batchApproveSubmissions,
   batchRejectSubmissions,
   batchPreApproveSubmissions,
