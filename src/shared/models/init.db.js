@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS bills (
   task_id bigint(20) DEFAULT NULL COMMENT '关联的任务ID',
   related_member_id bigint(20) DEFAULT NULL COMMENT '关联的会员ID',
   related_group_id bigint(20) DEFAULT NULL COMMENT '关联的群组ID',
+  waiter_id bigint(20) DEFAULT NULL COMMENT '操作人ID',
   failure_reason varchar(255) DEFAULT NULL COMMENT '结算失败原因',
   remark varchar(255) DEFAULT NULL COMMENT '备注说明',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -82,6 +83,7 @@ CREATE TABLE IF NOT EXISTS bills (
   KEY idx_task_id (task_id),
   KEY idx_related_member_id (related_member_id),
   KEY idx_related_group_id (related_group_id),
+  KEY idx_waiter_id (waiter_id),
   KEY idx_create_time (create_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='账单表';
 `;

@@ -392,11 +392,12 @@ async function grantReward(req, res) {
     const operatorId = req.user.id;
     const operatorName = req.user.username;
     
-    // 调用模型层方法发放奖励
+    // 调用模型层方法发放奖励，直接传递操作人ID
     const result = await memberModel.grantReward(
       parseInt(memberId, 10),
       parseFloat(amount),
-      `${remark} (操作人: ${operatorName})`
+      remark,
+      operatorId
     );
     
     // 记录操作日志
@@ -442,11 +443,12 @@ async function deductReward(req, res) {
     const operatorId = req.user.id;
     const operatorName = req.user.username;
     
-    // 调用模型层方法扣除奖励
+    // 调用模型层方法扣除奖励，直接传递操作人ID
     const result = await memberModel.deductReward(
       parseInt(memberId, 10),
       parseFloat(amount),
-      `${remark} (操作人: ${operatorName})`
+      remark,
+      operatorId
     );
     
     // 记录操作日志

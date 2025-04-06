@@ -800,9 +800,10 @@ async function isNewMember(memberId) {
  * @param {number} memberId - 会员ID
  * @param {number} amount - 奖励金额
  * @param {string} remark - 备注说明
+ * @param {number} waiterId - 操作人ID
  * @returns {Promise<Object>} 操作结果
  */
-async function grantReward(memberId, amount, remark) {
+async function grantReward(memberId, amount, remark, waiterId) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -855,7 +856,8 @@ async function grantReward(memberId, amount, remark) {
       remark,
       taskId: null,
       relatedMemberId: null,
-      settlementStatus: 'success' // 设置结算状态为success
+      settlementStatus: 'success', // 设置结算状态为success
+      waiterId // 添加操作人ID
     };
     
     await billModel.createBill(billData, connection);
@@ -886,9 +888,10 @@ async function grantReward(memberId, amount, remark) {
  * @param {number} memberId - 会员ID
  * @param {number} amount - 扣除金额
  * @param {string} remark - 备注说明
+ * @param {number} waiterId - 操作人ID
  * @returns {Promise<Object>} 操作结果
  */
-async function deductReward(memberId, amount, remark) {
+async function deductReward(memberId, amount, remark, waiterId) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -941,7 +944,8 @@ async function deductReward(memberId, amount, remark) {
       remark,
       taskId: null,
       relatedMemberId: null,
-      settlementStatus: 'success' // 设置结算状态为success
+      settlementStatus: 'success', // 设置结算状态为success
+      waiterId // 添加操作人ID
     };
     
     await billModel.createBill(billData, connection);

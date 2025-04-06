@@ -27,6 +27,11 @@ function formatBill(bill) {
   if (bill.submitted_id !== undefined) {
     formattedBill.submittedId = bill.submitted_id;
   }
+
+  // 确保waiterUsername字段被正确返回
+  if (bill.waiter_username !== undefined) {
+    formattedBill.waiterName = bill.waiter_username;
+  }
   
   return formattedBill;
 }
@@ -42,13 +47,14 @@ function formatBill(bill) {
  * @param {number} [billData.relatedGroupId] - 关联群组ID（用于数据统计）
  * @param {string} [billData.remark] - 备注说明
  * @param {string} [billData.settlementStatus] - 结算状态，默认为'pending'
+ * @param {number} [billData.waiterId] - 操作人ID
  * @param {Object} connection - 数据库连接（用于事务）
  * @returns {Promise<Object>} 创建结果
  */
 async function createBill(billData, connection) {
   try {
     // 日志记录所有传入的账单数据，便于调试
-    logger.info(`创建账单记录 - 会员ID: ${billData.memberId}, 账单类型: ${billData.billType}, 金额: ${billData.amount}, 任务ID: ${billData.taskId}, 关联会员ID: ${billData.relatedMemberId}, 关联群组ID: ${billData.relatedGroupId}, 备注: ${billData.remark || '无'}, 结算状态: ${billData.settlementStatus || 'pending'}`);
+    logger.info(`创建账单记录 - 会员ID: ${billData.memberId}, 账单类型: ${billData.billType}, 金额: ${billData.amount}, 任务ID: ${billData.taskId}, 关联会员ID: ${billData.relatedMemberId}, 关联群组ID: ${billData.relatedGroupId}, 备注: ${billData.remark || '无'}, 结算状态: ${billData.settlementStatus || 'pending'}, 操作人ID: ${billData.waiterId || '无'}`);
     
     // 进一步确认related_group_id是一个有效数字
     let relatedGroupId = null;
@@ -92,8 +98,8 @@ async function createBill(billData, connection) {
     // 构建插入语句
     const [result] = await connection.query(
       `INSERT INTO bills 
-       (member_id, bill_type, amount, ${statusField}, task_id, related_member_id, related_group_id, remark) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (member_id, bill_type, amount, ${statusField}, task_id, related_member_id, related_group_id, waiter_id, remark) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         billData.memberId,
         billData.billType,
@@ -102,12 +108,13 @@ async function createBill(billData, connection) {
         billData.taskId,
         billData.relatedMemberId || null,
         relatedGroupId,
+        billData.waiterId || null,
         billData.remark || null
       ]
     );
     
     // 记录插入结果
-    logger.info(`账单记录创建成功 - 账单ID: ${result.insertId}, 关联群组ID: ${relatedGroupId}, 状态字段: ${statusField}, 状态值: ${statusValue}`);
+    logger.info(`账单记录创建成功 - 账单ID: ${result.insertId}, 关联群组ID: ${relatedGroupId}, 状态字段: ${statusField}, 状态值: ${statusValue}, 操作人ID: ${billData.waiterId || '无'}`);
     
     // 验证插入结果
     const [inserted] = await connection.query(
@@ -249,13 +256,15 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
         t.task_name,
         rm.nickname as related_member_nickname,
         g.group_name as related_group_name,
-        st.id as submitted_id
+        st.id as submitted_id,
+        w.username as waiter_username
       FROM bills b
       JOIN members m ON b.member_id = m.id
       LEFT JOIN tasks t ON b.task_id = t.id
       LEFT JOIN members rm ON b.related_member_id = rm.id
       LEFT JOIN \`groups\` g ON b.related_group_id = g.id
       LEFT JOIN submitted_tasks st ON (b.task_id = st.task_id AND b.member_id = st.member_id)
+      LEFT JOIN waiters w ON b.waiter_id = w.id
       ${whereClause}
       ORDER BY b.update_time DESC
       LIMIT ?, ?`,
