@@ -181,18 +181,13 @@ async function getMemberSubmittedTasks(req, res) {
     const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, taskAuditStatus } = req.query;
     const memberId = req.user.id;
     
-    // 构建筛选条件
-    const filters = {
-      memberId,
-      taskAuditStatus
-    };
-    
     // 记录日志，包括请求的筛选条件
     logger.info(`获取会员已提交任务列表 - 会员ID: ${memberId}, 审核状态筛选: ${taskAuditStatus || '全部'}`);
     
-    // 获取提交列表
-    const result = await submittedTaskModel.getList(
-      filters,
+    // 使用专门的H5列表获取方法
+    const result = await submittedTaskModel.getH5List(
+      memberId,
+      taskAuditStatus,
       parseInt(page, 10),
       parseInt(pageSize, 10)
     );

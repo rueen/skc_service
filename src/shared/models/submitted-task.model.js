@@ -174,7 +174,7 @@ async function create(submitData) {
  * @param {Object} filters - 筛选条件
  * @param {string} filters.taskName - 任务名称
  * @param {number} filters.channelId - 渠道ID
- * @param {string} filters.taskAuditStatus - 审核状态
+ * @param {string} filters.taskAuditStatus - 审核状态（单一状态）
  * @param {string} filters.taskPreAuditStatus - 预审状态
  * @param {number} filters.groupId - 群组ID
  * @param {number} filters.memberId - 会员ID
@@ -209,48 +209,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     }
     
     if (filters.taskAuditStatus) {
-      // 处理可能的多状态条件 (例如 'pending|rejected')
-      if (filters.taskAuditStatus.includes('|')) {
-        const statuses = filters.taskAuditStatus.split('|').map(s => s.trim());
-        
-        // 构建复杂的WHERE条件，考虑初审和正式审核两个维度
-        let statusConditions = [];
-        
-        if (statuses.includes('approved')) {
-          // 已通过：只看正式审核通过的
-          statusConditions.push(`st.task_audit_status = 'approved'`);
-        }
-        
-        if (statuses.includes('rejected')) {
-          // 已拒绝：初审拒绝或正式审核拒绝
-          statusConditions.push(`(st.task_pre_audit_status = 'rejected' OR st.task_audit_status = 'rejected')`);
-        }
-        
-        if (statuses.includes('pending')) {
-          // 待审核：不是初审拒绝，也不是正式审核已通过或已拒绝
-          statusConditions.push(`(st.task_pre_audit_status != 'rejected' AND st.task_audit_status = 'pending')`);
-        }
-        
-        if (statusConditions.length > 0) {
-          whereClause += ` AND (${statusConditions.join(' OR ')})`;
-        }
-      } else {
-        // 单一状态处理
-        if (filters.taskAuditStatus === 'approved') {
-          // 已通过：只看正式审核通过的
-          whereClause += ` AND st.task_audit_status = 'approved'`;
-        } else if (filters.taskAuditStatus === 'rejected') {
-          // 已拒绝：初审拒绝或正式审核拒绝
-          whereClause += ` AND (st.task_pre_audit_status = 'rejected' OR st.task_audit_status = 'rejected')`;
-        } else if (filters.taskAuditStatus === 'pending') {
-          // 待审核：不是初审拒绝，也不是正式审核已通过或已拒绝
-          whereClause += ` AND st.task_pre_audit_status != 'rejected' AND st.task_audit_status = 'pending'`;
-        } else {
-          // 处理其他可能的状态
-          whereClause += ` AND st.task_audit_status = ?`;
-          queryParams.push(filters.taskAuditStatus);
-        }
-      }
+      whereClause += ` AND st.task_audit_status = ?`;
+      queryParams.push(filters.taskAuditStatus);
     }
     
     if (filters.taskPreAuditStatus) {
@@ -869,6 +829,148 @@ async function batchPreReject(ids, reason, waiterId) {
   }
 }
 
+/**
+ * 获取H5端已提交任务列表（仅限特定会员）
+ * @param {number} memberId - 会员ID（必需）
+ * @param {string} taskAuditStatus - 审核状态，支持多状态条件（可选，例如 'pending|rejected'）
+ * @param {number} page - 页码
+ * @param {number} pageSize - 每页条数
+ * @returns {Promise<Object>} 任务列表和总数
+ */
+async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
+  try {
+    if (!memberId) {
+      throw new Error('会员ID不能为空');
+    }
+    
+    // 构建 WHERE 子句
+    let whereClause = 'st.member_id = ?';
+    const queryParams = [memberId];
+    
+    // 处理审核状态
+    if (taskAuditStatus) {
+      // 处理可能的多状态条件 (例如 'pending|rejected')
+      if (taskAuditStatus.includes('|')) {
+        const statuses = taskAuditStatus.split('|').map(s => s.trim());
+        
+        // 构建复杂的WHERE条件，考虑初审和正式审核两个维度
+        let statusConditions = [];
+        
+        if (statuses.includes('approved')) {
+          // 已通过：只看正式审核通过的
+          statusConditions.push(`st.task_audit_status = 'approved'`);
+        }
+        
+        if (statuses.includes('rejected')) {
+          // 已拒绝：初审拒绝或正式审核拒绝
+          statusConditions.push(`(st.task_pre_audit_status = 'rejected' OR st.task_audit_status = 'rejected')`);
+        }
+        
+        if (statuses.includes('pending')) {
+          // 待审核：不是初审拒绝，也不是正式审核已通过或已拒绝
+          statusConditions.push(`(st.task_pre_audit_status != 'rejected' AND st.task_audit_status = 'pending')`);
+        }
+        
+        if (statusConditions.length > 0) {
+          whereClause += ` AND (${statusConditions.join(' OR ')})`;
+        }
+      } else {
+        // 单一状态处理
+        if (taskAuditStatus === 'approved') {
+          // 已通过：只看正式审核通过的
+          whereClause += ` AND st.task_audit_status = 'approved'`;
+        } else if (taskAuditStatus === 'rejected') {
+          // 已拒绝：初审拒绝或正式审核拒绝
+          whereClause += ` AND (st.task_pre_audit_status = 'rejected' OR st.task_audit_status = 'rejected')`;
+        } else if (taskAuditStatus === 'pending') {
+          // 待审核：不是初审拒绝，也不是正式审核已通过或已拒绝
+          whereClause += ` AND st.task_pre_audit_status != 'rejected' AND st.task_audit_status = 'pending'`;
+        } else {
+          // 处理其他可能的状态
+          whereClause += ` AND st.task_audit_status = ?`;
+          queryParams.push(taskAuditStatus);
+        }
+      }
+    }
+    
+    // 基本查询，包含任务基本信息
+    const query = `
+      SELECT 
+        st.*,
+        t.task_name,
+        t.channel_id,
+        t.reward,
+        c.name AS channel_name,
+        c.icon AS channel_icon,
+        pre_w.username AS pre_waiter_name,
+        w.username AS waiter_name
+      FROM 
+        submitted_tasks st
+        JOIN tasks t ON st.task_id = t.id
+        LEFT JOIN channels c ON t.channel_id = c.id
+        LEFT JOIN waiters pre_w ON st.pre_waiter_id = pre_w.id
+        LEFT JOIN waiters w ON st.waiter_id = w.id
+      WHERE ${whereClause}
+      ORDER BY st.submit_time DESC
+    `;
+    
+    // 计算总数的查询
+    const countQuery = `
+      SELECT COUNT(*) AS total 
+      FROM submitted_tasks st
+      JOIN tasks t ON st.task_id = t.id
+      WHERE ${whereClause}
+    `;
+    
+    // 执行查询，添加分页
+    let finalQuery = query;
+    finalQuery += ' LIMIT ?, ?';
+    queryParams.push((page - 1) * pageSize, parseInt(pageSize, 10));
+    
+    const [rows] = await pool.query(finalQuery, queryParams);
+    const [countResult] = await pool.query(countQuery, queryParams);
+    
+    const total = countResult[0].total;
+    
+    // 使用 formatSubmittedTask 方法格式化结果
+    const formattedList = rows.map(row => {
+      // 解析JSON格式的提交内容
+      if (row.submit_content) {
+        try {
+          // 检查是否已经是对象，避免重复解析
+          if (typeof row.submit_content === 'string') {
+            row.submit_content = JSON.parse(row.submit_content);
+          }
+        } catch (error) {
+          logger.error(`解析提交内容JSON失败: ${error.message}, 原始内容类型: ${typeof row.submit_content}`);
+          row.submit_content = {};
+        }
+      }
+      
+      const formattedItem = formatSubmittedTask(row);
+      // 添加列表中特有的字段
+      formattedItem.taskName = row.task_name;
+      formattedItem.channelName = row.channel_name;
+      formattedItem.channelIcon = row.channel_icon;
+      formattedItem.reward = row.reward;
+      formattedItem.preWaiterName = row.pre_waiter_name || '';
+      formattedItem.waiterName = row.waiter_name || '';
+      
+      return formattedItem;
+    });
+    
+    return {
+      total,
+      list: formattedList,
+      page: parseInt(page, 10),
+      pageSize: parseInt(pageSize, 10)
+    };
+  } catch (error) {
+    logger.error(`获取H5端已提交任务列表失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   create,
   getList,
@@ -878,5 +980,6 @@ module.exports = {
   batchReject,
   batchPreApprove,
   batchPreReject,
-  getByTaskAndMember
+  getByTaskAndMember,
+  getH5List
 }; 
