@@ -682,7 +682,7 @@ async function updateMemberBalance(memberId, amount, remark = '') {
     
     // 检查会员是否存在并获取当前余额
     const [member] = await connection.query(
-      'SELECT id, balance FROM members WHERE id = ?',
+      'SELECT id FROM members WHERE id = ?',
       [memberId]
     );
     
@@ -691,36 +691,16 @@ async function updateMemberBalance(memberId, amount, remark = '') {
     }
     
     // 确保金额是数字类型
-    const currentBalance = parseFloat(member[0].balance) || 0;
     const changeAmount = parseFloat(amount);
-    const newBalance = currentBalance + changeAmount;
     
-    if (newBalance < 0) {
-      throw new Error('余额不足');
-    }
-    
-    // 更新会员余额，使用 toFixed(2) 确保保留两位小数
-    const [result] = await connection.query(
-      'UPDATE members SET balance = ? WHERE id = ?',
-      [newBalance.toFixed(2), memberId]
-    );
-    
-    if (result.affectedRows === 0) {
-      throw new Error('更新会员余额失败');
-    }
-    
-    // 记录余额变动日志
-    await connection.query(
-      `INSERT INTO balance_logs 
-       (member_id, amount, before_balance, after_balance, transaction_type, create_time) 
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [
-        memberId, 
-        changeAmount.toFixed(2), 
-        currentBalance.toFixed(2), 
-        newBalance.toFixed(2),
-        remark || 'balance_change'
-      ]
+    // 使用 memberBalanceModel 统一更新余额
+    await memberBalanceModel.updateBalance(
+      memberId, 
+      changeAmount,
+      {
+        transactionType: remark || 'balance_change',
+        connection
+      }
     );
     
     await connection.commit();
