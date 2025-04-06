@@ -367,6 +367,106 @@ async function getTaskStats(req, res) {
   }
 }
 
+/**
+ * 发放奖励给会员
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function grantReward(req, res) {
+  try {
+    const { memberId, amount, remark } = req.body;
+    
+    if (!memberId) {
+      return responseUtil.badRequest(res, '会员ID不能为空');
+    }
+    
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      return responseUtil.badRequest(res, '奖励金额必须为大于0的数字');
+    }
+    
+    if (!remark) {
+      return responseUtil.badRequest(res, '备注说明不能为空');
+    }
+    
+    // 获取操作员信息
+    const operatorId = req.user.id;
+    const operatorName = req.user.username;
+    
+    // 调用模型层方法发放奖励
+    const result = await memberModel.grantReward(
+      parseInt(memberId, 10),
+      parseFloat(amount),
+      `${remark} (操作人: ${operatorName})`
+    );
+    
+    // 记录操作日志
+    logger.info(`会员奖励发放 - 操作员ID: ${operatorId}, 会员ID: ${memberId}, 金额: ${amount}, 备注: ${remark}`);
+    
+    return responseUtil.success(res, result.data, result.message);
+  } catch (error) {
+    logger.error(`发放会员奖励失败: ${error.message}`);
+    
+    // 处理特定错误
+    if (error.message === '会员不存在') {
+      return responseUtil.notFound(res, '会员不存在');
+    } else if (error.message === '奖励金额必须大于0') {
+      return responseUtil.badRequest(res, error.message);
+    }
+    
+    return responseUtil.serverError(res, '发放会员奖励失败，请稍后重试');
+  }
+}
+
+/**
+ * 从会员账户扣除奖励
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function deductReward(req, res) {
+  try {
+    const { memberId, amount, remark } = req.body;
+    
+    if (!memberId) {
+      return responseUtil.badRequest(res, '会员ID不能为空');
+    }
+    
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      return responseUtil.badRequest(res, '扣除金额必须为大于0的数字');
+    }
+    
+    if (!remark) {
+      return responseUtil.badRequest(res, '备注说明不能为空');
+    }
+    
+    // 获取操作员信息
+    const operatorId = req.user.id;
+    const operatorName = req.user.username;
+    
+    // 调用模型层方法扣除奖励
+    const result = await memberModel.deductReward(
+      parseInt(memberId, 10),
+      parseFloat(amount),
+      `${remark} (操作人: ${operatorName})`
+    );
+    
+    // 记录操作日志
+    logger.info(`会员奖励扣除 - 操作员ID: ${operatorId}, 会员ID: ${memberId}, 金额: ${amount}, 备注: ${remark}`);
+    
+    return responseUtil.success(res, result.data, result.message);
+  } catch (error) {
+    logger.error(`扣除会员奖励失败: ${error.message}`);
+    
+    // 处理特定错误
+    if (error.message === '会员不存在') {
+      return responseUtil.notFound(res, '会员不存在');
+    } else if (error.message === '扣除金额必须大于0') {
+      return responseUtil.badRequest(res, error.message);
+    }
+    
+    return responseUtil.serverError(res, '扣除会员奖励失败，请稍后重试');
+  }
+}
+
 module.exports = {
   list,
   getDetail,
@@ -374,5 +474,7 @@ module.exports = {
   update,
   remove,
   getInviteStats,
-  getTaskStats
+  getTaskStats,
+  grantReward,
+  deductReward
 }; 

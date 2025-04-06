@@ -245,4 +245,62 @@ router.get(
   memberController.getTaskStats
 );
 
+/**
+ * @route POST /api/admin/members/grant-reward
+ * @desc 发放奖励给会员
+ * @access Private (需要 member:edit 权限)
+ */
+router.post(
+  '/grant-reward',
+  authMiddleware.hasPermission('member:edit'),
+  [
+    body('memberId')
+      .notEmpty()
+      .withMessage('会员ID不能为空')
+      .isInt()
+      .withMessage('会员ID必须是整数'),
+    body('amount')
+      .notEmpty()
+      .withMessage('奖励金额不能为空')
+      .isFloat({ min: 0.01 })
+      .withMessage('奖励金额必须为大于0的数字'),
+    body('remark')
+      .notEmpty()
+      .withMessage('备注说明不能为空')
+      .isLength({ max: 255 })
+      .withMessage('备注说明不能超过255个字符')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.grantReward
+);
+
+/**
+ * @route POST /api/admin/members/deduct-reward
+ * @desc 从会员账户扣除奖励
+ * @access Private (需要 member:edit 权限)
+ */
+router.post(
+  '/deduct-reward',
+  authMiddleware.hasPermission('member:edit'),
+  [
+    body('memberId')
+      .notEmpty()
+      .withMessage('会员ID不能为空')
+      .isInt()
+      .withMessage('会员ID必须是整数'),
+    body('amount')
+      .notEmpty()
+      .withMessage('扣除金额不能为空')
+      .isFloat({ min: 0.01 })
+      .withMessage('扣除金额必须为大于0的数字'),
+    body('remark')
+      .notEmpty()
+      .withMessage('备注说明不能为空')
+      .isLength({ max: 255 })
+      .withMessage('备注说明不能超过255个字符')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.deductReward
+);
+
 module.exports = router; 

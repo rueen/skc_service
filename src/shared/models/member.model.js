@@ -10,6 +10,8 @@ const crypto = require('crypto');
 const { convertToCamelCase } = require('../utils/data.util');
 const groupModel = require('./group.model');
 const accountModel = require('./account.model');
+const { BillType } = require('../config/enums');
+const billModel = require('./bill.model');
 
 /**
  * 格式化会员信息
@@ -793,6 +795,178 @@ async function isNewMember(memberId) {
   }
 }
 
+/**
+ * 发放奖励给会员
+ * @param {number} memberId - 会员ID
+ * @param {number} amount - 奖励金额
+ * @param {string} remark - 备注说明
+ * @returns {Promise<Object>} 操作结果
+ */
+async function grantReward(memberId, amount, remark) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 验证会员是否存在
+    const [memberRows] = await connection.query(
+      'SELECT id, balance FROM members WHERE id = ?',
+      [memberId]
+    );
+    
+    if (memberRows.length === 0) {
+      throw new Error('会员不存在');
+    }
+    
+    // 验证金额是否合法
+    const rewardAmount = parseFloat(amount);
+    if (isNaN(rewardAmount) || rewardAmount <= 0) {
+      throw new Error('奖励金额必须大于0');
+    }
+    
+    // 更新会员余额，允许余额变为负数
+    const currentBalance = parseFloat(memberRows[0].balance) || 0;
+    const newBalance = currentBalance + rewardAmount;
+    
+    // 更新会员余额
+    await connection.query(
+      'UPDATE members SET balance = ? WHERE id = ?',
+      [newBalance.toFixed(2), memberId]
+    );
+    
+    // 记录余额变动日志
+    await connection.query(
+      `INSERT INTO balance_logs 
+       (member_id, amount, before_balance, after_balance, transaction_type, create_time) 
+       VALUES (?, ?, ?, ?, ?, NOW())`,
+      [
+        memberId, 
+        rewardAmount.toFixed(2), 
+        currentBalance.toFixed(2), 
+        newBalance.toFixed(2),
+        BillType.REWARD_GRANT
+      ]
+    );
+    
+    // 创建账单记录，设置结算状态为success而不是默认的pending
+    const billData = {
+      memberId,
+      billType: BillType.REWARD_GRANT,
+      amount: rewardAmount.toFixed(2),
+      remark,
+      taskId: null,
+      relatedMemberId: null,
+      settlementStatus: 'success' // 设置结算状态为success
+    };
+    
+    await billModel.createBill(billData, connection);
+    
+    await connection.commit();
+    
+    return {
+      success: true,
+      message: '奖励发放成功',
+      data: {
+        memberId,
+        amount: rewardAmount.toFixed(2),
+        beforeBalance: currentBalance.toFixed(2),
+        afterBalance: newBalance.toFixed(2)
+      }
+    };
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`发放奖励失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * 从会员账户扣除奖励
+ * @param {number} memberId - 会员ID
+ * @param {number} amount - 扣除金额
+ * @param {string} remark - 备注说明
+ * @returns {Promise<Object>} 操作结果
+ */
+async function deductReward(memberId, amount, remark) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 验证会员是否存在
+    const [memberRows] = await connection.query(
+      'SELECT id, balance FROM members WHERE id = ?',
+      [memberId]
+    );
+    
+    if (memberRows.length === 0) {
+      throw new Error('会员不存在');
+    }
+    
+    // 验证金额是否合法
+    const deductAmount = parseFloat(amount);
+    if (isNaN(deductAmount) || deductAmount <= 0) {
+      throw new Error('扣除金额必须大于0');
+    }
+    
+    // 更新会员余额，允许余额变为负数
+    const currentBalance = parseFloat(memberRows[0].balance) || 0;
+    const newBalance = currentBalance - deductAmount;
+    
+    // 更新会员余额
+    await connection.query(
+      'UPDATE members SET balance = ? WHERE id = ?',
+      [newBalance.toFixed(2), memberId]
+    );
+    
+    // 记录余额变动日志
+    await connection.query(
+      `INSERT INTO balance_logs 
+       (member_id, amount, before_balance, after_balance, transaction_type, create_time) 
+       VALUES (?, ?, ?, ?, ?, NOW())`,
+      [
+        memberId, 
+        (-deductAmount).toFixed(2), // 负数表示扣除
+        currentBalance.toFixed(2), 
+        newBalance.toFixed(2),
+        BillType.REWARD_DEDUCTION
+      ]
+    );
+    
+    // 创建账单记录，设置结算状态为success而不是默认的pending
+    const billData = {
+      memberId,
+      billType: BillType.REWARD_DEDUCTION,
+      amount: deductAmount.toFixed(2), // 使用正数，账单类型决定了是扣除
+      remark,
+      taskId: null,
+      relatedMemberId: null,
+      settlementStatus: 'success' // 设置结算状态为success
+    };
+    
+    await billModel.createBill(billData, connection);
+    
+    await connection.commit();
+    
+    return {
+      success: true,
+      message: '奖励扣除成功',
+      data: {
+        memberId,
+        amount: deductAmount.toFixed(2),
+        beforeBalance: currentBalance.toFixed(2),
+        afterBalance: newBalance.toFixed(2)
+      }
+    };
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`扣除奖励失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   getList,
   getById,
@@ -803,5 +977,7 @@ module.exports = {
   checkGroupExists,
   updateMemberBalance,
   updateIsNewStatus,
-  isNewMember
+  isNewMember,
+  grantReward,
+  deductReward
 }; 

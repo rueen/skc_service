@@ -40,13 +40,15 @@ function formatBill(bill) {
  * @param {number} billData.taskId - 任务ID
  * @param {number} [billData.relatedMemberId] - 关联会员ID（如邀请关系）
  * @param {number} [billData.relatedGroupId] - 关联群组ID（用于数据统计）
+ * @param {string} [billData.remark] - 备注说明
+ * @param {string} [billData.settlementStatus] - 结算状态，默认为'pending'
  * @param {Object} connection - 数据库连接（用于事务）
  * @returns {Promise<Object>} 创建结果
  */
 async function createBill(billData, connection) {
   try {
     // 日志记录所有传入的账单数据，便于调试
-    logger.info(`创建账单记录 - 会员ID: ${billData.memberId}, 账单类型: ${billData.billType}, 金额: ${billData.amount}, 任务ID: ${billData.taskId}, 关联会员ID: ${billData.relatedMemberId}, 关联群组ID: ${billData.relatedGroupId}`);
+    logger.info(`创建账单记录 - 会员ID: ${billData.memberId}, 账单类型: ${billData.billType}, 金额: ${billData.amount}, 任务ID: ${billData.taskId}, 关联会员ID: ${billData.relatedMemberId}, 关联群组ID: ${billData.relatedGroupId}, 备注: ${billData.remark || '无'}, 结算状态: ${billData.settlementStatus || 'pending'}`);
     
     // 进一步确认related_group_id是一个有效数字
     let relatedGroupId = null;
@@ -85,13 +87,13 @@ async function createBill(billData, connection) {
     // 根据账单类型初始化不同的状态字段
     const isWithdrawal = billData.billType === 'withdrawal';
     const statusField = isWithdrawal ? 'withdrawal_status' : 'settlement_status';
-    const statusValue = 'pending'; // 使用字符串状态值
+    const statusValue = isWithdrawal ? 'pending' : (billData.settlementStatus || 'pending'); // 使用提供的结算状态或默认值
     
     // 构建插入语句
     const [result] = await connection.query(
       `INSERT INTO bills 
-       (member_id, bill_type, amount, ${statusField}, task_id, related_member_id, related_group_id) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (member_id, bill_type, amount, ${statusField}, task_id, related_member_id, related_group_id, remark) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         billData.memberId,
         billData.billType,
@@ -99,7 +101,8 @@ async function createBill(billData, connection) {
         statusValue,
         billData.taskId,
         billData.relatedMemberId || null,
-        relatedGroupId
+        relatedGroupId,
+        billData.remark || null
       ]
     );
     

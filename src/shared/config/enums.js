@@ -157,7 +157,9 @@ const BillType = {
   WITHDRAWAL: 'withdrawal',      // 提现
   TASK_REWARD: 'task_reward',    // 任务奖励
   INVITE_REWARD: 'invite_reward', // 邀请奖励
-  GROUP_OWNER_COMMISSION: 'group_owner_commission'   // 群主收益
+  GROUP_OWNER_COMMISSION: 'group_owner_commission',   // 群主收益
+  REWARD_GRANT: 'reward_grant',   // 奖励发放
+  REWARD_DEDUCTION: 'reward_deduction'  // 奖励扣除
 };
 
 const BillTypeLang = {
@@ -176,6 +178,14 @@ const BillTypeLang = {
   [BillType.GROUP_OWNER_COMMISSION]: {
     'zh-CN': '群主收益',
     'en-US': 'Group Owner Commission'
+  },
+  [BillType.REWARD_GRANT]: {
+    'zh-CN': '奖励发放',
+    'en-US': 'Reward Grant'
+  },
+  [BillType.REWARD_DEDUCTION]: {
+    'zh-CN': '奖励扣除',
+    'en-US': 'Reward Deduction'
   }
 };
 
