@@ -3,15 +3,16 @@
  * 处理会员相关的数据库操作
  */
 const { pool } = require('./db');
-const logger = require('../config/logger.config');
-const { formatDateTime } = require('../utils/date.util');
-const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 const crypto = require('crypto');
+const billModel = require('./bill.model');
+const logger = require('../config/logger.config');
+const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
+const { BillType } = require('../config/enums');
+const { formatDateTime } = require('../utils/date.util');
 const { convertToCamelCase } = require('../utils/data.util');
 const groupModel = require('./group.model');
 const accountModel = require('./account.model');
-const { BillType } = require('../config/enums');
-const billModel = require('./bill.model');
+const memberBalanceModel = require('./member-balance.model');
 
 /**
  * 格式化会员信息
@@ -824,28 +825,17 @@ async function grantReward(memberId, amount, remark, waiterId) {
       throw new Error('奖励金额必须大于0');
     }
     
-    // 更新会员余额，允许余额变为负数
+    // 获取当前余额用于返回结果
     const currentBalance = parseFloat(memberRows[0].balance) || 0;
-    const newBalance = currentBalance + rewardAmount;
     
-    // 更新会员余额
-    await connection.query(
-      'UPDATE members SET balance = ? WHERE id = ?',
-      [newBalance.toFixed(2), memberId]
-    );
-    
-    // 记录余额变动日志
-    await connection.query(
-      `INSERT INTO balance_logs 
-       (member_id, amount, before_balance, after_balance, transaction_type, create_time) 
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [
-        memberId, 
-        rewardAmount.toFixed(2), 
-        currentBalance.toFixed(2), 
-        newBalance.toFixed(2),
-        BillType.REWARD_GRANT
-      ]
+    // 使用 memberBalanceModel 统一更新余额
+    await memberBalanceModel.updateBalance(
+      memberId, 
+      rewardAmount, 
+      {
+        transactionType: BillType.REWARD_GRANT,
+        connection
+      }
     );
     
     // 创建账单记录，设置结算状态为success而不是默认的pending
@@ -856,13 +846,16 @@ async function grantReward(memberId, amount, remark, waiterId) {
       remark,
       taskId: null,
       relatedMemberId: null,
-      settlementStatus: 'success', // 设置结算状态为success
-      waiterId // 添加操作人ID
+      settlementStatus: 'success',
+      waiterId
     };
     
     await billModel.createBill(billData, connection);
     
     await connection.commit();
+    
+    // 计算新余额
+    const newBalance = currentBalance + rewardAmount;
     
     return {
       success: true,
@@ -912,28 +905,18 @@ async function deductReward(memberId, amount, remark, waiterId) {
       throw new Error('扣除金额必须大于0');
     }
     
-    // 更新会员余额，允许余额变为负数
+    // 获取当前余额用于返回结果
     const currentBalance = parseFloat(memberRows[0].balance) || 0;
-    const newBalance = currentBalance - deductAmount;
     
-    // 更新会员余额
-    await connection.query(
-      'UPDATE members SET balance = ? WHERE id = ?',
-      [newBalance.toFixed(2), memberId]
-    );
-    
-    // 记录余额变动日志
-    await connection.query(
-      `INSERT INTO balance_logs 
-       (member_id, amount, before_balance, after_balance, transaction_type, create_time) 
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [
-        memberId, 
-        (-deductAmount).toFixed(2), // 负数表示扣除
-        currentBalance.toFixed(2), 
-        newBalance.toFixed(2),
-        BillType.REWARD_DEDUCTION
-      ]
+    // 使用 memberBalanceModel 统一更新余额
+    await memberBalanceModel.updateBalance(
+      memberId, 
+      -deductAmount, // 负数表示扣除
+      {
+        transactionType: BillType.REWARD_DEDUCTION,
+        connection,
+        allowNegativeBalance: true // 允许余额为负数
+      }
     );
     
     // 创建账单记录，设置结算状态为success而不是默认的pending
@@ -944,13 +927,16 @@ async function deductReward(memberId, amount, remark, waiterId) {
       remark,
       taskId: null,
       relatedMemberId: null,
-      settlementStatus: 'success', // 设置结算状态为success
-      waiterId // 添加操作人ID
+      settlementStatus: 'success',
+      waiterId
     };
     
     await billModel.createBill(billData, connection);
     
     await connection.commit();
+    
+    // 计算新余额
+    const newBalance = currentBalance - deductAmount;
     
     return {
       success: true,

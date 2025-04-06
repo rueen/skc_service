@@ -55,10 +55,15 @@ async function getBalance(memberId) {
  * @param {Object} options - 其他选项
  * @param {string} options.transactionType - 交易类型，用于记录日志
  * @param {Object} options.connection - 可选的数据库连接，用于事务中的操作
+ * @param {boolean} options.allowNegativeBalance - 是否允许余额为负数，默认为false
  * @returns {Promise<boolean>} 操作结果
  */
 async function updateBalance(memberId, amount, options = {}) {
-  const { transactionType = '未知交易', connection: existingConnection = null } = options;
+  const { 
+    transactionType = '未知交易', 
+    connection: existingConnection = null,
+    allowNegativeBalance = false 
+  } = options;
   const shouldReleaseConnection = !existingConnection;
   const connection = existingConnection || await pool.getConnection();
   
@@ -80,8 +85,8 @@ async function updateBalance(memberId, amount, options = {}) {
     const currentBalance = parseFloat(members[0].balance);
     const newBalance = currentBalance + parseFloat(amount);
     
-    // 如果是减少余额，确保账户余额足够
-    if (amount < 0 && newBalance < 0) {
+    // 如果是减少余额，且不允许负数余额，则确保账户余额足够
+    if (amount < 0 && newBalance < 0 && !allowNegativeBalance) {
       throw new Error('账户余额不足');
     }
     
