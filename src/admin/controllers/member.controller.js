@@ -10,6 +10,8 @@ const { OccupationType } = require('../../shared/config/enums');
 const groupModel = require('../../shared/models/group.model');
 const inviteModel = require('../../shared/models/invite.model');
 const taskStatsModel = require('../../shared/models/task-stats.model');
+const memberBalanceModel = require('../../shared/models/member-balance.model');
+
 /**
  * 获取会员列表
  * @param {Object} req - 请求对象
@@ -469,6 +471,34 @@ async function deductReward(req, res) {
   }
 }
 
+/**
+ * 获取会员账户余额信息
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getMemberBalance(req, res) {
+  try {
+    const memberId = parseInt(req.params.id, 10);
+    
+    if (!memberId || isNaN(memberId)) {
+      return responseUtil.badRequest(res, '无效的会员ID');
+    }
+    
+    // 获取会员余额
+    const balance = await memberBalanceModel.getBalance(memberId);
+    const withdrawalAmount = await memberBalanceModel.getWithdrawalAmount(memberId);
+    
+    // 返回余额信息
+    return responseUtil.success(res, {
+      balance,
+      withdrawalAmount
+    });
+  } catch (error) {
+    logger.error(`获取会员账户余额失败: ${error.message}`);
+    return responseUtil.serverError(res, '获取会员账户余额失败');
+  }
+}
+
 module.exports = {
   list,
   getDetail,
@@ -478,5 +508,6 @@ module.exports = {
   getInviteStats,
   getTaskStats,
   grantReward,
-  deductReward
+  deductReward,
+  getMemberBalance
 }; 

@@ -303,4 +303,34 @@ router.post(
   memberController.deductReward
 );
 
+// 获取会员账户余额
+/**
+ * @api {get} /api/admin/members/:id/balance 获取会员账户余额
+ * @apiName GetMemberBalance
+ * @apiGroup Member
+ * @apiPermission member:view
+ * 
+ * @apiParam {Number} id 会员ID
+ * 
+ * @apiSuccess {Object} data 余额信息
+ * @apiSuccess {Number} data.balance 账户余额
+ * @apiSuccess {Number} data.withdrawalAmount 已提现金额
+ * 
+ * @apiError (404) NotFound 会员不存在
+ * @apiError (500) ServerError 服务器错误
+ */
+router.get(
+  '/:id/balance',
+  authMiddleware.hasPermission('member:view'),
+  [
+    param('id')
+      .notEmpty()
+      .withMessage('会员ID不能为空')
+      .isInt()
+      .withMessage('会员ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.getMemberBalance
+);
+
 module.exports = router; 
