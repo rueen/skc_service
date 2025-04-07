@@ -90,6 +90,38 @@ CREATE TABLE IF NOT EXISTS bills (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='账单表';
 `;
 
+// 创建FB老账号表
+const createOldAccountsFbTable = `
+CREATE TABLE IF NOT EXISTS old_accounts_fb (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键，自增',
+  uid varchar(100) NOT NULL COMMENT 'FB账户标识，唯一',
+  nickname varchar(100) NOT NULL COMMENT 'FB昵称',
+  home_url varchar(255) DEFAULT NULL COMMENT 'FB链接',
+  member_id bigint(20) DEFAULT NULL COMMENT '关联会员ID，可为空',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_uid (uid),
+  KEY idx_member_id (member_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='FB老账号表';
+`;
+
+// 创建会员_FB老账号关联表
+const createMemberOldAccountsFbTable = `
+CREATE TABLE IF NOT EXISTS member_old_accounts_fb (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键，自增',
+  member_id bigint(20) NOT NULL COMMENT '会员ID',
+  old_accounts_fb_id bigint(20) NOT NULL COMMENT 'FB老账号ID',
+  bind_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '绑定时间',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_member_old_account (member_id, old_accounts_fb_id),
+  KEY idx_member_id (member_id),
+  KEY idx_old_accounts_fb_id (old_accounts_fb_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员_FB老账号关联表';
+`;
+
 // 创建渠道表
 const createChannelsTable = `
 CREATE TABLE IF NOT EXISTS channels (
@@ -405,6 +437,8 @@ async function initTables() {
     await connection.query(createWithdrawalsTable);
     await connection.query(createBalanceLogsTable);
     await connection.query(createNotificationsTable);
+    await connection.query(createOldAccountsFbTable);
+    await connection.query(createMemberOldAccountsFbTable);
     
     // 初始化管理员账号
     await connection.query(initAdminUser);

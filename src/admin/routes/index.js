@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-02 10:22:18
+ * @LastEditTime: 2025-04-07 10:47:31
  * @Description: 
  */
 /**
@@ -22,6 +22,7 @@ const groupRoutes = require('./group.routes');
 const billRoutes = require('./bill.routes');
 const withdrawalRoutes = require('./withdrawal.routes');
 const submittedTaskRoutes = require('./submitted-task.routes');
+const oldAccountsFbRoutes = require('./old-accounts-fb.routes');
 
 const router = express.Router();
 
@@ -59,5 +60,8 @@ router.use(`/articles`, articleRoutes);
 
 // 系统配置路由
 router.use(`/system-configs`, systemConfigRoutes);
+
+// 老账号管理路由
+router.use(`/old-accounts-fb`, oldAccountsFbRoutes);
 
 module.exports = router; 
