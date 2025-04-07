@@ -10,7 +10,7 @@
  * 处理管理端账号相关的路由
  */
 const express = require('express');
-const { body } = require('express-validator');
+const { body, query } = require('express-validator');
 const accountController = require('../controllers/account.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
@@ -30,6 +30,41 @@ router.use(authMiddleware.hasPermission('account:list'));
  */
 router.get(
   '/',
+  [
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('页码必须是大于0的整数'),
+    query('pageSize')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('每页条数必须是1-100之间的整数'),
+    query('keyword')
+      .optional()
+      .isString()
+      .withMessage('关键词必须是字符串'),
+    query('account')
+      .optional()
+      .isString()
+      .withMessage('账号必须是字符串'),
+    query('channelId')
+      .optional()
+      .isInt()
+      .withMessage('渠道ID必须是整数'),
+    query('accountAuditStatus')
+      .optional()
+      .isIn(['pending', 'approved', 'rejected'])
+      .withMessage('账号审核状态无效'),
+    query('groupId')
+      .optional()
+      .isInt()
+      .withMessage('群组ID必须是整数'),
+    query('memberId')
+      .optional()
+      .isInt()
+      .withMessage('会员ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.getAccounts
 );
 

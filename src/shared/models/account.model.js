@@ -36,6 +36,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(`%${filters.account}%`);
     }
     
+    // 添加对 keyword 的支持，搜索 account 和 uid 字段
+    if (filters.keyword) {
+      whereClause += ' AND (a.account LIKE ? OR a.uid LIKE ?)';
+      queryParams.push(`%${filters.keyword}%`, `%${filters.keyword}%`);
+    }
+    
     if (filters.groupId) {
       whereClause += ' AND EXISTS (SELECT 1 FROM member_groups mg WHERE mg.member_id = a.member_id AND mg.group_id = ?)';
       queryParams.push(filters.groupId);

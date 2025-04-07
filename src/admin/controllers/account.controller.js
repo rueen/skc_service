@@ -15,13 +15,17 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.con
  */
 async function getAccounts(req, res) {
   try {
-    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, account, channelId, accountAuditStatus, groupId, memberId } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, account, keyword, channelId, accountAuditStatus, groupId, memberId } = req.query;
     
     // 构建筛选条件
     const filters = {};
     
     if (account) {
       filters.account = account;
+    }
+    
+    if (keyword) {
+      filters.keyword = keyword;
     }
     
     if (channelId) {
