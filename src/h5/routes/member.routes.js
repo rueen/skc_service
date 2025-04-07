@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-07 08:02:13
+ * @LastEditTime: 2025-04-07 10:49:25
  * @Description: 
  */
 /**
@@ -12,6 +12,7 @@
 const express = require('express');
 const { body, param, query } = require('express-validator');
 const memberController = require('../controllers/member.controller');
+const memberAccountController = require('../controllers/member-account.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
@@ -48,7 +49,7 @@ router.put(
  */
 router.get(
   '/accounts',
-  memberController.getAccounts
+  memberAccountController.getAccounts
 );
 
 /**
@@ -91,7 +92,7 @@ router.post(
       .withMessage('发布数量必须是非负整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  memberController.addAccount
+  memberAccountController.addAccount
 );
 
 /**
@@ -109,7 +110,7 @@ router.get(
       .withMessage('账号ID必须是整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  memberController.getAccountDetail
+  memberAccountController.getAccountDetail
 );
 
 /**
@@ -151,7 +152,7 @@ router.put(
       .withMessage('发布数量必须是非负整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  memberController.updateAccount
+  memberAccountController.updateAccount
 );
 
 /**
@@ -169,7 +170,7 @@ router.delete(
       .withMessage('账号ID必须是整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  memberController.deleteAccount
+  memberAccountController.deleteAccount
 );
 
 /**

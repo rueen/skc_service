@@ -2,14 +2,20 @@
  * FB老账号管理路由
  */
 const express = require('express');
-const router = express.Router();
 const oldAccountsFbController = require('../controllers/old-accounts-fb.controller');
-const { authenticateJwt } = require('../../shared/middlewares/jwt.middleware');
-const { checkPermission } = require('../../shared/middlewares/permission.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
+const authMiddleware = require('../middlewares/auth.middleware');
+const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 const { body, param, query } = require('express-validator');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
+
+const router = express.Router();
+
+// 所有会员路由都需要认证
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
+authMiddleware.hasPermission('account:list'),
 
 /**
  * @route GET /api/admin/old-accounts-fb
@@ -19,8 +25,6 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.get(
   '/',
   [
-    authenticateJwt,
-    checkPermission('account:list'),
     query('page')
       .optional()
       .isInt({ min: 1 })
@@ -50,8 +54,6 @@ router.get(
 router.post(
   '/import',
   [
-    authenticateJwt,
-    checkPermission('account:list'),
     upload.single('file')
   ],
   oldAccountsFbController.importOldAccountsFb
@@ -65,8 +67,6 @@ router.post(
 router.post(
   '/',
   [
-    authenticateJwt,
-    checkPermission('account:list'),
     body('uid')
       .notEmpty()
       .withMessage('FB账户不能为空')
@@ -94,8 +94,6 @@ router.post(
 router.put(
   '/:id',
   [
-    authenticateJwt,
-    checkPermission('account:list'),
     param('id')
       .isInt()
       .withMessage('ID必须是整数'),
@@ -126,8 +124,6 @@ router.put(
 router.delete(
   '/:id',
   [
-    authenticateJwt,
-    checkPermission('account:list'),
     param('id')
       .isInt()
       .withMessage('ID必须是整数')

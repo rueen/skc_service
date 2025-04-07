@@ -278,11 +278,6 @@ async function remove(id) {
       throw new Error('FB老账号不存在');
     }
     
-    // 检查是否已关联会员
-    if (existingAccount[0].member_id !== null) {
-      throw new Error('该FB老账号已关联会员，不能删除');
-    }
-    
     // 执行删除
     const [result] = await connection.query(
       'DELETE FROM old_accounts_fb WHERE id = ?',
