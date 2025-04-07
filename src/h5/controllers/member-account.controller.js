@@ -249,10 +249,34 @@ async function deleteAccount(req, res) {
   }
 }
 
+/**
+ * 根据主页链接查找UID
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function findUidByHomeUrl(req, res) {
+  try {
+    const { homeUrl } = req.query;
+    
+    if (!homeUrl) {
+      return responseUtil.badRequest(res, '主页链接不能为空');
+    }
+    
+    // 获取UID
+    const uid = await oldAccountsFbModel.getUidByHomeUrl(homeUrl);
+    
+    return responseUtil.success(res, { uid });
+  } catch (error) {
+    logger.error(`根据主页链接查找UID失败: ${error.message}`);
+    return responseUtil.serverError(res, '查找UID失败');
+  }
+}
+
 module.exports = {
   getAccounts,
   getAccountDetail,
   addAccount,
   updateAccount,
-  deleteAccount
+  deleteAccount,
+  findUidByHomeUrl
 }; 

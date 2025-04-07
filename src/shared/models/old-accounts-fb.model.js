@@ -138,6 +138,29 @@ async function getByUid(uid) {
 }
 
 /**
+ * 根据主页链接获取UID
+ * @param {string} homeUrl - FB主页链接
+ * @returns {Promise<string|null>} FB账户UID或null
+ */
+async function getUidByHomeUrl(homeUrl) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT uid FROM old_accounts_fb WHERE home_url = ?`,
+      [homeUrl]
+    );
+    
+    if (rows.length === 0) {
+      return null;
+    }
+    
+    return rows[0].uid;
+  } catch (error) {
+    logger.error(`根据主页链接获取UID失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
  * 创建FB老账号
  * @param {Object} accountData - 账号数据
  * @returns {Promise<Object>} 创建结果
@@ -427,6 +450,7 @@ module.exports = {
   getList,
   getById,
   getByUid,
+  getUidByHomeUrl,
   create,
   update,
   remove,

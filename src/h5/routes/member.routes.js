@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-07 10:49:25
+ * @LastEditTime: 2025-04-07 20:17:36
  * @Description: 
  */
 /**
@@ -50,6 +50,24 @@ router.put(
 router.get(
   '/accounts',
   memberAccountController.getAccounts
+);
+
+/**
+ * @route GET /api/h5/members/accounts/find-uid-by-home-url
+ * @desc 根据主页链接查找UID
+ * @access Private
+ */
+router.get(
+  '/accounts/find-uid-by-home-url',
+  [
+    query('homeUrl')
+      .notEmpty()
+      .withMessage('主页链接不能为空')
+      .isURL()
+      .withMessage('主页链接必须是有效的URL')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberAccountController.findUidByHomeUrl
 );
 
 /**
