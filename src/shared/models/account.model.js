@@ -228,11 +228,24 @@ async function getByMemberAndChannel(memberId, channelId) {
  */
 async function create(accountData) {
   try {
+    // 检查 UID 唯一性（如果提供了 UID）
+    if (accountData.uid) {
+      const [existingUid] = await pool.query(
+        'SELECT id FROM accounts WHERE uid = ?',
+        [accountData.uid]
+      );
+      
+      if (existingUid.length > 0) {
+        throw new Error('该 UID 已被使用，请提供一个唯一的标识符');
+      }
+    }
+    
     // 准备数据
     const data = {
       member_id: accountData.memberId,
       channel_id: accountData.channelId,
       account: accountData.account,
+      uid: accountData.uid || null,
       home_url: accountData.homeUrl,
       fans_count: accountData.fansCount || 0,
       friends_count: accountData.friendsCount || 0,
@@ -284,9 +297,22 @@ async function create(accountData) {
  */
 async function update(accountData) {
   try {
+    // 检查 UID 唯一性（如果提供了 UID）
+    if (accountData.uid !== undefined) {
+      const [existingUid] = await pool.query(
+        'SELECT id FROM accounts WHERE uid = ? AND id != ?',
+        [accountData.uid, accountData.id]
+      );
+      
+      if (existingUid.length > 0) {
+        throw new Error('该 UID 已被使用，请提供一个唯一的标识符');
+      }
+    }
+    
     // 准备数据
     const data = {
       account: accountData.account,
+      uid: accountData.uid,
       home_url: accountData.homeUrl,
       fans_count: accountData.fansCount,
       friends_count: accountData.friendsCount,

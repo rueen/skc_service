@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-30 16:21:36
+ * @LastEditTime: 2025-04-07 08:02:13
  * @Description: 
  */
 /**
@@ -69,6 +69,10 @@ router.post(
       .withMessage('账号不能为空')
       .isLength({ max: 100 })
       .withMessage('账号长度不能超过100个字符'),
+    body('uid')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('UID长度不能超过100个字符'),
     body('homeUrl')
       .optional()
       .isURL()
@@ -125,6 +129,10 @@ router.put(
       .optional()
       .isLength({ max: 100 })
       .withMessage('账号长度不能超过100个字符'),
+    body('uid')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('UID长度不能超过100个字符'),
     body('homeUrl')
       .optional()
       .isURL()

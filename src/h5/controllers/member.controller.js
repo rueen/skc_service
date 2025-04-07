@@ -138,7 +138,7 @@ async function getAccountDetail(req, res) {
 async function addAccount(req, res) {
   try {
     const memberId = req.user.id;
-    const { channelId, account, homeUrl, fansCount, friendsCount, postsCount } = req.body;
+    const { channelId, account, uid, homeUrl, fansCount, friendsCount, postsCount } = req.body;
     
     // 检查是否已存在相同渠道的账号
     const existingAccount = await accountModel.getByMemberAndChannel(memberId, channelId);
@@ -152,6 +152,7 @@ async function addAccount(req, res) {
       memberId,
       channelId,
       account,
+      uid,
       homeUrl,
       fansCount: fansCount || 0,
       friendsCount: friendsCount || 0,
@@ -164,6 +165,12 @@ async function addAccount(req, res) {
     return responseUtil.success(res, newAccount, '添加账号成功，请等待审核');
   } catch (error) {
     logger.error(`添加会员账号失败: ${error.message}`);
+    
+    // 处理UID重复的特定错误
+    if (error.message.includes('UID 已被使用')) {
+      return responseUtil.badRequest(res, error.message);
+    }
+    
     return responseUtil.serverError(res, '添加会员账号失败');
   }
 }
@@ -183,7 +190,7 @@ async function updateAccount(req, res) {
     }
     
     // 获取要更新的字段
-    const { account, homeUrl, fansCount, friendsCount, postsCount } = req.body;
+    const { account, uid, homeUrl, fansCount, friendsCount, postsCount } = req.body;
     
     // 获取账号详情，检查是否存在以及是否属于当前会员
     const query = `
@@ -211,6 +218,7 @@ async function updateAccount(req, res) {
     const updateData = {
       id: accountId,
       account: account,
+      uid: uid,
       homeUrl: homeUrl,
       fansCount: fansCount,
       friendsCount: friendsCount,
@@ -225,6 +233,12 @@ async function updateAccount(req, res) {
     return responseUtil.success(res, { success: true }, '更新账号成功，请等待审核');
   } catch (error) {
     logger.error(`更新账号失败: ${error.message}`);
+    
+    // 处理UID重复的特定错误
+    if (error.message.includes('UID 已被使用')) {
+      return responseUtil.badRequest(res, error.message);
+    }
+    
     return responseUtil.serverError(res, '更新账号失败');
   }
 }
