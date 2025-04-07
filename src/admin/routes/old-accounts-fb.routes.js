@@ -15,7 +15,8 @@ const router = express.Router();
 // 所有会员路由都需要认证
 router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
-authMiddleware.hasPermission('account:list'),
+// 所有接口都需要account:list权限
+router.use(authMiddleware.hasPermission('account:list'));
 
 /**
  * @route GET /api/admin/old-accounts-fb
