@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 18:15:53
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 18:12:38
+ * @LastEditTime: 2025-04-08 14:53:40
  * @Description: 
  */
 /**
@@ -96,6 +96,10 @@ async function startServer() {
       } else {
         logger.info(`任务状态更新定时任务配置为在 ${schedulerServiceConfig.taskStatusUpdateService} 服务中运行，不在此实例中启动`);
       }
+      
+      // 初始化支付交易监控任务
+      const paymentTransactionMonitor = require('../shared/services/payment-transaction-monitor.js');
+      paymentTransactionMonitor.initTasks();
     });
   } catch (error) {
     logger.error(`启动管理后台服务失败: ${error.message}`);

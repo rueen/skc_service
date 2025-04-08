@@ -253,6 +253,34 @@ async function batchApproveWithdrawals(ids, waiterId, remark = null) {
            WHERE member_id = ? AND bill_type = ? AND amount = ?`,
           [WithdrawalStatus.SUCCESS, withdrawal.member_id, BillType.WITHDRAWAL, -withdrawal.amount]
         );
+
+        // 获取提现记录的详细信息，包括提现账户信息
+        const [withdrawalDetails] = await connection.query(
+          `SELECT w.*, 
+                  wa.account, 
+                  wa.name as account_name, 
+                  wa.payment_channel_id,
+                  pc.merchant_id,
+                  pc.secret_key,
+                  pc.bank
+           FROM withdrawals w
+           LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
+           LEFT JOIN payment_channels pc ON wa.payment_channel_id = pc.id
+           WHERE w.id = ?`,
+          [id]
+        );
+
+        if (withdrawalDetails.length > 0) {
+          // 异步发起第三方代付，不等待结果，不影响审核流程
+          // 使用process.nextTick确保不阻塞主线程
+          process.nextTick(async () => {
+            try {
+              await processThirdPartyPayment(withdrawalDetails[0]);
+            } catch (error) {
+              logger.error(`提现ID ${id} 的第三方代付处理失败: ${error.message}`);
+            }
+          });
+        }
       }
     }
     
@@ -265,6 +293,112 @@ async function batchApproveWithdrawals(ids, waiterId, remark = null) {
     throw error;
   } finally {
     connection.release();
+  }
+}
+
+/**
+ * 处理第三方代付请求
+ * @param {Object} withdrawalDetail - 提现详情
+ * @returns {Promise<void>}
+ */
+async function processThirdPartyPayment(withdrawalDetail) {
+  const paymentUtil = require('../utils/payment.util');
+  const paymentTransactionModel = require('./payment-transaction.model');
+  
+  // 创建订单号
+  const orderId = paymentUtil.generateOrderId();
+  
+  try {
+    // 记录请求开始
+    logger.info(`开始处理提现ID ${withdrawalDetail.id} 的第三方代付，订单号: ${orderId}`);
+    // 创建支付交易记录
+    const requestParams = {
+      merchant_id: withdrawalDetail.merchant_id,
+      order_id: orderId,
+      amount: withdrawalDetail.amount,
+      callback_url: 'no',
+      account: withdrawalDetail.account,
+      account_name: withdrawalDetail.account_name,
+      notify_url: 'no'
+    };
+    
+    const transactionData = {
+      orderId: orderId,
+      withdrawalId: withdrawalDetail.id,
+      memberId: withdrawalDetail.member_id,
+      paymentChannelId: withdrawalDetail.payment_channel_id,
+      amount: withdrawalDetail.amount,
+      account: withdrawalDetail.account,
+      accountName: withdrawalDetail.account_name,
+      transactionStatus: 'pending',
+      requestParams: requestParams,
+      requestTime: new Date()
+    };
+    
+    // 创建交易记录
+    const transaction = await paymentTransactionModel.createTransaction(transactionData);
+    
+    // 配置API参数
+    const apiUrl = 'https://72pay.la2568.site/api/daifu';
+    
+    const paymentData = {
+      channelMerchantId: withdrawalDetail.merchant_id,
+      channelSecretKey: withdrawalDetail.secret_key,
+      apiUrl: apiUrl,
+      account: withdrawalDetail.account,
+      accountName: withdrawalDetail.account_name,
+      amount: withdrawalDetail.amount,
+      orderId: orderId
+    };
+    
+    // 调用支付API
+    const response = await paymentUtil.callPaymentAPI(paymentData);
+    
+    // 处理响应结果
+    let transactionStatus = 'pending';
+    let errorMessage = null;
+    
+    // 验证响应签名
+    const signValid = paymentUtil.verifySignature(response, withdrawalDetail.secret_key);
+    
+    if (!signValid) {
+      transactionStatus = 'failed';
+      errorMessage = '响应签名验证失败';
+      logger.error(`订单 ${orderId} 响应签名验证失败`);
+    } else if (response.code === '0' || response.code === 0) {
+      // 代付请求成功，但实际打款可能还在处理中
+      transactionStatus = 'pending';
+      logger.info(`订单 ${orderId} 代付请求成功，状态：${response.status || '处理中'}`);
+    } else {
+      // 代付请求失败
+      transactionStatus = 'failed';
+      errorMessage = response.message || '代付请求失败';
+      logger.error(`订单 ${orderId} 代付请求失败：${errorMessage}`);
+    }
+    
+    // 更新交易记录
+    await paymentTransactionModel.updateTransactionResult(orderId, {
+      transactionStatus: transactionStatus,
+      responseData: response,
+      errorMessage: errorMessage,
+      responseTime: new Date()
+    });
+    
+    logger.info(`提现ID ${withdrawalDetail.id} 的第三方代付处理完成，最终状态: ${transactionStatus}`);
+  } catch (error) {
+    // 更新交易记录为失败状态
+    try {
+      await paymentTransactionModel.updateTransactionResult(orderId, {
+        transactionStatus: 'failed',
+        errorMessage: `API调用异常: ${error.message}`,
+        responseTime: new Date()
+      });
+    } catch (updateError) {
+      logger.error(`更新交易记录失败: ${updateError.message}`);
+    }
+    
+    logger.error(`提现ID ${withdrawalDetail.id} 的第三方代付处理异常: ${error.message}`);
+    throw error;
   }
 }
 
@@ -431,4 +565,4 @@ module.exports = {
   batchRejectWithdrawals,
   exportWithdrawals,
   hasPendingWithdrawal
-}; 
+};

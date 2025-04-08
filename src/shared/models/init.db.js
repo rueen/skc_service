@@ -427,6 +427,35 @@ CREATE TABLE IF NOT EXISTS payment_channels (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='支付渠道表';
 `;
 
+// 创建支付交易记录表
+const createPaymentTransactionsTable = `
+CREATE TABLE IF NOT EXISTS payment_transactions (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '交易ID',
+  order_id varchar(64) NOT NULL COMMENT '订单号',
+  withdrawal_id bigint(20) NOT NULL COMMENT '关联的提现ID',
+  member_id bigint(20) NOT NULL COMMENT '会员ID',
+  payment_channel_id bigint(20) NOT NULL COMMENT '支付渠道ID',
+  amount decimal(10,2) NOT NULL COMMENT '交易金额',
+  account varchar(100) NOT NULL COMMENT '收款账号',
+  account_name varchar(100) NOT NULL COMMENT '收款人姓名',
+  transaction_status varchar(20) NOT NULL DEFAULT 'pending' COMMENT '交易状态：pending-处理中，success-成功，failed-失败',
+  request_params json DEFAULT NULL COMMENT '请求参数',
+  response_data json DEFAULT NULL COMMENT '响应数据',
+  error_message varchar(500) DEFAULT NULL COMMENT '错误信息',
+  request_time datetime DEFAULT NULL COMMENT '请求时间',
+  response_time datetime DEFAULT NULL COMMENT '响应时间',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_order_id (order_id),
+  KEY idx_withdrawal_id (withdrawal_id),
+  KEY idx_member_id (member_id),
+  KEY idx_payment_channel_id (payment_channel_id),
+  KEY idx_transaction_status (transaction_status),
+  KEY idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='支付交易记录表';
+`;
+
 // 执行所有SQL语句创建表
 async function initTables() {
   const connection = await pool.getConnection();
@@ -456,6 +485,7 @@ async function initTables() {
     await connection.query(createOldAccountsFbTable);
     await connection.query(createMemberOldAccountsFbTable);
     await connection.query(createPaymentChannelsTable);
+    await connection.query(createPaymentTransactionsTable);
     
     // 初始化管理员账号
     await connection.query(initAdminUser);

@@ -6,6 +6,10 @@ const withdrawalModel = require('../../shared/models/withdrawal.model');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
+const memberModel = require('../../shared/models/member.model');
+const withdrawalAccountModel = require('../../shared/models/withdrawal-account.model');
+const { WithdrawalStatus } = require('../../shared/config/enums');
+const paymentTransactionModel = require('../../shared/models/payment-transaction.model');
 
 /**
  * 获取提现记录列表
@@ -172,9 +176,132 @@ async function exportWithdrawals(req, res) {
   }
 }
 
+/**
+ * 获取提现申请的支付交易记录
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getWithdrawalTransactions(req, res) {
+  try {
+    const withdrawalId = parseInt(req.params.id);
+    
+    // 检查提现记录是否存在
+    const [withdrawalExists] = await withdrawalModel.getAllWithdrawals({ id: withdrawalId }, 1, 1);
+    if (withdrawalExists.total === 0) {
+      return responseUtil.notFound(res, '提现记录不存在');
+    }
+    
+    // 获取关联的交易记录
+    const transaction = await paymentTransactionModel.getTransactionByWithdrawalId(withdrawalId);
+    
+    if (!transaction) {
+      return responseUtil.success(res, null, '该提现申请暂无支付交易记录');
+    }
+    
+    return responseUtil.success(res, transaction);
+  } catch (error) {
+    return responseUtil.serverError(res, error.message);
+  }
+}
+
+/**
+ * 获取所有支付交易记录
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getAllTransactions(req, res) {
+  try {
+    const page = parseInt(req.query.page) || DEFAULT_PAGE;
+    const pageSize = parseInt(req.query.pageSize) || DEFAULT_PAGE_SIZE;
+    
+    // 构建筛选条件
+    const filters = {};
+    
+    if (req.query.memberId) {
+      filters.memberId = parseInt(req.query.memberId);
+    }
+    
+    if (req.query.transactionStatus) {
+      filters.transactionStatus = req.query.transactionStatus;
+    }
+    
+    if (req.query.orderId) {
+      filters.orderId = req.query.orderId;
+    }
+    
+    if (req.query.withdrawalId) {
+      filters.withdrawalId = parseInt(req.query.withdrawalId);
+    }
+    
+    if (req.query.startDate) {
+      filters.startDate = req.query.startDate;
+    }
+    
+    if (req.query.endDate) {
+      filters.endDate = req.query.endDate;
+    }
+    
+    // 获取交易记录
+    const transactions = await paymentTransactionModel.getTransactions(filters, page, pageSize);
+    
+    return responseUtil.success(res, transactions);
+  } catch (error) {
+    return responseUtil.serverError(res, error.message);
+  }
+}
+
+/**
+ * 手动重试超时的交易
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function retryTransaction(req, res) {
+  try {
+    const orderId = req.params.orderId;
+    
+    // 获取交易记录
+    const transaction = await paymentTransactionModel.getTransactionByOrderId(orderId);
+    
+    if (!transaction) {
+      return responseUtil.notFound(res, '交易记录不存在');
+    }
+    
+    // 只允许重试失败或超时的交易
+    if (transaction.transactionStatus !== 'failed') {
+      return responseUtil.badRequest(res, '只能重试失败或超时的交易');
+    }
+    
+    // 导入任务处理模块
+    const paymentTransactionMonitor = require('../../shared/tasks/payment-transaction-monitor');
+    
+    // 设置交易状态为pending
+    await paymentTransactionModel.updateTransactionResult(orderId, {
+      transactionStatus: 'pending',
+      errorMessage: '手动重试',
+      responseTime: new Date()
+    });
+    
+    // 异步查询交易状态
+    process.nextTick(async () => {
+      try {
+        await paymentTransactionMonitor.checkPendingTransactions();
+      } catch (error) {
+        console.error('重试交易处理失败:', error);
+      }
+    });
+    
+    return responseUtil.success(res, { orderId }, '交易已重新提交，正在处理中');
+  } catch (error) {
+    return responseUtil.serverError(res, error.message);
+  }
+}
+
 module.exports = {
   getWithdrawals,
   batchResolveWithdrawals,
   batchRejectWithdrawals,
-  exportWithdrawals
+  exportWithdrawals,
+  getWithdrawalTransactions,
+  getAllTransactions,
+  retryTransaction
 }; 

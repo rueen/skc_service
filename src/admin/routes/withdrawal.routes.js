@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-08 10:46:58
+ * @LastEditTime: 2025-04-08 15:39:13
  * @Description: 
  */
 /**
@@ -10,7 +10,7 @@
  * 处理提现相关的路由
  */
 const express = require('express');
-const { body, query } = require('express-validator');
+const { body, query, param } = require('express-validator');
 const withdrawalController = require('../controllers/withdrawal.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
@@ -102,6 +102,26 @@ router.get(
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.exportWithdrawals
+);
+
+// 获取提现交易记录
+router.get(
+  '/:id/transactions',
+  param('id').isInt().withMessage('提现ID必须是整数'),
+  withdrawalController.getWithdrawalTransactions
+);
+
+// 获取所有支付交易记录
+router.get(
+  '/payment-transactions',
+  withdrawalController.getAllTransactions
+);
+
+// 重试交易
+router.post(
+  '/payment-transactions/:orderId/retry',
+  param('orderId').notEmpty().withMessage('订单ID不能为空'),
+  withdrawalController.retryTransaction
 );
 
 module.exports = router; 
