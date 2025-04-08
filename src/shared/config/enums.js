@@ -111,6 +111,7 @@ const AccountAuditStatusLang = {
 // 提现状态枚举
 const WithdrawalStatus = {
   PENDING: 'pending',     // 待处理
+  PROCESSING: 'processing', // 处理中
   SUCCESS: 'success',     // 提现成功
   FAILED: 'failed'       // 提现失败
 };
@@ -119,6 +120,10 @@ const WithdrawalStatusLang = {
   [WithdrawalStatus.PENDING]: {
     'zh-CN': '待处理',
     'en-US': 'Pending'
+  },
+  [WithdrawalStatus.PROCESSING]: {
+    'zh-CN': '处理中',
+    'en-US': 'Processing'
   },
   [WithdrawalStatus.SUCCESS]: {
     'zh-CN': '提现成功',

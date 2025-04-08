@@ -9,34 +9,44 @@ const logger = require('../config/logger.config');
 
 /**
  * 生成第三方支付API签名
+ * 1. 参数名ASCII码从小到大排序（字典序）
+ * 2. 参数名区分大小写
+ * 3. 排除空值参数和sign参数
+ * 4. 最后拼接key={secretKey}
+ * 5. 对拼接字符串进行MD5计算
  * @param {Object} params - 请求参数
  * @param {string} secretKey - 密钥
  * @returns {string} - 签名值
  */
-function generateSignature(params, secretKey) {
+function generateSignature(data, secretKey) {
   try {
-    // 按键名ASCII码从小到大排序
-    const sortedKeys = Object.keys(params).sort();
+    // 过滤掉空值参数和sign参数
+    const filteredData = {};
+    for (const key in data) {
+      if (key !== 'sign' && data[key] !== undefined && data[key] !== null && data[key] !== '') {
+        // 确保数字值不会转换为科学计数法
+        if (typeof data[key] === 'number') {
+          filteredData[key] = data[key].toString();
+        } else {
+          filteredData[key] = data[key];
+        }
+      }
+    }
     
-    // 构建待签名字符串
+    // 按照ASCII码从小到大排序（字典序）
+    const sortedKeys = Object.keys(filteredData).sort();
+    
+    // 构建签名字符串：key1=value1&key2=value2&...
     let signStr = '';
     for (const key of sortedKeys) {
-      // 跳过sign字段
-      if (key !== 'sign' && params[key] !== undefined && params[key] !== null && params[key] !== '') {
-        signStr += `${key}=${params[key]}&`;
-      }
+      signStr += `${key}=${filteredData[key]}&`;
     }
     
     // 添加密钥
     signStr += `key=${secretKey}`;
     
-    // 生成签名
-    const sign = crypto.MD5(signStr).toString().toUpperCase();
-    
-    logger.debug(`签名字符串: ${signStr}`);
-    logger.debug(`生成的签名: ${sign}`);
-    
-    return sign;
+    // 使用MD5进行加密
+    return crypto.MD5(signStr).toString();
   } catch (error) {
     logger.error(`生成签名失败: ${error.message}`);
     throw error;
@@ -65,42 +75,55 @@ function generateOrderId() {
 /**
  * 调用第三方代付API
  * @param {Object} paymentData - 支付数据
- * @param {string} paymentData.channelMerchantId - 渠道商户ID
- * @param {string} paymentData.channelSecretKey - 渠道密钥
+ * @param {string} paymentData.merchant - 渠道商户ID
+ * @param {string} paymentData.secret_key - 渠道密钥
+ * @param {string} paymentData.order_id - 订单号
+ * @param {string} paymentData.bank - 银行
+ * @param {number} paymentData.total_amount - 金额
+ * @param {string} paymentData.bank_card_account - 收款账号
+ * @param {string} paymentData.bank_card_name - 收款人姓名
  * @param {string} paymentData.apiUrl - API地址
- * @param {string} paymentData.account - 收款账号
- * @param {string} paymentData.accountName - 收款人姓名
- * @param {number} paymentData.amount - 金额
- * @param {string} paymentData.orderId - 订单号
  * @returns {Promise<Object>} - API响应结果
  */
 async function callPaymentAPI(paymentData) {
   try {
     const {
-      channelMerchantId,
-      channelSecretKey,
+      merchant,
+      secret_key,
+      order_id,
+      bank,
+      total_amount,
+      bank_card_account,
+      bank_card_name,
       apiUrl,
-      account,
-      accountName,
-      amount,
-      orderId
     } = paymentData;
+    
+    // 确保amount是数字类型
+    let formattedAmount;
+    if (typeof total_amount === 'number') {
+      formattedAmount = total_amount.toFixed(2);
+    } else if (typeof total_amount === 'string') {
+      formattedAmount = parseFloat(total_amount).toFixed(2);
+    } else {
+      throw new Error(`无效的金额类型: ${typeof total_amount}`);
+    }
     
     // 构造请求参数
     const params = {
-      merchant_id: channelMerchantId,
-      order_id: orderId,
-      amount: amount.toFixed(2),
+      merchant: merchant,
+      order_id: order_id,
+      bank: bank,
+      total_amount: formattedAmount,
+      bank_card_account: bank_card_account,
+      bank_card_name: bank_card_name,
+      bank_card_remark: 'no',
       callback_url: 'no',
-      account: account,
-      account_name: accountName,
-      notify_url: 'no'
     };
     
     // 生成签名并添加到参数中
-    params.sign = generateSignature(params, channelSecretKey);
+    params.sign = generateSignature(params, secret_key);
     
-    logger.info(`开始调用第三方支付API，订单号: ${orderId}`);
+    logger.info(`开始调用第三方支付API，订单号: ${order_id}`);
     logger.debug(`支付API请求参数: ${JSON.stringify(params)}`);
     
     // 发起POST请求
@@ -131,31 +154,8 @@ async function callPaymentAPI(paymentData) {
   }
 }
 
-/**
- * 验证API响应签名
- * @param {Object} responseData - API响应数据
- * @param {string} secretKey - 密钥
- * @returns {boolean} - 签名是否有效
- */
-function verifySignature(responseData, secretKey) {
-  try {
-    if (!responseData || !responseData.sign) {
-      return false;
-    }
-    
-    const receivedSign = responseData.sign;
-    const calculatedSign = generateSignature(responseData, secretKey);
-    
-    return receivedSign === calculatedSign;
-  } catch (error) {
-    logger.error(`验证响应签名失败: ${error.message}`);
-    return false;
-  }
-}
-
 module.exports = {
   generateSignature,
   generateOrderId,
-  callPaymentAPI,
-  verifySignature
+  callPaymentAPI
 }; 

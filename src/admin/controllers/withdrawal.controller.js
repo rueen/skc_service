@@ -177,34 +177,6 @@ async function exportWithdrawals(req, res) {
 }
 
 /**
- * 获取提现申请的支付交易记录
- * @param {Object} req - 请求对象
- * @param {Object} res - 响应对象
- */
-async function getWithdrawalTransactions(req, res) {
-  try {
-    const withdrawalId = parseInt(req.params.id);
-    
-    // 检查提现记录是否存在
-    const [withdrawalExists] = await withdrawalModel.getAllWithdrawals({ id: withdrawalId }, 1, 1);
-    if (withdrawalExists.total === 0) {
-      return responseUtil.notFound(res, '提现记录不存在');
-    }
-    
-    // 获取关联的交易记录
-    const transaction = await paymentTransactionModel.getTransactionByWithdrawalId(withdrawalId);
-    
-    if (!transaction) {
-      return responseUtil.success(res, null, '该提现申请暂无支付交易记录');
-    }
-    
-    return responseUtil.success(res, transaction);
-  } catch (error) {
-    return responseUtil.serverError(res, error.message);
-  }
-}
-
-/**
  * 获取所有支付交易记录
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
@@ -272,7 +244,7 @@ async function retryTransaction(req, res) {
     }
     
     // 导入任务处理模块
-    const paymentTransactionMonitor = require('../../shared/tasks/payment-transaction-monitor');
+    const paymentTransactionMonitor = require('../../shared/services/payment-transaction-monitor');
     
     // 设置交易状态为pending
     await paymentTransactionModel.updateTransactionResult(orderId, {
@@ -281,17 +253,19 @@ async function retryTransaction(req, res) {
       responseTime: new Date()
     });
     
-    // 异步查询交易状态
+    // 异步调用专用的重试方法
     process.nextTick(async () => {
       try {
-        await paymentTransactionMonitor.checkPendingTransactions();
+        // 使用专用的重试方法处理
+        await paymentTransactionMonitor.retryTransaction(orderId);
       } catch (error) {
-        console.error('重试交易处理失败:', error);
+        logger.error(`重试交易处理失败: ${error.message}`);
       }
     });
     
     return responseUtil.success(res, { orderId }, '交易已重新提交，正在处理中');
   } catch (error) {
+    logger.error(`重试交易失败: ${error.message}`);
     return responseUtil.serverError(res, error.message);
   }
 }
@@ -301,7 +275,6 @@ module.exports = {
   batchResolveWithdrawals,
   batchRejectWithdrawals,
   exportWithdrawals,
-  getWithdrawalTransactions,
   getAllTransactions,
   retryTransaction
 }; 

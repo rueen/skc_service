@@ -232,7 +232,7 @@ async function batchApproveWithdrawals(ids, waiterId, remark = null) {
       `UPDATE withdrawals 
        SET withdrawal_status = ?, waiter_id = ?, process_time = ?, remark = ? 
        WHERE id IN (?) AND withdrawal_status = ?`,
-      [WithdrawalStatus.SUCCESS, waiterId, now, remark, ids, WithdrawalStatus.PENDING]
+      [WithdrawalStatus.PROCESSING, waiterId, now, remark, ids, WithdrawalStatus.PENDING]
     );
     
     // 批量更新关联的账单状态
@@ -251,7 +251,7 @@ async function batchApproveWithdrawals(ids, waiterId, remark = null) {
           `UPDATE bills 
            SET withdrawal_status = ? 
            WHERE member_id = ? AND bill_type = ? AND amount = ?`,
-          [WithdrawalStatus.SUCCESS, withdrawal.member_id, BillType.WITHDRAWAL, -withdrawal.amount]
+          [WithdrawalStatus.PROCESSING, withdrawal.member_id, BillType.WITHDRAWAL, -withdrawal.amount]
         );
 
         // 获取提现记录的详细信息，包括提现账户信息
@@ -313,13 +313,14 @@ async function processThirdPartyPayment(withdrawalDetail) {
     logger.info(`开始处理提现ID ${withdrawalDetail.id} 的第三方代付，订单号: ${orderId}`);
     // 创建支付交易记录
     const requestParams = {
-      merchant_id: withdrawalDetail.merchant_id,
+      merchant: withdrawalDetail.merchant_id,
       order_id: orderId,
-      amount: withdrawalDetail.amount,
-      callback_url: 'no',
-      account: withdrawalDetail.account,
-      account_name: withdrawalDetail.account_name,
-      notify_url: 'no'
+      bank: withdrawalDetail.bank,
+      total_amount: withdrawalDetail.amount,
+      bank_card_account: withdrawalDetail.account,
+      bank_card_name: withdrawalDetail.account_name,
+      bank_card_remark: 'no',
+      callback_url: 'no'
     };
     
     const transactionData = {
@@ -342,13 +343,16 @@ async function processThirdPartyPayment(withdrawalDetail) {
     const apiUrl = 'https://72pay.la2568.site/api/daifu';
     
     const paymentData = {
-      channelMerchantId: withdrawalDetail.merchant_id,
-      channelSecretKey: withdrawalDetail.secret_key,
+      merchant: withdrawalDetail.merchant_id,
+      secret_key: withdrawalDetail.secret_key,
+      order_id: orderId,
+      bank: withdrawalDetail.bank,
+      total_amount: withdrawalDetail.amount,
+      bank_card_account: withdrawalDetail.account,
+      bank_card_name: withdrawalDetail.account_name,
+      bank_card_remark: 'no',
+      callback_url: 'no',
       apiUrl: apiUrl,
-      account: withdrawalDetail.account,
-      accountName: withdrawalDetail.account_name,
-      amount: withdrawalDetail.amount,
-      orderId: orderId
     };
     
     // 调用支付API
@@ -358,21 +362,22 @@ async function processThirdPartyPayment(withdrawalDetail) {
     let transactionStatus = 'pending';
     let errorMessage = null;
     
-    // 验证响应签名
-    const signValid = paymentUtil.verifySignature(response, withdrawalDetail.secret_key);
-    
-    if (!signValid) {
-      transactionStatus = 'failed';
-      errorMessage = '响应签名验证失败';
-      logger.error(`订单 ${orderId} 响应签名验证失败`);
-    } else if (response.code === '0' || response.code === 0) {
+    if (response.code === '0' || response.code === 0) {
       // 代付请求成功，但实际打款可能还在处理中
       transactionStatus = 'pending';
       logger.info(`订单 ${orderId} 代付请求成功，状态：${response.status || '处理中'}`);
     } else {
       // 代付请求失败
       transactionStatus = 'failed';
-      errorMessage = response.message || '代付请求失败';
+      let message = null;
+      if(response.message) {
+        try {
+          message = JSON.stringify(response.message);
+        } catch (e) {
+          message = response.message;
+        }
+      }
+      errorMessage = message || '代付请求失败';
       logger.error(`订单 ${orderId} 代付请求失败：${errorMessage}`);
     }
     
@@ -385,6 +390,41 @@ async function processThirdPartyPayment(withdrawalDetail) {
     });
     
     logger.info(`提现ID ${withdrawalDetail.id} 的第三方代付处理完成，最终状态: ${transactionStatus}`);
+    
+    // 如果交易失败，更新提现记录状态为失败
+    if (transactionStatus === 'failed') {
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
+        
+        // 更新提现记录状态
+        await connection.query(
+          `UPDATE withdrawals 
+           SET withdrawal_status = ?, reject_reason = ? 
+           WHERE id = ? AND withdrawal_status = ?`,
+          [WithdrawalStatus.FAILED, errorMessage || '第三方代付失败', withdrawalDetail.id, WithdrawalStatus.PROCESSING]
+        );
+        
+        // 退还余额
+        await memberModel.updateMemberBalance(withdrawalDetail.member_id, withdrawalDetail.amount);
+        
+        // 更新账单状态
+        await connection.query(
+          `UPDATE bills 
+           SET withdrawal_status = ?, failure_reason = ? 
+           WHERE member_id = ? AND bill_type = ? AND amount = ?`,
+          [WithdrawalStatus.FAILED, errorMessage || '第三方代付失败', withdrawalDetail.member_id, BillType.WITHDRAWAL, -withdrawalDetail.amount]
+        );
+        
+        await connection.commit();
+        logger.info(`提现ID ${withdrawalDetail.id} 状态已更新为失败，余额已退还`);
+      } catch (error) {
+        await connection.rollback();
+        logger.error(`更新提现记录状态失败: ${error.message}`);
+      } finally {
+        connection.release();
+      }
+    }
   } catch (error) {
     // 更新交易记录为失败状态
     try {
@@ -393,6 +433,39 @@ async function processThirdPartyPayment(withdrawalDetail) {
         errorMessage: `API调用异常: ${error.message}`,
         responseTime: new Date()
       });
+      
+      // 同时更新提现记录为失败状态
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
+        
+        // 更新提现记录状态
+        await connection.query(
+          `UPDATE withdrawals 
+           SET withdrawal_status = ?, reject_reason = ? 
+           WHERE id = ? AND withdrawal_status = ?`,
+          [WithdrawalStatus.FAILED, `API调用异常: ${error.message}`, withdrawalDetail.id, WithdrawalStatus.PROCESSING]
+        );
+        
+        // 退还余额
+        await memberModel.updateMemberBalance(withdrawalDetail.member_id, withdrawalDetail.amount);
+        
+        // 更新账单状态
+        await connection.query(
+          `UPDATE bills 
+           SET withdrawal_status = ?, failure_reason = ? 
+           WHERE member_id = ? AND bill_type = ? AND amount = ?`,
+          [WithdrawalStatus.FAILED, `API调用异常: ${error.message}`, withdrawalDetail.member_id, BillType.WITHDRAWAL, -withdrawalDetail.amount]
+        );
+        
+        await connection.commit();
+        logger.info(`提现ID ${withdrawalDetail.id} 状态已更新为失败，余额已退还`);
+      } catch (updateError) {
+        await connection.rollback();
+        logger.error(`更新提现记录状态失败: ${updateError.message}`);
+      } finally {
+        connection.release();
+      }
     } catch (updateError) {
       logger.error(`更新交易记录失败: ${updateError.message}`);
     }

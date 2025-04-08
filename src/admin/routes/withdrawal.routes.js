@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-08 15:39:13
+ * @LastEditTime: 2025-04-08 19:02:00
  * @Description: 
  */
 /**
@@ -102,13 +102,6 @@ router.get(
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.exportWithdrawals
-);
-
-// 获取提现交易记录
-router.get(
-  '/:id/transactions',
-  param('id').isInt().withMessage('提现ID必须是整数'),
-  withdrawalController.getWithdrawalTransactions
 );
 
 // 获取所有支付交易记录

@@ -16,17 +16,52 @@ function formatPaymentTransaction(transaction) {
   if (!transaction) return null;
 
   // 转换字段名称为驼峰命名法
-  const formattedTransaction = convertToCamelCase({
-    ...transaction,
-    requestParams: transaction.request_params ? JSON.parse(transaction.request_params) : null,
-    responseData: transaction.response_data ? JSON.parse(transaction.response_data) : null,
-    requestTime: formatDateTime(transaction.request_time),
-    responseTime: formatDateTime(transaction.response_time),
-    createTime: formatDateTime(transaction.create_time),
-    updateTime: formatDateTime(transaction.update_time)
-  });
+  try {
+    let requestParams = null;
+    let responseData = null;
+    
+    if (transaction.request_params) {
+      try {
+        requestParams = JSON.parse(transaction.request_params);
+      } catch (e) {
+        requestParams = transaction.request_params; // 保留原始字符串
+      }
+    }
+    
+    if (transaction.response_data) {
+      try {
+        responseData = JSON.parse(transaction.response_data);
+      } catch (e) {
+        responseData = transaction.response_data; // 保留原始字符串
+      }
+    }
+    
+    const formattedTransaction = convertToCamelCase({
+      ...transaction,
+      requestParams: requestParams,
+      responseData: responseData,
+      requestTime: formatDateTime(transaction.request_time),
+      responseTime: formatDateTime(transaction.response_time),
+      createTime: formatDateTime(transaction.create_time),
+      updateTime: formatDateTime(transaction.update_time)
+    });
 
-  return formattedTransaction;
+    return formattedTransaction;
+  } catch (error) {
+    logger.error(`格式化交易记录失败: ${error.message}`);
+    // 返回一个基本的格式化记录，不包含可能导致错误的JSON字段
+    return {
+      id: transaction.id,
+      orderId: transaction.order_id,
+      withdrawalId: transaction.withdrawal_id,
+      memberId: transaction.member_id,
+      amount: transaction.amount,
+      transactionStatus: transaction.transaction_status,
+      createTime: formatDateTime(transaction.create_time),
+      requestTime: formatDateTime(transaction.request_time),
+      responseTime: formatDateTime(transaction.response_time)
+    };
+  }
 }
 
 /**
@@ -41,13 +76,23 @@ async function createTransaction(transactionData) {
 
     const now = new Date();
     
+    // 确保amount是数字类型
+    let formattedAmount;
+    if (typeof transactionData.amount === 'number') {
+      formattedAmount = transactionData.amount.toFixed(2);
+    } else if (typeof transactionData.amount === 'string') {
+      formattedAmount = parseFloat(transactionData.amount).toFixed(2);
+    } else {
+      throw new Error(`无效的金额类型: ${typeof transactionData.amount}`);
+    }
+
     // 准备插入数据
     const data = {
       order_id: transactionData.orderId,
       withdrawal_id: transactionData.withdrawalId,
       member_id: transactionData.memberId,
       payment_channel_id: transactionData.paymentChannelId,
-      amount: transactionData.amount,
+      amount: formattedAmount,
       account: transactionData.account,
       account_name: transactionData.accountName,
       transaction_status: transactionData.transactionStatus || 'pending',
@@ -92,10 +137,20 @@ async function updateTransactionResult(orderId, updateData) {
 
     const now = new Date();
     
+    // 确保responseData是JSON字符串
+    let responseDataStr = null;
+    if (updateData.responseData) {
+      if (typeof updateData.responseData === 'string') {
+        responseDataStr = updateData.responseData;
+      } else {
+        responseDataStr = JSON.stringify(updateData.responseData);
+      }
+    }
+    
     // 准备更新数据
     const data = {
       transaction_status: updateData.transactionStatus,
-      response_data: updateData.responseData ? JSON.stringify(updateData.responseData) : null,
+      response_data: responseDataStr,
       error_message: updateData.errorMessage,
       response_time: updateData.responseTime || now,
       update_time: now
@@ -138,29 +193,6 @@ async function getTransactionByOrderId(orderId) {
     return formatPaymentTransaction(transactions[0]);
   } catch (error) {
     logger.error(`根据订单号获取交易记录失败: ${error.message}`);
-    throw error;
-  }
-}
-
-/**
- * 根据提现ID获取交易记录
- * @param {number} withdrawalId - 提现ID
- * @returns {Promise<Object|null>} 交易记录
- */
-async function getTransactionByWithdrawalId(withdrawalId) {
-  try {
-    const [transactions] = await pool.query(
-      'SELECT * FROM payment_transactions WHERE withdrawal_id = ?',
-      [withdrawalId]
-    );
-
-    if (transactions.length === 0) {
-      return null;
-    }
-
-    return formatPaymentTransaction(transactions[0]);
-  } catch (error) {
-    logger.error(`根据提现ID获取交易记录失败: ${error.message}`);
     throw error;
   }
 }
@@ -278,7 +310,7 @@ async function markTimeoutTransactions(timeoutMinutes = 30) {
       `SELECT id, order_id FROM payment_transactions 
        WHERE transaction_status = 'pending' 
        AND request_time < ? 
-       AND (response_time IS NULL OR response_time = '')`,
+       AND response_time IS NULL`,
       [timeout]
     );
 
@@ -315,7 +347,6 @@ module.exports = {
   createTransaction,
   updateTransactionResult,
   getTransactionByOrderId,
-  getTransactionByWithdrawalId,
   getTransactions,
   markTimeoutTransactions
 }; 
