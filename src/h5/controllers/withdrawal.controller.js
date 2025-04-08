@@ -14,12 +14,12 @@ const logger = require('../../shared/config/logger.config');
  */
 async function createWithdrawalAccount(req, res) {
   try {
-    const { accountType, account, name } = req.body;
+    const { paymentChannelId, account, name } = req.body;
     const memberId = req.user.id;
     
     const accountData = {
       memberId: memberId,
-      accountType: accountType,
+      paymentChannelId: paymentChannelId,
       account,
       name
     };
@@ -41,7 +41,7 @@ async function createWithdrawalAccount(req, res) {
 async function updateWithdrawalAccount(req, res) {
   try {
     const { id } = req.params;
-    const { accountType, account, name } = req.body;
+    const { paymentChannelId, account, name } = req.body;
     const memberId = req.user.id;
     
     // 验证账户所有权
@@ -55,7 +55,7 @@ async function updateWithdrawalAccount(req, res) {
     }
     
     const accountData = {
-      accountType: accountType,
+      paymentChannelId: paymentChannelId,
       account,
       name
     };

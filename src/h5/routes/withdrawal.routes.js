@@ -22,9 +22,11 @@ router.use(rateLimiterMiddleware.apiLimiter);
 router.post(
   '/accounts',
   [
-    body('accountType')
-      .isIn(Object.values(WithdrawalAccountType))
-      .withMessage('无效的账户类型'),
+    body('paymentChannelId')
+      .notEmpty()
+      .withMessage('支付渠道不能为空')
+      .isInt()
+      .withMessage('无效的支付渠道ID'),
     body('account')
       .notEmpty()
       .withMessage('账号不能为空')
@@ -49,9 +51,11 @@ router.put(
   '/accounts/:id',
   [
     param('id').isInt().withMessage('无效的账户ID'),
-    body('accountType')
-      .isIn(Object.values(WithdrawalAccountType))
-      .withMessage('无效的账户类型'),
+    body('paymentChannelId')
+      .notEmpty()
+      .withMessage('支付渠道不能为空')
+      .isInt()
+      .withMessage('无效的支付渠道ID'),
     body('account')
       .notEmpty()
       .withMessage('账号不能为空')
