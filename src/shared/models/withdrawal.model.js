@@ -112,7 +112,7 @@ async function getWithdrawalsByMemberId(memberId, options = {}) {
     
     // 查询提现记录列表
     const [withdrawals] = await pool.query(
-      `SELECT w.*, wa.account_type, wa.account, wa.name
+      `SELECT w.*, wa.payment_channel_id, wa.account, wa.name
        FROM withdrawals w
        LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
        ${whereClause}
@@ -185,7 +185,7 @@ async function getAllWithdrawals(options = {}) {
     
     // 查询提现记录列表
     const [withdrawals] = await pool.query(
-      `SELECT w.*, wa.account_type, wa.account, wa.name, m.nickname, m.account
+      `SELECT w.*, wa.payment_channel_id, wa.account, wa.name, m.nickname, m.account
        FROM withdrawals w
        LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
        LEFT JOIN members m ON w.member_id = m.id
@@ -336,7 +336,7 @@ async function exportWithdrawals(filters = {}) {
     let baseQuery = `
       SELECT w.*, 
              m.nickname,
-             wa.account_type as withdrawal_account_type,
+             wa.payment_channel_id,
              wa.account as withdrawal_account,
              wa.name as withdrawal_name
       FROM withdrawals w

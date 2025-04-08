@@ -135,7 +135,7 @@ async function exportWithdrawals(req, res) {
     // CSV 表头
     const headers = [
       'ID', '会员ID', '会员昵称', '金额', '提现状态', '账单编号', 
-      '提现账户类型', '提现账户', '提现账户姓名', '拒绝原因', '审核员ID', 
+      '支付渠道ID', '提现账户', '提现账户姓名', '拒绝原因', '审核员ID', 
       '处理时间', '备注', '创建时间', '更新时间'
     ];
     
@@ -151,7 +151,7 @@ async function exportWithdrawals(req, res) {
         item.amount || '',
         (item.withdrawalStatus || '').replace(/,/g, '，'),
         (item.billNo || '').replace(/,/g, '，'),
-        (item.withdrawalAccountType || '').replace(/,/g, '，'),
+        item.paymentChannelId || '',
         (item.withdrawalAccount || '').replace(/,/g, '，'),
         (item.withdrawalName || '').replace(/,/g, '，'),
         (item.rejectReason || '').replace(/,/g, '，'),
