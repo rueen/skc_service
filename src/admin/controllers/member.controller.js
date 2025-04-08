@@ -11,6 +11,7 @@ const groupModel = require('../../shared/models/group.model');
 const inviteModel = require('../../shared/models/invite.model');
 const taskStatsModel = require('../../shared/models/task-stats.model');
 const memberBalanceModel = require('../../shared/models/member-balance.model');
+const withdrawalAccountModel = require('../../shared/models/withdrawal-account.model');
 
 /**
  * 获取会员列表
@@ -499,6 +500,28 @@ async function getMemberBalance(req, res) {
   }
 }
 
+/**
+ * 获取会员提现账户列表
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getWithdrawalAccounts(req, res) {
+  try {
+    const { id: memberId } = req.params;
+    
+    if (!memberId) {
+      return responseUtil.badRequest(res, '会员ID不能为空');
+    }
+    
+    const accounts = await withdrawalAccountModel.getWithdrawalAccountsByMemberId(parseInt(memberId, 10));
+    
+    return responseUtil.success(res, accounts);
+  } catch (error) {
+    logger.error(`获取会员提现账户列表失败: ${error.message}`);
+    return responseUtil.serverError(res, '获取会员提现账户列表失败');
+  }
+}
+
 module.exports = {
   list,
   getDetail,
@@ -509,5 +532,6 @@ module.exports = {
   getTaskStats,
   grantReward,
   deductReward,
-  getMemberBalance
+  getMemberBalance,
+  getWithdrawalAccounts
 }; 

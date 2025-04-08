@@ -246,6 +246,25 @@ router.get(
 );
 
 /**
+ * @route GET /api/admin/members/:id/withdrawal-accounts
+ * @desc 获取指定会员的提现账户列表
+ * @access Private (需要 member:view 权限)
+ */
+router.get(
+  '/:id/withdrawal-accounts',
+  authMiddleware.hasPermission('member:view'),
+  [
+    param('id')
+      .notEmpty()
+      .withMessage('会员ID不能为空')
+      .isInt()
+      .withMessage('会员ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.getWithdrawalAccounts
+);
+
+/**
  * @route POST /api/admin/members/grant-reward
  * @desc 发放奖励给会员
  * @access Private (需要 member:edit 权限)
