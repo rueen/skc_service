@@ -99,7 +99,11 @@ async function updateWithdrawalAccount(id, accountData) {
 async function getWithdrawalAccountsByMemberId(memberId) {
   try {
     const [accounts] = await pool.query(
-      `SELECT * FROM withdrawal_accounts WHERE member_id = ? ORDER BY create_time DESC`,
+      `SELECT wa.*, pc.name as payment_channel_name 
+       FROM withdrawal_accounts wa
+       LEFT JOIN payment_channels pc ON wa.payment_channel_id = pc.id
+       WHERE wa.member_id = ? 
+       ORDER BY wa.create_time DESC`,
       [memberId]
     );
     
