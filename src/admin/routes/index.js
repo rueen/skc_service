@@ -23,6 +23,7 @@ const billRoutes = require('./bill.routes');
 const withdrawalRoutes = require('./withdrawal.routes');
 const submittedTaskRoutes = require('./submitted-task.routes');
 const oldAccountsFbRoutes = require('./old-accounts-fb.routes');
+const paymentChannelRoutes = require('./payment-channel.routes');
 
 const router = express.Router();
 
@@ -63,5 +64,8 @@ router.use(`/system-configs`, systemConfigRoutes);
 
 // 老账号管理路由
 router.use(`/old-accounts-fb`, oldAccountsFbRoutes);
+
+// 支付渠道管理路由
+router.use(`/payment-channels`, paymentChannelRoutes);
 
 module.exports = router; 

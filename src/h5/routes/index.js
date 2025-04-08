@@ -23,6 +23,7 @@ const withdrawalRoutes = require('./withdrawal.routes');
 const taskSubmitRoutes = require('./task-submit.routes');
 const notificationRoutes = require('./notification.routes');
 const systemConfigRoutes = require('./system-config.routes');
+const paymentChannelRoutes = require('./payment-channel.routes');
 
 const router = express.Router();
 
@@ -64,5 +65,8 @@ router.use('/notifications', notificationRoutes);
 
 // 系统配置路由
 router.use('/system-configs', systemConfigRoutes);
+
+// 支付渠道路由
+router.use('/payment-channels', paymentChannelRoutes);
 
 module.exports = router; 

@@ -1,0 +1,113 @@
+/**
+ * 支付渠道管理路由
+ */
+const express = require('express');
+const paymentChannelController = require('../controllers/payment-channel.controller');
+const validatorUtil = require('../../shared/utils/validator.util');
+const authMiddleware = require('../middlewares/auth.middleware');
+const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
+const { body, param } = require('express-validator');
+
+const router = express.Router();
+
+// 所有路由都需要认证
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
+// 所有路由都需要支付渠道管理权限
+router.use(authMiddleware.hasPermission('finance:paymentChannels'));
+
+/**
+ * @route GET /api/admin/payment-channels
+ * @desc 获取支付渠道列表
+ * @access Private - Finance:PaymentChannels
+ */
+router.get(
+  '/',
+  paymentChannelController.getPaymentChannels
+);
+
+/**
+ * @route POST /api/admin/payment-channels
+ * @desc 添加支付渠道
+ * @access Private - Finance:PaymentChannels
+ */
+router.post(
+  '/',
+  [
+    body('name')
+      .notEmpty()
+      .withMessage('支付渠道名称不能为空')
+      .isLength({ max: 100 })
+      .withMessage('支付渠道名称长度不能超过100个字符'),
+    body('bank')
+      .notEmpty()
+      .withMessage('银行名称不能为空')
+      .isLength({ max: 100 })
+      .withMessage('银行名称长度不能超过100个字符'),
+    body('merchantId')
+      .notEmpty()
+      .withMessage('商户ID不能为空')
+      .isLength({ max: 100 })
+      .withMessage('商户ID长度不能超过100个字符'),
+    body('secretKey')
+      .notEmpty()
+      .withMessage('密钥不能为空')
+      .isLength({ max: 255 })
+      .withMessage('密钥长度不能超过255个字符')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  paymentChannelController.addPaymentChannel
+);
+
+/**
+ * @route PUT /api/admin/payment-channels/:id
+ * @desc 更新支付渠道
+ * @access Private - Finance:PaymentChannels
+ */
+router.put(
+  '/:id',
+  [
+    param('id')
+      .isInt()
+      .withMessage('ID必须是整数'),
+    body('name')
+      .notEmpty()
+      .withMessage('支付渠道名称不能为空')
+      .isLength({ max: 100 })
+      .withMessage('支付渠道名称长度不能超过100个字符'),
+    body('bank')
+      .notEmpty()
+      .withMessage('银行名称不能为空')
+      .isLength({ max: 100 })
+      .withMessage('银行名称长度不能超过100个字符'),
+    body('merchantId')
+      .notEmpty()
+      .withMessage('商户ID不能为空')
+      .isLength({ max: 100 })
+      .withMessage('商户ID长度不能超过100个字符'),
+    body('secretKey')
+      .optional()
+      .isLength({ max: 255 })
+      .withMessage('密钥长度不能超过255个字符')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  paymentChannelController.updatePaymentChannel
+);
+
+/**
+ * @route DELETE /api/admin/payment-channels/:id
+ * @desc 删除支付渠道
+ * @access Private - Finance:PaymentChannels
+ */
+router.delete(
+  '/:id',
+  [
+    param('id')
+      .isInt()
+      .withMessage('ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  paymentChannelController.deletePaymentChannel
+);
+
+module.exports = router; 

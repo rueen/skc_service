@@ -411,6 +411,22 @@ CREATE TABLE IF NOT EXISTS notifications (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知表';
 `;
 
+// 创建支付渠道表
+const createPaymentChannelsTable = `
+CREATE TABLE IF NOT EXISTS payment_channels (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '支付渠道ID',
+  name varchar(100) NOT NULL COMMENT '支付渠道名称',
+  bank varchar(100) NOT NULL COMMENT '银行名称',
+  merchant_id varchar(100) NOT NULL COMMENT '商户ID',
+  secret_key varchar(255) NOT NULL COMMENT '密钥',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  KEY idx_name (name),
+  KEY idx_bank (bank)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='支付渠道表';
+`;
+
 // 执行所有SQL语句创建表
 async function initTables() {
   const connection = await pool.getConnection();
@@ -439,6 +455,7 @@ async function initTables() {
     await connection.query(createNotificationsTable);
     await connection.query(createOldAccountsFbTable);
     await connection.query(createMemberOldAccountsFbTable);
+    await connection.query(createPaymentChannelsTable);
     
     // 初始化管理员账号
     await connection.query(initAdminUser);
