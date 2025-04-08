@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 19:32:41
+ * @LastEditTime: 2025-04-08 10:46:58
  * @Description: 
  */
 /**
@@ -47,7 +47,7 @@ router.get(
 );
 
 /**
- * @route POST /api/admin/withdrawal/batch-approve
+ * @route POST /api/admin/withdrawals/batch-approve
  * @desc 批量审核通过提现申请
  * @access Private (需要 finance:withdrawal 权限)
  */
@@ -63,7 +63,7 @@ router.post(
 );
 
 /**
- * @route POST /api/admin/withdrawal/batch-reject
+ * @route POST /api/admin/withdrawals/batch-reject
  * @desc 批量拒绝提现申请
  * @access Private (需要 finance:withdrawal 权限)
  */

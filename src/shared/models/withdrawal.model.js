@@ -25,7 +25,8 @@ function formatWithdrawal(withdrawal) {
     ...withdrawal,
     processTime: formatDateTime(withdrawal.process_time),
     createTime: formatDateTime(withdrawal.create_time),
-    updateTime: formatDateTime(withdrawal.update_time)
+    updateTime: formatDateTime(withdrawal.update_time),
+    paymentChannelName: withdrawal.payment_channel_name
   });
   
   return formattedWithdrawal;
@@ -110,11 +111,12 @@ async function getWithdrawalsByMemberId(memberId, options = {}) {
     );
     const total = countResult[0].total;
     
-    // 查询提现记录列表
+    // 查询提现记录列表，增加支付渠道名称
     const [withdrawals] = await pool.query(
-      `SELECT w.*, wa.payment_channel_id, wa.account, wa.name
+      `SELECT w.*, wa.payment_channel_id, wa.account, wa.name, pc.name as payment_channel_name
        FROM withdrawals w
        LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
+       LEFT JOIN payment_channels pc ON wa.payment_channel_id = pc.id
        ${whereClause}
        ORDER BY w.create_time DESC
        LIMIT ?, ?`,
@@ -183,12 +185,13 @@ async function getAllWithdrawals(options = {}) {
     );
     const total = countResult[0].total;
     
-    // 查询提现记录列表
+    // 查询提现记录列表，增加关联payment_channels表获取支付渠道名称
     const [withdrawals] = await pool.query(
-      `SELECT w.*, wa.payment_channel_id, wa.account, wa.name, m.nickname, m.account
+      `SELECT w.*, wa.payment_channel_id, wa.account, wa.name, m.nickname, m.account, pc.name as payment_channel_name
        FROM withdrawals w
        LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
        LEFT JOIN members m ON w.member_id = m.id
+       LEFT JOIN payment_channels pc ON wa.payment_channel_id = pc.id
        ${whereClause}
        ORDER BY w.create_time DESC
        LIMIT ?, ?`,
