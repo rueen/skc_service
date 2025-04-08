@@ -342,14 +342,14 @@ const createWithdrawalAccountsTable = `
 CREATE TABLE IF NOT EXISTS withdrawal_accounts (
   id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '账户ID，主键，自增',
   member_id bigint(20) NOT NULL COMMENT '会员ID，外键关联members表',
-  account_type varchar(20) NOT NULL COMMENT '账户类型：maya-Maya，gcash-GCash，alipay-Alipay',
+  payment_channel_id bigint(20) DEFAULT NULL COMMENT '支付渠道ID，外键关联payment_channels表',
   account varchar(100) NOT NULL COMMENT '账号',
   name varchar(50) NOT NULL COMMENT '姓名',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
   KEY idx_member_id (member_id),
-  KEY idx_account_type (account_type)
+  KEY idx_payment_channel_id (payment_channel_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='提现账户表';
 `;
 
