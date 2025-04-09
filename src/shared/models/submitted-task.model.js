@@ -347,15 +347,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       
       const formattedItem = formatSubmittedTask(row);
       // 添加列表中特有的字段
-      formattedItem.channelName = row.channel_name;
-      formattedItem.channelIcon = row.channel_icon;
-      formattedItem.memberNickname = row.nickname;
-      formattedItem.groupId = row.group_id;
-      formattedItem.groupName = row.group_name;
-      formattedItem.isGroupOwner = !!row.is_group_owner;
       formattedItem.completedTaskCount = parseInt(row.completed_task_count || 0, 10);
-      formattedItem.preWaiterName = row.pre_waiter_name || '';
-      formattedItem.waiterName = row.waiter_name || '';
       
       return formattedItem;
     });
