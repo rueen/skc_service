@@ -1,13 +1,16 @@
 /*
  * @Author: diaochan
- * @Date: 2025-03-25 10:15:13
+ * @Date: 2025-03-15 15:43:57
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 18:50:24
+ * @LastEditTime: 2025-03-15 19:32:49
  * @Description: 
  */
 /**
  * H5端服务入口文件
  */
+// 加载环境变量（放在最顶部，确保在所有模块导入前加载）
+require('dotenv').config({ path: '.env.h5' });
+
 const createApp = require('../shared/app-common');
 const { initDatabase } = require('../shared/models/db');
 const h5Routes = require('./routes');
@@ -17,9 +20,6 @@ const logger = require('../shared/config/logger.config');
 const errorHandler = require('../shared/middlewares/errorHandler.middleware');
 const { startScheduler } = require('../shared/services/task-scheduler.service');
 const { taskStatusUpdateConfig, schedulerServiceConfig } = require('../shared/config/scheduler.config');
-
-// 加载环境变量
-require('dotenv').config({ path: '.env.h5' });
 
 // 设置端口
 const PORT = process.env.H5_PORT || 3001;
@@ -61,7 +61,7 @@ async function startServer() {
     // 启动服务器
     app.listen(PORT, () => {
       logger.info(`H5端服务已启动，监听端口 ${PORT}`);
-      logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`环境: ${process.env.NODE_ENV}`);
       
       if (process.env.NODE_ENV !== 'production') {
         logger.info('开发模式: H5端API可在 http://localhost:3001/api/h5 访问');

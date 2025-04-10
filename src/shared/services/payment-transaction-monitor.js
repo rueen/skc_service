@@ -61,7 +61,7 @@ async function checkPendingTransactions() {
         }
         
         // 查询API地址
-        const apiUrl = 'https://72pay.la2568.site/api/query';
+        const apiUrl = process.env.PAYMENT_QUERY_API_URL;
         
         // 调用查询API
         const response = await paymentUtil.callPaymentAPI({
@@ -140,7 +140,7 @@ async function retryTransaction(orderId) {
     }
     
     // 查询API地址
-    const apiUrl = 'https://72pay.la2568.site/api/query';
+    const apiUrl = process.env.PAYMENT_QUERY_API_URL;
     
     // 调用查询API
     const response = await paymentUtil.callPaymentAPI({

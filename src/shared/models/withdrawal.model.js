@@ -340,7 +340,7 @@ async function processThirdPartyPayment(withdrawalDetail) {
     const transaction = await paymentTransactionModel.createTransaction(transactionData);
     
     // 配置API参数
-    const apiUrl = 'https://72pay.la2568.site/api/daifu';
+    const apiUrl = process.env.PAYMENT_API_URL;
     
     const paymentData = {
       merchant: withdrawalDetail.merchant_id,

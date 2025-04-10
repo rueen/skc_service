@@ -23,7 +23,7 @@ const logDirectory = path.join(process.cwd(), 'logs');
 
 // 创建日志记录器
 const logger = createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL,
   format: combine(
     timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     logFormat

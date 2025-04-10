@@ -1,13 +1,13 @@
 /*
  * @Author: diaochan
- * @Date: 2025-03-25 18:15:53
+ * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-08 14:53:40
+ * @LastEditTime: 2025-04-10 11:21:39
  * @Description: 
  */
-/**
- * 管理后台服务入口文件
- */
+// 加载环境变量（放在最顶部，确保在所有模块导入前加载）
+require('dotenv').config({ path: '.env.admin' });
+
 const createApp = require('../shared/app-common');
 const { initDatabase } = require('../shared/models/db');
 const { initTables } = require('../shared/models/init.db');
@@ -19,11 +19,8 @@ const errorHandler = require('../shared/middlewares/errorHandler.middleware');
 const { startScheduler } = require('../shared/services/task-scheduler.service');
 const { taskStatusUpdateConfig, schedulerServiceConfig } = require('../shared/config/scheduler.config');
 
-// 加载环境变量
-require('dotenv').config({ path: '.env.admin' });
-
-// 设置端口
-const PORT = process.env.ADMIN_PORT || 3002;
+// 设置服务器端口
+const PORT = process.env.ADMIN_PORT;
 
 // 创建管理后台应用
 const app = createApp({
@@ -68,8 +65,9 @@ async function startServer() {
     
     // 启动服务器
     app.listen(PORT, () => {
-      logger.info(`管理后台服务已启动，监听端口 ${PORT}`);
-      logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`管理后台服务器启动成功`);
+      logger.info(`端口: ${PORT}`);
+      logger.info(`环境: ${process.env.NODE_ENV}`);
       
       if (process.env.NODE_ENV !== 'production') {
         logger.info('开发模式: 管理后台API可在 http://localhost:3002/api/admin 访问');
