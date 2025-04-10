@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 15:43:57
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-15 19:32:49
+ * @LastEditTime: 2025-04-10 14:04:46
  * @Description: 
  */
 /**
@@ -28,7 +28,7 @@ const PORT = process.env.H5_PORT || 3001;
 const app = createApp({
   appName: 'h5',
   corsOrigins: process.env.NODE_ENV === 'production' 
-    ? ['https://h5.example.com'] 
+    ? ['https://m.rueen.cn', 'http://m.rueen.cn']
     : '*'
 });
 
