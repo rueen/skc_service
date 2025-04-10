@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 15:44:59
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-15 15:58:39
+ * @LastEditTime: 2025-04-10 14:01:49
  * @Description: 
  */
 /**
@@ -15,8 +15,6 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
-const errorHandler = require('./middlewares/errorHandler.middleware');
-const logger = require('./config/logger.config');
 
 /**
  * 创建一个配置好的Express应用
