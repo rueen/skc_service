@@ -15,6 +15,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
+const FileStreamRotator = require('file-stream-rotator');
 
 /**
  * 创建一个配置好的Express应用
@@ -61,19 +62,22 @@ function createApp(options = {}) {
   }, express.static(path.join(process.cwd(), 'uploads')));
   
   // 日志中间件
-  // 在生产环境中将日志写入文件
+  // 确保日志目录存在
+  const logDirectory = path.join(process.cwd(), 'logs');
+  fs.existsSync(logDirectory) || fs.mkdirSync(logDirectory);
+  
+  // 根据环境配置日志
   if (process.env.NODE_ENV === 'production') {
-    // 确保日志目录存在
-    const logDirectory = path.join(process.cwd(), 'logs');
-    fs.existsSync(logDirectory) || fs.mkdirSync(logDirectory);
+    // 在生产环境中使用日志轮换
+    const accessLogStream = FileStreamRotator.getStream({
+      date_format: 'YYYY-MM-DD',
+      filename: path.join(logDirectory, `${appName}-access-%DATE%.log`),
+      frequency: 'daily',
+      verbose: false,
+      max_logs: '14d',
+      size: '20m'
+    });
     
-    // 创建日志写入流
-    const accessLogStream = fs.createWriteStream(
-      path.join(logDirectory, `${appName}-access.log`),
-      { flags: 'a' }
-    );
-    
-    // 使用combined格式并写入文件
     app.use(morgan('combined', { stream: accessLogStream }));
   } else {
     // 在开发环境中使用dev格式并输出到控制台

@@ -11,6 +11,7 @@
     "start:all": "concurrently \"npm run start:admin\" \"npm run start:h5\"",
     "dev:all": "concurrently \"npm run dev:admin\" \"npm run dev:h5\"",
     "migrate": "node scripts/run-migrations.js",
+    "clean-logs": "node src/shared/utils/log-cleaner.util.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -26,6 +27,7 @@
     "express": "^4.19.2",
     "express-rate-limit": "^7.2.0",
     "express-validator": "^7.0.1",
+    "file-stream-rotator": "^1.0.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
@@ -34,6 +36,7 @@
     "node-cron": "^3.0.3",
     "uuid": "^11.1.0",
     "winston": "^3.12.0",
+    "winston-daily-rotate-file": "^5.0.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

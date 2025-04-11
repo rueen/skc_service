@@ -38,7 +38,27 @@ const taskStatusUpdateConfig = {
   }
 };
 
+// 日志清理任务配置
+const logCleanupConfig = {
+  // 开发环境配置：每天凌晨2点执行
+  development: {
+    schedule: '0 0 2 * * *',
+    runImmediately: false
+  },
+  // 生产环境配置：每天凌晨2点执行
+  production: {
+    schedule: '0 0 2 * * *',
+    runImmediately: false
+  },
+  // 测试环境配置：每天凌晨2点执行
+  test: {
+    schedule: '0 0 2 * * *',
+    runImmediately: false
+  }
+};
+
 module.exports = {
   taskStatusUpdateConfig,
-  schedulerServiceConfig
+  schedulerServiceConfig,
+  logCleanupConfig
 }; 

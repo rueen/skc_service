@@ -17,7 +17,8 @@ const { router: sharedRoutes, setAppType } = require('../shared/routes');
 const logger = require('../shared/config/logger.config');
 const errorHandler = require('../shared/middlewares/errorHandler.middleware');
 const { startScheduler } = require('../shared/services/task-scheduler.service');
-const { taskStatusUpdateConfig, schedulerServiceConfig } = require('../shared/config/scheduler.config');
+const { startLogCleanupScheduler } = require('../shared/services/log-cleaner.service');
+const { taskStatusUpdateConfig, schedulerServiceConfig, logCleanupConfig } = require('../shared/config/scheduler.config');
 
 // 设置服务器端口
 const PORT = process.env.ADMIN_PORT;
@@ -45,6 +46,9 @@ app.use(errorHandler.notFoundHandler);
 
 // 添加全局错误处理中间件
 app.use(errorHandler.errorHandler);
+
+// 注册关闭时的清理逻辑
+setupShutdownHandlers(app);
 
 // 初始化数据库并启动服务器
 async function startServer() {
@@ -91,6 +95,20 @@ async function startServer() {
         } catch (error) {
           logger.error(`❌ 任务状态更新定时任务启动时发生错误: ${error.message}`);
         }
+        
+        // 启动日志清理定时任务
+        const logCleanupSchedulerConfig = require('../shared/config/scheduler.config').logCleanupConfig[env] || 
+                                         require('../shared/config/scheduler.config').logCleanupConfig.development;
+        
+        logger.info(`尝试启动日志清理定时任务，环境: ${env}，调度表达式: ${logCleanupSchedulerConfig.schedule}`);
+        
+        const logCleanupScheduler = startLogCleanupScheduler(logCleanupSchedulerConfig);
+        
+        if (logCleanupScheduler) {
+          logger.info(`✅ 日志清理定时任务已成功启动，环境: ${env}，调度周期: ${logCleanupSchedulerConfig.schedule}`);
+        } else {
+          logger.error(`❌ 日志清理定时任务启动失败`);
+        }
       } else {
         logger.info(`任务状态更新定时任务配置为在 ${schedulerServiceConfig.taskStatusUpdateService} 服务中运行，不在此实例中启动`);
       }
@@ -106,4 +124,9 @@ async function startServer() {
 }
 
 // 启动服务器
-startServer(); 
+startServer();
+
+// 设置关闭处理程序
+function setupShutdownHandlers(app) {
+  // ... existing code ...
+} 
