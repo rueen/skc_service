@@ -14,7 +14,7 @@ const authUtil = require('../../shared/utils/auth.util');
  */
 async function login(req, res) {
   try {
-    const { loginType, memberAccount, areaCode = '86', password, inviteCode } = req.body;
+    const { loginType, memberAccount, areaCode = null, password, inviteCode } = req.body;
     
     if (!memberAccount) {
       return responseUtil.badRequest(res, '账号不能为空');
@@ -84,6 +84,7 @@ async function login(req, res) {
       // 根据登录类型设置 phone 或 email 字段
       if (loginType === 'phone') {
         memberData.phone = memberAccount;
+        memberData.areaCode = areaCode; // 添加区号字段
       } else if (loginType === 'email') {
         memberData.email = memberAccount;
       }
@@ -129,6 +130,19 @@ async function login(req, res) {
       // 检查用户状态
       if (member.status === 0) {
         return responseUtil.error(res, '用户已被禁用');
+      }
+      
+      // 如果是手机号登录，更新区号
+      if (loginType === 'phone' && areaCode) {
+        try {
+          await memberModel.update({
+            id: member.id,
+            areaCode: areaCode
+          });
+        } catch (updateError) {
+          logger.error(`更新用户区号失败: ${updateError.message}`);
+          // 继续登录流程，不因更新区号失败而中断
+        }
       }
       
       // 生成JWT令牌

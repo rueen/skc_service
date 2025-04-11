@@ -181,6 +181,7 @@ CREATE TABLE IF NOT EXISTS members (
   occupation varchar(20) DEFAULT NULL COMMENT '职业：housewife-宝妈，freelancer-自由职业，student-学生',
   invite_code varchar(10) NOT NULL COMMENT '邀请码',
   phone varchar(20) DEFAULT NULL COMMENT '手机号',
+  area_code varchar(10) DEFAULT NULL COMMENT '手机区号',
   email varchar(100) DEFAULT NULL COMMENT '邮箱',
   avatar varchar(255) DEFAULT NULL COMMENT '头像URL',
   gender tinyint(1) DEFAULT 2 COMMENT '性别：0-男，1-女，2-保密',

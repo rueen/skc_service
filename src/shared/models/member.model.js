@@ -338,8 +338,8 @@ async function create(memberData) {
     // 创建会员
     const [result] = await connection.query(
       `INSERT INTO members 
-       (nickname, account, password, inviter_id, occupation, invite_code, phone, email, avatar, gender, telegram, register_source)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (nickname, account, password, inviter_id, occupation, invite_code, phone, area_code, email, avatar, gender, telegram, register_source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         memberData.memberNickname,
         memberData.memberAccount,
@@ -348,6 +348,7 @@ async function create(memberData) {
         memberData.occupation || null,
         inviteCode,
         memberData.phone || null,
+        memberData.areaCode || null, // 默认为null
         memberData.email || null,
         memberData.avatar || null,
         memberData.gender !== undefined ? memberData.gender : 2, // 默认为保密
@@ -456,9 +457,24 @@ async function update(memberData) {
       updateFields.push('password_changed_time = NOW()');
     }
     
+    if (memberData.inviterId !== undefined) {
+      updateFields.push('inviter_id = ?');
+      params.push(memberData.inviterId);
+    }
+    
+    if (memberData.occupation !== undefined) {
+      updateFields.push('occupation = ?');
+      params.push(memberData.occupation);
+    }
+    
     if (memberData.phone !== undefined) {
       updateFields.push('phone = ?');
       params.push(memberData.phone);
+    }
+    
+    if (memberData.areaCode !== undefined) {
+      updateFields.push('area_code = ?');
+      params.push(memberData.areaCode);
     }
     
     if (memberData.email !== undefined) {
@@ -479,16 +495,6 @@ async function update(memberData) {
     if (memberData.telegram !== undefined) {
       updateFields.push('telegram = ?');
       params.push(memberData.telegram);
-    }
-    
-    if (memberData.inviterId !== undefined) {
-      updateFields.push('inviter_id = ?');
-      params.push(memberData.inviterId);
-    }
-    
-    if (memberData.occupation !== undefined) {
-      updateFields.push('occupation = ?');
-      params.push(memberData.occupation);
     }
     
     if (memberData.registerSource !== undefined) {
