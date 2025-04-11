@@ -13,15 +13,21 @@ const TaskStatus = {
 const TaskStatusLang = {
   [TaskStatus.NOT_STARTED]: {
     'zh-CN': '未开始',
-    'en-US': 'Not Started'
+    'en-US': 'Not Started',
+    'zh-TW': '未開始',
+    'tl-PH': 'Hindi Pa Nagsisimula'
   },
   [TaskStatus.PROCESSING]: {
     'zh-CN': '进行中',
-    'en-US': 'Processing'
+    'en-US': 'Processing',
+    'zh-TW': '進行中',
+    'tl-PH': 'Nagpoproseso'
   },
   [TaskStatus.ENDED]: {
     'zh-CN': '已结束',
-    'en-US': 'Ended'
+    'en-US': 'Ended',
+    'zh-TW': '已結束',
+    'tl-PH': 'Natapos Na'
   }
 };
 
@@ -34,11 +40,15 @@ const TaskType = {
 const TaskTypeLang = {
   [TaskType.IMAGE_TEXT]: {
     'zh-CN': '图文',
-    'en-US': 'Image & Text'
+    'en-US': 'Image & Text',
+    'zh-TW': '圖文',
+    'tl-PH': 'Larawan at Teksto'
   },
   [TaskType.VIDEO]: {
     'zh-CN': '视频',
-    'en-US': 'Video'
+    'en-US': 'Video',
+    'zh-TW': '視頻',
+    'tl-PH': 'Bidyo'
   }
 };
 
@@ -52,15 +62,21 @@ const TaskAuditStatus = {
 const TaskAuditStatusLang = {
   [TaskAuditStatus.PENDING]: {
     'zh-CN': '待审核',
-    'en-US': 'Pending'
+    'en-US': 'Pending',
+    'zh-TW': '待審核',
+    'tl-PH': 'Nakabinbin'
   },
   [TaskAuditStatus.APPROVED]: {
     'zh-CN': '已通过',
-    'en-US': 'Approved'
+    'en-US': 'Approved',
+    'zh-TW': '已通過',
+    'tl-PH': 'Naaprubahan'
   },
   [TaskAuditStatus.REJECTED]: {
     'zh-CN': '已拒绝',
-    'en-US': 'Rejected'
+    'en-US': 'Rejected',
+    'zh-TW': '已拒絕',
+    'tl-PH': 'Tinanggihan'
   }
 };
 
@@ -74,15 +90,21 @@ const TaskPreAuditStatus = {
 const TaskPreAuditStatusLang = {
   [TaskPreAuditStatus.PENDING]: {
     'zh-CN': '待审核',
-    'en-US': 'Pending'
+    'en-US': 'Pending',
+    'zh-TW': '待審核',
+    'tl-PH': 'Nakabinbin'
   },
   [TaskPreAuditStatus.APPROVED]: {
     'zh-CN': '已通过',
-    'en-US': 'Approved'
+    'en-US': 'Approved',
+    'zh-TW': '已通過',
+    'tl-PH': 'Naaprubahan'
   },
   [TaskPreAuditStatus.REJECTED]: {
     'zh-CN': '已拒绝',
-    'en-US': 'Rejected'
+    'en-US': 'Rejected',
+    'zh-TW': '已拒絕',
+    'tl-PH': 'Tinanggihan'
   }
 };
 
@@ -96,15 +118,21 @@ const AccountAuditStatus = {
 const AccountAuditStatusLang = {
   [AccountAuditStatus.PENDING]: {
     'zh-CN': '待审核',
-    'en-US': 'Pending'
+    'en-US': 'Pending',
+    'zh-TW': '待審核',
+    'tl-PH': 'Nakabinbin'
   },
   [AccountAuditStatus.APPROVED]: {
     'zh-CN': '已通过',
-    'en-US': 'Approved'
+    'en-US': 'Approved',
+    'zh-TW': '已通過',
+    'tl-PH': 'Naaprubahan'
   },
   [AccountAuditStatus.REJECTED]: {
     'zh-CN': '已拒绝',
-    'en-US': 'Rejected'
+    'en-US': 'Rejected',
+    'zh-TW': '已拒絕',
+    'tl-PH': 'Tinanggihan'
   }
 };
 
@@ -119,19 +147,27 @@ const WithdrawalStatus = {
 const WithdrawalStatusLang = {
   [WithdrawalStatus.PENDING]: {
     'zh-CN': '待处理',
-    'en-US': 'Pending'
+    'en-US': 'Pending',
+    'zh-TW': '待處理',
+    'tl-PH': 'Nakabinbin'
   },
   [WithdrawalStatus.PROCESSING]: {
     'zh-CN': '处理中',
-    'en-US': 'Processing'
+    'en-US': 'Processing',
+    'zh-TW': '處理中',
+    'tl-PH': 'Nagpoproseso'
   },
   [WithdrawalStatus.SUCCESS]: {
     'zh-CN': '提现成功',
-    'en-US': 'Success'
+    'en-US': 'Success',
+    'zh-TW': '提現成功',
+    'tl-PH': 'Matagumpay'
   },
   [WithdrawalStatus.FAILED]: {
     'zh-CN': '提现失败',
-    'en-US': 'Failed'
+    'en-US': 'Failed',
+    'zh-TW': '提現失敗',
+    'tl-PH': 'Nabigo'
   }
 };
 
@@ -148,27 +184,39 @@ const BillType = {
 const BillTypeLang = {
   [BillType.WITHDRAWAL]: {
     'zh-CN': '提现',
-    'en-US': 'Withdrawal'
+    'en-US': 'Withdrawal',
+    'zh-TW': '提現',
+    'tl-PH': 'Pag-withdraw'
   },
   [BillType.TASK_REWARD]: {
     'zh-CN': '任务奖励',
-    'en-US': 'Task Reward'
+    'en-US': 'Task Reward',
+    'zh-TW': '任務獎勵',
+    'tl-PH': 'Gantimpala sa Gawain'
   },
   [BillType.INVITE_REWARD]: {
     'zh-CN': '邀请奖励',
-    'en-US': 'Invite Reward'
+    'en-US': 'Invite Reward',
+    'zh-TW': '邀請獎勵',
+    'tl-PH': 'Gantimpala sa Pag-imbita'
   },
   [BillType.GROUP_OWNER_COMMISSION]: {
     'zh-CN': '群主收益',
-    'en-US': 'Group Owner Commission'
+    'en-US': 'Group Owner Commission',
+    'zh-TW': '群主收益',
+    'tl-PH': 'Komisyon ng May-ari ng Grupo'
   },
   [BillType.REWARD_GRANT]: {
     'zh-CN': '奖励发放',
-    'en-US': 'Reward Grant'
+    'en-US': 'Reward Grant',
+    'zh-TW': '獎勵發放',
+    'tl-PH': 'Pagbibigay ng Gantimpala'
   },
   [BillType.REWARD_DEDUCTION]: {
     'zh-CN': '奖励扣除',
-    'en-US': 'Reward Deduction'
+    'en-US': 'Reward Deduction',
+    'zh-TW': '獎勵扣除',
+    'tl-PH': 'Pagbawas ng Gantimpala'
   }
 };
 
@@ -182,15 +230,21 @@ const OccupationType = {
 const OccupationTypeLang = {
   [OccupationType.HOUSEWIFE]: {
     'zh-CN': '宝妈',
-    'en-US': 'Housewife'
+    'en-US': 'Housewife',
+    'zh-TW': '寶媽',
+    'tl-PH': 'Maybahay'
   },
   [OccupationType.FREELANCER]: {
     'zh-CN': '自由职业',
-    'en-US': 'Freelancer'
+    'en-US': 'Freelancer',
+    'zh-TW': '自由職業',
+    'tl-PH': 'Freelancer'
   },
   [OccupationType.STUDENT]: {
     'zh-CN': '学生',
-    'en-US': 'Student'
+    'en-US': 'Student',
+    'zh-TW': '學生',
+    'tl-PH': 'Estudyante'
   }
 };
 
@@ -204,15 +258,21 @@ const GenderType = {
 const GenderTypeLang = {
   [GenderType.MALE]: {
     'zh-CN': '男',
-    'en-US': 'Male'
+    'en-US': 'Male',
+    'zh-TW': '男',
+    'tl-PH': 'Lalaki'
   },
   [GenderType.FEMALE]: {
     'zh-CN': '女',
-    'en-US': 'Female'
+    'en-US': 'Female',
+    'zh-TW': '女',
+    'tl-PH': 'Babae'
   },
   [GenderType.SECRET]: {
     'zh-CN': '保密',
-    'en-US': 'Secret'
+    'en-US': 'Secret',
+    'zh-TW': '保密',
+    'tl-PH': 'Lihim'
   }
 };
 
@@ -225,11 +285,15 @@ const SettlementStatus = {
 const SettlementStatusLang = {
   [SettlementStatus.SUCCESS]: {
     'zh-CN': '结算成功',
-    'en-US': 'Success'
+    'en-US': 'Success',
+    'zh-TW': '結算成功',
+    'tl-PH': 'Matagumpay'
   },
   [SettlementStatus.FAILED]: {
     'zh-CN': '结算失败',
-    'en-US': 'Failed'
+    'en-US': 'Failed',
+    'zh-TW': '結算失敗',
+    'tl-PH': 'Nabigo'
   }
 };
 
