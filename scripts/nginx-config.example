@@ -1,0 +1,107 @@
+### SKC服务Nginx配置示例 ###
+# 将此文件放在 /etc/nginx/sites-available/ 目录下
+# 然后创建软链接到 /etc/nginx/sites-enabled/ 目录
+# sudo ln -s /etc/nginx/sites-available/skc /etc/nginx/sites-enabled/skc
+# 重启Nginx: sudo systemctl restart nginx
+
+# HTTP配置（重定向到HTTPS）
+server {
+    listen 80;
+    listen [::]:80;
+    
+    # 替换为您的域名
+    server_name example.com www.example.com;
+    
+    # 将所有HTTP请求重定向到HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+    
+    # Let's Encrypt验证
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+}
+
+# HTTPS配置
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    
+    # 替换为您的域名
+    server_name example.com www.example.com;
+    
+    # SSL证书配置
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/example.com/chain.pem;
+    
+    # SSL参数优化
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+    
+    # 安全头部设置
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-Frame-Options SAMEORIGIN;
+    add_header X-XSS-Protection "1; mode=block";
+    
+    # 日志配置
+    access_log /var/log/nginx/skc.access.log;
+    error_log /var/log/nginx/skc.error.log;
+    
+    # 管理后台API代理
+    location /api/support {
+        proxy_pass http://localhost:3002;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+    
+    # H5前端API代理
+    location /api/h5 {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+    
+    # 上传文件静态服务
+    location /uploads {
+        # 替换为您的项目目录
+        alias /var/www/skc_service/uploads;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+        add_header Access-Control-Allow-Origin '*';
+        add_header Cross-Origin-Resource-Policy 'cross-origin';
+        try_files $uri =404;
+    }
+    
+    # 如果有前端应用，可以添加以下配置
+    # location / {
+    #     root /var/www/skc_frontend;
+    #     index index.html;
+    #     try_files $uri $uri/ /index.html;
+    # }
+    
+    # 大文件上传设置
+    client_max_body_size 10M;
+} 
