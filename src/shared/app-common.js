@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 15:44:59
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-10 14:01:49
+ * @LastEditTime: 2025-04-12 09:26:13
  * @Description: 
  */
 /**
@@ -29,6 +29,9 @@ function createApp(options = {}) {
   
   // 创建Express应用
   const app = express();
+  // 设置trust proxy，因为应用运行在反向代理（如Nginx）后面
+  app.set("trust proxy", 1);
+
   
   // 安全中间件
   app.use(helmet());
