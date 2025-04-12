@@ -348,8 +348,56 @@ async function batchReject(req, res) {
   }
 }
 
+/**
+ * 编辑账号
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function editAccount(req, res) {
+  try {
+    const { id } = req.params;
+    const { homeUrl, uid, account, fansCount, friendsCount, postsCount } = req.body;
+    
+    // 检查账号是否存在
+    const { pool } = require('../../shared/models/db');
+    const [accountRows] = await pool.query('SELECT * FROM accounts WHERE id = ?', [id]);
+    
+    if (accountRows.length === 0) {
+      return responseUtil.notFound(res, '账号不存在');
+    }
+    
+    // 准备更新数据
+    const accountData = {
+      id: parseInt(id, 10)
+    };
+    
+    // 仅包含提交的字段，未提交的字段不更新
+    if (homeUrl !== undefined) accountData.homeUrl = homeUrl;
+    if (uid !== undefined) accountData.uid = uid;
+    if (account !== undefined) accountData.account = account;
+    if (fansCount !== undefined) accountData.fansCount = parseInt(fansCount, 10);
+    if (friendsCount !== undefined) accountData.friendsCount = parseInt(friendsCount, 10);
+    if (postsCount !== undefined) accountData.postsCount = parseInt(postsCount, 10);
+    
+    // 调用模型更新账号信息
+    const result = await accountModel.update(accountData);
+    
+    return responseUtil.success(res, result, '账号更新成功');
+  } catch (error) {
+    logger.error(`编辑账号失败: ${error.message}`);
+    
+    // 处理唯一性验证错误
+    if (error.message.includes('UID 已被使用')) {
+      return responseUtil.badRequest(res, error.message);
+    }
+    
+    return responseUtil.serverError(res, '编辑账号失败，请稍后重试');
+  }
+}
+
 module.exports = {
   getAccounts,
   batchResolve,
-  batchReject
+  batchReject,
+  editAccount
 }; 

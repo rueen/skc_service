@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 19:32:38
+ * @LastEditTime: 2025-04-12 10:32:58
  * @Description: 
  */
 /**
@@ -106,6 +106,43 @@ router.post(
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.batchReject
+);
+
+/**
+ * @route PUT /api/admin/accounts/:id
+ * @desc 编辑会员社交媒体账号信息
+ * @access Private - 仅需account:list权限
+ */
+router.put(
+  '/:id',
+  [
+    body('homeUrl')
+      .optional()
+      .isURL()
+      .withMessage('个人主页URL格式不正确'),
+    body('uid')
+      .optional()
+      .isString()
+      .withMessage('UID必须是字符串'),
+    body('account')
+      .optional()
+      .isString()
+      .withMessage('账号必须是字符串'),
+    body('fansCount')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('粉丝数量必须是非负整数'),
+    body('friendsCount')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('好友数量必须是非负整数'),
+    body('postsCount')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('帖子数量必须是非负整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  accountController.editAccount
 );
 
 module.exports = router; 
