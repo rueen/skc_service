@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-07 20:17:36
+ * @LastEditTime: 2025-04-13 16:34:43
  * @Description: 
  */
 /**
@@ -53,14 +53,14 @@ router.get(
 );
 
 /**
- * @route GET /api/h5/members/accounts/find-uid-by-home-url
+ * @route POST /api/h5/members/accounts/find-uid-by-home-url
  * @desc 根据主页链接查找UID
  * @access Private
  */
-router.get(
+router.post(
   '/accounts/find-uid-by-home-url',
   [
-    query('homeUrl')
+    body('homeUrl')
       .notEmpty()
       .withMessage('主页链接不能为空')
       .isURL()

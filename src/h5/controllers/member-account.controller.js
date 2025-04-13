@@ -256,7 +256,7 @@ async function deleteAccount(req, res) {
  */
 async function findUidByHomeUrl(req, res) {
   try {
-    const { homeUrl } = req.query;
+    const { homeUrl } = req.body;
     
     if (!homeUrl) {
       return responseUtil.badRequest(res, '主页链接不能为空');
