@@ -46,7 +46,7 @@ async function login(req, res) {
     // 如果用户不存在，自动注册
     if (!member) {
       // 生成随机昵称
-      const randomNickname = `用户${Math.floor(Math.random() * 1000000)}`;
+      const randomNickname = `user${Math.floor(Math.random() * 1000000)}`;
       
       // 加密密码
       const hashedPassword = await authUtil.hashPassword(password);
