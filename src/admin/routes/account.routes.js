@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-12 10:32:58
+ * @LastEditTime: 2025-04-14 21:37:01
  * @Description: 
  */
 /**
@@ -144,5 +144,12 @@ router.put(
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.editAccount
 );
+
+/**
+ * @route GET /api/admin/accounts/:id
+ * @desc 获取账号详情
+ * @access Private - Admin
+ */
+router.get('/:id', authMiddleware.verifyToken, accountController.getAccountDetail);
 
 module.exports = router; 

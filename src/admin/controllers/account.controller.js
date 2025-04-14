@@ -395,9 +395,37 @@ async function editAccount(req, res) {
   }
 }
 
+/**
+ * 获取账号详情
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getAccountDetail(req, res) {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return responseUtil.badRequest(res, '账号ID不能为空');
+    }
+    
+    // 获取账号详情
+    const account = await accountModel.getList({ id }, 1, 1);
+    
+    if (!account || account.list.length === 0) {
+      return responseUtil.notFound(res, '账号不存在');
+    }
+    
+    return responseUtil.success(res, account.list[0]);
+  } catch (error) {
+    logger.error(`获取账号详情失败: ${error.message}`);
+    return responseUtil.serverError(res, '获取账号详情失败');
+  }
+}
+
 module.exports = {
   getAccounts,
   batchResolve,
   batchReject,
-  editAccount
+  editAccount,
+  getAccountDetail
 }; 
