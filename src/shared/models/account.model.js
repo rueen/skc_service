@@ -163,7 +163,8 @@ function formatAccount(account) {
   const formattedAccount = convertToCamelCase({
     ...account,
     createTime: formatDateTime(account.create_time),
-    updateTime: formatDateTime(account.update_time)
+    updateTime: formatDateTime(account.update_time),
+    submitTime: formatDateTime(account.submit_time)
   });
   return formattedAccount;
 }
@@ -252,43 +253,31 @@ async function create(accountData) {
       channel_id: accountData.channelId,
       account: accountData.account,
       uid: accountData.uid || null,
-      home_url: accountData.homeUrl,
+      home_url: accountData.homeUrl || null,
       fans_count: accountData.fansCount || 0,
       friends_count: accountData.friendsCount || 0,
       posts_count: accountData.postsCount || 0,
       account_audit_status: accountData.accountAuditStatus || 'pending',
-      create_time: new Date(),
-      update_time: new Date()
+      submit_time: new Date()
     };
     
     // 执行插入
-    const query = `
-      INSERT INTO accounts SET ?
-    `;
-    
-    const [result] = await pool.query(query, [data]);
+    const [result] = await pool.query(
+      'INSERT INTO accounts SET ?',
+      [data]
+    );
     
     if (result.affectedRows === 0) {
       throw new Error('创建账户失败');
     }
     
-    // 查询新创建的账号(包含渠道信息)
-    const newAccountQuery = `
-      SELECT a.*, 
-             c.name as channel_name,
-             c.icon as channel_icon
-      FROM accounts a
-      LEFT JOIN channels c ON a.channel_id = c.id
-      WHERE a.id = ?
-    `;
+    // 获取新创建的账户信息
+    const [accounts] = await pool.query(
+      'SELECT * FROM accounts WHERE id = ?',
+      [result.insertId]
+    );
     
-    const [accounts] = await pool.query(newAccountQuery, [result.insertId]);
-    
-    if (accounts.length === 0) {
-      throw new Error('获取新创建的账户信息失败');
-    }
-    
-    // 格式化并返回结果
+    // 格式化结果
     return formatAccount(accounts[0]);
   } catch (error) {
     logger.error(`创建账户失败: ${error.message}`);
@@ -297,17 +286,29 @@ async function create(accountData) {
 }
 
 /**
- * 更新账户
+ * 更新账户信息
  * @param {Object} accountData - 账户数据
  * @returns {Promise<Object>} 更新结果
  */
 async function update(accountData) {
   try {
-    // 检查 UID 唯一性（如果提供了 UID）
-    if (accountData.uid !== undefined) {
+    const id = accountData.id;
+    
+    // 检查账号是否存在
+    const [existingAccount] = await pool.query(
+      'SELECT * FROM accounts WHERE id = ?',
+      [id]
+    );
+    
+    if (existingAccount.length === 0) {
+      throw new Error('账号不存在');
+    }
+    
+    // 检查UID唯一性（如果提供了UID且不同于原值）
+    if (accountData.uid !== undefined && accountData.uid !== existingAccount[0].uid) {
       const [existingUid] = await pool.query(
         'SELECT id FROM accounts WHERE uid = ? AND id != ?',
-        [accountData.uid, accountData.id]
+        [accountData.uid, id]
       );
       
       if (existingUid.length > 0) {
@@ -315,43 +316,38 @@ async function update(accountData) {
       }
     }
     
-    // 准备数据
-    const data = {
-      account: accountData.account,
-      uid: accountData.uid,
-      home_url: accountData.homeUrl,
-      fans_count: accountData.fansCount,
-      friends_count: accountData.friendsCount,
-      posts_count: accountData.postsCount,
-      account_audit_status: accountData.accountAuditStatus,
-      reject_reason: accountData.rejectReason,
-      update_time: new Date()
-    };
+    // 准备更新数据
+    const updateData = {};
     
-    // 删除未定义的字段
-    Object.keys(data).forEach(key => {
-      if (data[key] === undefined) {
-        delete data[key];
+    // 只更新提供的字段
+    if (accountData.account !== undefined) updateData.account = accountData.account;
+    if (accountData.uid !== undefined) updateData.uid = accountData.uid;
+    if (accountData.homeUrl !== undefined) updateData.home_url = accountData.homeUrl;
+    if (accountData.fansCount !== undefined) updateData.fans_count = parseInt(accountData.fansCount, 10);
+    if (accountData.friendsCount !== undefined) updateData.friends_count = parseInt(accountData.friendsCount, 10);
+    if (accountData.postsCount !== undefined) updateData.posts_count = parseInt(accountData.postsCount, 10);
+    if (accountData.accountAuditStatus !== undefined) updateData.account_audit_status = accountData.accountAuditStatus;
+    if (accountData.rejectReason !== undefined) updateData.reject_reason = accountData.rejectReason;
+    if (accountData.waiterId !== undefined) updateData.waiter_id = accountData.waiterId;
+    
+    // 如果有更新字段，才执行更新操作
+    if (Object.keys(updateData).length > 0) {
+      // 更新提交时间
+      updateData.submit_time = new Date();
+      
+      // 执行更新
+      const [result] = await pool.query(
+        'UPDATE accounts SET ? WHERE id = ?',
+        [updateData, id]
+      );
+      
+      if (result.affectedRows === 0) {
+        throw new Error('更新账户失败');
       }
-    });
-    
-    // 执行更新
-    const query = `
-      UPDATE accounts
-      SET ?
-      WHERE id = ?
-    `;
-    
-    const [result] = await pool.query(query, [data, accountData.id]);
-    
-    if (result.affectedRows === 0) {
-      throw new Error('更新账户失败');
     }
     
-    return {
-      success: true,
-      message: '账户更新成功'
-    };
+    // 返回更新结果
+    return { success: true, id };
   } catch (error) {
     logger.error(`更新账户失败: ${error.message}`);
     throw error;
