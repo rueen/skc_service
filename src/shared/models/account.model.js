@@ -164,7 +164,8 @@ function formatAccount(account) {
     ...account,
     createTime: formatDateTime(account.create_time),
     updateTime: formatDateTime(account.update_time),
-    submitTime: formatDateTime(account.submit_time)
+    submitTime: formatDateTime(account.submit_time),
+    auditTime: formatDateTime(account.audit_time)
   });
   return formattedAccount;
 }
@@ -396,7 +397,7 @@ async function batchApprove(ids, waiterId) {
     // 更新账号状态为已通过
     const [result] = await connection.query(
       `UPDATE accounts 
-       SET account_audit_status = 'approved', waiter_id = ? 
+       SET account_audit_status = 'approved', waiter_id = ?, audit_time = NOW() 
        WHERE id IN (?) AND account_audit_status = 'pending'`,
       [waiterId, ids]
     );
@@ -431,7 +432,7 @@ async function batchReject(ids, reason, waiterId) {
     // 更新账号状态为已拒绝
     const [result] = await connection.query(
       `UPDATE accounts 
-       SET account_audit_status = 'rejected', reject_reason = ?, waiter_id = ? 
+       SET account_audit_status = 'rejected', reject_reason = ?, waiter_id = ?, audit_time = NOW() 
        WHERE id IN (?) AND account_audit_status = 'pending'`,
       [reason, waiterId, ids]
     );

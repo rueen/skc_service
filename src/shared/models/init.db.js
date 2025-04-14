@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   account_audit_status varchar(20) DEFAULT 'pending' COMMENT '账号审核状态：pending-待审核，approved-已通过，rejected-已拒绝',
   reject_reason varchar(255) DEFAULT NULL COMMENT '拒绝原因',
   waiter_id bigint(20) DEFAULT NULL COMMENT '审核小二ID',
+  audit_time datetime DEFAULT NULL COMMENT '审核时间',
   submit_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '提交/修改时间',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
