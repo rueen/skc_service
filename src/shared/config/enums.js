@@ -33,22 +33,29 @@ const TaskStatusLang = {
 
 // 任务类型枚举
 const TaskType = {
-  IMAGE_TEXT: 'image_text',   // 图文任务
-  VIDEO: 'video'              // 视频任务
+  POST: 'post',       // 图文
+  VIDEO: 'video',     // 视频
+  LIVE: 'live'        // 直播
 };
 
 const TaskTypeLang = {
-  [TaskType.IMAGE_TEXT]: {
+  [TaskType.POST]: {
     'zh-CN': '图文',
-    'en-US': 'Image & Text',
+    'en-US': 'Post',
     'zh-TW': '圖文',
-    'tl-PH': 'Larawan at Teksto'
+    'tl-PH': 'Post'
   },
   [TaskType.VIDEO]: {
     'zh-CN': '视频',
     'en-US': 'Video',
     'zh-TW': '視頻',
     'tl-PH': 'Bidyo'
+  },
+  [TaskType.LIVE]: {
+    'zh-CN': '直播',
+    'en-US': 'Live',
+    'zh-TW': '直播',
+    'tl-PH': 'Live'
   }
 };
 

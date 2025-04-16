@@ -79,9 +79,7 @@ router.post(
       .withMessage('任务类别长度不能超过50个字符'),
     body('taskType')
       .notEmpty()
-      .withMessage('任务类型不能为空')
-      .isIn(['image_text', 'video'])
-      .withMessage('任务类型值无效'),
+      .withMessage('任务类型不能为空'),
     body('reward')
       .notEmpty()
       .withMessage('任务奖励金额不能为空')
@@ -189,9 +187,7 @@ router.put(
       .isLength({ max: 50 })
       .withMessage('任务类别长度不能超过50个字符'),
     body('taskType')
-      .optional()
-      .isIn(['image_text', 'video'])
-      .withMessage('任务类型值无效'),
+      .optional(),
     body('reward')
       .optional()
       .isFloat({ min: 0 })
