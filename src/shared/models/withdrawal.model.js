@@ -53,29 +53,37 @@ async function createWithdrawal(withdrawalData) {
     // 冻结相应金额（从余额中扣除）
     await memberModel.updateMemberBalance(member_id, -amount);
     
+    // 生成唯一的账单编号
+    const timestamp = new Date().getTime();
+    const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const billNo = `WIT${timestamp}${randomNum}`;
+    
     // 插入提现记录
     const [result] = await connection.query(
       `INSERT INTO withdrawals 
-      (member_id, withdrawal_account_id, amount, withdrawal_status) 
-      VALUES (?, ?, ?, ?)`,
-      [member_id, withdrawal_account_id, amount, WithdrawalStatus.PENDING]
+      (bill_no, member_id, withdrawal_account_id, amount, withdrawal_status) 
+      VALUES (?, ?, ?, ?, ?)`,
+      [billNo, member_id, withdrawal_account_id, amount, WithdrawalStatus.PENDING]
     );
     
     const withdrawalId = result.insertId;
     
+    // 创建账单记录，使用相同的 billNo
     await billModel.createBill({
       memberId: member_id,
       billType: BillType.WITHDRAWAL,
       amount: -amount,
       taskId: null,
       withdrawalId: withdrawalId,
-      relatedGroupId: null
+      relatedGroupId: null,
+      billNo: billNo // 传递相同的账单编号
     }, connection);
     
     await connection.commit();
     
     return {
       id: withdrawalId,
+      billNo
     };
   } catch (error) {
     await connection.rollback();
@@ -152,7 +160,8 @@ async function getAllWithdrawals(options = {}) {
       withdrawalStatus, 
       memberId,
       startTime,
-      endTime
+      endTime,
+      billNo
     } = options;
     const offset = (page - 1) * pageSize;
     
@@ -177,6 +186,11 @@ async function getAllWithdrawals(options = {}) {
     if (endTime) {
       whereClause += ' AND w.create_time <= ?';
       queryParams.push(endTime);
+    }
+    
+    if (billNo) {
+      whereClause += ' AND w.bill_no LIKE ?';
+      queryParams.push(`%${billNo}%`);
     }
     
     // 查询总数

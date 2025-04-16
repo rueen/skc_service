@@ -18,7 +18,15 @@ const paymentTransactionModel = require('../../shared/models/payment-transaction
  */
 async function getWithdrawals(req, res) {
   try {
-    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, withdrawalStatus, memberId, startTime, endTime } = req.query;
+    const { 
+      page = DEFAULT_PAGE, 
+      pageSize = DEFAULT_PAGE_SIZE, 
+      withdrawalStatus, 
+      memberId, 
+      startTime, 
+      endTime,
+      billNo
+    } = req.query;
     
     const options = {
       page: parseInt(page) || 1,
@@ -39,6 +47,10 @@ async function getWithdrawals(req, res) {
     
     if (endTime) {
       options.endTime = endTime;
+    }
+    
+    if (billNo) {
+      options.billNo = billNo;
     }
     
     const withdrawals = await withdrawalModel.getAllWithdrawals(options);

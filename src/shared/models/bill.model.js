@@ -49,6 +49,7 @@ function formatBill(bill) {
  * @param {string} [billData.remark] - 备注说明
  * @param {string} [billData.settlementStatus] - 结算状态，默认为'pending'
  * @param {number} [billData.waiterId] - 操作人ID
+ * @param {string} [billData.billNo] - 账单编号，如果提供则使用此编号
  * @param {Object} connection - 数据库连接（用于事务）
  * @returns {Promise<Object>} 创建结果
  */
@@ -96,11 +97,14 @@ async function createBill(billData, connection) {
     const statusField = isWithdrawal ? 'withdrawal_status' : 'settlement_status';
     const statusValue = isWithdrawal ? 'pending' : (billData.settlementStatus || 'pending'); // 使用提供的结算状态或默认值
     
-    // 生成唯一的账单编号
-    const timestamp = new Date().getTime();
-    const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    const billType = billData.billType.toUpperCase().substring(0, 3);
-    const billNo = `${billType}${timestamp}${randomNum}`;
+    // 使用提供的账单编号或生成新的账单编号
+    let billNo = billData.billNo;
+    if (!billNo) {
+      const timestamp = new Date().getTime();
+      const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      const billType = billData.billType.toUpperCase().substring(0, 3);
+      billNo = `${billType}${timestamp}${randomNum}`;
+    }
     
     // 构建插入语句
     const [result] = await connection.query(
