@@ -68,6 +68,7 @@ async function createWithdrawal(withdrawalData) {
       billType: BillType.WITHDRAWAL,
       amount: -amount,
       taskId: null,
+      withdrawalId: withdrawalId,
       relatedGroupId: null
     }, connection);
     

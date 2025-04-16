@@ -43,6 +43,7 @@ function formatBill(bill) {
  * @param {string} billData.billType - 账单类型
  * @param {number} billData.amount - 金额
  * @param {number} billData.taskId - 任务ID
+ * @param {number} [billData.withdrawalId] - 关联的提现ID
  * @param {number} [billData.relatedMemberId] - 关联会员ID（如邀请关系）
  * @param {number} [billData.relatedGroupId] - 关联群组ID（用于数据统计）
  * @param {string} [billData.remark] - 备注说明
@@ -54,7 +55,7 @@ function formatBill(bill) {
 async function createBill(billData, connection) {
   try {
     // 日志记录所有传入的账单数据，便于调试
-    logger.info(`创建账单记录 - 会员ID: ${billData.memberId}, 账单类型: ${billData.billType}, 金额: ${billData.amount}, 任务ID: ${billData.taskId}, 关联会员ID: ${billData.relatedMemberId}, 关联群组ID: ${billData.relatedGroupId}, 备注: ${billData.remark || '无'}, 结算状态: ${billData.settlementStatus || 'pending'}, 操作人ID: ${billData.waiterId || '无'}`);
+    logger.info(`创建账单记录 - 会员ID: ${billData.memberId}, 账单类型: ${billData.billType}, 金额: ${billData.amount}, 任务ID: ${billData.taskId}, 提现ID: ${billData.withdrawalId || '无'}, 关联会员ID: ${billData.relatedMemberId}, 关联群组ID: ${billData.relatedGroupId}, 备注: ${billData.remark || '无'}, 结算状态: ${billData.settlementStatus || 'pending'}, 操作人ID: ${billData.waiterId || '无'}`);
     
     // 进一步确认related_group_id是一个有效数字
     let relatedGroupId = null;
@@ -98,14 +99,15 @@ async function createBill(billData, connection) {
     // 构建插入语句
     const [result] = await connection.query(
       `INSERT INTO bills 
-       (member_id, bill_type, amount, ${statusField}, task_id, related_member_id, related_group_id, waiter_id, remark) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (member_id, bill_type, amount, ${statusField}, task_id, withdrawal_id, related_member_id, related_group_id, waiter_id, remark) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         billData.memberId,
         billData.billType,
         billData.amount,
         statusValue,
         billData.taskId,
+        billData.withdrawalId || null,
         billData.relatedMemberId || null,
         relatedGroupId,
         billData.waiterId || null,
@@ -118,12 +120,12 @@ async function createBill(billData, connection) {
     
     // 验证插入结果
     const [inserted] = await connection.query(
-      'SELECT related_group_id FROM bills WHERE id = ?',
+      'SELECT related_group_id, withdrawal_id FROM bills WHERE id = ?',
       [result.insertId]
     );
     
     if (inserted.length > 0) {
-      logger.info(`验证插入结果 - 账单ID: ${result.insertId}, 实际存储的关联群组ID: ${inserted[0].related_group_id}`);
+      logger.info(`验证插入结果 - 账单ID: ${result.insertId}, 实际存储的关联群组ID: ${inserted[0].related_group_id}, 关联提现ID: ${inserted[0].withdrawal_id}`);
     }
     
     return { id: result.insertId };

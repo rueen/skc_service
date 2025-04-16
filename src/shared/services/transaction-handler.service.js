@@ -41,7 +41,7 @@ async function handleFailedTransaction(orderId, reason) {
     
     // 2. 更新相关账单记录状态为失败
     await connection.query(
-      'UPDATE bills SET settlement_status = ?, withdrawal_status = ?, failure_reason = ? WHERE bill_type = "withdrawal" AND task_id = ?',
+      'UPDATE bills SET settlement_status = ?, withdrawal_status = ?, failure_reason = ? WHERE bill_type = "withdrawal" AND withdrawal_id = ?',
       ['failed', 'failed', reason, withdrawalId]
     );
     
@@ -120,7 +120,7 @@ async function handleSuccessTransaction(orderId) {
     
     // 2. 更新相关账单记录状态为成功
     await connection.query(
-      'UPDATE bills SET settlement_status = ?, withdrawal_status = ? WHERE bill_type = "withdrawal" AND task_id = ?',
+      'UPDATE bills SET settlement_status = ?, withdrawal_status = ? WHERE bill_type = "withdrawal" AND withdrawal_id = ?',
       ['success', 'success', withdrawalId]
     );
     
@@ -173,7 +173,7 @@ async function updateWithdrawalStatus(withdrawalId, status, reason = null) {
       
       // 更新相关账单记录状态为成功
       await connection.query(
-        'UPDATE bills SET settlement_status = ?, withdrawal_status = ? WHERE bill_type = "withdrawal" AND task_id = ?',
+        'UPDATE bills SET settlement_status = ?, withdrawal_status = ? WHERE bill_type = "withdrawal" AND withdrawal_id = ?',
         ['success', 'success', withdrawalId]
       );
       
@@ -187,7 +187,7 @@ async function updateWithdrawalStatus(withdrawalId, status, reason = null) {
       
       // 更新相关账单记录状态为失败
       await connection.query(
-        'UPDATE bills SET settlement_status = ?, withdrawal_status = ?, failure_reason = ? WHERE bill_type = "withdrawal" AND task_id = ?',
+        'UPDATE bills SET settlement_status = ?, withdrawal_status = ?, failure_reason = ? WHERE bill_type = "withdrawal" AND withdrawal_id = ?',
         ['failed', 'failed', reason || '提现失败', withdrawalId]
       );
       
