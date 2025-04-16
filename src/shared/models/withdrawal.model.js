@@ -342,27 +342,37 @@ async function processThirdPartyPayment(withdrawalDetail) {
     // 配置API参数
     const apiUrl = process.env.PAYMENT_API_URL;
     
+    // 确保amount是数字类型
+    let formattedAmount;
+    if (typeof withdrawalDetail.amount === 'number') {
+      formattedAmount = withdrawalDetail.amount.toFixed(2);
+    } else if (typeof withdrawalDetail.amount === 'string') {
+      formattedAmount = parseFloat(withdrawalDetail.amount).toFixed(2);
+    } else {
+      throw new Error(`无效的金额类型: ${typeof withdrawalDetail.amount}`);
+    }
     const paymentData = {
       merchant: withdrawalDetail.merchant_id,
-      secret_key: withdrawalDetail.secret_key,
       order_id: orderId,
       bank: withdrawalDetail.bank,
-      total_amount: withdrawalDetail.amount,
+      total_amount: formattedAmount,
       bank_card_account: withdrawalDetail.account,
       bank_card_name: withdrawalDetail.account_name,
       bank_card_remark: 'no',
       callback_url: 'no',
-      apiUrl: apiUrl,
     };
     
     // 调用支付API
-    const response = await paymentUtil.callPaymentAPI(paymentData);
+    const response = await paymentUtil.callPaymentAPI({
+      apiUrl,
+      secret_key: withdrawalDetail.secret_key,
+    }, paymentData);
     
     // 处理响应结果
     let transactionStatus = 'pending';
     let errorMessage = null;
     
-    if (response.code === '0' || response.code === 0) {
+    if (Number(response.status) === 1) {
       // 代付请求成功，但实际打款可能还在处理中
       transactionStatus = 'pending';
       logger.info(`订单 ${orderId} 代付请求成功，状态：${response.status || '处理中'}`);
@@ -389,7 +399,7 @@ async function processThirdPartyPayment(withdrawalDetail) {
       responseTime: new Date()
     });
     
-    logger.info(`提现ID ${withdrawalDetail.id} 的第三方代付处理完成，最终状态: ${transactionStatus}`);
+    logger.info(`提现ID ${withdrawalDetail.id} 的第三方代付处理完成，状态: ${transactionStatus}`);
     
     // 如果交易失败，更新提现记录状态为失败
     if (transactionStatus === 'failed') {

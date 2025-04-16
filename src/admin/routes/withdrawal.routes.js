@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-08 19:02:00
+ * @LastEditTime: 2025-04-16 09:31:59
  * @Description: 
  */
 /**
@@ -108,13 +108,6 @@ router.get(
 router.get(
   '/payment-transactions',
   withdrawalController.getAllTransactions
-);
-
-// 重试交易
-router.post(
-  '/payment-transactions/:orderId/retry',
-  param('orderId').notEmpty().withMessage('订单ID不能为空'),
-  withdrawalController.retryTransaction
 );
 
 module.exports = router; 

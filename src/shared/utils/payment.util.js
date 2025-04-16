@@ -82,48 +82,26 @@ function generateOrderId() {
  * @param {number} paymentData.total_amount - 金额
  * @param {string} paymentData.bank_card_account - 收款账号
  * @param {string} paymentData.bank_card_name - 收款人姓名
- * @param {string} paymentData.apiUrl - API地址
+ * @param {string} baseData.apiUrl - 支付API地址
+ * @param {string} baseData.secret_key - 支付API密钥
  * @returns {Promise<Object>} - API响应结果
  */
-async function callPaymentAPI(paymentData) {
+async function callPaymentAPI(baseData, paymentData) {
   try {
-    const {
-      merchant,
-      secret_key,
-      order_id,
-      bank,
-      total_amount,
-      bank_card_account,
-      bank_card_name,
-      apiUrl,
-    } = paymentData;
-    
-    // 确保amount是数字类型
-    let formattedAmount;
-    if (typeof total_amount === 'number') {
-      formattedAmount = total_amount.toFixed(2);
-    } else if (typeof total_amount === 'string') {
-      formattedAmount = parseFloat(total_amount).toFixed(2);
-    } else {
-      throw new Error(`无效的金额类型: ${typeof total_amount}`);
-    }
+    const { apiUrl, secret_key } = baseData;
+    const { order_id } = paymentData;
     
     // 构造请求参数
     const params = {
-      merchant: merchant,
-      order_id: order_id,
-      bank: bank,
-      total_amount: formattedAmount,
-      bank_card_account: bank_card_account,
-      bank_card_name: bank_card_name,
-      bank_card_remark: 'no',
-      callback_url: 'no',
+      ...paymentData
     };
     
     // 生成签名并添加到参数中
     params.sign = generateSignature(params, secret_key);
     
-    logger.info(`开始调用第三方支付API，订单号: ${order_id}`);
+    if(order_id){
+      logger.info(`开始调用第三方支付API，订单号: ${order_id}`);
+    }
     logger.debug(`支付API请求参数: ${JSON.stringify(params)}`);
     
     // 发起POST请求

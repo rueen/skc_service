@@ -222,59 +222,10 @@ async function getAllTransactions(req, res) {
   }
 }
 
-/**
- * 手动重试超时的交易
- * @param {Object} req - 请求对象
- * @param {Object} res - 响应对象
- */
-async function retryTransaction(req, res) {
-  try {
-    const orderId = req.params.orderId;
-    
-    // 获取交易记录
-    const transaction = await paymentTransactionModel.getTransactionByOrderId(orderId);
-    
-    if (!transaction) {
-      return responseUtil.notFound(res, '交易记录不存在');
-    }
-    
-    // 只允许重试失败或超时的交易
-    if (transaction.transactionStatus !== 'failed') {
-      return responseUtil.badRequest(res, '只能重试失败或超时的交易');
-    }
-    
-    // 导入任务处理模块
-    const paymentTransactionMonitor = require('../../shared/services/payment-transaction-monitor');
-    
-    // 设置交易状态为pending
-    await paymentTransactionModel.updateTransactionResult(orderId, {
-      transactionStatus: 'pending',
-      errorMessage: '手动重试',
-      responseTime: new Date()
-    });
-    
-    // 异步调用专用的重试方法
-    process.nextTick(async () => {
-      try {
-        // 使用专用的重试方法处理
-        await paymentTransactionMonitor.retryTransaction(orderId);
-      } catch (error) {
-        logger.error(`重试交易处理失败: ${error.message}`);
-      }
-    });
-    
-    return responseUtil.success(res, { orderId }, '交易已重新提交，正在处理中');
-  } catch (error) {
-    logger.error(`重试交易失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message);
-  }
-}
-
 module.exports = {
   getWithdrawals,
   batchResolveWithdrawals,
   batchRejectWithdrawals,
   exportWithdrawals,
-  getAllTransactions,
-  retryTransaction
+  getAllTransactions
 }; 
