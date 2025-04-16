@@ -14,7 +14,6 @@ const router = express.Router();
 // 所有任务路由都需要认证
 router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
-router.use(authMiddleware.hasPermission('channel:list'));
 
 /**
  * @route GET /api/admin/channels
@@ -39,6 +38,7 @@ router.get(
  */
 router.get(
   '/:id',
+  authMiddleware.hasPermission('channel:list'),
   [
     param('id')
       .notEmpty()
@@ -57,6 +57,7 @@ router.get(
  */
 router.post(
   '/',
+  authMiddleware.hasPermission('channel:list'),
   [
     body('name')
       .notEmpty()
@@ -82,6 +83,7 @@ router.post(
  */
 router.put(
   '/:id',
+  authMiddleware.hasPermission('channel:list'),
   [
     param('id')
       .notEmpty()
@@ -112,6 +114,7 @@ router.put(
  */
 router.delete(
   '/:id',
+  authMiddleware.hasPermission('channel:list'),
   [
     param('id')
       .notEmpty()
