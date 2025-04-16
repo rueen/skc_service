@@ -403,36 +403,12 @@ async function processThirdPartyPayment(withdrawalDetail) {
     
     // 如果交易失败，更新提现记录状态为失败
     if (transactionStatus === 'failed') {
-      const connection = await pool.getConnection();
       try {
-        await connection.beginTransaction();
-        
-        // 更新提现记录状态
-        await connection.query(
-          `UPDATE withdrawals 
-           SET withdrawal_status = ?, reject_reason = ? 
-           WHERE id = ? AND withdrawal_status = ?`,
-          [WithdrawalStatus.FAILED, errorMessage || '第三方代付失败', withdrawalDetail.id, WithdrawalStatus.PROCESSING]
-        );
-        
-        // 退还余额
-        await memberModel.updateMemberBalance(withdrawalDetail.member_id, withdrawalDetail.amount);
-        
-        // 更新账单状态
-        await connection.query(
-          `UPDATE bills 
-           SET withdrawal_status = ?, failure_reason = ? 
-           WHERE member_id = ? AND bill_type = ? AND amount = ?`,
-          [WithdrawalStatus.FAILED, errorMessage || '第三方代付失败', withdrawalDetail.member_id, BillType.WITHDRAWAL, -withdrawalDetail.amount]
-        );
-        
-        await connection.commit();
+        const transactionHandler = require('../services/transaction-handler.service');
+        await transactionHandler.updateWithdrawalStatus(withdrawalDetail.id, 'failed', errorMessage || '第三方代付失败');
         logger.info(`提现ID ${withdrawalDetail.id} 状态已更新为失败，余额已退还`);
       } catch (error) {
-        await connection.rollback();
         logger.error(`更新提现记录状态失败: ${error.message}`);
-      } finally {
-        connection.release();
       }
     }
   } catch (error) {
@@ -445,36 +421,12 @@ async function processThirdPartyPayment(withdrawalDetail) {
       });
       
       // 同时更新提现记录为失败状态
-      const connection = await pool.getConnection();
       try {
-        await connection.beginTransaction();
-        
-        // 更新提现记录状态
-        await connection.query(
-          `UPDATE withdrawals 
-           SET withdrawal_status = ?, reject_reason = ? 
-           WHERE id = ? AND withdrawal_status = ?`,
-          [WithdrawalStatus.FAILED, `API调用异常: ${error.message}`, withdrawalDetail.id, WithdrawalStatus.PROCESSING]
-        );
-        
-        // 退还余额
-        await memberModel.updateMemberBalance(withdrawalDetail.member_id, withdrawalDetail.amount);
-        
-        // 更新账单状态
-        await connection.query(
-          `UPDATE bills 
-           SET withdrawal_status = ?, failure_reason = ? 
-           WHERE member_id = ? AND bill_type = ? AND amount = ?`,
-          [WithdrawalStatus.FAILED, `API调用异常: ${error.message}`, withdrawalDetail.member_id, BillType.WITHDRAWAL, -withdrawalDetail.amount]
-        );
-        
-        await connection.commit();
+        const transactionHandler = require('../services/transaction-handler.service');
+        await transactionHandler.updateWithdrawalStatus(withdrawalDetail.id, 'failed', `API调用异常: ${error.message}`);
         logger.info(`提现ID ${withdrawalDetail.id} 状态已更新为失败，余额已退还`);
       } catch (updateError) {
-        await connection.rollback();
         logger.error(`更新提现记录状态失败: ${updateError.message}`);
-      } finally {
-        connection.release();
       }
     } catch (updateError) {
       logger.error(`更新交易记录失败: ${updateError.message}`);

@@ -7,6 +7,7 @@ const logger = require('../config/logger.config');
 const paymentTransactionModel = require('../models/payment-transaction.model');
 const paymentUtil = require('../utils/payment.util');
 const paymentChannelModel = require('../models/payment-channel.model');
+const transactionHandler = require('./transaction-handler.service');
 
 /**
  * 处理超时交易
@@ -19,6 +20,11 @@ async function handleTimeoutTransactions() {
     
     if (timeoutOrderIds.length > 0) {
       logger.info(`成功处理 ${timeoutOrderIds.length} 笔超时交易: ${timeoutOrderIds.join(', ')}`);
+      
+      // 处理这些超时交易的提现和余额
+      for (const orderId of timeoutOrderIds) {
+        await transactionHandler.handleFailedTransaction(orderId, '交易超时');
+      }
     } else {
       logger.info('没有需要处理的超时交易');
     }
@@ -90,13 +96,22 @@ async function checkPendingTransactions() {
         }
         
         // 如果状态有变化或查询失败，更新交易记录
-        if (transactionStatus !== transaction.transactionStatus || Number(response.status) !== 1) {
+        if (transactionStatus !== transaction.transactionStatus || Number(response.status) !== 5) {
           await paymentTransactionModel.updateTransactionResult(transaction.orderId, {
             transactionStatus: transactionStatus,
             responseData: response,
             errorMessage: errorMessage,
             responseTime: new Date()
           });
+          
+          // 根据交易状态，更新提现记录和账单状态，处理余额
+          if (transactionStatus === 'success') {
+            // 处理成功交易
+            await transactionHandler.handleSuccessTransaction(transaction.orderId);
+          } else if (transactionStatus === 'failed') {
+            // 处理失败交易
+            await transactionHandler.handleFailedTransaction(transaction.orderId, errorMessage || '交易失败');
+          }
         }
       } catch (error) {
         logger.error(`查询交易 ${transaction.orderId} 状态失败: ${error.message}`);
