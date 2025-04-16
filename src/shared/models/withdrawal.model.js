@@ -25,8 +25,7 @@ function formatWithdrawal(withdrawal) {
     ...withdrawal,
     processTime: formatDateTime(withdrawal.process_time),
     createTime: formatDateTime(withdrawal.create_time),
-    updateTime: formatDateTime(withdrawal.update_time),
-    paymentChannelName: withdrawal.payment_channel_name
+    updateTime: formatDateTime(withdrawal.update_time)
   });
   
   return formattedWithdrawal;
@@ -122,7 +121,11 @@ async function getWithdrawalsByMemberId(memberId, options = {}) {
     
     // 查询提现记录列表，增加支付渠道名称
     const [withdrawals] = await pool.query(
-      `SELECT w.*, wa.payment_channel_id, wa.account, wa.name, pc.name as payment_channel_name
+      `SELECT w.*, 
+              wa.payment_channel_id, 
+              wa.account, 
+              wa.name as withdrawal_name, 
+              pc.name as payment_channel_name
        FROM withdrawals w
        LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
        LEFT JOIN payment_channels pc ON wa.payment_channel_id = pc.id
@@ -202,7 +205,13 @@ async function getAllWithdrawals(options = {}) {
     
     // 查询提现记录列表，增加关联payment_channels表获取支付渠道名称
     const [withdrawals] = await pool.query(
-      `SELECT w.*, wa.payment_channel_id, wa.account, wa.name, m.nickname, m.account, pc.name as payment_channel_name
+      `SELECT w.*, 
+              wa.payment_channel_id, 
+              wa.account, 
+              wa.name as withdrawal_name, 
+              m.nickname, 
+              m.account as member_account, 
+              pc.name as payment_channel_name
        FROM withdrawals w
        LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
        LEFT JOIN members m ON w.member_id = m.id
@@ -524,7 +533,7 @@ async function exportWithdrawals(filters = {}) {
       SELECT w.*, 
              m.nickname,
              wa.payment_channel_id,
-             wa.account as withdrawal_account,
+             wa.account,
              wa.name as withdrawal_name
       FROM withdrawals w
       LEFT JOIN members m ON w.member_id = m.id
