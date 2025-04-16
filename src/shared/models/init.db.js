@@ -66,6 +66,7 @@ WHERE NOT EXISTS (SELECT 1 FROM articles WHERE location = 'privacyPolicy')
 const createBillsTable = `
 CREATE TABLE IF NOT EXISTS bills (
   id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '账单ID',
+  bill_no varchar(64) NOT NULL COMMENT '账单编号',
   member_id bigint(20) NOT NULL COMMENT '会员ID',
   bill_type varchar(50) NOT NULL COMMENT '账单类型：withdrawal-提现，task_reward-任务奖励，invite_reward-邀请奖励，group_owner_commission-群主收益，reward_grant-奖励发放，reward_deduction-奖励扣除',
   amount decimal(10,2) NOT NULL COMMENT '金额',
@@ -81,6 +82,7 @@ CREATE TABLE IF NOT EXISTS bills (
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
+  UNIQUE KEY uk_bill_no (bill_no),
   KEY idx_member_id (member_id),
   KEY idx_bill_type (bill_type),
   KEY idx_settlement_status (settlement_status),

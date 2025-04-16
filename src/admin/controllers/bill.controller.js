@@ -19,7 +19,8 @@ async function list(req, res) {
       pageSize = DEFAULT_PAGE_SIZE, 
       memberNickname, 
       billType, 
-      settlementStatus 
+      settlementStatus,
+      billNo
     } = req.query;
     
     const filters = {};
@@ -27,6 +28,7 @@ async function list(req, res) {
     if (memberNickname) filters.memberNickname = memberNickname;
     if (billType) filters.billType = billType;
     if (settlementStatus) filters.settlementStatus = settlementStatus;
+    if (billNo) filters.billNo = billNo;
 
     // 获取账单列表
     const result = await billModel.getAllBills(filters, page, pageSize);

@@ -96,12 +96,19 @@ async function createBill(billData, connection) {
     const statusField = isWithdrawal ? 'withdrawal_status' : 'settlement_status';
     const statusValue = isWithdrawal ? 'pending' : (billData.settlementStatus || 'pending'); // 使用提供的结算状态或默认值
     
+    // 生成唯一的账单编号
+    const timestamp = new Date().getTime();
+    const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const billType = billData.billType.toUpperCase().substring(0, 3);
+    const billNo = `${billType}${timestamp}${randomNum}`;
+    
     // 构建插入语句
     const [result] = await connection.query(
       `INSERT INTO bills 
-       (member_id, bill_type, amount, ${statusField}, task_id, withdrawal_id, related_member_id, related_group_id, waiter_id, remark) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (bill_no, member_id, bill_type, amount, ${statusField}, task_id, withdrawal_id, related_member_id, related_group_id, waiter_id, remark) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        billNo,
         billData.memberId,
         billData.billType,
         billData.amount,
@@ -116,19 +123,19 @@ async function createBill(billData, connection) {
     );
     
     // 记录插入结果
-    logger.info(`账单记录创建成功 - 账单ID: ${result.insertId}, 关联群组ID: ${relatedGroupId}, 状态字段: ${statusField}, 状态值: ${statusValue}, 操作人ID: ${billData.waiterId || '无'}`);
+    logger.info(`账单记录创建成功 - 账单ID: ${result.insertId}, 账单编号: ${billNo}, 关联群组ID: ${relatedGroupId}, 状态字段: ${statusField}, 状态值: ${statusValue}, 操作人ID: ${billData.waiterId || '无'}`);
     
     // 验证插入结果
     const [inserted] = await connection.query(
-      'SELECT related_group_id, withdrawal_id FROM bills WHERE id = ?',
+      'SELECT bill_no, related_group_id, withdrawal_id FROM bills WHERE id = ?',
       [result.insertId]
     );
     
     if (inserted.length > 0) {
-      logger.info(`验证插入结果 - 账单ID: ${result.insertId}, 实际存储的关联群组ID: ${inserted[0].related_group_id}, 关联提现ID: ${inserted[0].withdrawal_id}`);
+      logger.info(`验证插入结果 - 账单ID: ${result.insertId}, 账单编号: ${inserted[0].bill_no}, 实际存储的关联群组ID: ${inserted[0].related_group_id}, 关联提现ID: ${inserted[0].withdrawal_id}`);
     }
     
-    return { id: result.insertId };
+    return { id: result.insertId, billNo };
   } catch (error) {
     logger.error(`创建账单记录失败: ${error.message}`);
     throw error;
@@ -213,12 +220,13 @@ async function getMemberBills(memberId, options = {}) {
  * @param {string} filters.memberNickname - 会员昵称
  * @param {string} filters.billType - 账单类型
  * @param {string} filters.settlementStatus - 结算状态
+ * @param {string} filters.billNo - 账单编号
  * @param {number} page - 页码
  * @param {number} pageSize - 每页数量
  * @returns {Promise<Object>} 账单列表和统计信息
  */
 async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
-  const { memberNickname, billType, settlementStatus } = filters;
+  const { memberNickname, billType, settlementStatus, billNo } = filters;
   const params = [];
   let whereClause = 'WHERE 1=1';
   
@@ -235,6 +243,11 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
   if (settlementStatus) {
     whereClause += ' AND b.settlement_status = ?';
     params.push(settlementStatus);
+  }
+  
+  if (billNo) {
+    whereClause += ' AND b.bill_no LIKE ?';
+    params.push(`%${billNo}%`);
   }
   
   const offset = (page - 1) * pageSize;
