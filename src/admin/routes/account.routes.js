@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-14 21:37:01
+ * @LastEditTime: 2025-04-16 18:58:40
  * @Description: 
  */
 /**
@@ -151,5 +151,12 @@ router.put(
  * @access Private - Admin
  */
 router.get('/:id', authMiddleware.verifyToken, accountController.getAccountDetail);
+
+/**
+ * @route DELETE /api/admin/accounts/:id
+ * @desc 删除账号
+ * @access Private - Admin
+ */
+router.delete('/:id', authMiddleware.verifyToken, accountController.deleteAccount);
 
 module.exports = router; 

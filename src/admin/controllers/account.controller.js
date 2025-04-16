@@ -422,10 +422,41 @@ async function getAccountDetail(req, res) {
   }
 }
 
+/**
+ * 删除账号
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function deleteAccount(req, res) {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return responseUtil.badRequest(res, '账号ID不能为空');
+    }
+    
+    // 检查账号是否存在
+    const account = await accountModel.getById(parseInt(id, 10));
+    
+    if (!account) {
+      return responseUtil.notFound(res, '账号不存在');
+    }
+    
+    // 删除账号
+    const result = await accountModel.remove(parseInt(id, 10));
+    
+    return responseUtil.success(res, result, '账号删除成功');
+  } catch (error) {
+    logger.error(`删除账号失败: ${error.message}`);
+    return responseUtil.serverError(res, '删除账号失败，请稍后重试');
+  }
+}
+
 module.exports = {
   getAccounts,
   batchResolve,
   batchReject,
   editAccount,
-  getAccountDetail
+  getAccountDetail,
+  deleteAccount
 }; 
