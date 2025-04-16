@@ -452,6 +452,53 @@ async function batchReject(ids, reason, waiterId) {
   }
 }
 
+/**
+ * 根据ID获取账号详情
+ * @param {number} id - 账号ID
+ * @returns {Promise<Object>} 账号详情
+ */
+async function getById(id) {
+  try {
+    const query = `
+      SELECT a.*, 
+             c.name as channel_name,
+             c.icon as channel_icon,
+             c.custom_fields as channel_custom_fields
+      FROM accounts a
+      LEFT JOIN channels c ON a.channel_id = c.id
+      WHERE a.id = ?
+      LIMIT 1
+    `;
+    
+    const [rows] = await pool.query(query, [id]);
+    
+    if (rows.length === 0) {
+      return null;
+    }
+    
+    // 格式化账号信息
+    const formattedAccount = formatAccount(rows[0]);
+    
+    // 处理渠道自定义字段
+    if (rows[0].channel_custom_fields) {
+      try {
+        formattedAccount.channelCustomFields = typeof rows[0].channel_custom_fields === 'object' 
+          ? rows[0].channel_custom_fields 
+          : JSON.parse(rows[0].channel_custom_fields);
+      } catch (e) {
+        formattedAccount.channelCustomFields = [];
+      }
+    } else {
+      formattedAccount.channelCustomFields = [];
+    }
+    
+    return formattedAccount;
+  } catch (error) {
+    logger.error(`根据ID获取账号详情失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   getList,
   formatAccount,
@@ -461,5 +508,6 @@ module.exports = {
   update,
   remove,
   batchApprove,
-  batchReject
+  batchReject,
+  getById
 }; 

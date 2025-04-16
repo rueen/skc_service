@@ -409,13 +409,13 @@ async function getAccountDetail(req, res) {
     }
     
     // 获取账号详情
-    const account = await accountModel.getList({ id }, 1, 1);
+    const account = await accountModel.getById(parseInt(id, 10));
     
-    if (!account || account.list.length === 0) {
+    if (!account) {
       return responseUtil.notFound(res, '账号不存在');
     }
     
-    return responseUtil.success(res, account.list[0]);
+    return responseUtil.success(res, account);
   } catch (error) {
     logger.error(`获取账号详情失败: ${error.message}`);
     return responseUtil.serverError(res, '获取账号详情失败');
