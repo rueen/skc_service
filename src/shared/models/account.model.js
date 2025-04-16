@@ -244,7 +244,7 @@ async function create(accountData) {
       );
       
       if (existingUid.length > 0) {
-        throw new Error('该 UID 已被使用，请提供一个唯一的标识符');
+        throw new Error('该账号已被使用，禁止重复绑定');
       }
     }
     
@@ -313,7 +313,7 @@ async function update(accountData) {
       );
       
       if (existingUid.length > 0) {
-        throw new Error('该 UID 已被使用，请提供一个唯一的标识符');
+        throw new Error('该账号已被使用，禁止重复绑定');
       }
     }
     
