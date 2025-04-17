@@ -23,7 +23,10 @@ router.use(rateLimiterMiddleware.apiLimiter);
 router.get(
   '/',
   [
-    query('keyword').optional().isString().withMessage('关键字必须是字符串')
+    query('keyword')
+      .optional()
+      .isString()
+      .withMessage('channel.validation.keywordString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.list
@@ -40,9 +43,9 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('channel.validation.idNotEmpty')
       .isInt()
-      .withMessage('渠道ID必须是整数')
+      .withMessage('channel.validation.idInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.get
@@ -59,16 +62,16 @@ router.post(
   [
     body('name')
       .notEmpty()
-      .withMessage('渠道名称不能为空')
+      .withMessage('channel.validation.nameNotEmpty')
       .isLength({ max: 50 })
-      .withMessage('渠道名称长度不能超过50个字符'),
+      .withMessage('channel.validation.nameLength'),
     body('icon')
       .notEmpty()
-      .withMessage('渠道图标不能为空'),
+      .withMessage('channel.validation.iconNotEmpty'),
     body('customFields')
       .optional()
       .isArray()
-      .withMessage('customFields必须是数组')
+      .withMessage('channel.validation.customFieldsArray')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.add
@@ -85,21 +88,21 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('channel.validation.idNotEmpty')
       .isInt()
-      .withMessage('渠道ID必须是整数'),
+      .withMessage('channel.validation.idInt'),
     body('name')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('渠道名称长度不能超过50个字符'),
+      .withMessage('channel.validation.nameLength'),
     body('icon')
       .optional()
       .notEmpty()
-      .withMessage('渠道图标不能为空'),
+      .withMessage('channel.validation.iconNotEmpty'),
     body('customFields')
       .optional()
       .isArray()
-      .withMessage('customFields必须是数组')
+      .withMessage('channel.validation.customFieldsArray')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.edit
@@ -116,9 +119,9 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('channel.validation.idNotEmpty')
       .isInt()
-      .withMessage('渠道ID必须是整数')
+      .withMessage('channel.validation.idInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.remove
