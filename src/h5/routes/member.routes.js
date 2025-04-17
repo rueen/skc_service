@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 17:00:59
+ * @LastEditTime: 2025-04-17 20:10:58
  * @Description: 
  */
 /**
@@ -210,13 +210,9 @@ router.get(
   '/bills',
   [
     query('billType')
-      .optional()
-      .isIn(['withdrawal', 'task_reward', 'invite_reward', 'group_owner_commission'])
-      .withMessage('账单类型无效'),
+      .optional(),
     query('settlementStatus')
       .optional()
-      .isIn(['success', 'failed', 'pending'])
-      .withMessage('结算状态无效')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.getBills

@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-24 20:43:21
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 10:54:54
+ * @LastEditTime: 2025-04-17 20:09:30
  * @Description: 
  */
 /**
@@ -32,17 +32,11 @@ router.get(
   '/',
   [
     query('memberNickname')
-      .optional()
-      .isString()
-      .withMessage('会员昵称必须是字符串'),
+      .optional(),
     query('billType')
-      .optional()
-      .isIn(['withdrawal', 'task_reward', 'invite_reward', 'group_owner_commission'])
-      .withMessage('账单类型无效'),
+      .optional(),
     query('settlementStatus')
       .optional()
-      .isIn(['success', 'failed', 'pending'])
-      .withMessage('结算状态无效')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   billController.list
