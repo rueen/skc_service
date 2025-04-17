@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 15:54:26
+ * @LastEditTime: 2025-04-17 15:58:35
  * @Description: 
  */
 /**
@@ -112,27 +112,27 @@ router.put(
     body('homeUrl')
       .optional()
       .isURL()
-      .withMessage('个人主页URL格式不正确'),
+      .withMessage('account.validation.homeUrlInvalid'),
     body('uid')
       .optional()
       .isString()
-      .withMessage('UID必须是字符串'),
+      .withMessage('account.validation.uidString'),
     body('account')
       .optional()
       .isString()
-      .withMessage('账号必须是字符串'),
+      .withMessage('account.validation.accountString'),
     body('fansCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('粉丝数量必须是非负整数'),
+      .withMessage('account.validation.fansCountNonNegative'),
     body('friendsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('好友数量必须是非负整数'),
+      .withMessage('account.validation.friendsCountNonNegative'),
     body('postsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('帖子数量必须是非负整数')
+      .withMessage('account.validation.postsCountNonNegative')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.editAccount

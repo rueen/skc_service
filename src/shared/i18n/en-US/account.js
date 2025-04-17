@@ -14,6 +14,13 @@ module.exports = {
     idsArray: 'ids must be an array',
     idsNotEmpty: 'ids cannot be empty',
     rejectReasonRequired: 'Reject reason cannot be empty',
-    rejectReasonString: 'Reject reason must be a string'
+    rejectReasonString: 'Reject reason must be a string',
+    
+    // Account edit field validation
+    homeUrlInvalid: 'Personal homepage URL format is invalid',
+    uidString: 'UID must be a string',
+    fansCountNonNegative: 'Fans count must be a non-negative integer',
+    friendsCountNonNegative: 'Friends count must be a non-negative integer',
+    postsCountNonNegative: 'Posts count must be a non-negative integer'
   }
 }; 
