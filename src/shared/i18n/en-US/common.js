@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:47
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 15:08:59
+ * @LastEditTime: 2025-04-17 15:55:52
  * @Description: 
  */
 /**
@@ -18,12 +18,6 @@ module.exports = {
   unauthorized: 'Unauthorized, please login first',
   forbidden: 'Access denied',
   notFound: 'Resource not found',
-  
-  validation: {
-    // Common form validation
-    required: '{field} cannot be empty',
-    invalidFormat: '{field} format is incorrect',
-  }
   
   // Other common translations...
 }; 
