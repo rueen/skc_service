@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 10:55:49
+ * @LastEditTime: 2025-04-17 17:00:59
  * @Description: 
  */
 /**
@@ -80,34 +80,34 @@ router.post(
   [
     body('channelId')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('account.validation.channelIdNotEmpty')
       .isInt()
-      .withMessage('渠道ID必须是整数'),
+      .withMessage('account.validation.channelIdInt'),
     body('account')
       .notEmpty()
-      .withMessage('账号不能为空')
+      .withMessage('account.validation.accountNotEmpty')
       .isLength({ max: 100 })
-      .withMessage('账号长度不能超过100个字符'),
+      .withMessage('account.validation.accountLength'),
     body('uid')
       .optional()
       .isLength({ max: 100 })
-      .withMessage('UID长度不能超过100个字符'),
+      .withMessage('account.validation.uidLength'),
     body('homeUrl')
       .optional()
       .isURL()
-      .withMessage('主页链接必须是有效的URL'),
+      .withMessage('account.validation.homeUrlInvalid'),
     body('fansCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('粉丝数量必须是非负整数'),
+      .withMessage('account.validation.fansCountNonNegative'),
     body('friendsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('好友数量必须是非负整数'),
+      .withMessage('account.validation.friendsCountNonNegative'),
     body('postsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('发布数量必须是非负整数')
+      .withMessage('account.validation.postsCountNonNegative')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberAccountController.addAccount
@@ -123,9 +123,9 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('账号ID不能为空')
+      .withMessage('account.validation.idNotEmpty')
       .isInt()
-      .withMessage('账号ID必须是整数')
+      .withMessage('account.validation.idInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberAccountController.getAccountDetail
@@ -141,33 +141,33 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('账号ID不能为空')
+      .withMessage('account.validation.idNotEmpty')
       .isInt()
-      .withMessage('账号ID必须是整数'),
+      .withMessage('account.validation.idInt'),
     body('account')
       .optional()
       .isLength({ max: 100 })
-      .withMessage('账号长度不能超过100个字符'),
+      .withMessage('account.validation.accountLength'),
     body('uid')
       .optional()
       .isLength({ max: 100 })
-      .withMessage('UID长度不能超过100个字符'),
+      .withMessage('account.validation.uidLength'),
     body('homeUrl')
       .optional()
       .isURL()
-      .withMessage('主页链接必须是有效的URL'),
+      .withMessage('account.validation.homeUrlInvalid'),
     body('fansCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('粉丝数量必须是非负整数'),
+      .withMessage('account.validation.fansCountNonNegative'),
     body('friendsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('好友数量必须是非负整数'),
+      .withMessage('account.validation.friendsCountNonNegative'),
     body('postsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('发布数量必须是非负整数')
+      .withMessage('account.validation.postsCountNonNegative')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberAccountController.updateAccount
@@ -183,9 +183,9 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('账号ID不能为空')
+      .withMessage('account.validation.idNotEmpty')
       .isInt()
-      .withMessage('账号ID必须是整数')
+      .withMessage('account.validation.idInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberAccountController.deleteAccount
