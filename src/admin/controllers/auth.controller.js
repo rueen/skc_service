@@ -6,6 +6,7 @@ const waiterModel = require('../../shared/models/waiter.model');
 const authUtil = require('../../shared/utils/auth.util');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 用户登录
@@ -19,13 +20,13 @@ async function login(req, res) {
     // 查找用户
     const waiter = await waiterModel.findByUsername(username);
     if (!waiter) {
-      return responseUtil.unauthorized(res, '用户名或密码错误');
+      return responseUtil.unauthorized(res, i18n.t('auth.admin.invalidCredentials', req.lang));
     }
 
     // 验证密码
     const isPasswordValid = await authUtil.comparePassword(password, waiter.password);
     if (!isPasswordValid) {
-      return responseUtil.unauthorized(res, '用户名或密码错误');
+      return responseUtil.unauthorized(res, i18n.t('auth.admin.invalidCredentials', req.lang));
     }
 
     // 更新最后登录时间
@@ -48,10 +49,10 @@ async function login(req, res) {
         isAdmin: waiter.isAdmin,
         permissions: waiter.permissions
       }
-    }, '登录成功');
+    }, i18n.t('auth.admin.loginSuccess', req.lang));
   } catch (error) {
     logger.error(`登录失败: ${error.message}`);
-    return responseUtil.serverError(res, '登录过程中发生错误');
+    return responseUtil.serverError(res, i18n.t('auth.admin.loginFailed', req.lang));
   }
 }
 
@@ -67,7 +68,7 @@ async function getCurrentUser(req, res) {
     // 查找用户
     const waiter = await waiterModel.findById(userId);
     if (!waiter) {
-      return responseUtil.notFound(res, '用户不存在');
+      return responseUtil.notFound(res, i18n.t('auth.admin.userNotFound'));
     }
 
     // 返回用户信息
@@ -80,7 +81,7 @@ async function getCurrentUser(req, res) {
     });
   } catch (error) {
     logger.error(`获取当前用户信息失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取用户信息过程中发生错误');
+    return responseUtil.serverError(res, i18n.t('auth.admin.getUserInfoFailed', req.lang));
   }
 }
 
@@ -95,7 +96,7 @@ async function logout(req, res) {
     return responseUtil.success(res, null, '退出登录成功');
   } catch (error) {
     logger.error(`退出登录失败: ${error.message}`);
-    return responseUtil.serverError(res, '退出登录失败');
+    return responseUtil.serverError(res, i18n.t('auth.admin.logoutFailed', req.lang));
   }
 }
 
