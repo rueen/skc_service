@@ -37,6 +37,9 @@ function createApp(options = {}) {
   // 安全中间件
   app.use(helmet());
   
+  // 国际化中间件，提前到请求体解析之前，以便尽早设置语言
+  app.use(i18nMiddleware);
+  
   // CORS配置
   app.use(cors({
     origin: process.env.NODE_ENV === 'production' 
@@ -57,9 +60,6 @@ function createApp(options = {}) {
   // 请求体解析
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  
-  // 国际化中间件，用于识别请求语言
-  app.use(i18nMiddleware);
   
   // 静态文件服务
   app.use('/uploads', (req, res, next) => {

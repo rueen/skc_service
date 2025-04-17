@@ -18,8 +18,8 @@ const validateRequest = (req, res) => {
     const firstError = errors.array()[0];
     const lang = req.lang || 'zh-CN';
     
-    // 错误信息可能已经是国际化的，因为在路由定义中使用了 getErrorMessage 函数
-    responseUtil.badRequest(res, firstError.msg, {
+    const message = i18n.t(firstError.msg, lang);
+    responseUtil.badRequest(res, message, {
       errors: errors.array().map(error => error.msg),
       errorFields: errors.array().map(error => error.param)
     });
