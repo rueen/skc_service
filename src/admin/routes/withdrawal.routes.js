@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-16 20:12:24
+ * @LastEditTime: 2025-04-17 10:55:33
  * @Description: 
  */
 /**
@@ -32,8 +32,6 @@ router.use(authMiddleware.hasPermission('finance:withdrawal'));
 router.get(
   '/',
   [
-    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
-    query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
     query('withdrawalStatus')
       .optional()
       .isIn(Object.values(WithdrawalStatus))

@@ -24,8 +24,6 @@ router.get(
   '/',
   authMiddleware.hasPermission('task:list'),
   [
-    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
-    query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
     query('taskName').optional().isString().withMessage('任务名称必须是字符串'),
     query('taskStatus').optional().isIn(['not_started', 'processing', 'ended']).withMessage('任务状态值无效'),
     query('channelId').optional().isInt().withMessage('渠道ID必须是整数')

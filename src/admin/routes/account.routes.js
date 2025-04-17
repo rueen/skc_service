@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-16 18:58:40
+ * @LastEditTime: 2025-04-17 10:53:53
  * @Description: 
  */
 /**
@@ -31,14 +31,6 @@ router.use(authMiddleware.hasPermission('account:list'));
 router.get(
   '/',
   [
-    query('page')
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage('页码必须是大于0的整数'),
-    query('pageSize')
-      .optional()
-      .isInt({ min: 1, max: 100 })
-      .withMessage('每页条数必须是1-100之间的整数'),
     query('keyword')
       .optional()
       .isString()

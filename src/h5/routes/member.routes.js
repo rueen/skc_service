@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-13 16:34:43
+ * @LastEditTime: 2025-04-17 10:55:49
  * @Description: 
  */
 /**
@@ -209,14 +209,6 @@ router.get(
 router.get(
   '/bills',
   [
-    query('page')
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage('页码必须是大于0的整数'),
-    query('pageSize')
-      .optional()
-      .isInt({ min: 1, max: 100 })
-      .withMessage('每页数量必须是1-100之间的整数'),
     query('billType')
       .optional()
       .isIn(['withdrawal', 'task_reward', 'invite_reward', 'group_owner_commission'])
