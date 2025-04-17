@@ -4,6 +4,7 @@
  */
 const { validationResult } = require('express-validator');
 const responseUtil = require('./response.util');
+const i18n = require('./i18n.util');
 
 /**
  * 验证请求参数
@@ -15,7 +16,13 @@ const validateRequest = (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const firstError = errors.array()[0];
-    responseUtil.badRequest(res, firstError.msg);
+    const lang = req.lang || 'zh-CN';
+    
+    // 错误信息可能已经是国际化的，因为在路由定义中使用了 getErrorMessage 函数
+    responseUtil.badRequest(res, firstError.msg, {
+      errors: errors.array().map(error => error.msg),
+      errorFields: errors.array().map(error => error.param)
+    });
     return false;
   }
   return true;

@@ -5,6 +5,7 @@
 const enums = require('../config/enums');
 const responseUtil = require('../utils/response.util');
 const logger = require('../config/logger.config');
+const i18n = require('../utils/i18n.util');
 
 /**
  * 获取枚举常量
@@ -14,11 +15,11 @@ const logger = require('../config/logger.config');
 async function getEnum(req, res) {
   try {
     const { enumType } = req.params;
-    const lang = req.query.lang || 'zh-CN';
+    const lang = req.lang || 'zh-CN';
     
     // 检查枚举类型是否存在
     if (!enums[enumType]) {
-      return responseUtil.badRequest(res, '枚举类型不存在');
+      return responseUtil.badRequest(res, i18n.t('common.notFound', lang, { field: 'enumType' }));
     }
     
     // 获取枚举值
@@ -46,7 +47,7 @@ async function getEnum(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取枚举常量失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取枚举常量失败');
+    return responseUtil.serverError(res, i18n.t('common.serverError', req.lang));
   }
 }
 
@@ -57,9 +58,9 @@ async function getEnum(req, res) {
  */
 async function getAllEnums(req, res) {
   try {
-    const lang = req.query.lang || 'zh-CN';
+    const lang = req.lang || 'zh-CN';
     const result = {};
-    
+
     // 遍历所有枚举类型
     Object.keys(enums).forEach(key => {
       // 跳过语言配置
@@ -91,7 +92,7 @@ async function getAllEnums(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取所有枚举常量失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取所有枚举常量失败');
+    return responseUtil.serverError(res, i18n.t('common.serverError', req.lang));
   }
 }
 

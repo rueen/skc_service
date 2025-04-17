@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 15:44:59
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-12 09:26:13
+ * @LastEditTime: 2025-04-17 11:44:09
  * @Description: 
  */
 /**
@@ -16,6 +16,7 @@ const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
 const FileStreamRotator = require('file-stream-rotator');
+const i18nMiddleware = require('./middlewares/i18n.middleware');
 
 /**
  * 创建一个配置好的Express应用
@@ -56,6 +57,9 @@ function createApp(options = {}) {
   // 请求体解析
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  
+  // 国际化中间件，用于识别请求语言
+  app.use(i18nMiddleware);
   
   // 静态文件服务
   app.use('/uploads', (req, res, next) => {
