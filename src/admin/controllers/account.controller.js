@@ -47,16 +47,15 @@ async function getAccounts(req, res) {
     // 调用模型获取账号列表（包含群组和渠道详细信息）
     const result = await accountModel.getList(filters, page, pageSize);
     
-    // 使用i18n键值作为消息
     return responseUtil.success(res, {
       total: result.pagination.total,
       list: result.list,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
-    }, 'account.list.success');
+    });
   } catch (error) {
     logger.error(`获取账号列表失败: ${error.message}`);
-    return responseUtil.serverError(res, 'account.list.error');
+    return responseUtil.serverError(res, '获取账号列表失败');
   }
 }
 
@@ -71,7 +70,7 @@ async function batchResolve(req, res) {
     const waiterId = req.user.id;
     
     if (!Array.isArray(ids) || ids.length === 0) {
-      return responseUtil.badRequest(res, 'validator.account.ids');
+      return responseUtil.badRequest(res, '账号ID列表不能为空');
     }
     
     // 获取系统配置的群组最大成员数
@@ -291,11 +290,14 @@ async function batchResolve(req, res) {
     }
     
     return responseUtil.success(res, {
-      results
-    }, 'account.batchResolve.success');
+      success: results.success,
+      failed: results.failed,
+      successCount: results.success.length,
+      failedCount: results.failed.length
+    }, `成功审核通过 ${results.success.length} 个账号，${results.failed.length} 个账号审核失败`);
   } catch (error) {
     logger.error(`批量审核通过账号失败: ${error.message}`);
-    return responseUtil.serverError(res, 'account.batchResolve.error');
+    return responseUtil.serverError(res, '批量审核通过账号失败');
   }
 }
 
@@ -310,66 +312,39 @@ async function batchReject(req, res) {
     const waiterId = req.user.id;
     
     if (!Array.isArray(ids) || ids.length === 0) {
-      return responseUtil.badRequest(res, 'validator.account.ids');
+      return responseUtil.badRequest(res, '账号ID列表不能为空');
     }
     
-    if (!rejectReason) {
-      return responseUtil.badRequest(res, 'validator.account.rejectReason');
-    }
+    // 获取账号详情，包含会员ID和账号信息
+    const { pool } = require('../../shared/models/db');
+    const [accountsInfo] = await pool.query(
+      'SELECT id, member_id, account FROM accounts WHERE id IN (?)',
+      [ids]
+    );
     
-    // 处理批量拒绝
-    await accountModel.batchReject(ids, rejectReason, waiterId);
+    // 执行批量拒绝操作
+    const result = await accountModel.batchReject(ids, rejectReason || '审核未通过', waiterId);
     
-    // 为每个账号创建通知
-    for (const id of ids) {
-      try {
-        const [accountRows] = await accountModel.getById(id);
-        if (accountRows && accountRows.length > 0) {
-          const account = accountRows[0];
-          const memberId = account.member_id;
-          
-          // 创建拒绝通知
-          await notificationModel.createAccountRejectNotification(memberId, {
-            accountId: id,
-            account: account.account,
-            reason: rejectReason
-          });
-        }
-      } catch (notificationError) {
-        logger.error(`创建拒绝通知失败: ${notificationError.message}`);
-      }
-    }
+    // 发送账号审核拒绝通知
+    const notificationPromises = accountsInfo.map(accountInfo => {
+      return notificationModel.createAccountRejectedNotification(
+        accountInfo.member_id,
+        accountInfo.account,
+        rejectReason || '审核未通过'
+      ).catch(error => {
+        logger.error(`发送账号审核拒绝通知失败: ${error.message}`);
+      });
+    });
     
-    return responseUtil.success(res, { count: ids.length }, 'account.batchReject.success');
+    await Promise.all(notificationPromises);
+    
+    return responseUtil.success(res, { 
+      success: true,
+      updatedCount: result.updatedCount 
+    }, `成功拒绝 ${result.updatedCount} 个账号`);
   } catch (error) {
-    logger.error(`批量拒绝账号失败: ${error.message}`);
-    return responseUtil.serverError(res, 'account.batchReject.error');
-  }
-}
-
-/**
- * 获取账号详情
- * @param {Object} req - 请求对象
- * @param {Object} res - 响应对象
- */
-async function getAccountDetail(req, res) {
-  try {
-    const { id } = req.params;
-    
-    if (!id) {
-      return responseUtil.badRequest(res, 'validator.common.required', { field: 'ID' });
-    }
-
-    const account = await accountModel.getById(id);
-    
-    if (!account) {
-      return responseUtil.notFound(res, 'account.detail.notFound');
-    }
-    
-    return responseUtil.success(res, account, 'account.detail.success');
-  } catch (error) {
-    logger.error(`获取账号详情失败: ${error.message}`);
-    return responseUtil.serverError(res, 'account.detail.error');
+    logger.error(`批量审核拒绝账号失败: ${error.message}`);
+    return responseUtil.serverError(res, '批量审核拒绝账号失败');
   }
 }
 
@@ -383,37 +358,67 @@ async function editAccount(req, res) {
     const { id } = req.params;
     const { homeUrl, uid, account, fansCount, friendsCount, postsCount } = req.body;
     
-    if (!id) {
-      return responseUtil.badRequest(res, 'validator.common.required', { field: 'ID' });
-    }
-    
     // 检查账号是否存在
-    const [existingAccount] = await accountModel.getById(id);
+    const { pool } = require('../../shared/models/db');
+    const [accountRows] = await pool.query('SELECT * FROM accounts WHERE id = ?', [id]);
     
-    if (!existingAccount || existingAccount.length === 0) {
-      return responseUtil.notFound(res, 'account.detail.notFound');
+    if (accountRows.length === 0) {
+      return responseUtil.notFound(res, '账号不存在');
     }
     
-    // 构建更新数据
-    const updateData = {};
+    // 准备更新数据
+    const accountData = {
+      id: parseInt(id, 10)
+    };
     
-    if (homeUrl !== undefined) updateData.homeUrl = homeUrl;
-    if (uid !== undefined) updateData.uid = uid;
-    if (account !== undefined) updateData.account = account;
-    if (fansCount !== undefined) updateData.fansCount = parseInt(fansCount, 10);
-    if (friendsCount !== undefined) updateData.friendsCount = parseInt(friendsCount, 10);
-    if (postsCount !== undefined) updateData.postsCount = parseInt(postsCount, 10);
+    // 仅包含提交的字段，未提交的字段不更新
+    if (homeUrl !== undefined) accountData.homeUrl = homeUrl;
+    if (uid !== undefined) accountData.uid = uid;
+    if (account !== undefined) accountData.account = account;
+    if (fansCount !== undefined) accountData.fansCount = parseInt(fansCount, 10);
+    if (friendsCount !== undefined) accountData.friendsCount = parseInt(friendsCount, 10);
+    if (postsCount !== undefined) accountData.postsCount = parseInt(postsCount, 10);
     
-    // 执行更新
-    await accountModel.update(id, updateData);
+    // 调用模型更新账号信息
+    const result = await accountModel.update(accountData);
     
-    // 获取更新后的账号信息
-    const [updatedAccount] = await accountModel.getById(id);
-    
-    return responseUtil.success(res, updatedAccount[0], 'account.edit.success');
+    return responseUtil.success(res, result, '账号更新成功');
   } catch (error) {
     logger.error(`编辑账号失败: ${error.message}`);
-    return responseUtil.serverError(res, 'account.edit.error');
+    
+    // 处理唯一性验证错误
+    if (error.message.includes('UID 已被使用')) {
+      return responseUtil.badRequest(res, error.message);
+    }
+    
+    return responseUtil.serverError(res, '编辑账号失败，请稍后重试');
+  }
+}
+
+/**
+ * 获取账号详情
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getAccountDetail(req, res) {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return responseUtil.badRequest(res, '账号ID不能为空');
+    }
+    
+    // 获取账号详情
+    const account = await accountModel.getById(parseInt(id, 10));
+    
+    if (!account) {
+      return responseUtil.notFound(res, '账号不存在');
+    }
+    
+    return responseUtil.success(res, account);
+  } catch (error) {
+    logger.error(`获取账号详情失败: ${error.message}`);
+    return responseUtil.serverError(res, '获取账号详情失败');
   }
 }
 
@@ -427,23 +432,23 @@ async function deleteAccount(req, res) {
     const { id } = req.params;
     
     if (!id) {
-      return responseUtil.badRequest(res, 'validator.common.required', { field: 'ID' });
+      return responseUtil.badRequest(res, '账号ID不能为空');
     }
     
     // 检查账号是否存在
-    const [account] = await accountModel.getById(id);
+    const account = await accountModel.getById(parseInt(id, 10));
     
-    if (!account || account.length === 0) {
-      return responseUtil.notFound(res, 'account.delete.notFound');
+    if (!account) {
+      return responseUtil.notFound(res, '账号不存在');
     }
     
-    // 执行删除
-    await accountModel.remove(id);
+    // 删除账号
+    const result = await accountModel.remove(parseInt(id, 10));
     
-    return responseUtil.success(res, { id }, 'account.delete.success');
+    return responseUtil.success(res, result, '账号删除成功');
   } catch (error) {
     logger.error(`删除账号失败: ${error.message}`);
-    return responseUtil.serverError(res, 'account.delete.error');
+    return responseUtil.serverError(res, '删除账号失败，请稍后重试');
   }
 }
 

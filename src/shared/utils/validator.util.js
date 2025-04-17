@@ -4,7 +4,6 @@
  */
 const { validationResult } = require('express-validator');
 const responseUtil = require('./response.util');
-const { getMessage } = require('../i18n');
 
 /**
  * 验证请求参数
@@ -20,49 +19,6 @@ const validateRequest = (req, res) => {
     return false;
   }
   return true;
-};
-
-/**
- * 获取请求中的语言设置
- * @param {Object} req - Express请求对象
- * @returns {string} 语言代码
- */
-const getLangFromRequest = (req) => {
-  return req.query.lang || req.body.lang || req.headers['accept-language'] || 'zh-CN';
-};
-
-/**
- * 创建验证中间件，支持多语言错误信息
- * @param {Array} validations - 验证规则数组
- * @returns {Function} Express中间件
- */
-const createValidator = (validations) => {
-  return async (req, res, next) => {
-    const lang = getLangFromRequest(req);
-    
-    // 替换验证规则中的错误信息
-    const localizedValidations = validations.map(validation => {
-      // 定制错误消息
-      if (validation.message && typeof validation.message === 'object') {
-        const { module, key, params } = validation.message;
-        validation.errorMessage = getMessage(lang, `validator.${module}.${key}`, params);
-      }
-      return validation;
-    });
-    
-    // 执行验证
-    await Promise.all(localizedValidations.map(validation => validation.run(req)));
-    
-    // 检查验证结果
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      const firstError = errors.array()[0];
-      responseUtil.badRequest(res, firstError.msg);
-      return;
-    }
-    
-    next();
-  };
 };
 
 /**
@@ -136,8 +92,6 @@ const isStrongPassword = (password) => {
 
 module.exports = {
   validateRequest,
-  getLangFromRequest,
-  createValidator,
   isValidId,
   isValidDate,
   isValidEmail,

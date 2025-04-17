@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 10:26:10
+ * @LastEditTime: 2025-04-16 18:58:40
  * @Description: 
  */
 /**
@@ -15,7 +15,6 @@ const accountController = require('../controllers/account.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
-const { createValidatorMessages } = require('../../shared/i18n');
 
 const router = express.Router();
 
@@ -24,12 +23,6 @@ router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 router.use(authMiddleware.hasPermission('account:list'));
 
-// 提取请求中的语言参数
-router.use((req, res, next) => {
-  req.lang = validatorUtil.getLangFromRequest(req);
-  next();
-});
-
 /**
  * @route GET /api/admin/accounts
  * @desc 获取账号列表
@@ -37,49 +30,41 @@ router.use((req, res, next) => {
  */
 router.get(
   '/',
-  (req, res, next) => {
-    // 根据请求中的语言参数获取验证消息
-    const lang = req.lang;
-    
-    // 应用验证规则
-    const validations = [
-      query('keyword')
-        .optional()
-        .isString()
-        .withMessage(() => createValidatorMessages('account')(lang).keyword),
-      query('account')
-        .optional()
-        .isString()
-        .withMessage(() => createValidatorMessages('account')(lang).account),
-      query('channelId')
-        .optional()
-        .isInt()
-        .withMessage(() => createValidatorMessages('account')(lang).channelId),
-      query('accountAuditStatus')
-        .optional()
-        .isIn(['pending', 'approved', 'rejected'])
-        .withMessage(() => createValidatorMessages('account')(lang).accountAuditStatus),
-      query('groupId')
-        .optional()
-        .isInt()
-        .withMessage(() => createValidatorMessages('account')(lang).groupId),
-      query('memberId')
-        .optional()
-        .isInt()
-        .withMessage(() => createValidatorMessages('account')(lang).memberId)
-    ];
-    
-    // 执行验证
-    Promise.all(validations.map(validation => validation.run(req)))
-      .then(() => {
-        if (validatorUtil.validateRequest(req, res)) {
-          next();
-        }
-      })
-      .catch(err => {
-        next(err);
-      });
-  },
+  [
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('页码必须是大于0的整数'),
+    query('pageSize')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('每页条数必须是1-100之间的整数'),
+    query('keyword')
+      .optional()
+      .isString()
+      .withMessage('关键词必须是字符串'),
+    query('account')
+      .optional()
+      .isString()
+      .withMessage('账号必须是字符串'),
+    query('channelId')
+      .optional()
+      .isInt()
+      .withMessage('渠道ID必须是整数'),
+    query('accountAuditStatus')
+      .optional()
+      .isIn(['pending', 'approved', 'rejected'])
+      .withMessage('账号审核状态无效'),
+    query('groupId')
+      .optional()
+      .isInt()
+      .withMessage('群组ID必须是整数'),
+    query('memberId')
+      .optional()
+      .isInt()
+      .withMessage('会员ID必须是整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.getAccounts
 );
 
@@ -90,27 +75,14 @@ router.get(
  */
 router.post(
   '/batch-approve',
-  (req, res, next) => {
-    const lang = req.lang;
-    
-    const validations = [
-      body('ids')
-        .isArray()
-        .withMessage(() => createValidatorMessages('account')(lang).ids)
-        .notEmpty()
-        .withMessage(() => createValidatorMessages('account')(lang).ids)
-    ];
-    
-    Promise.all(validations.map(validation => validation.run(req)))
-      .then(() => {
-        if (validatorUtil.validateRequest(req, res)) {
-          next();
-        }
-      })
-      .catch(err => {
-        next(err);
-      });
-  },
+  [
+    body('ids')
+      .isArray()
+      .withMessage('ids必须是数组')
+      .notEmpty()
+      .withMessage('ids不能为空')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.batchResolve
 );
 
@@ -121,31 +93,18 @@ router.post(
  */
 router.post(
   '/batch-reject',
-  (req, res, next) => {
-    const lang = req.lang;
-    
-    const validations = [
-      body('ids')
-        .isArray()
-        .withMessage(() => createValidatorMessages('account')(lang).ids)
-        .notEmpty()
-        .withMessage(() => createValidatorMessages('account')(lang).ids),
-      body('rejectReason')
-        .optional()
-        .isString()
-        .withMessage(() => createValidatorMessages('account')(lang).rejectReason)
-    ];
-    
-    Promise.all(validations.map(validation => validation.run(req)))
-      .then(() => {
-        if (validatorUtil.validateRequest(req, res)) {
-          next();
-        }
-      })
-      .catch(err => {
-        next(err);
-      });
-  },
+  [
+    body('ids')
+      .isArray()
+      .withMessage('ids必须是数组')
+      .notEmpty()
+      .withMessage('ids不能为空'),
+    body('rejectReason')
+      .optional()
+      .isString()
+      .withMessage('拒绝原因必须是字符串')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.batchReject
 );
 
@@ -156,46 +115,33 @@ router.post(
  */
 router.put(
   '/:id',
-  (req, res, next) => {
-    const lang = req.lang;
-    
-    const validations = [
-      body('homeUrl')
-        .optional()
-        .isURL()
-        .withMessage(() => createValidatorMessages('account')(lang).homeUrl),
-      body('uid')
-        .optional()
-        .isString()
-        .withMessage(() => createValidatorMessages('account')(lang).uid),
-      body('account')
-        .optional()
-        .isString()
-        .withMessage(() => createValidatorMessages('account')(lang).account),
-      body('fansCount')
-        .optional()
-        .isInt({ min: 0 })
-        .withMessage(() => createValidatorMessages('account')(lang).fansCount),
-      body('friendsCount')
-        .optional()
-        .isInt({ min: 0 })
-        .withMessage(() => createValidatorMessages('account')(lang).friendsCount),
-      body('postsCount')
-        .optional()
-        .isInt({ min: 0 })
-        .withMessage(() => createValidatorMessages('account')(lang).postsCount)
-    ];
-    
-    Promise.all(validations.map(validation => validation.run(req)))
-      .then(() => {
-        if (validatorUtil.validateRequest(req, res)) {
-          next();
-        }
-      })
-      .catch(err => {
-        next(err);
-      });
-  },
+  [
+    body('homeUrl')
+      .optional()
+      .isURL()
+      .withMessage('个人主页URL格式不正确'),
+    body('uid')
+      .optional()
+      .isString()
+      .withMessage('UID必须是字符串'),
+    body('account')
+      .optional()
+      .isString()
+      .withMessage('账号必须是字符串'),
+    body('fansCount')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('粉丝数量必须是非负整数'),
+    body('friendsCount')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('好友数量必须是非负整数'),
+    body('postsCount')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('帖子数量必须是非负整数')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.editAccount
 );
 
