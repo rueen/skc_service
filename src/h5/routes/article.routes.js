@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-29 18:36:26
+ * @LastEditTime: 2025-04-17 17:32:11
  * @Description: 
  */
 /**
@@ -28,9 +28,9 @@ router.get(
   [
     param('location')
       .notEmpty()
-      .withMessage('位置标识不能为空')
+      .withMessage('article.validation.locationNotEmpty')
       .isString()
-      .withMessage('位置标识必须是字符串')
+      .withMessage('article.validation.locationString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   articleController.getDetailByLocation
@@ -47,9 +47,9 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('文章ID不能为空')
+      .withMessage('article.validation.idNotEmpty')
       .isInt()
-      .withMessage('文章ID必须是整数')
+      .withMessage('article.validation.idInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   articleController.getDetailById

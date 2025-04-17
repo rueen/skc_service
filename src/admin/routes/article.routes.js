@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-12 14:28:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 10:54:47
+ * @LastEditTime: 2025-04-17 17:31:15
  * @Description: 
  */
 /**
@@ -29,7 +29,7 @@ router.use(authMiddleware.hasPermission('article:list'));
 router.get(
   '/',
   [
-    query('keyword').optional().isString().withMessage('关键字必须是字符串')
+    query('keyword').optional().isString().withMessage('article.validation.keywordString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   articleController.list
@@ -45,16 +45,16 @@ router.post(
   [
     body('title')
       .notEmpty()
-      .withMessage('标题不能为空')
+      .withMessage('article.validation.titleNotEmpty')
       .isLength({ max: 100 })
-      .withMessage('标题长度不能超过100个字符'),
+      .withMessage('article.validation.titleLength'),
     body('content')
       .notEmpty()
-      .withMessage('内容不能为空'),
+      .withMessage('article.validation.contentNotEmpty'),
     body('location')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('位置标识长度不能超过50个字符')
+      .withMessage('article.validation.locationLength')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   articleController.add
@@ -70,21 +70,21 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('文章ID不能为空')
+      .withMessage('article.validation.idNotEmpty')
       .isInt()
-      .withMessage('文章ID必须是整数'),
+      .withMessage('article.validation.idInt'),
     body('title')
       .notEmpty()
-      .withMessage('标题不能为空')
+      .withMessage('article.validation.titleNotEmpty')
       .isLength({ max: 100 })
-      .withMessage('标题长度不能超过100个字符'),
+      .withMessage('article.validation.titleLength'),
     body('content')
       .notEmpty()
-      .withMessage('内容不能为空'),
+      .withMessage('article.validation.contentNotEmpty'),
     body('location')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('位置标识长度不能超过50个字符')
+      .withMessage('article.validation.locationLength')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   articleController.edit
@@ -100,9 +100,9 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('文章ID不能为空')
+      .withMessage('article.validation.idNotEmpty')
       .isInt()
-      .withMessage('文章ID必须是整数')
+      .withMessage('article.validation.idInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   articleController.remove
