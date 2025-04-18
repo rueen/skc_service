@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 16:57:00
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-30 16:20:09
+ * @LastEditTime: 2025-04-18 09:23:37
  * @Description: 
  */
 /**
@@ -44,8 +44,8 @@ router.get(
       .withMessage('页码必须是大于0的整数'),
     query('pageSize')
       .optional()
-      .isInt({ min: 1, max: 100 })
-      .withMessage('每页数量必须是1-100之间的整数')
+      .isInt({ min: 1 })
+      .withMessage('每页条数必须是大于0的整数'),
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   inviteController.getInviteFriends

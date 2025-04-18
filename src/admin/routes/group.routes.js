@@ -23,12 +23,30 @@ router.use(rateLimiterMiddleware.apiLimiter);
 router.get(
   '/',
   [
-    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
-    query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
-    query('groupName').optional().isString().withMessage('群组名称必须是字符串'),
-    query('ownerId').optional().isInt().withMessage('群主ID必须是整数'),
-    query('memberId').optional().isInt().withMessage('成员ID必须是整数'),
-    query('keyword').optional().isString().withMessage('关键词必须是字符串')
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('页码必须是大于0的整数'),
+    query('pageSize')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('每页条数必须是大于0的整数'),
+    query('groupName')
+      .optional()
+      .isString()
+      .withMessage('群组名称必须是字符串'),
+    query('ownerId')
+      .optional()
+      .isInt()
+      .withMessage('群主ID必须是整数'),
+    query('memberId')
+      .optional()
+      .isInt()
+      .withMessage('成员ID必须是整数'),
+    query('keyword')
+      .optional()
+      .isString()
+      .withMessage('关键词必须是字符串')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.list
