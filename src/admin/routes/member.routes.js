@@ -113,7 +113,7 @@ router.post(
     body('email')
       .optional()
       .isEmail()
-      .withMessage('邮箱格式不正确'),
+      .withMessage('common.validation.formatInvalid'),
     body('gender')
       .optional()
       .isIn([0, 1, 2])

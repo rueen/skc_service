@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:38
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:07:13
+ * @LastEditTime: 2025-04-18 16:09:53
  * @Description: 
  */
 /**
@@ -26,8 +26,9 @@ module.exports = {
     mustBeString: '{field}必须是字符串',
     mustBeInt: '{field}必须是整数',
     invalid: '{field}无效',
-    timeFormatInvalid: '{field}时间格式无效',
+    timeFormatInvalid: '{field}时间格式不正确',
     mustNotBeEmpty: '{field}不能为空',
     mustBeArray: '{field}必须是数组',
+    formatInvalid: '{field}格式不正确',
   }
 }; 

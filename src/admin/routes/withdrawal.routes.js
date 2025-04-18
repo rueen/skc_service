@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:07:59
+ * @LastEditTime: 2025-04-18 16:10:10
  * @Description: 
  */
 /**
@@ -51,11 +51,11 @@ router.get(
     query('startTime')
       .optional()
       .isISO8601()
-      .withMessage('开始时间格式不正确'),
+      .withMessage('common.validation.timeFormatInvalid'),
     query('endTime')
       .optional()
       .isISO8601()
-      .withMessage('结束时间格式不正确')
+      .withMessage('common.validation.timeFormatInvalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.getWithdrawals
@@ -112,8 +112,8 @@ router.get(
       .isIn(Object.values(WithdrawalStatus))
       .withMessage('无效的提现状态'),
     query('billNo').optional().isString().withMessage('common.validation.mustBeString'),
-    query('startDate').optional().isString().withMessage('开始日期格式不正确'),
-    query('endDate').optional().isString().withMessage('结束日期格式不正确')
+    query('startDate').optional().isString().withMessage('common.validation.timeFormatInvalid'),
+    query('endDate').optional().isString().withMessage('common.validation.timeFormatInvalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.exportWithdrawals

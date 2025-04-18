@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:07:34
+ * @LastEditTime: 2025-04-18 16:11:22
  * @Description: 
  */
 /**
@@ -119,7 +119,7 @@ router.put(
     body('homeUrl')
       .optional()
       .isURL()
-      .withMessage('个人主页URL格式不正确'),
+      .withMessage('common.validation.formatInvalid'),
     body('uid')
       .optional()
       .isString()
