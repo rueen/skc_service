@@ -41,21 +41,21 @@ const TaskType = {
 const TaskTypeLang = {
   [TaskType.POST]: {
     'zh-CN': '图文',
-    'en-US': 'Post',
+    'en-US': 'POST',
     'zh-TW': '圖文',
-    'tl-PH': 'Post'
+    'tl-PH': 'POST'
   },
   [TaskType.VIDEO]: {
     'zh-CN': '视频',
-    'en-US': 'Video',
+    'en-US': 'VIDEO',
     'zh-TW': '視頻',
-    'tl-PH': 'Bidyo'
+    'tl-PH': 'VIDEO'
   },
   [TaskType.LIVE]: {
     'zh-CN': '直播',
-    'en-US': 'Live',
+    'en-US': 'LIVE',
     'zh-TW': '直播',
-    'tl-PH': 'Live'
+    'tl-PH': 'LIVE'
   }
 };
 
