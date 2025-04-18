@@ -52,7 +52,7 @@ router.put(
   [
     param('id')
       .isInt()
-      .withMessage('无效的账户ID'),
+      .withMessage('common.validation.mustBeInt'),
     body('paymentChannelId')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
@@ -112,7 +112,7 @@ router.post(
       .withMessage('common.validation.mustBeInt'),
     body('amount')
       .isFloat({ min: 0.01 })
-      .withMessage('提现金额必须大于0')
+      .withMessage('common.validation.amountFormat')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.createWithdrawal

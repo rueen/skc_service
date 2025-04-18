@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:21:58
+ * @LastEditTime: 2025-04-18 17:27:26
  * @Description: 
  */
 /**
@@ -145,7 +145,7 @@ router.get(
     query('auditType')
       .optional()
       .isIn(['confirm', 'pre'])
-      .withMessage('审核类型值无效，有效值为 confirm 或 pre')
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:submittedDetail'),

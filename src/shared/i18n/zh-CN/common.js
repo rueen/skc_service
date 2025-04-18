@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:38
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 17:17:20
+ * @LastEditTime: 2025-04-18 17:34:22
  * @Description: 
  */
 /**
@@ -25,13 +25,19 @@ module.exports = {
     pageSize: '每页条数必须是大于0的整数',
     mustBeString: '{field}必须是字符串',
     mustBeInt: '{field}必须是整数',
-    invalid: '{field}无效',
+    invalid: '{field}类型值无效',
     timeFormatInvalid: '{field}时间格式不正确',
     mustNotBeEmpty: '{field}不能为空',
     mustBeArray: '{field}必须是数组',
     formatInvalid: '{field}格式不正确',
     mustBeNonNegativeInteger: '{field}必须是非负整数',
     maxLength: '{field}长度不能超过{max}个字符',
-    minLength: '{field}长度不能小于{min}个字符'
+    minLength: '{field}长度不能小于{min}个字符',
+    memberAccountLength: '会员账号长度必须在4-50个字符之间',
+    memberPasswordLength: '密码长度必须在8-20位之间',
+    memberPasswordFormat: '密码必须包含字母和数字',
+    confirmPasswordNotMatch: '确认密码与新密码不一致',
+    amountFormat: '金额格式不正确',
+    waiterUsernameLength: '小二用户名长度必须在3-20个字符之间',
   }
 }; 

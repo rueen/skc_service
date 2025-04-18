@@ -99,7 +99,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isFloat({ min: 0 })
-      .withMessage('任务奖励金额必须是非负数'),
+      .withMessage('common.validation.amountFormat'),
     body('brand')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
@@ -112,12 +112,12 @@ router.post(
     body('groupMode')
       .optional()
       .isBoolean()
-      .withMessage('群组模式必须是布尔值'),
+      .withMessage('common.validation.formatInvalid'),
     body('userRange')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isIn([0, 1])
-      .withMessage('用户范围必须是0或1，0表示全部用户，1表示需要校验完成任务次数'),
+      .withMessage('common.validation.invalid'),
     body('taskCount')
       .custom((value, { req }) => {
         // 当 userRange 为 1 时，taskCount 必须存在且为非负整数
@@ -149,11 +149,11 @@ router.post(
     body('unlimitedQuota')
       .optional()
       .isBoolean()
-      .withMessage('是否不限名额必须是布尔值'),
+      .withMessage('common.validation.formatInvalid'),
     body('fansRequired')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('粉丝要求必须是大于等于0的整数'),
+      .withMessage('common.validation.formatInvalid'),
     body('contentRequirement')
       .optional()
       .isString()
@@ -206,7 +206,7 @@ router.put(
     body('reward')
       .optional()
       .isFloat({ min: 0 })
-      .withMessage('任务奖励金额必须是非负数'),
+      .withMessage('common.validation.amountFormat'),
     body('brand')
       .optional()
       .isLength({ max: 100 })
@@ -218,11 +218,11 @@ router.put(
     body('groupMode')
       .optional()
       .isBoolean()
-      .withMessage('群组模式必须是布尔值'),
+      .withMessage('common.validation.formatInvalid'),
     body('userRange')
       .optional()
       .isIn([0, 1])
-      .withMessage('用户范围必须是0或1，0表示全部用户，1表示需要校验完成任务次数'),
+      .withMessage('common.validation.invalid'),
     body('taskCount')
       .optional()
       .custom((value, { req }) => {
@@ -249,11 +249,11 @@ router.put(
     body('unlimitedQuota')
       .optional()
       .isBoolean()
-      .withMessage('是否不限名额必须是布尔值'),
+      .withMessage('common.validation.formatInvalid'),
     body('fansRequired')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('粉丝要求必须是大于等于0的整数'),
+      .withMessage('common.validation.formatInvalid'),
     body('contentRequirement')
       .optional()
       .isString()

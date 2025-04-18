@@ -78,14 +78,14 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 4, max: 50 })
-      .withMessage('会员账号长度必须在4-50个字符之间'),
+      .withMessage('common.validation.memberAccountLength'),
     body('password')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 8, max: 20 })
-      .withMessage('密码长度必须在8-20位之间')
+      .withMessage('common.validation.memberPasswordLength')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
-      .withMessage('密码必须包含字母和数字'),
+      .withMessage('common.validation.memberPasswordFormat'),
     body('memberNickname')
       .optional()
       .isLength({ max: 50 })
@@ -147,14 +147,14 @@ router.put(
       .withMessage('common.validation.maxLength{max:50}'),
     body('memberAccount')
       .optional()
-      .isLength({ max: 50 })
-      .withMessage('common.validation.maxLength{max:50}'),
+      .isLength({ min: 4, max: 50 })
+      .withMessage('common.validation.memberAccountLength'),
     body('password')
       .optional()
       .isLength({ min: 8, max: 20 })
-      .withMessage('密码长度必须在8-20个字符之间')
+      .withMessage('common.validation.memberPasswordLength')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
-      .withMessage('密码必须包含字母和数字'),
+      .withMessage('common.validation.memberPasswordFormat'),
     body('groupIds')
       .optional()
       .isArray()
@@ -170,7 +170,7 @@ router.put(
         if (value === null) return true;
         return Number.isInteger(Number(value));
       })
-      .withMessage('邀请人ID必须是整数或null'),
+      .withMessage('common.validation.inviterIdFormat'),
     body('occupation')
       .optional()
       .isIn(Object.values(OccupationType))
@@ -293,7 +293,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isFloat({ min: 0.01 })
-      .withMessage('奖励金额必须为大于0的数字'),
+      .withMessage('common.validation.amountFormat'),
     body('remark')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
@@ -322,7 +322,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isFloat({ min: 0.01 })
-      .withMessage('扣除金额必须为大于0的数字'),
+      .withMessage('common.validation.amountFormat'),
     body('remark')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')

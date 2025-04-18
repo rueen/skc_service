@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 17:16:12
+ * @LastEditTime: 2025-04-18 17:33:38
  * @Description: 
  */
 /**
@@ -31,7 +31,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isIn(['phone', 'email'])
-      .withMessage('登录类型必须为phone或email'),
+      .withMessage('common.validation.invalid'),
     body('memberAccount')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
@@ -45,9 +45,9 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 8, max: 20 })
-      .withMessage('密码长度必须在8-20个字符之间')
+      .withMessage('common.validation.memberPasswordLength')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
-      .withMessage('密码必须包含字母和数字'),
+      .withMessage('common.validation.memberPasswordFormat'),
     body('inviteCode')
       .optional()
       .isString()
@@ -87,15 +87,15 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 8, max: 20 })
-      .withMessage('新密码长度必须在8-20个字符之间')
+      .withMessage('common.validation.memberPasswordLength')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
-      .withMessage('新密码必须包含字母和数字'),
+      .withMessage('common.validation.memberPasswordFormat'),
     body('confirmPassword')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .custom((value, { req }) => {
         if (value !== req.body.newPassword) {
-          throw new Error('确认密码与新密码不一致');
+          throw new Error('common.validation.confirmPasswordNotMatch');
         }
         return true;
       })

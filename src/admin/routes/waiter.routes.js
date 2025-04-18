@@ -39,7 +39,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 3, max: 20 })
-      .withMessage('用户名长度应为3-20个字符'),
+      .withMessage('common.validation.waiterUsernameLength'),
     body('password')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
@@ -48,7 +48,7 @@ router.post(
     body('isAdmin')
       .optional()
       .isBoolean()
-      .withMessage('isAdmin必须是布尔值'),
+      .withMessage('common.validation.formatInvalid'),
     body('permissions')
       .optional()
       .isString()
@@ -81,7 +81,7 @@ router.put(
     body('username')
       .optional()
       .isLength({ min: 3, max: 20 })
-      .withMessage('用户名长度应为3-20个字符'),
+      .withMessage('common.validation.waiterUsernameLength'),
     body('password')
       .optional()
       .isLength({ min: 6 })
@@ -89,7 +89,7 @@ router.put(
     body('isAdmin')
       .optional()
       .isBoolean()
-      .withMessage('isAdmin必须是布尔值'),
+      .withMessage('common.validation.formatInvalid'),
     body('permissions')
       .optional()
       .isString()

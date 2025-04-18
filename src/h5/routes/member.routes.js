@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 17:15:42
+ * @LastEditTime: 2025-04-18 17:35:07
  * @Description: 
  */
 /**
@@ -64,7 +64,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isURL()
-      .withMessage('主页链接必须是有效的URL')
+      .withMessage('common.validation.formatInvalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberAccountController.findUidByHomeUrl
