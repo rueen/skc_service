@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-11 20:46:54
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 09:05:33
+ * @LastEditTime: 2025-04-18 22:51:29
  * @Description: 
  */
 /**
@@ -20,7 +20,7 @@ const i18n = require('./i18n.util');
  */
 const success = (res, data = {}, message = null, statusCode = 200) => {
   // 使用国际化翻译，如果没有提供消息，则使用默认的成功消息
-  const lang = res.req.lang || 'zh-CN';
+  const lang = res.req.lang || 'en-US';
   const finalMessage = message || i18n.t('common.success', lang);
 
   return res.status(statusCode).json({
@@ -39,7 +39,7 @@ const success = (res, data = {}, message = null, statusCode = 200) => {
  */
 const error = (res, message = null, code = 5001, statusCode = 400) => {
   // 使用国际化翻译，如果没有提供消息，则使用默认的失败消息
-  const lang = res.req.lang || 'zh-CN';
+  const lang = res.req.lang || 'en-US';
   const finalMessage = message || i18n.t('common.failed', lang);
 
   return res.status(statusCode).json({
@@ -55,7 +55,7 @@ const error = (res, message = null, code = 5001, statusCode = 400) => {
  * @param {string} message - 错误消息
  */
 const badRequest = (res, message = null) => {
-  const lang = res.req.lang || 'zh-CN';
+  const lang = res.req.lang || 'en-US';
   const finalMessage = message || i18n.t('common.badRequest', lang);
   return error(res, finalMessage, 4001, 400);
 };
@@ -66,7 +66,7 @@ const badRequest = (res, message = null) => {
  * @param {string} message - 错误消息
  */
 const unauthorized = (res, message = null) => {
-  const lang = res.req.lang || 'zh-CN';
+  const lang = res.req.lang || 'en-US';
   const finalMessage = message || i18n.t('common.unauthorized', lang);
   return error(res, finalMessage, 4010, 401);
 };
@@ -77,7 +77,7 @@ const unauthorized = (res, message = null) => {
  * @param {string} message - 错误消息
  */
 const forbidden = (res, message = null) => {
-  const lang = res.req.lang || 'zh-CN';
+  const lang = res.req.lang || 'en-US';
   const finalMessage = message || i18n.t('common.forbidden', lang);
   return error(res, finalMessage, 4030, 403);
 };
@@ -88,7 +88,7 @@ const forbidden = (res, message = null) => {
  * @param {string} message - 错误消息
  */
 const notFound = (res, message = null) => {
-  const lang = res.req.lang || 'zh-CN';
+  const lang = res.req.lang || 'en-US';
   const finalMessage = message || i18n.t('common.notFound', lang);
   return error(res, finalMessage, 4040, 404);
 };
@@ -99,7 +99,7 @@ const notFound = (res, message = null) => {
  * @param {string} message - 错误消息
  */
 const serverError = (res, message = null) => {
-  const lang = res.req.lang || 'zh-CN';
+  const lang = res.req.lang || 'en-US';
   const finalMessage = message || i18n.t('common.serverError', lang);
   return error(res, finalMessage, 5001, 500);
 };

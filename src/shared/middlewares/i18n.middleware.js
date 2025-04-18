@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:03
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 11:44:33
+ * @LastEditTime: 2025-04-18 22:51:15
  * @Description: 
  */
 /**
@@ -31,10 +31,9 @@ function i18nMiddleware(req, res, next) {
   }
   
   // 如果都没有找到，则使用默认语言
-  if (!['zh-CN', 'en-US'].includes(lang)) {
-    lang = 'zh-CN';
+  if (!['zh-CN', 'en-US', 'zh-TW', 'tl-PH'].includes(lang)) {
+    lang = 'en-US';
   }
-  
   // 将语言设置保存到请求对象中，以便后续使用
   req.lang = lang;
   

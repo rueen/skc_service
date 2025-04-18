@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 19:53:45
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 22:23:20
+ * @LastEditTime: 2025-04-18 22:53:52
  * @Description: 
  */
 module.exports = {
@@ -34,7 +34,7 @@ module.exports = {
     addSuccess: 'Account added successfully, please wait for review',
     updateSuccess: 'Account updated successfully, please wait for review',
     deleteSuccess: 'Account deleted successfully',
-    duplicateBind: 'This account has already been used, please do not repeat the binding',
+    duplicateBind: 'This account has already been used. Duplicate binding is not allowed',
   },
 
   member: {

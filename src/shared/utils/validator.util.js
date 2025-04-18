@@ -67,7 +67,7 @@ const validateRequest = (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const firstError = errors.array()[0];
-    const lang = req.lang || req.query.lang || req.body.lang || 'zh-CN';
+    const lang = req.lang || req.query.lang || req.body.lang || 'en-US';
     const { part1, part2 } = extractParts(firstError.msg);
     console.log(part1, part2);
     const message = i18n.t(part1, lang, {

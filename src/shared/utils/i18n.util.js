@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:40:52
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 15:21:33
+ * @LastEditTime: 2025-04-18 22:50:30
  * @Description: 
  */
 /**
@@ -20,8 +20,8 @@ const i18nResources = require('../i18n');
  */
 function t(key, lang = 'zh-CN', params = {}) {
   // 如果语言代码不存在，默认使用中文
-  if (!['zh-CN', 'en-US'].includes(lang)) {
-    lang = 'zh-CN';
+  if (!['zh-CN', 'en-US', 'zh-TW', 'tl-PH'].includes(lang)) {
+    lang = 'en-US';
   }
 
   // 解析键名
