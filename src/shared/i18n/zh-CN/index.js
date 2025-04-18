@@ -5,11 +5,11 @@
 const common = require('./common');
 const account = require('./account');
 const task = require('./task');
-const article = require('./article');
+// 导入其他模块语言文件
 
 module.exports = {
   common,
   account,
   task,
-  article
+  // 导出其他模块
 }; 

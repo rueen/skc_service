@@ -2,14 +2,15 @@
  * @Author: diaochan
  * @Date: 2025-04-17 17:45:00
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 18:05:12
+ * @LastEditTime: 2025-04-17 17:45:00
  * @Description: 修改articles表的location字段允许为NULL
  */
 /**
- * 迁移脚本：修改articles表的location字段允许为NULL
+ * 修改articles表的location字段允许为NULL的迁移脚本
  */
-const mysql = require('mysql2/promise');
 require('dotenv').config();
+const mysql = require('mysql2/promise');
+const logger = require('../src/shared/config/logger.config');
 
 async function allowLocationNull() {
   console.log('开始执行迁移：修改 articles 表 location 字段允许为 NULL');
@@ -20,23 +21,10 @@ async function allowLocationNull() {
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    database: process.env.DB_DATABASE
   });
 
   try {
-    // 检查 location 字段的当前配置
-    const [columns] = await connection.query(`
-      SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_DEFAULT
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'articles' AND COLUMN_NAME = 'location'
-    `, [process.env.DB_NAME]);
-
-    // 如果字段已经是允许NULL的，则跳过
-    if (columns.length > 0 && columns[0].IS_NULLABLE === 'YES') {
-      console.log('location 字段已经允许 NULL，无需修改');
-      return;
-    }
-
     // 开始事务
     await connection.beginTransaction();
 
@@ -63,7 +51,7 @@ async function allowLocationNull() {
 }
 
 // 执行迁移
-allowLocationNull().catch(err => {
-  console.error('迁移过程中出错：', err.message);
+allowLocationNull().catch(error => {
+  console.error('执行迁移时发生错误：', error);
   process.exit(1);
 }); 

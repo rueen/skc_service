@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 18:10:09
+ * @LastEditTime: 2025-03-29 18:35:27
  * @Description: 
  */
 /**
@@ -12,7 +12,6 @@
 const articleModel = require('../../shared/models/article.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
-const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取文章详情
@@ -27,7 +26,7 @@ async function getDetailById(req, res) {
     const article = await articleModel.getById(parseInt(id, 10));
     
     if (!article) {
-      return responseUtil.notFound(res, i18n.t('article.h5.articleNotFound', req.lang));
+      return responseUtil.notFound(res, '文章不存在');
     }
     
     // 已移除阅读量统计功能
@@ -35,7 +34,7 @@ async function getDetailById(req, res) {
     return responseUtil.success(res, article);
   } catch (error) {
     logger.error(`获取文章详情失败: ${error.message}`);
-    return responseUtil.serverError(res, i18n.t('article.h5.getArticleDetailFailed', req.lang));
+    return responseUtil.serverError(res, '获取文章详情失败');
   }
 }
 
@@ -52,13 +51,13 @@ async function getDetailByLocation(req, res) {
     const article = await articleModel.getByLocation(location);
     
     if (!article) {
-      return responseUtil.notFound(res, i18n.t('article.h5.articleNotFound', req.lang));
+      return responseUtil.notFound(res, '文章不存在');
     }
     
     return responseUtil.success(res, article);
   } catch (error) {
     logger.error(`通过位置标识获取文章详情失败: ${error.message}`);
-    return responseUtil.serverError(res, i18n.t('article.h5.getArticleDetailFailed', req.lang));
+    return responseUtil.serverError(res, '通过位置标识获取文章详情失败');
   }
 }
 

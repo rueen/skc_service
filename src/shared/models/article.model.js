@@ -7,7 +7,6 @@ const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 const { convertToCamelCase } = require('../utils/data.util');
-const i18n = require('../utils/i18n.util');
 
 /**
  * 格式化文章信息
@@ -115,7 +114,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
  * @param {Object} articleData - 文章数据
  * @returns {Promise<Object>} 创建结果
  */
-async function create(articleData, lang) {
+async function create(articleData) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -129,7 +128,7 @@ async function create(articleData, lang) {
       );
 
       if (existing.length > 0) {
-        throw new Error(i18n.t('article.common.locationExists', lang));
+        throw new Error('文章位置标识已存在');
       }
     }
 
@@ -155,7 +154,7 @@ async function create(articleData, lang) {
  * @param {Object} articleData - 文章数据
  * @returns {Promise<boolean>} 更新是否成功
  */
-async function update(articleData, lang) {
+async function update(articleData) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -172,7 +171,7 @@ async function update(articleData, lang) {
       );
 
       if (existing.length > 0) {
-        throw new Error(i18n.t('article.common.locationExists', lang));
+        throw new Error('文章位置标识已存在');
       }
 
       query += ', location = ?';
