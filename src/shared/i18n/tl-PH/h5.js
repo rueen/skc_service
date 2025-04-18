@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 22:39:33
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 22:54:06
+ * @LastEditTime: 2025-04-19 07:49:41
  * @Description: 
  */
 /**
@@ -17,7 +17,7 @@ module.exports = {
   userNotFund: 'Hindi mahanap ang user',
   passwordNotMatch: 'Hindi tumutugma ang bagong password at ang kumpirmasyon ng password',
   currentPasswordError: 'Hindi tama ang kasalukuyang password',
-  passwordFormatError: 'Hindi nakakatugon sa mga kinakailangan ang bagong password, dapat na nasa pagitan ng 8-20 na karakter ang haba ng password, at dapat naglalaman ng mga titik at numero',
+  passwordFormatError: 'Ang password ay dapat may 8–20 na karakter at dapat naglalaman ng mga letra at numero',
 
   article: {
     notFound: 'Hindi mahanap ang artikulo',
