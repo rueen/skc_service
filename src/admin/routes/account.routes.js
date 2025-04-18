@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 15:37:44
+ * @LastEditTime: 2025-04-17 11:49:28
  * @Description: 
  */
 /**
@@ -15,6 +15,7 @@ const accountController = require('../controllers/account.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
+const i18n = require('../../shared/utils/i18n.util');
 
 const router = express.Router();
 
@@ -22,6 +23,11 @@ const router = express.Router();
 router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 router.use(authMiddleware.hasPermission('account:list'));
+
+// 创建一个动态获取错误消息的方法
+const getErrorMessage = (key) => (req) => {
+  return i18n.t(`account.validation.${key}`, req.lang || 'zh-CN');
+};
 
 /**
  * @route GET /api/admin/accounts
@@ -34,27 +40,27 @@ router.get(
     query('keyword')
       .optional()
       .isString()
-      .withMessage('account.validation.keywordString'),
+      .withMessage(getErrorMessage('keywordString')),
     query('account')
       .optional()
       .isString()
-      .withMessage('account.validation.accountString'),
+      .withMessage('账号必须是字符串'),
     query('channelId')
       .optional()
       .isInt()
-      .withMessage('account.validation.channelIdInt'),
+      .withMessage('渠道ID必须是整数'),
     query('accountAuditStatus')
       .optional()
       .isIn(['pending', 'approved', 'rejected'])
-      .withMessage('account.validation.accountAuditStatusInvalid'),
+      .withMessage('账号审核状态无效'),
     query('groupId')
       .optional()
       .isInt()
-      .withMessage('account.validation.groupIdInt'),
+      .withMessage('群组ID必须是整数'),
     query('memberId')
       .optional()
       .isInt()
-      .withMessage('account.validation.memberIdInt')
+      .withMessage('会员ID必须是整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.getAccounts

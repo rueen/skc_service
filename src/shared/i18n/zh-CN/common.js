@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:38
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 15:09:34
+ * @LastEditTime: 2025-04-17 14:31:01
  * @Description: 
  */
 /**
@@ -19,11 +19,9 @@ module.exports = {
   forbidden: '无权操作',
   notFound: '资源不存在',
   
-  validation: {
-    // 通用表单验证
-    required: '{field}不能为空',
-    invalidFormat: '{field}格式不正确',
-  }
+  // 通用表单验证
+  required: '{field}不能为空',
+  invalidFormat: '{field}格式不正确',
   
   // 其他通用翻译...
 }; 
