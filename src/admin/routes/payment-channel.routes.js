@@ -69,7 +69,7 @@ router.put(
   [
     param('id')
       .isInt()
-      .withMessage('ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('name')
       .notEmpty()
       .withMessage('支付渠道名称不能为空')
@@ -104,7 +104,7 @@ router.delete(
   [
     param('id')
       .isInt()
-      .withMessage('ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   paymentChannelController.deletePaymentChannel

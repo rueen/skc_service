@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 10:13:52
+ * @LastEditTime: 2025-04-18 15:52:34
  * @Description: 
  */
 /**
@@ -39,11 +39,11 @@ router.get(
     query('channelId')
       .optional()
       .isInt()
-      .withMessage('渠道ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     query('category')
       .optional()
       .isString()
-      .withMessage('任务类别必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.optionalVerifyToken,
@@ -62,7 +62,7 @@ router.get(
       .notEmpty()
       .withMessage('任务ID不能为空')
       .isInt()
-      .withMessage('任务ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.optionalVerifyToken,

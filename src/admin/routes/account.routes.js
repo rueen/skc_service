@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 10:12:20
+ * @LastEditTime: 2025-04-18 15:43:19
  * @Description: 
  */
 /**
@@ -42,27 +42,27 @@ router.get(
     query('keyword')
       .optional()
       .isString()
-      .withMessage('关键词必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     query('account')
       .optional()
       .isString()
-      .withMessage('账号必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     query('channelId')
       .optional()
       .isInt()
-      .withMessage('渠道ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     query('accountAuditStatus')
       .optional()
       .isIn(['pending', 'approved', 'rejected'])
-      .withMessage('账号审核状态无效'),
+      .withMessage('common.validation.invalid'),
     query('groupId')
       .optional()
       .isInt()
-      .withMessage('群组ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     query('memberId')
       .optional()
       .isInt()
-      .withMessage('会员ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.getAccounts
@@ -102,7 +102,7 @@ router.post(
     body('rejectReason')
       .optional()
       .isString()
-      .withMessage('拒绝原因必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.batchReject
@@ -123,11 +123,11 @@ router.put(
     body('uid')
       .optional()
       .isString()
-      .withMessage('UID必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('account')
       .optional()
       .isString()
-      .withMessage('账号必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('fansCount')
       .optional()
       .isInt({ min: 0 })

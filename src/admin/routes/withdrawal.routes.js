@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 10:13:29
+ * @LastEditTime: 2025-04-18 15:51:07
  * @Description: 
  */
 /**
@@ -47,7 +47,7 @@ router.get(
     query('memberId')
       .optional()
       .isInt()
-      .withMessage('会员ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     query('startTime')
       .optional()
       .isISO8601()
@@ -70,8 +70,8 @@ router.post(
   '/batch-approve',
   [
     body('ids').isArray().withMessage('ids必须是数组'),
-    body('ids.*').isInt().withMessage('提现ID必须是整数'),
-    body('remark').optional().isString().withMessage('备注必须是字符串')
+    body('ids.*').isInt().withMessage('common.validation.mustBeInt'),
+    body('remark').optional().isString().withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.batchResolveWithdrawals
@@ -86,13 +86,13 @@ router.post(
   '/batch-reject',
   [
     body('ids').isArray().withMessage('ids必须是数组'),
-    body('ids.*').isInt().withMessage('提现ID必须是整数'),
+    body('ids.*').isInt().withMessage('common.validation.mustBeInt'),
     body('rejectReason')
       .notEmpty()
       .withMessage('拒绝原因不能为空')
       .isLength({ max: 255 })
       .withMessage('拒绝原因长度不能超过255个字符'),
-    body('remark').optional().isString().withMessage('备注必须是字符串')
+    body('remark').optional().isString().withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.batchRejectWithdrawals
@@ -106,12 +106,12 @@ router.post(
 router.get(
   '/export',
   [
-    query('memberNickname').optional().isString().withMessage('会员昵称必须是字符串'),
+    query('memberNickname').optional().isString().withMessage('common.validation.mustBeString'),
     query('withdrawalStatus')
       .optional()
       .isIn(Object.values(WithdrawalStatus))
       .withMessage('无效的提现状态'),
-    query('billNo').optional().isString().withMessage('账单编号必须是字符串'),
+    query('billNo').optional().isString().withMessage('common.validation.mustBeString'),
     query('startDate').optional().isString().withMessage('开始日期格式不正确'),
     query('endDate').optional().isString().withMessage('结束日期格式不正确')
   ],

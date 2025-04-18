@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 21:21:23
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 10:13:34
+ * @LastEditTime: 2025-04-18 15:51:26
  * @Description: 
  */
 /**
@@ -83,7 +83,7 @@ router.get(
       .notEmpty()
       .withMessage('群组ID不能为空')
       .isInt()
-      .withMessage('群组ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
       query('page')
       .optional()
       .isInt({ min: 1 })

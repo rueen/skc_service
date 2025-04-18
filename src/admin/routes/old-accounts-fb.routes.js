@@ -37,11 +37,11 @@ router.get(
     query('keyword')
       .optional()
       .isString()
-      .withMessage('关键词必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     query('memberId')
       .optional()
       .isInt()
-      .withMessage('会员ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   oldAccountsFbController.getOldAccountsFb
@@ -72,16 +72,16 @@ router.post(
       .notEmpty()
       .withMessage('FB账户不能为空')
       .isString()
-      .withMessage('FB账户必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('nickname')
       .notEmpty()
       .withMessage('FB昵称不能为空')
       .isString()
-      .withMessage('FB昵称必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('homeUrl')
       .optional()
       .isString()
-      .withMessage('FB链接必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   oldAccountsFbController.addOldAccountFb
@@ -97,21 +97,21 @@ router.put(
   [
     param('id')
       .isInt()
-      .withMessage('ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('uid')
       .notEmpty()
       .withMessage('FB账户不能为空')
       .isString()
-      .withMessage('FB账户必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('nickname')
       .notEmpty()
       .withMessage('FB昵称不能为空')
       .isString()
-      .withMessage('FB昵称必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('homeUrl')
       .optional()
       .isString()
-      .withMessage('FB链接必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   oldAccountsFbController.updateOldAccountFb
@@ -127,7 +127,7 @@ router.delete(
   [
     param('id')
       .isInt()
-      .withMessage('ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   oldAccountsFbController.deleteOldAccountFb

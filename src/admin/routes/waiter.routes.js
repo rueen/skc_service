@@ -52,7 +52,7 @@ router.post(
     body('permissions')
       .optional()
       .isString()
-      .withMessage('permissions必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => {
     // 验证请求参数
@@ -77,7 +77,7 @@ router.put(
       .notEmpty()
       .withMessage('小二ID不能为空')
       .isInt()
-      .withMessage('小二ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('username')
       .optional()
       .isLength({ min: 3, max: 20 })
@@ -93,7 +93,7 @@ router.put(
     body('permissions')
       .optional()
       .isString()
-      .withMessage('permissions必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => {
     // 验证请求参数
@@ -118,7 +118,7 @@ router.delete(
       .notEmpty()
       .withMessage('小二ID不能为空')
       .isInt()
-      .withMessage('小二ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
   ],
   (req, res, next) => {
     // 验证请求参数

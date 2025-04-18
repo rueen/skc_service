@@ -4,6 +4,7 @@
  */
 const { validationResult } = require('express-validator');
 const responseUtil = require('./response.util');
+const i18n = require('./i18n.util');
 
 /**
  * 验证请求参数
@@ -16,8 +17,9 @@ const validateRequest = (req, res) => {
   if (!errors.isEmpty()) {
     const firstError = errors.array()[0];
     const lang = req.lang || req.query.lang || req.body.lang || 'zh-CN';
-    
-    const message = i18n.t(firstError.msg, lang);
+    const message = i18n.t(firstError.msg, lang, {
+      field: firstError.path
+    });
     responseUtil.badRequest(res, message, {
       errors: errors.array().map(error => error.msg),
       errorFields: errors.array().map(error => error.param)

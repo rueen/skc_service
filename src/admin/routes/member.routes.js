@@ -36,11 +36,11 @@ router.get(
     query('memberNickname')
       .optional()
       .isString()
-      .withMessage('会员昵称必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     query('groupId')
       .optional()
       .isInt()
-      .withMessage('群组ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.list
@@ -59,7 +59,7 @@ router.get(
       .notEmpty()
       .withMessage('会员ID不能为空')
       .isInt()
-      .withMessage('会员ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.getDetail
@@ -97,11 +97,11 @@ router.post(
     body('groupIds.*')
       .optional()
       .isInt()
-      .withMessage('群组ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('inviterId')
       .optional()
       .isInt()
-      .withMessage('邀请人ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('occupation')
       .optional()
       .isIn(Object.values(OccupationType))
@@ -109,7 +109,7 @@ router.post(
     body('phone')
       .optional()
       .isString()
-      .withMessage('手机号必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('email')
       .optional()
       .isEmail()
@@ -121,7 +121,7 @@ router.post(
     body('telegram')
       .optional()
       .isString()
-      .withMessage('Telegram账号必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.create
@@ -140,7 +140,7 @@ router.put(
       .notEmpty()
       .withMessage('会员ID不能为空')
       .isInt()
-      .withMessage('会员ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('memberNickname')
       .optional()
       .isLength({ max: 50 })
@@ -162,7 +162,7 @@ router.put(
     body('groupIds.*')
       .optional()
       .isInt()
-      .withMessage('群组ID数组中的值必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('inviterId')
       .optional()
       .custom((value) => {
@@ -193,7 +193,7 @@ router.delete(
       .notEmpty()
       .withMessage('会员ID不能为空')
       .isInt()
-      .withMessage('会员ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.remove
@@ -212,7 +212,7 @@ router.get(
       .notEmpty()
       .withMessage('会员ID不能为空')
       .isInt()
-      .withMessage('会员ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.getOwnerGroupStats
@@ -231,7 +231,7 @@ router.get(
       .notEmpty()
       .withMessage('会员ID不能为空')
       .isInt()
-      .withMessage('会员ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.getInviteStats
@@ -250,7 +250,7 @@ router.get(
       .notEmpty()
       .withMessage('会员ID不能为空')
       .isInt()
-      .withMessage('会员ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.getTaskStats
@@ -269,7 +269,7 @@ router.get(
       .notEmpty()
       .withMessage('会员ID不能为空')
       .isInt()
-      .withMessage('会员ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.getWithdrawalAccounts
@@ -288,7 +288,7 @@ router.post(
       .notEmpty()
       .withMessage('会员ID不能为空')
       .isInt()
-      .withMessage('会员ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('amount')
       .notEmpty()
       .withMessage('奖励金额不能为空')
@@ -317,7 +317,7 @@ router.post(
       .notEmpty()
       .withMessage('会员ID不能为空')
       .isInt()
-      .withMessage('会员ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('amount')
       .notEmpty()
       .withMessage('扣除金额不能为空')
@@ -357,7 +357,7 @@ router.get(
       .notEmpty()
       .withMessage('会员ID不能为空')
       .isInt()
-      .withMessage('会员ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.getMemberBalance

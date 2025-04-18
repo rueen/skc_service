@@ -34,19 +34,19 @@ router.get(
     query('groupName')
       .optional()
       .isString()
-      .withMessage('群组名称必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     query('ownerId')
       .optional()
       .isInt()
-      .withMessage('群主ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     query('memberId')
       .optional()
       .isInt()
-      .withMessage('成员ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     query('keyword')
       .optional()
       .isString()
-      .withMessage('关键词必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.list
@@ -65,7 +65,7 @@ router.get(
       .notEmpty()
       .withMessage('群组ID不能为空')
       .isInt()
-      .withMessage('群组ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.get
@@ -93,7 +93,7 @@ router.post(
     body('ownerId')
       .optional()
       .isInt()
-      .withMessage('群主ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.create
@@ -112,7 +112,7 @@ router.put(
       .notEmpty()
       .withMessage('群组ID不能为空')
       .isInt()
-      .withMessage('群组ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('groupName')
       .optional()
       .isLength({ max: 50 })
@@ -129,7 +129,7 @@ router.put(
         // 如果传值了，必须是整数
         return Number.isInteger(Number(value));
       })
-      .withMessage('群主ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.update
@@ -148,7 +148,7 @@ router.delete(
       .notEmpty()
       .withMessage('群组ID不能为空')
       .isInt()
-      .withMessage('群组ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.remove

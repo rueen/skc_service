@@ -35,15 +35,15 @@ router.get(
     query('taskName')
       .optional()
       .isString()
-      .withMessage('任务名称必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     query('taskStatus')
       .optional()
       .isIn(['not_started', 'processing', 'ended'])
-      .withMessage('任务状态值无效'),
+      .withMessage('common.validation.invalid'),
     query('channelId')
       .optional()
       .isInt()
-      .withMessage('渠道ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.getList
@@ -62,7 +62,7 @@ router.get(
       .notEmpty()
       .withMessage('任务ID不能为空')
       .isInt()
-      .withMessage('任务ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.getDetail
@@ -86,7 +86,7 @@ router.post(
       .notEmpty()
       .withMessage('渠道ID不能为空')
       .isInt()
-      .withMessage('渠道ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('category')
       .notEmpty()
       .withMessage('任务类别不能为空')
@@ -157,19 +157,19 @@ router.post(
     body('contentRequirement')
       .optional()
       .isString()
-      .withMessage('内容要求必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('taskInfo')
       .optional()
       .isString()
-      .withMessage('任务说明必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('notice')
       .optional()
       .isString()
-      .withMessage('温馨提示必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('taskStatus')
       .optional()
       .isIn(['not_started', 'processing', 'ended'])
-      .withMessage('任务状态值无效')
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.create
@@ -188,7 +188,7 @@ router.put(
       .notEmpty()
       .withMessage('任务ID不能为空')
       .isInt()
-      .withMessage('任务ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('taskName')
       .optional()
       .isLength({ max: 100 })
@@ -196,7 +196,7 @@ router.put(
     body('channelId')
       .optional()
       .isInt()
-      .withMessage('渠道ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('category')
       .optional()
       .isLength({ max: 50 })
@@ -257,19 +257,19 @@ router.put(
     body('contentRequirement')
       .optional()
       .isString()
-      .withMessage('内容要求必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('taskInfo')
       .optional()
       .isString()
-      .withMessage('任务说明必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('notice')
       .optional()
       .isString()
-      .withMessage('温馨提示必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('taskStatus')
       .optional()
       .isIn(['not_started', 'processing', 'ended'])
-      .withMessage('任务状态值无效')
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.update
@@ -288,7 +288,7 @@ router.delete(
       .notEmpty()
       .withMessage('任务ID不能为空')
       .isInt()
-      .withMessage('任务ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.remove

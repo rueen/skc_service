@@ -34,7 +34,7 @@ router.get(
     query('keyword')
       .optional()
       .isString()
-      .withMessage('关键字必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.list
@@ -53,7 +53,7 @@ router.get(
       .notEmpty()
       .withMessage('渠道ID不能为空')
       .isInt()
-      .withMessage('渠道ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.get
@@ -98,7 +98,7 @@ router.put(
       .notEmpty()
       .withMessage('渠道ID不能为空')
       .isInt()
-      .withMessage('渠道ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('name')
       .optional()
       .isLength({ max: 50 })
@@ -129,7 +129,7 @@ router.delete(
       .notEmpty()
       .withMessage('渠道ID不能为空')
       .isInt()
-      .withMessage('渠道ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.remove

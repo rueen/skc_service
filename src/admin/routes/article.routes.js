@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-12 14:28:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 10:12:59
+ * @LastEditTime: 2025-04-18 15:46:15
  * @Description: 
  */
 /**
@@ -40,7 +40,7 @@ router.get(
     query('keyword')
       .optional()
       .isString()
-      .withMessage('关键字必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   articleController.list
@@ -83,7 +83,7 @@ router.put(
       .notEmpty()
       .withMessage('文章ID不能为空')
       .isInt()
-      .withMessage('文章ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('title')
       .notEmpty()
       .withMessage('标题不能为空')
@@ -113,7 +113,7 @@ router.delete(
       .notEmpty()
       .withMessage('文章ID不能为空')
       .isInt()
-      .withMessage('文章ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   articleController.remove
