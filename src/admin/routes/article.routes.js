@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-12 14:28:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 10:54:47
+ * @LastEditTime: 2025-03-29 18:32:55
  * @Description: 
  */
 /**
@@ -29,6 +29,8 @@ router.use(authMiddleware.hasPermission('article:list'));
 router.get(
   '/',
   [
+    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
+    query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
     query('keyword').optional().isString().withMessage('关键字必须是字符串')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
