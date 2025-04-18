@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 15:55:00
+ * @LastEditTime: 2025-04-18 16:13:01
  * @Description: 
  */
 /**
@@ -41,7 +41,7 @@ router.get(
     query('completedTaskCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('已完成任务次数必须是非负整数'),
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     query('taskPreAuditStatus')
       .optional()
       .isIn(['pending', 'approved', 'rejected'])
@@ -71,7 +71,7 @@ router.get(
     query('completedTaskCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('已完成任务次数必须是非负整数')
+      .withMessage('common.validation.mustBeNonNegativeInteger')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:confirmAudit'),
@@ -97,7 +97,7 @@ router.get(
     query('completedTaskCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('已完成任务次数必须是非负整数'),
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     query('taskPreAuditStatus')
       .optional()
       .isIn(['pending', 'approved', 'rejected'])
@@ -127,7 +127,7 @@ router.get(
     query('completedTaskCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('已完成任务次数必须是非负整数')
+      .withMessage('common.validation.mustBeNonNegativeInteger')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:confirmAudit'),

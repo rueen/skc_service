@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:38
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:09:53
+ * @LastEditTime: 2025-04-18 16:12:38
  * @Description: 
  */
 /**
@@ -30,5 +30,6 @@ module.exports = {
     mustNotBeEmpty: '{field}不能为空',
     mustBeArray: '{field}必须是数组',
     formatInvalid: '{field}格式不正确',
+    mustBeNonNegativeInteger: '{field}必须是非负整数',
   }
 }; 

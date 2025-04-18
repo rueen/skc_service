@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:04:28
+ * @LastEditTime: 2025-04-18 16:13:56
  * @Description: 
  */
 /**
@@ -99,15 +99,15 @@ router.post(
     body('fansCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('粉丝数量必须是非负整数'),
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     body('friendsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('好友数量必须是非负整数'),
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     body('postsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('发布数量必须是非负整数')
+      .withMessage('common.validation.mustBeNonNegativeInteger')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberAccountController.addAccount
@@ -159,15 +159,15 @@ router.put(
     body('fansCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('粉丝数量必须是非负整数'),
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     body('friendsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('好友数量必须是非负整数'),
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     body('postsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('发布数量必须是非负整数')
+      .withMessage('common.validation.mustBeNonNegativeInteger')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberAccountController.updateAccount

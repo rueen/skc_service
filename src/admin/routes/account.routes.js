@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:11:22
+ * @LastEditTime: 2025-04-18 16:12:50
  * @Description: 
  */
 /**
@@ -131,15 +131,15 @@ router.put(
     body('fansCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('粉丝数量必须是非负整数'),
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     body('friendsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('好友数量必须是非负整数'),
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     body('postsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('帖子数量必须是非负整数')
+      .withMessage('common.validation.mustBeNonNegativeInteger')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.editAccount
