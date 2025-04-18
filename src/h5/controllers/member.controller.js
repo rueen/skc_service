@@ -8,6 +8,7 @@ const billModel = require('../../shared/models/bill.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 更新会员个人资料
@@ -23,7 +24,7 @@ async function updateProfile(req, res) {
     const member = await memberModel.getById(memberId);
     
     if (!member) {
-      return responseUtil.notFound(res, '会员不存在');
+      return responseUtil.notFound(res, i18n.t('h5.member.notFound', req.lang));
     }
     
     // 验证性别值是否有效
@@ -51,7 +52,7 @@ async function updateProfile(req, res) {
     const success = await memberModel.update(updateData);
     
     if (!success) {
-      return responseUtil.serverError(res, '更新个人资料失败');
+      return responseUtil.serverError(res);
     }
     
     // 获取更新后的会员信息
@@ -60,10 +61,10 @@ async function updateProfile(req, res) {
     // 移除敏感信息
     delete updatedMember.password;
     
-    return responseUtil.success(res, updatedMember, '更新个人资料成功');
+    return responseUtil.success(res, updatedMember);
   } catch (error) {
     logger.error(`更新会员个人资料失败: ${error.message}`);
-    return responseUtil.serverError(res, '更新会员个人资料失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -87,7 +88,7 @@ async function getBalance(req, res) {
     });
   } catch (error) {
     logger.error(`获取会员账户余额失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取会员账户余额失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -112,7 +113,7 @@ async function getBills(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取会员账单列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取会员账单列表失败');
+    return responseUtil.serverError(res);
   }
 }
 

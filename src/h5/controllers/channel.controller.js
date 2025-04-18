@@ -19,7 +19,7 @@ async function getList(req, res) {
     return responseUtil.success(res, result.list);
   } catch (error) {
     logger.error(`获取渠道列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取渠道列表失败');
+    return responseUtil.serverError(res);
   }
 }
 

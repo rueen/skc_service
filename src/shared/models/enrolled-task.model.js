@@ -275,52 +275,9 @@ async function checkEnrollment(taskId, memberId) {
   }
 }
 
-/**
- * 取消任务报名
- * @param {number} taskId - 任务ID
- * @param {number} memberId - 会员ID
- * @returns {Promise<boolean>} 是否成功取消
- */
-async function cancel(taskId, memberId) {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-    
-    const parsedTaskId = parseInt(taskId, 10);
-    const parsedMemberId = parseInt(memberId, 10);
-    
-    // 验证是否已报名
-    const [enrolls] = await connection.query(
-      'SELECT id FROM enrolled_tasks WHERE task_id = ? AND member_id = ?',
-      [parsedTaskId, parsedMemberId]
-    );
-    
-    if (enrolls.length === 0) {
-      throw new Error('未报名该任务');
-    }
-    
-    // 删除报名记录
-    const [result] = await connection.query(
-      'DELETE FROM enrolled_tasks WHERE task_id = ? AND member_id = ?',
-      [parsedTaskId, parsedMemberId]
-    );
-    
-    await connection.commit();
-    
-    return result.affectedRows > 0;
-  } catch (error) {
-    await connection.rollback();
-    logger.error(`取消任务报名失败: ${error.message}`);
-    throw error;
-  } finally {
-    connection.release();
-  }
-}
-
 module.exports = {
   create,
   getListByMember,
   checkEnrollment,
-  cancel,
   formatEnrolledTask
 }; 

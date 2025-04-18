@@ -6,6 +6,7 @@ const groupModel = require('../../shared/models/group.model');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取当前会员所属群列表
@@ -20,7 +21,7 @@ async function getMemberGroups(req, res) {
     return responseUtil.success(res, groups);
   } catch (error) {
     logger.error(`获取会员群组列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取群组列表失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -37,7 +38,7 @@ async function getOwnerGroupStats(req, res) {
     return responseUtil.success(res, stats);
   } catch (error) {
     logger.error(`获取群主统计信息失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取群组统计信息失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -57,7 +58,7 @@ async function getGroupMembers(req, res) {
     const group = groups.find(g => g.id === parseInt(groupId, 10) && g.isGroupOwner);
     
     if (!group) {
-      return responseUtil.forbidden(res, '您不是该群的群主，无权查看成员列表');
+      return responseUtil.forbidden(res, i18n.t('h5.group.noPermission', req.lang));
     }
     
     const members = await groupModel.getGroupMembers(parseInt(groupId, 10), page, pageSize);
@@ -65,10 +66,10 @@ async function getGroupMembers(req, res) {
     return responseUtil.success(res, members);
   } catch (error) {
     if (error.message === '群组不存在') {
-      return responseUtil.notFound(res, error.message);
+      return responseUtil.notFound(res, i18n.t('h5.group.notFound', req.lang));
     }
     logger.error(`获取群组成员列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取群组成员列表失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -102,7 +103,7 @@ async function getOwnerCommissionTasks(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取群主任务收益列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取群主任务收益列表失败');
+    return responseUtil.serverError(res);
   }
 }
 

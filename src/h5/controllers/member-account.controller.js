@@ -6,7 +6,7 @@ const accountModel = require('../../shared/models/account.model');
 const oldAccountsFbModel = require('../../shared/models/old-accounts-fb.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
-const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取会员账号列表
@@ -23,7 +23,7 @@ async function getAccounts(req, res) {
     return responseUtil.success(res, accounts);
   } catch (error) {
     logger.error(`获取会员账号列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取会员账号列表失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -53,20 +53,20 @@ async function getAccountDetail(req, res) {
     const [rows] = await pool.query(query, [accountId]);
     
     if (rows.length === 0) {
-      return responseUtil.notFound(res, '账号不存在');
+      return responseUtil.notFound(res, i18n.t('h5.account.notFound', req.lang));
     }
     
     const account = rows[0];
     
     // 检查账号是否属于当前会员
     if (account.member_id !== memberId) {
-      return responseUtil.forbidden(res, '无权查看此账号');
+      return responseUtil.forbidden(res, i18n.t('h5.account.noPermissionView', req.lang));
     }
     
     return responseUtil.success(res, accountModel.formatAccount(account));
   } catch (error) {
     logger.error(`获取账号详情失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取账号详情失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -84,7 +84,7 @@ async function addAccount(req, res) {
     const existingAccount = await accountModel.getByMemberAndChannel(memberId, channelId);
     
     if (existingAccount) {
-      return responseUtil.badRequest(res, '您已添加过该渠道的账号');
+      return responseUtil.badRequest(res, i18n.t('h5.account.alreadyExists', req.lang));
     }
     
     // 添加账号
@@ -112,16 +112,16 @@ async function addAccount(req, res) {
       }
     }
     
-    return responseUtil.success(res, newAccount, '添加账号成功，请等待审核');
+    return responseUtil.success(res, newAccount, i18n.t('h5.account.addSuccess', req.lang));
   } catch (error) {
     logger.error(`添加会员账号失败: ${error.message}`);
     
     // 处理UID重复的特定错误
-    if (error.message.includes('UID 已被使用')) {
-      return responseUtil.badRequest(res, error.message);
+    if (error.message === '该账号已被使用，禁止重复绑定') {
+      return responseUtil.badRequest(res, i18n.t('h5.account.duplicateBind', req.lang));
     }
     
-    return responseUtil.serverError(res, '添加会员账号失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -154,14 +154,14 @@ async function updateAccount(req, res) {
     const [rows] = await pool.query(query, [accountId]);
     
     if (rows.length === 0) {
-      return responseUtil.notFound(res, '账号不存在');
+      return responseUtil.notFound(res, i18n.t('h5.account.notFound', req.lang));
     }
     
     const accountInfo = rows[0];
     
     // 检查账号是否属于当前会员
     if (accountInfo.member_id !== memberId) {
-      return responseUtil.forbidden(res, '无权更新此账号');
+      return responseUtil.forbidden(res, i18n.t('h5.account.noPermissionUpdate', req.lang));
     }
     
     // 准备更新数据
@@ -190,16 +190,16 @@ async function updateAccount(req, res) {
     }
     
     // 只返回成功消息，不再返回更新后的账号信息
-    return responseUtil.success(res, { success: true }, '更新账号成功，请等待审核');
+    return responseUtil.success(res, { success: true }, i18n.t('h5.account.updateSuccess', req.lang));
   } catch (error) {
     logger.error(`更新账号失败: ${error.message}`);
     
     // 处理UID重复的特定错误
-    if (error.message.includes('UID 已被使用')) {
-      return responseUtil.badRequest(res, error.message);
+    if (error.message === '该账号已被使用，禁止重复绑定') {
+      return responseUtil.badRequest(res, i18n.t('h5.account.duplicateBind', req.lang));
     }
     
-    return responseUtil.serverError(res, '更新账号失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -229,23 +229,23 @@ async function deleteAccount(req, res) {
     const [rows] = await pool.query(query, [accountId]);
     
     if (rows.length === 0) {
-      return responseUtil.notFound(res, '账号不存在');
+      return responseUtil.notFound(res, i18n.t('h5.account.notFound', req.lang));
     }
     
     const accountInfo = rows[0];
     
     // 检查账号是否属于当前会员
     if (accountInfo.member_id !== memberId) {
-      return responseUtil.forbidden(res, '无权删除此账号');
+      return responseUtil.forbidden(res, i18n.t('h5.account.noPermissionDelete', req.lang));
     }
     
     // 调用模型的删除方法
     const result = await accountModel.remove(accountId);
     
-    return responseUtil.success(res, result, '删除账号成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`删除账号失败: ${error.message}`);
-    return responseUtil.serverError(res, '删除账号失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -268,7 +268,7 @@ async function findUidByHomeUrl(req, res) {
     return responseUtil.success(res, { uid });
   } catch (error) {
     logger.error(`根据主页链接查找UID失败: ${error.message}`);
-    return responseUtil.serverError(res, '查找UID失败');
+    return responseUtil.serverError(res);
   }
 }
 

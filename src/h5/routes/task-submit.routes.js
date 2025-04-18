@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-30 11:11:00
+ * @LastEditTime: 2025-04-18 22:10:48
  * @Description: 
  */
 /**
@@ -46,16 +46,6 @@ router.get(
 router.post(
   '/',
   taskSubmitController.submitTask
-);
-
-/**
- * @route GET /api/h5/task-submit/check/:taskId
- * @desc 检查任务提交状态
- * @access Private
- */
-router.get(
-  '/check/:taskId',
-  taskSubmitController.checkSubmission
 );
 
 module.exports = router; 

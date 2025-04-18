@@ -6,6 +6,7 @@ const memberModel = require('../../shared/models/member.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const authUtil = require('../../shared/utils/auth.util');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 用户登录
@@ -115,21 +116,21 @@ async function login(req, res) {
       return responseUtil.success(res, {
         token,
         userInfo
-      }, '登录成功');
+      }, i18n.t('h5.loginSuccess', req.lang));
     } else {
       // 验证密码
       if (!member.hasPassword) {
-        return responseUtil.error(res, '账号密码未设置，请联系管理员');
+        return responseUtil.error(res, i18n.t('h5.notSetPassword', req.lang));
       }
       
       const isMatch = await authUtil.comparePassword(password, member.password);
       if (!isMatch) {
-        return responseUtil.error(res, '密码错误');
+        return responseUtil.error(res, i18n.t('h5.passwordError', req.lang));
       }
       
       // 检查用户状态
       if (member.status === 0) {
-        return responseUtil.error(res, '用户已被禁用');
+        return responseUtil.error(res, i18n.t('h5.userDisabled', req.lang));
       }
       
       // 如果是手机号登录，更新区号
@@ -167,11 +168,11 @@ async function login(req, res) {
       return responseUtil.success(res, {
         token,
         userInfo
-      }, '登录成功');
+      }, i18n.t('h5.loginSuccess', req.lang));
     }
   } catch (error) {
     logger.error(`用户登录失败: ${error.message}`);
-    return responseUtil.serverError(res, '登录失败，请稍后重试');
+    return responseUtil.serverError(res, i18n.t('h5.loginFailed', req.lang));
   }
 }
 
@@ -187,7 +188,7 @@ async function getUserInfo(req, res) {
     // 获取用户信息
     const member = await memberModel.getById(userId);
     if (!member) {
-      return responseUtil.notFound(res, '用户不存在');
+      return responseUtil.notFound(res, i18n.t('h5.userNotFund', req.lang));
     }
     
     // 从令牌中获取登录类型，如果没有则尝试推断
@@ -228,7 +229,7 @@ async function getUserInfo(req, res) {
     return responseUtil.success(res, member);
   } catch (error) {
     logger.error(`获取用户信息失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取用户信息失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -240,10 +241,10 @@ async function getUserInfo(req, res) {
 async function logout(req, res) {
   try {
     // 客户端需要清除token，服务端无需特殊处理
-    return responseUtil.success(res, null, '退出登录成功');
+    return responseUtil.success(res, null);
   } catch (error) {
     logger.error(`用户退出登录失败: ${error.message}`);
-    return responseUtil.serverError(res, '退出登录失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -259,25 +260,25 @@ async function changePassword(req, res) {
     
     // 验证新密码与确认密码是否一致
     if (newPassword !== confirmPassword) {
-      return responseUtil.badRequest(res, '新密码与确认密码不一致');
+      return responseUtil.badRequest(res, i18n.t('h5.passwordNotMatch', req.lang));
     }
     
     // 获取用户信息
     const member = await memberModel.getById(userId);
     if (!member) {
-      return responseUtil.notFound(res, '用户不存在');
+      return responseUtil.notFound(res, i18n.t('h5.userNotFund', req.lang));
     }
     
     // 验证当前密码是否正确
     const isPasswordValid = await authUtil.comparePassword(currentPassword, member.password);
     if (!isPasswordValid) {
-      return responseUtil.badRequest(res, '当前密码不正确');
+      return responseUtil.badRequest(res, i18n.t('h5.currentPasswordError', req.lang));
     }
     
     // 验证新密码是否符合强密码规则
     const validatorUtil = require('../../shared/utils/validator.util');
     if (!validatorUtil.isStrongPassword(newPassword)) {
-      return responseUtil.badRequest(res, '新密码不符合要求，密码长度必须在8-20位之间，且必须包含字母和数字');
+      return responseUtil.badRequest(res, i18n.t('h5.passwordFormatError', req.lang));
     }
     
     // 加密新密码
@@ -292,13 +293,13 @@ async function changePassword(req, res) {
     const success = await memberModel.update(updateData);
     
     if (!success) {
-      return responseUtil.serverError(res, '修改密码失败');
+      return responseUtil.serverError(res);
     }
     
-    return responseUtil.success(res, null, '密码修改成功');
+    return responseUtil.success(res, null);
   } catch (error) {
     logger.error(`修改密码失败: ${error.message}`);
-    return responseUtil.serverError(res, '修改密码失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 

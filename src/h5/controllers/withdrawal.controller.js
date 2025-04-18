@@ -6,6 +6,7 @@ const withdrawalAccountModel = require('../../shared/models/withdrawal-account.m
 const withdrawalModel = require('../../shared/models/withdrawal.model');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 创建提现账户
@@ -29,7 +30,7 @@ async function createWithdrawalAccount(req, res) {
     return responseUtil.success(res, createdAccount);
   } catch (error) {
     logger.error(`创建提现账户失败: ${error.message}`);
-    return responseUtil.serverError(res, '创建提现账户失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -47,11 +48,11 @@ async function updateWithdrawalAccount(req, res) {
     // 验证账户所有权
     const existingAccount = await withdrawalAccountModel.getWithdrawalAccountById(id);
     if (!existingAccount) {
-      return responseUtil.notFound(res, '提现账户不存在');
+      return responseUtil.notFound(res, i18n.t('h5.withdrawal.notFound', req.lang));
     }
 
     if (existingAccount.memberId !== memberId) {
-      return responseUtil.forbidden(res, '没有权限修改此提现账户');
+      return responseUtil.forbidden(res, i18n.t('h5.withdrawal.noPermissionUpdate', req.lang));
     }
     
     const accountData = {
@@ -65,7 +66,7 @@ async function updateWithdrawalAccount(req, res) {
     return responseUtil.success(res, updatedAccount);
   } catch (error) {
     logger.error(`更新提现账户失败: ${error.message}`);
-    return responseUtil.serverError(res, '更新提现账户失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -83,7 +84,7 @@ async function getWithdrawalAccounts(req, res) {
     return responseUtil.success(res, accounts);
   } catch (error) {
     logger.error(`获取提现账户列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取提现账户列表失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -100,13 +101,13 @@ async function deleteWithdrawalAccount(req, res) {
     const deleted = await withdrawalAccountModel.deleteWithdrawalAccount(id, memberId);
     
     if (!deleted) {
-      return responseUtil.notFound(res, '提现账户不存在或无权删除');
+      return responseUtil.notFound(res, i18n.t('h5.withdrawal.noPermissionDelete', req.lang));
     }
     
-    return responseUtil.success(res, { message: '提现账户删除成功' });
+    return responseUtil.success(res);
   } catch (error) {
     logger.error(`删除提现账户失败: ${error.message}`);
-    return responseUtil.serverError(res, '删除提现账户失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -123,22 +124,22 @@ async function createWithdrawal(req, res) {
     // 验证提现账户是否存在
     const account = await withdrawalAccountModel.getWithdrawalAccountById(withdrawalAccountId);
     if (!account) {
-      return responseUtil.badRequest(res, '提现账户不存在');
+      return responseUtil.badRequest(res, i18n.t('h5.withdrawal.notFound', req.lang));
     }
     
     if (account.memberId !== memberId) {
-      return responseUtil.forbidden(res, '没有权限使用此提现账户');
+      return responseUtil.forbidden(res, i18n.t('h5.withdrawal.noPermissionUse', req.lang));
     }
     
     // 检查提现金额是否合法
     if (amount <= 0) {
-      return responseUtil.badRequest(res, '提现金额必须大于0');
+      return responseUtil.badRequest(res, i18n.t('h5.withdrawal.amountLimit', req.lang));
     }
     
     // 检查用户是否有待处理的提现申请
     const hasPending = await withdrawalModel.hasPendingWithdrawal(memberId);
     if (hasPending) {
-      return responseUtil.badRequest(res, '您有待处理的提现申请，请等待处理完成后再申请');
+      return responseUtil.badRequest(res, i18n.t('h5.withdrawal.pendingWithdrawal', req.lang));
     }
     
     const withdrawalData = {
@@ -153,9 +154,9 @@ async function createWithdrawal(req, res) {
   } catch (error) {
     logger.error(`申请提现失败: ${error.message}`);
     if (error.message === '账户余额不足') {
-      return responseUtil.badRequest(res, '账户余额不足');
+      return responseUtil.badRequest(res, i18n.t('h5.withdrawal.insufficientBalance', req.lang));
     }
-    return responseUtil.serverError(res, '申请提现失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -183,7 +184,7 @@ async function getWithdrawals(req, res) {
     return responseUtil.success(res, withdrawals);
   } catch (error) {
     logger.error(`获取提现记录失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取提现记录失败');
+    return responseUtil.serverError(res);
   }
 }
 

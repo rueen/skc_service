@@ -4,8 +4,10 @@
  */
 const common = require('./common');
 const admin = require('./admin');
+const h5 = require('./h5');
 
 module.exports = {
   common,
-  admin
+  admin,
+  h5
 }; 

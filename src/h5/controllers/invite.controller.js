@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-25 10:56:16
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-18 21:38:29
+ * @Description: 
+ */
 /**
  * H5端邀请控制器
  * 处理H5端邀请相关的业务逻辑
@@ -22,7 +29,7 @@ async function getInviteStats(req, res) {
     return responseUtil.success(res, stats);
   } catch (error) {
     logger.error(`获取会员邀请数据统计失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取会员邀请数据统计失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -45,7 +52,7 @@ async function getInviteFriends(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取会员邀请好友列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取会员邀请好友列表失败');
+    return responseUtil.serverError(res);
   }
 }
 

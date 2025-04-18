@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 11:08:17
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-30 12:10:13
+ * @LastEditTime: 2025-04-18 22:00:57
  * @Description: 
  */
 /**
@@ -32,19 +32,5 @@ router.post('/:taskId', taskEnrollController.enrollTask);
  * @access Private
  */
 router.get('/record', taskEnrollController.getEnrolledTasks);
-
-/**
- * @route DELETE /api/h5/task-enroll/:taskId
- * @desc 取消任务报名
- * @access Private
- */
-router.delete('/:taskId', taskEnrollController.cancelEnrollment);
-
-/**
- * @route GET /api/h5/task-enroll/:taskId/check
- * @desc 检查是否已报名任务
- * @access Private
- */
-router.get('/:taskId/check', taskEnrollController.checkEnrollment);
 
 module.exports = router; 

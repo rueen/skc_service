@@ -6,6 +6,7 @@ const submittedTaskModel = require('../../shared/models/submitted-task.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 提交任务
@@ -33,24 +34,36 @@ async function submitTask(req, res) {
     });
     
     // 根据是否是重新提交返回不同的消息
-    const message = result.isResubmit ? '任务重新提交成功' : '任务提交成功';
+    const message = result.isResubmit ? i18n.t('h5.task.resubmitSuccess', req.lang) : i18n.t('h5.task.submitSuccess', req.lang);
     
     return responseUtil.success(res, { id: result.id }, message);
   } catch (error) {
     logger.error(`任务提交失败: ${error.message}`);
     
     // 处理特定错误
-    if (error.message === '任务不存在' || 
-        error.message === '只能提交进行中的任务' || 
-        error.message === '会员不存在' || 
-        error.message === '请先报名任务' || 
-        error.message === '任务已提交，正在审核中' || 
-        error.message === '任务已提交并已通过审核' ||
-        error.message === '任务名额已满，无法提交') {
-      return responseUtil.badRequest(res, error.message);
+    if (error.message === '任务不存在') {
+      return responseUtil.badRequest(res, i18n.t('h5.task.notFound', req.lang));
+    }
+    if (error.message === '只能提交进行中的任务') {
+      return responseUtil.badRequest(res, i18n.t('h5.task.onlySubmitActiveTask', req.lang));
+    }
+    if (error.message === '会员不存在') {
+      return responseUtil.badRequest(res, i18n.t('h5.task.memberNotFound', req.lang));
+    }
+    if (error.message === '请先报名任务') {
+      return responseUtil.badRequest(res, i18n.t('h5.task.forbiddenSubmitWithoutEnroll', req.lang));
+    }
+    if (error.message === '任务已提交，正在审核中') {
+      return responseUtil.badRequest(res, i18n.t('h5.task.taskSubmitted', req.lang));
+    }
+    if (error.message === '任务已提交并已通过审核') {
+      return responseUtil.badRequest(res, i18n.t('h5.task.taskSubmittedAndApproved', req.lang));
+    }
+    if (error.message === '任务名额已满，无法提交') {
+      return responseUtil.badRequest(res, i18n.t('h5.task.taskFull', req.lang));
     }
     
-    return responseUtil.serverError(res, '任务提交失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -77,7 +90,7 @@ async function getSubmittedTaskDetail(req, res) {
     
     // 验证是否是当前会员的提交
     if (task.memberId !== memberId) {
-      return responseUtil.forbidden(res, '无权查看此提交记录');
+      return responseUtil.forbidden(res, i18n.t('h5.task.noPermissionView', req.lang));
     }
     
     // 获取综合审核状态
@@ -96,56 +109,10 @@ async function getSubmittedTaskDetail(req, res) {
       rejectReason: task.rejectReason
     };
     
-    return responseUtil.success(res, responseData, '获取已提交任务详情成功');
+    return responseUtil.success(res, responseData);
   } catch (error) {
     logger.error(`获取已提交任务详情失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取已提交任务详情失败，请稍后重试');
-  }
-}
-
-/**
- * 获取任务提交状态
- * @param {Object} req - 请求对象
- * @param {Object} res - 响应对象
- */
-async function checkSubmission(req, res) {
-  try {
-    const { taskId } = req.params;
-    const memberId = req.user.id;
-    
-    if (!taskId) {
-      return responseUtil.badRequest(res, '任务ID不能为空');
-    }
-    
-    // 获取提交状态
-    const submission = await submittedTaskModel.getByTaskAndMember(
-      parseInt(taskId, 10),
-      memberId
-    );
-    
-    // 如果没有提交记录
-    if (!submission) {
-      return responseUtil.success(res, { 
-        isSubmitted: false 
-      }, '获取任务提交状态成功');
-    }
-    
-    // 获取综合审核状态
-    const effectiveStatus = getEffectiveAuditStatus(submission.taskPreAuditStatus, submission.taskAuditStatus);
-    
-    // 返回提交状态
-    return responseUtil.success(res, {
-      isSubmitted: true,
-      id: submission.id,
-      submitTime: submission.submitTime,
-      taskPreAuditStatus: submission.taskPreAuditStatus,
-      taskAuditStatus: submission.taskAuditStatus,
-      effectiveStatus: effectiveStatus,
-      rejectReason: submission.rejectReason
-    }, '获取任务提交状态成功');
-  } catch (error) {
-    logger.error(`获取任务提交状态失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取任务提交状态失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -195,16 +162,15 @@ async function getMemberSubmittedTasks(req, res) {
     // 记录查询结果
     logger.info(`会员已提交任务列表查询结果 - 会员ID: ${memberId}, 总数: ${result.total}, 当前页数据量: ${result.list.length}`);
     
-    return responseUtil.success(res, result, '获取已提交任务列表成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取已提交任务列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取已提交任务列表失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
 module.exports = {
   submitTask,
   getSubmittedTaskDetail,
-  checkSubmission,
   getMemberSubmittedTasks
 }; 

@@ -5,6 +5,7 @@
 const notificationModel = require('../../shared/models/notification.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取用户未读通知
@@ -19,10 +20,10 @@ const getUnreadNotifications = async (req, res) => {
     // 获取用户所有未读通知
     const notifications = await notificationModel.getUnreadByMemberId(memberId);
     
-    return responseUtil.success(res, notifications, '获取未读通知成功');
+    return responseUtil.success(res, notifications);
   } catch (error) {
     logger.error(`获取未读通知失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取未读通知失败');
+    return responseUtil.serverError(res);
   }
 };
 
@@ -41,13 +42,13 @@ const markNotificationAsRead = async (req, res) => {
     const result = await notificationModel.markAsRead(notificationId, memberId);
     
     if (!result) {
-      return responseUtil.notFound(res, '通知不存在或无权操作');
+      return responseUtil.notFound(res, i18n.t('h5.notification.notFound', req.lang));
     }
     
-    return responseUtil.success(res, { success: true }, '标记通知为已读成功');
+    return responseUtil.success(res, { success: true });
   } catch (error) {
     logger.error(`标记通知为已读失败: ${error.message}`);
-    return responseUtil.serverError(res, '标记通知为已读失败');
+    return responseUtil.serverError(res);
   }
 };
 
@@ -69,15 +70,15 @@ const batchMarkNotificationsAsRead = async (req, res) => {
     
     // 批量标记通知为已读
     const affectedCount = await notificationModel.batchMarkAsRead(ids, memberId);
-    
+
     return responseUtil.success(
       res, 
       { success: true, affectedCount }, 
-      `成功标记${affectedCount}条通知为已读`
+      i18n.t('h5.notification.markSuccess', req.lang, { affectedCount })
     );
   } catch (error) {
     logger.error(`批量标记通知为已读失败: ${error.message}`);
-    return responseUtil.serverError(res, '批量标记通知为已读失败');
+    return responseUtil.serverError(res);
   }
 };
 

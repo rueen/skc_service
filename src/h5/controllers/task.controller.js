@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-16 16:49:21
+ * @LastEditTime: 2025-04-18 22:12:27
  * @Description: 
  */
 /**
@@ -13,6 +13,7 @@ const taskModel = require('../../shared/models/task.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取任务列表
@@ -53,10 +54,10 @@ async function getList(req, res) {
     // 添加完整的调试日志，包括返回的任务数量
     logger.info(`任务列表返回 - 会员ID: ${memberId || '未登录'}, 任务数量: ${result.list.length}`);
     
-    return responseUtil.success(res, result, '获取任务列表成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取任务列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取任务列表失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -77,7 +78,7 @@ async function getDetail(req, res) {
     const task = await taskModel.getDetail(parseInt(id, 10), memberId);
     
     if (!task) {
-      return responseUtil.notFound(res, '任务不存在');
+      return responseUtil.notFound(res, i18n.t('h5.task.notFound', req.lang));
     }
     
     // 检查任务是否已结束
@@ -88,10 +89,10 @@ async function getDetail(req, res) {
     // 添加完整的调试日志，包括报名状态
     logger.info(`任务详情返回 - 任务ID: ${id}, 会员ID: ${memberId || '未登录'}, 报名状态: ${task.isEnrolled}, 报名ID: ${task.enrollmentId || '无'}`);
     
-    return responseUtil.success(res, task, '获取任务详情成功');
+    return responseUtil.success(res, task);
   } catch (error) {
     logger.error(`获取任务详情失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取任务详情失败');
+    return responseUtil.serverError(res);
   }
 }
 

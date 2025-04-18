@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-02 10:42:57
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-02 10:48:34
+ * @LastEditTime: 2025-04-18 21:49:51
  * @Description: 
  */
 /**
@@ -22,10 +22,10 @@ async function getAllConfigs(req, res) {
   try {
     const configs = await systemConfigModel.getAllConfigs();
     
-    return responseUtil.success(res, configs, '获取所有系统配置成功');
+    return responseUtil.success(res, configs);
   } catch (error) {
     logger.error(`H5端获取所有系统配置失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取所有系统配置失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
