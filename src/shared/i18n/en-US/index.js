@@ -6,12 +6,10 @@ const common = require('./common');
 const account = require('./account');
 const task = require('./task');
 const article = require('./article');
-const auth = require('./auth');
 
 module.exports = {
   common,
   account,
   task,
-  article,
-  auth
+  article
 }; 

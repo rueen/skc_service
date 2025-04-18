@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 19:38:41
+ * @LastEditTime: 2025-03-27 18:33:47
  * @Description: 
  */
 /**
@@ -29,31 +29,31 @@ router.post(
   [
     body('loginType')
       .notEmpty()
-      .withMessage('auth.validation.loginTypeNotEmpty')
+      .withMessage('登录类型不能为空')
       .isIn(['phone', 'email'])
-      .withMessage('auth.validation.invalidLoginType'),
+      .withMessage('登录类型必须为phone或email'),
     body('memberAccount')
       .notEmpty()
-      .withMessage('auth.validation.memberAccountNotEmpty')
+      .withMessage('账号不能为空')
       .isString()
-      .withMessage('auth.validation.memberAccountMustBeString'),
+      .withMessage('账号必须为字符串'),
     body('areaCode')
       .optional()
       .isString()
-      .withMessage('auth.validation.areaCodeMustBeString'),
+      .withMessage('区号必须为字符串'),
     body('password')
       .notEmpty()
-      .withMessage('auth.validation.passwordNotEmpty')
+      .withMessage('密码不能为空')
       .isLength({ min: 8, max: 20 })
-      .withMessage('auth.validation.passwordLength')
+      .withMessage('密码长度必须在8-20个字符之间')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
-      .withMessage('auth.validation.passwordMustContainLetterAndNumber'),
+      .withMessage('密码必须包含字母和数字'),
     body('inviteCode')
       .optional()
       .isString()
-      .withMessage('auth.validation.inviteCodeMustBeString')
+      .withMessage('邀请码必须为字符串')
       .isLength({ max: 20 })
-      .withMessage('auth.validation.inviteCodeLength')
+      .withMessage('邀请码长度不能超过20个字符')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authController.login
@@ -82,20 +82,20 @@ router.post(
   [
     body('currentPassword')
       .notEmpty()
-      .withMessage('auth.validation.currentPasswordNotEmpty'),
+      .withMessage('当前密码不能为空'),
     body('newPassword')
       .notEmpty()
-      .withMessage('auth.validation.newPasswordNotEmpty')
+      .withMessage('新密码不能为空')
       .isLength({ min: 8, max: 20 })
-      .withMessage('auth.validation.newPasswordLength')
+      .withMessage('新密码长度必须在8-20个字符之间')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
-      .withMessage('auth.validation.newPasswordMustContainLetterAndNumber'),
+      .withMessage('新密码必须包含字母和数字'),
     body('confirmPassword')
       .notEmpty()
-      .withMessage('auth.validation.confirmPasswordNotEmpty')
+      .withMessage('确认密码不能为空')
       .custom((value, { req }) => {
         if (value !== req.body.newPassword) {
-          throw new Error('auth.validation.confirmPasswordNotMatch');
+          throw new Error('确认密码与新密码不一致');
         }
         return true;
       })

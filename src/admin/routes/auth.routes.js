@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 19:39:19
+ * @LastEditTime: 2025-03-27 15:55:34
  * @Description: 
  */
 /**
@@ -29,10 +29,10 @@ router.post(
   [
     body('username')
       .notEmpty()
-      .withMessage('auth.validation.usernameNotEmpty'),
+      .withMessage('用户名不能为空'),
     body('password')
       .notEmpty()
-      .withMessage('auth.validation.passwordNotEmpty')
+      .withMessage('密码不能为空')
   ],
   (req, res, next) => {
     // 验证请求参数
