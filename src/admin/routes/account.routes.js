@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 15:54:26
+ * @LastEditTime: 2025-04-17 15:37:44
  * @Description: 
  */
 /**
@@ -70,9 +70,9 @@ router.post(
   [
     body('ids')
       .isArray()
-      .withMessage('account.validation.idsArray')
+      .withMessage('ids必须是数组')
       .notEmpty()
-      .withMessage('account.validation.idsNotEmpty')
+      .withMessage('ids不能为空')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.batchResolve
@@ -88,14 +88,13 @@ router.post(
   [
     body('ids')
       .isArray()
-      .withMessage('account.validation.idsArray')
+      .withMessage('ids必须是数组')
       .notEmpty()
-      .withMessage('account.validation.idsNotEmpty'),
+      .withMessage('ids不能为空'),
     body('rejectReason')
-      .notEmpty()
-      .withMessage('account.validation.rejectReasonRequired')
+      .optional()
       .isString()
-      .withMessage('account.validation.rejectReasonString')
+      .withMessage('拒绝原因必须是字符串')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.batchReject

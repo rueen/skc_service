@@ -10,10 +10,6 @@ module.exports = {
     channelIdInt: 'Channel ID must be an integer',
     accountAuditStatusInvalid: 'Invalid account audit status',
     groupIdInt: 'Group ID must be an integer',
-    memberIdInt: 'Member ID must be an integer',
-    idsArray: 'ids must be an array',
-    idsNotEmpty: 'ids cannot be empty',
-    rejectReasonRequired: 'Reject reason cannot be empty',
-    rejectReasonString: 'Reject reason must be a string'
+    memberIdInt: 'Member ID must be an integer'
   }
 }; 
