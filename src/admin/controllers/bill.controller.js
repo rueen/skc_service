@@ -36,7 +36,7 @@ async function list(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取账单列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取账单列表失败');
+    return responseUtil.serverError(res);
   }
 }
 

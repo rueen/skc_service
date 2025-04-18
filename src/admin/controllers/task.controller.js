@@ -6,6 +6,7 @@ const taskModel = require('../../shared/models/task.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取任务列表
@@ -25,10 +26,10 @@ async function getList(req, res) {
     // 获取任务列表
     const result = await taskModel.getList(filters, page, pageSize);
     
-    return responseUtil.success(res, result, '获取任务列表成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取任务列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取任务列表失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -48,13 +49,13 @@ async function getDetail(req, res) {
     const result = await taskModel.getDetail(id);
     
     if (!result) {
-      return responseUtil.notFound(res, '任务不存在');
+      return responseUtil.notFound(res, i18n.t('admin.task.notFound', req.lang));
     }
     
-    return responseUtil.success(res, result, '获取任务详情成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取任务详情失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取任务详情失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -75,7 +76,7 @@ async function create(req, res) {
     // 创建任务
     const result = await taskModel.create(req.body);
     
-    return responseUtil.success(res, result, '创建任务成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`创建任务失败: ${error.message}`);
     
@@ -83,7 +84,7 @@ async function create(req, res) {
       return responseUtil.badRequest(res, error.message);
     }
     
-    return responseUtil.serverError(res, '创建任务失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -104,7 +105,7 @@ async function update(req, res) {
     const task = await taskModel.getDetail(id);
     
     if (!task) {
-      return responseUtil.notFound(res, '任务不存在');
+      return responseUtil.notFound(res, i18n.t('admin.task.notFound', req.lang));
     }
     
     // 验证必要参数
@@ -120,10 +121,10 @@ async function update(req, res) {
       ...req.body
     });
     
-    return responseUtil.success(res, result, '更新任务成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`更新任务失败: ${error.message}`);
-    return responseUtil.serverError(res, '更新任务失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -144,16 +145,16 @@ async function remove(req, res) {
     const task = await taskModel.getDetail(id);
     
     if (!task) {
-      return responseUtil.notFound(res, '任务不存在');
+      return responseUtil.notFound(res, i18n.t('admin.task.notFound', req.lang));
     }
     
     // 删除任务
     const result = await taskModel.remove(id);
     
-    return responseUtil.success(res, { success: result }, '删除任务成功');
+    return responseUtil.success(res, { success: result });
   } catch (error) {
     logger.error(`删除任务失败: ${error.message}`);
-    return responseUtil.serverError(res, '删除任务失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 

@@ -6,10 +6,9 @@ const withdrawalModel = require('../../shared/models/withdrawal.model');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
-const memberModel = require('../../shared/models/member.model');
-const withdrawalAccountModel = require('../../shared/models/withdrawal-account.model');
 const { WithdrawalStatus } = require('../../shared/config/enums');
 const paymentTransactionModel = require('../../shared/models/payment-transaction.model');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取提现记录列表
@@ -58,7 +57,7 @@ async function getWithdrawals(req, res) {
     return responseUtil.success(res, withdrawals);
   } catch (error) {
     logger.error(`获取提现记录列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取提现记录列表失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -79,13 +78,13 @@ async function batchResolveWithdrawals(req, res) {
     const result = await withdrawalModel.batchApproveWithdrawals(ids, waiterId, remark);
     
     if (!result) {
-      return responseUtil.badRequest(res, '批量审核失败，可能没有符合条件的提现申请');
+      return responseUtil.badRequest(res, i18n.t('admin.withdrawal.noWithdrawalsResolve', req.lang));
     }
     
-    return responseUtil.success(res, { message: '批量审核通过成功' });
+    return responseUtil.success(res);
   } catch (error) {
     logger.error(`批量审核通过提现申请失败: ${error.message}`);
-    return responseUtil.serverError(res, '批量审核通过提现申请失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -110,13 +109,13 @@ async function batchRejectWithdrawals(req, res) {
     const result = await withdrawalModel.batchRejectWithdrawals(ids, rejectReason, waiterId, remark);
     
     if (!result) {
-      return responseUtil.badRequest(res, '批量拒绝失败，可能没有符合条件的提现申请');
+      return responseUtil.badRequest(res, i18n.t('admin.withdrawal.noWithdrawalsReject', req.lang));
     }
     
-    return responseUtil.success(res, { message: '批量拒绝提现申请成功' });
+    return responseUtil.success(res);
   } catch (error) {
     logger.error(`批量拒绝提现申请失败: ${error.message}`);
-    return responseUtil.serverError(res, '批量拒绝提现申请失败');
+    return responseUtil.serverError(res);
   }
 }
 

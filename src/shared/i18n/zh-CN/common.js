@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:38
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 17:34:22
+ * @LastEditTime: 2025-04-18 21:03:56
  * @Description: 
  */
 /**
@@ -37,7 +37,7 @@ module.exports = {
     memberPasswordLength: '密码长度必须在8-20位之间',
     memberPasswordFormat: '密码必须包含字母和数字',
     confirmPasswordNotMatch: '确认密码与新密码不一致',
-    amountFormat: '金额格式不正确',
+    amountFormat: '{field}金额格式不正确',
     waiterUsernameLength: '小二用户名长度必须在3-20个字符之间',
   }
 }; 

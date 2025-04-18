@@ -7,6 +7,7 @@ const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const notificationModel = require('../../shared/models/notification.model');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取账号列表
@@ -55,7 +56,7 @@ async function getAccounts(req, res) {
     });
   } catch (error) {
     logger.error(`获取账号列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取账号列表失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -97,7 +98,7 @@ async function batchResolve(req, res) {
       if (accountRows.length === 0) {
         results.failed.push({
           id,
-          reason: '账号不存在'
+          reason: i18n.t('admin.account.notFound', req.lang)
         });
         continue;
       }
@@ -108,7 +109,7 @@ async function batchResolve(req, res) {
       if (!memberId) {
         results.failed.push({
           id,
-          reason: '账号未关联会员'
+          reason: i18n.t('admin.account.notAssociatedWithMember', req.lang)
         });
         continue;
       }
@@ -127,7 +128,7 @@ async function batchResolve(req, res) {
           memberId,
           groupId: memberGroupRows[0].group_id,
           groupName: memberGroupRows[0].group_name,
-          message: '会员已有群组，审核通过'
+          message: i18n.t('admin.account.alreadyInGroup', req.lang)
         });
         // 会员已有群组，不触发通知
         continue;
@@ -142,7 +143,7 @@ async function batchResolve(req, res) {
       if (memberRows.length === 0) {
         results.failed.push({
           id,
-          reason: '会员不存在'
+          reason: i18n.t('admin.account.memberNotFound', req.lang)
         });
         continue;
       }
@@ -153,7 +154,9 @@ async function batchResolve(req, res) {
         const nickname = memberRows[0].nickname;
         results.failed.push({
           id,
-          reason: `会员【${nickname}】没有邀请人，无法自动分配群组`
+          reason: i18n.t('admin.account.noInviter', req.lang, {
+            nickname
+          })
         });
         continue;
       }
@@ -167,7 +170,7 @@ async function batchResolve(req, res) {
       if (inviterGroupRows.length === 0) {
         results.failed.push({
           id,
-          reason: '邀请人没有所属群，无法自动分配群组'
+          reason: i18n.t('admin.account.inviterNoGroup', req.lang)
         });
         continue;
       }
@@ -204,7 +207,7 @@ async function batchResolve(req, res) {
           memberId,
           groupId: inviterGroup.group_id,
           groupName: inviterGroup.group_name,
-          message: '分配到邀请人的群组'
+          message: i18n.t('admin.account.assignedToInviterGroup', req.lang)
         });
         
         // 发送账号审核通过通知
@@ -225,7 +228,7 @@ async function batchResolve(req, res) {
         if (!ownerId) {
           results.failed.push({
             id,
-            reason: '邀请人所在群组已满且没有群主'
+            reason: i18n.t('admin.account.inviterNoOwner', req.lang)
           });
           continue;
         }
@@ -245,7 +248,7 @@ async function batchResolve(req, res) {
         if (ownerGroupsRows.length === 0) {
           results.failed.push({
             id,
-            reason: '邀请人所在群组已满，且该群主名下所有群组均已满员'
+            reason: i18n.t('admin.account.inviterAllGroupFull', req.lang)
           });
           continue;
         }
@@ -272,7 +275,7 @@ async function batchResolve(req, res) {
           memberId,
           groupId: targetGroup.id,
           groupName: targetGroup.group_name,
-          message: '邀请人所在群组已满，分配到群主名下的其他群组'
+          message: i18n.t('admin.account.assignedToOtherGroup', req.lang)
         });
         
         // 发送账号审核通过通知
@@ -294,10 +297,13 @@ async function batchResolve(req, res) {
       failed: results.failed,
       successCount: results.success.length,
       failedCount: results.failed.length
-    }, `成功审核通过 ${results.success.length} 个账号，${results.failed.length} 个账号审核失败`);
+    }, i18n.t('admin.account.auditSuccess', req.lang, {
+      success: results.success.length,
+      failed: results.failed.length
+    }));
   } catch (error) {
     logger.error(`批量审核通过账号失败: ${error.message}`);
-    return responseUtil.serverError(res, '批量审核通过账号失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -341,10 +347,12 @@ async function batchReject(req, res) {
     return responseUtil.success(res, { 
       success: true,
       updatedCount: result.updatedCount 
-    }, `成功拒绝 ${result.updatedCount} 个账号`);
+    }, i18n.t('admin.account.rejectSuccess', req.lang, {
+      count: result.updatedCount
+    }));
   } catch (error) {
     logger.error(`批量审核拒绝账号失败: ${error.message}`);
-    return responseUtil.serverError(res, '批量审核拒绝账号失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -363,7 +371,7 @@ async function editAccount(req, res) {
     const [accountRows] = await pool.query('SELECT * FROM accounts WHERE id = ?', [id]);
     
     if (accountRows.length === 0) {
-      return responseUtil.notFound(res, '账号不存在');
+      return responseUtil.notFound(res, i18n.t('admin.account.notFound', req.lang));
     }
     
     // 准备更新数据
@@ -382,7 +390,7 @@ async function editAccount(req, res) {
     // 调用模型更新账号信息
     const result = await accountModel.update(accountData);
     
-    return responseUtil.success(res, result, '账号更新成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`编辑账号失败: ${error.message}`);
     
@@ -391,7 +399,7 @@ async function editAccount(req, res) {
       return responseUtil.badRequest(res, error.message);
     }
     
-    return responseUtil.serverError(res, '编辑账号失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -412,13 +420,13 @@ async function getAccountDetail(req, res) {
     const account = await accountModel.getById(parseInt(id, 10));
     
     if (!account) {
-      return responseUtil.notFound(res, '账号不存在');
+      return responseUtil.notFound(res, i18n.t('admin.account.notFound', req.lang));
     }
     
     return responseUtil.success(res, account);
   } catch (error) {
     logger.error(`获取账号详情失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取账号详情失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -439,16 +447,16 @@ async function deleteAccount(req, res) {
     const account = await accountModel.getById(parseInt(id, 10));
     
     if (!account) {
-      return responseUtil.notFound(res, '账号不存在');
+      return responseUtil.notFound(res, i18n.t('admin.account.notFound', req.lang));
     }
     
     // 删除账号
     const result = await accountModel.remove(parseInt(id, 10));
     
-    return responseUtil.success(res, result, '账号删除成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`删除账号失败: ${error.message}`);
-    return responseUtil.serverError(res, '删除账号失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 

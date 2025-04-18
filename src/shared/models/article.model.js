@@ -128,7 +128,7 @@ async function create(articleData) {
       );
 
       if (existing.length > 0) {
-        throw new Error(i18n.t('article.common.locationExists', lang));
+        throw new Error('文章位置标识已存在');
       }
     }
 

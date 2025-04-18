@@ -7,6 +7,7 @@ const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../../shared/config/api.config');
 const xlsx = require('xlsx');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取FB老账号列表
@@ -39,7 +40,7 @@ async function getOldAccountsFb(req, res) {
     });
   } catch (error) {
     logger.error(`获取FB老账号列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取FB老账号列表失败');
+    return responseUtil.serverError(res);
   }
 }
 

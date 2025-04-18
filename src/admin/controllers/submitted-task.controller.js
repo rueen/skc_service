@@ -6,6 +6,7 @@ const submittedTaskModel = require('../../shared/models/submitted-task.model');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取预审任务列表
@@ -46,10 +47,10 @@ async function getPreAuditTasks(req, res) {
       parseInt(pageSize, 10)
     );
     
-    return responseUtil.success(res, result, '获取已提交任务列表成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取已提交任务列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取已提交任务列表失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -90,10 +91,10 @@ async function getConfirmAuditTasks(req, res) {
       parseInt(pageSize, 10)
     );
     
-    return responseUtil.success(res, result, '获取预审已通过任务列表成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取预审已通过任务列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取预审已通过任务列表失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -115,13 +116,13 @@ async function getSubmittedTaskDetail(req, res) {
     const task = await submittedTaskModel.getById(parseInt(id, 10), auditType);
     
     if (!task) {
-      return responseUtil.notFound(res, '未找到提交记录');
+      return responseUtil.notFound(res, i18n.t('admin.submittedTask.notFound', req.lang));
     }
     
-    return responseUtil.success(res, task, '获取已提交任务详情成功');
+    return responseUtil.success(res, task);
   } catch (error) {
     logger.error(`获取已提交任务详情失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取已提交任务详情失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -144,12 +145,14 @@ async function batchApproveSubmissions(req, res) {
     
     return responseUtil.success(
       res, 
-      { updatedCount: result.updatedCount }, 
-      `成功审核通过 ${result.updatedCount} 个任务`
+      { updatedCount: result.updatedCount },
+      i18n.t('admin.submittedTask.approveSuccess', req.lang, {
+        updatedCount: result.updatedCount
+      })
     );
   } catch (error) {
     logger.error(`批量审核通过任务失败: ${error.message}`);
-    return responseUtil.serverError(res, '批量审核通过任务失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -176,12 +179,14 @@ async function batchRejectSubmissions(req, res) {
     
     return responseUtil.success(
       res, 
-      { updatedCount: result.updatedCount }, 
-      `成功拒绝 ${result.updatedCount} 个任务`
+      { updatedCount: result.updatedCount },
+      i18n.t('admin.submittedTask.rejectSuccess', req.lang, {
+        updatedCount: result.updatedCount
+      })
     );
   } catch (error) {
     logger.error(`批量拒绝任务失败: ${error.message}`);
-    return responseUtil.serverError(res, '批量拒绝任务失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -259,7 +264,7 @@ async function exportPreAuditTasks(req, res) {
     return res.end();
   } catch (error) {
     logger.error(`导出已提交任务列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '导出已提交任务列表失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -336,7 +341,7 @@ async function exportConfirmAuditTasks(req, res) {
     return res.end();
   } catch (error) {
     logger.error(`导出预审已通过任务列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '导出预审已通过任务列表失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -359,12 +364,14 @@ async function batchPreApproveSubmissions(req, res) {
     
     return responseUtil.success(
       res, 
-      { updatedCount: result.updatedCount }, 
-      `成功预审通过 ${result.updatedCount} 个任务`
+      { updatedCount: result.updatedCount },
+      i18n.t('admin.submittedTask.preApproveSuccess', req.lang, {
+        updatedCount: result.updatedCount
+      })
     );
   } catch (error) {
     logger.error(`批量预审通过任务失败: ${error.message}`);
-    return responseUtil.serverError(res, '批量预审通过任务失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -391,12 +398,14 @@ async function batchPreRejectSubmissions(req, res) {
     
     return responseUtil.success(
       res, 
-      { updatedCount: result.updatedCount }, 
-      `成功预审拒绝 ${result.updatedCount} 个任务`
+      { updatedCount: result.updatedCount },
+      i18n.t('admin.submittedTask.preRejectSuccess', req.lang, {
+        updatedCount: result.updatedCount
+      })
     );
   } catch (error) {
     logger.error(`批量预审拒绝任务失败: ${error.message}`);
-    return responseUtil.serverError(res, '批量预审拒绝任务失败，请稍后重试');
+    return responseUtil.serverError(res);
   }
 }
 
