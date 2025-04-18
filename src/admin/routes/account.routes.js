@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 15:59:38
+ * @LastEditTime: 2025-04-18 16:07:34
  * @Description: 
  */
 /**
@@ -78,7 +78,7 @@ router.post(
   [
     body('ids')
       .isArray()
-      .withMessage('ids必须是数组')
+      .withMessage('common.validation.mustBeArray')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
   ],
@@ -96,7 +96,7 @@ router.post(
   [
     body('ids')
       .isArray()
-      .withMessage('ids必须是数组')
+      .withMessage('common.validation.mustBeArray')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty'),
     body('rejectReason')

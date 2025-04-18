@@ -108,7 +108,7 @@ router.post(
     body('groupIds')
       .optional()
       .isArray()
-      .withMessage('群组ID列表必须是数组'),
+      .withMessage('common.validation.mustBeArray'),
     body('groupMode')
       .optional()
       .isBoolean()
@@ -135,7 +135,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isArray()
-      .withMessage('自定义字段必须是数组'),
+      .withMessage('common.validation.mustBeArray'),
     body('startTime')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
@@ -214,7 +214,7 @@ router.put(
     body('groupIds')
       .optional()
       .isArray()
-      .withMessage('群组ID列表必须是数组'),
+      .withMessage('common.validation.mustBeArray'),
     body('groupMode')
       .optional()
       .isBoolean()
@@ -237,7 +237,7 @@ router.put(
     body('customFields')
       .optional()
       .isArray()
-      .withMessage('自定义字段必须是数组'),
+      .withMessage('common.validation.mustBeArray'),
     body('startTime')
       .optional()
       .isISO8601()

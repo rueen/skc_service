@@ -79,7 +79,7 @@ router.post(
     body('customFields')
       .optional()
       .isArray()
-      .withMessage('customFields必须是数组')
+      .withMessage('common.validation.mustBeArray')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.add
@@ -110,7 +110,7 @@ router.put(
     body('customFields')
       .optional()
       .isArray()
-      .withMessage('customFields必须是数组')
+      .withMessage('common.validation.mustBeArray')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.edit

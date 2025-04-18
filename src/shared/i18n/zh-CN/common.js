@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:38
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 15:59:27
+ * @LastEditTime: 2025-04-18 16:07:13
  * @Description: 
  */
 /**
@@ -28,5 +28,6 @@ module.exports = {
     invalid: '{field}无效',
     timeFormatInvalid: '{field}时间格式无效',
     mustNotBeEmpty: '{field}不能为空',
+    mustBeArray: '{field}必须是数组',
   }
 }; 

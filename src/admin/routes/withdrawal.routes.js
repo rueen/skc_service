@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:03:40
+ * @LastEditTime: 2025-04-18 16:07:59
  * @Description: 
  */
 /**
@@ -69,7 +69,7 @@ router.get(
 router.post(
   '/batch-approve',
   [
-    body('ids').isArray().withMessage('ids必须是数组'),
+    body('ids').isArray().withMessage('common.validation.mustBeArray'),
     body('ids.*').isInt().withMessage('common.validation.mustBeInt'),
     body('remark').optional().isString().withMessage('common.validation.mustBeString')
   ],
@@ -85,7 +85,7 @@ router.post(
 router.post(
   '/batch-reject',
   [
-    body('ids').isArray().withMessage('ids必须是数组'),
+    body('ids').isArray().withMessage('common.validation.mustBeArray'),
     body('ids.*').isInt().withMessage('common.validation.mustBeInt'),
     body('rejectReason')
       .notEmpty()
