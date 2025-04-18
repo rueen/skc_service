@@ -7,13 +7,11 @@ const account = require('./account');
 const task = require('./task');
 const article = require('./article');
 const auth = require('./auth');
-const channel = require('./channel');
 
 module.exports = {
   common,
   account,
   task,
   article,
-  auth,
-  channel
+  auth
 }; 

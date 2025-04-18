@@ -7,7 +7,6 @@ const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 const { convertToCamelCase } = require('../utils/data.util');
-const i18n = require('../utils/i18n.util');
 
 /**
  * 格式化渠道信息
@@ -110,7 +109,7 @@ async function getById(id) {
  * @param {Object} channelData - 渠道数据
  * @returns {Promise<Object>} 创建结果
  */
-async function create(channelData, lang) {
+async function create(channelData) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -122,7 +121,7 @@ async function create(channelData, lang) {
     );
 
     if (existing.length > 0) {
-      throw new Error(i18n.t('channel.common.nameExists', lang));
+      throw new Error('渠道名称已存在');
     }
 
     // 处理customFields字段
@@ -164,7 +163,7 @@ async function create(channelData, lang) {
  * @param {Object} channelData - 渠道数据
  * @returns {Promise<boolean>} 更新是否成功
  */
-async function update(channelData, lang) {
+async function update(channelData) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -177,7 +176,7 @@ async function update(channelData, lang) {
       );
 
       if (existing.length > 0) {
-        throw new Error(i18n.t('channel.common.nameExists', lang));
+        throw new Error('渠道名称已存在');
       }
     }
 
@@ -242,7 +241,7 @@ async function update(channelData, lang) {
  * @param {number} id - 渠道ID
  * @returns {Promise<boolean>} 删除是否成功
  */
-async function remove(id, lang) {
+async function remove(id) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -254,7 +253,7 @@ async function remove(id, lang) {
     );
 
     if (accounts[0].count > 0) {
-      throw new Error(i18n.t('channel.common.associatedAccounts', lang));
+      throw new Error('该渠道下存在关联账号，无法删除');
     }
 
     // 检查是否有关联的任务
@@ -264,7 +263,7 @@ async function remove(id, lang) {
     );
 
     if (tasks[0].count > 0) {
-      throw new Error(i18n.t('channel.common.associatedTasks', lang));
+      throw new Error('该渠道下存在关联任务，无法删除');
     }
 
     // 删除渠道

@@ -1,10 +1,3 @@
-/*
- * @Author: diaochan
- * @Date: 2025-03-25 10:15:13
- * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 20:30:24
- * @Description: 
- */
 /**
  * H5端渠道控制器
  * 处理H5端渠道相关的业务逻辑
@@ -26,7 +19,7 @@ async function getList(req, res) {
     return responseUtil.success(res, result.list);
   } catch (error) {
     logger.error(`获取渠道列表失败: ${error.message}`);
-    return responseUtil.serverError(res);
+    return responseUtil.serverError(res, '获取渠道列表失败');
   }
 }
 
