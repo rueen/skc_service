@@ -72,7 +72,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
-      .withMessage('渠道名称长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('icon')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty'),
@@ -102,7 +102,7 @@ router.put(
     body('name')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('渠道名称长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('icon')
       .optional()
       .notEmpty()

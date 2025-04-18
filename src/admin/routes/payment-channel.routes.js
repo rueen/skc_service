@@ -38,22 +38,22 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('支付渠道名称长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('bank')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('银行名称长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('merchantId')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('商户ID长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('secretKey')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 255 })
-      .withMessage('密钥长度不能超过255个字符')
+      .withMessage('common.validation.maxLength{max:255}')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   paymentChannelController.addPaymentChannel
@@ -74,21 +74,21 @@ router.put(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('支付渠道名称长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('bank')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('银行名称长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('merchantId')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('商户ID长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('secretKey')
       .optional()
       .isLength({ max: 255 })
-      .withMessage('密钥长度不能超过255个字符')
+      .withMessage('common.validation.maxLength{max:255}')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   paymentChannelController.updatePaymentChannel

@@ -89,7 +89,7 @@ router.post(
     body('memberNickname')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('会员昵称长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('groupIds')
       .optional()
       .isArray()
@@ -144,11 +144,11 @@ router.put(
     body('memberNickname')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('会员昵称长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('memberAccount')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('会员账号长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('password')
       .optional()
       .isLength({ min: 8, max: 20 })
@@ -298,7 +298,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 255 })
-      .withMessage('备注说明不能超过255个字符')
+      .withMessage('common.validation.maxLength{max:255}')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.grantReward
@@ -327,7 +327,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 255 })
-      .withMessage('备注说明不能超过255个字符')
+      .withMessage('common.validation.maxLength{max:255}')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.deductReward

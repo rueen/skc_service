@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:32:56
+ * @LastEditTime: 2025-04-18 17:13:47
  * @Description: 
  */
 /**
@@ -98,7 +98,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 255 })
-      .withMessage('拒绝原因长度不能超过255个字符'),
+      .withMessage('common.validation.maxLength{max:255}'),
     body('remark').optional().isString().withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,

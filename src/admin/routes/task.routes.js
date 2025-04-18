@@ -81,7 +81,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('任务名称长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('channelId')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
@@ -91,7 +91,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
-      .withMessage('任务类别长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('taskType')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty'),
@@ -104,7 +104,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('品牌名称长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('groupIds')
       .optional()
       .isArray()
@@ -192,7 +192,7 @@ router.put(
     body('taskName')
       .optional()
       .isLength({ max: 100 })
-      .withMessage('任务名称长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('channelId')
       .optional()
       .isInt()
@@ -200,7 +200,7 @@ router.put(
     body('category')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('任务类别长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('taskType')
       .optional(),
     body('reward')
@@ -210,7 +210,7 @@ router.put(
     body('brand')
       .optional()
       .isLength({ max: 100 })
-      .withMessage('品牌名称长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('groupIds')
       .optional()
       .isArray()

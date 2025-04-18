@@ -44,7 +44,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 6 })
-      .withMessage('密码长度至少为6个字符'),
+      .withMessage('common.validation.minLength{min:6}'),
     body('isAdmin')
       .optional()
       .isBoolean()
@@ -85,7 +85,7 @@ router.put(
     body('password')
       .optional()
       .isLength({ min: 6 })
-      .withMessage('密码长度至少为6个字符'),
+      .withMessage('common.validation.minLength{min:6}'),
     body('isAdmin')
       .optional()
       .isBoolean()

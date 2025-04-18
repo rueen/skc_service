@@ -84,7 +84,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
-      .withMessage('群组名称长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('groupLink')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
@@ -116,7 +116,7 @@ router.put(
     body('groupName')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('群组名称长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('groupLink')
       .optional()
       .isURL()

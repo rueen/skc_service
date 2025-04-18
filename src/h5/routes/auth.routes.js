@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:24:24
+ * @LastEditTime: 2025-04-18 17:16:12
  * @Description: 
  */
 /**
@@ -51,9 +51,9 @@ router.post(
     body('inviteCode')
       .optional()
       .isString()
-      .withMessage('邀请码必须为字符串')
+      .withMessage('common.validation.mustBeString')
       .isLength({ max: 20 })
-      .withMessage('邀请码长度不能超过20个字符')
+      .withMessage('common.validation.maxLength{max:20}')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authController.login

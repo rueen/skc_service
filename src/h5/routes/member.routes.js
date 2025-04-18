@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:26:39
+ * @LastEditTime: 2025-04-18 17:15:42
  * @Description: 
  */
 /**
@@ -32,7 +32,7 @@ router.put(
     body('memberNickname')
       .optional()
       .isLength({ max: 20 })
-      .withMessage('昵称长度不能超过20个字符'),
+      .withMessage('common.validation.maxLength{max:20}'),
     body('occupation')
       .optional()
       .isIn(['housewife', 'freelancer', 'student'])
@@ -87,15 +87,15 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('账号长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('uid')
       .optional()
       .isLength({ max: 100 })
-      .withMessage('UID长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('homeUrl')
       .optional()
       .isURL()
-      .withMessage('主页链接必须是有效的URL'),
+      .withMessage('common.validation.formatInvalid'),
     body('fansCount')
       .optional()
       .isInt({ min: 0 })
@@ -147,11 +147,11 @@ router.put(
     body('account')
       .optional()
       .isLength({ max: 100 })
-      .withMessage('账号长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('uid')
       .optional()
       .isLength({ max: 100 })
-      .withMessage('UID长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('homeUrl')
       .optional()
       .isURL()

@@ -31,12 +31,12 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('账号长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('name')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
-      .withMessage('姓名长度不能超过50个字符')
+      .withMessage('common.validation.maxLength{max:50}')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.createWithdrawalAccount
@@ -62,12 +62,12 @@ router.put(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('账号长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('name')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
-      .withMessage('姓名长度不能超过50个字符')
+      .withMessage('common.validation.maxLength{max:50}')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.updateWithdrawalAccount
