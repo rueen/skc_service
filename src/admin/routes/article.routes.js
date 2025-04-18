@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-12 14:28:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 15:46:15
+ * @LastEditTime: 2025-04-18 16:00:18
  * @Description: 
  */
 /**
@@ -56,12 +56,12 @@ router.post(
   [
     body('title')
       .notEmpty()
-      .withMessage('标题不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('标题长度不能超过100个字符'),
     body('content')
       .notEmpty()
-      .withMessage('内容不能为空'),
+      .withMessage('common.validation.mustNotBeEmpty'),
     body('location')
       .optional()
       .isLength({ max: 50 })
@@ -81,17 +81,17 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('文章ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
     body('title')
       .notEmpty()
-      .withMessage('标题不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('标题长度不能超过100个字符'),
     body('content')
       .notEmpty()
-      .withMessage('内容不能为空'),
+      .withMessage('common.validation.mustNotBeEmpty'),
     body('location')
       .optional()
       .isLength({ max: 50 })
@@ -111,7 +111,7 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('文章ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],

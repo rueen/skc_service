@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:47
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 15:53:18
+ * @LastEditTime: 2025-04-18 16:05:45
  * @Description: 
  */
 /**
@@ -26,5 +26,7 @@ module.exports = {
     mustBeString: '{field} must be a string',
     mustBeInt: '{field} must be an integer',
     invalid: '{field} is invalid',
+    timeFormatInvalid: '{field} time format is invalid',
+    mustNotBeEmpty: '{field} must not be empty',
   }
 }; 

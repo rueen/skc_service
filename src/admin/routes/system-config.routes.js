@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 15:56:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-02 10:21:34
+ * @LastEditTime: 2025-04-18 16:02:42
  * @Description: 
  */
 /**
@@ -43,7 +43,7 @@ router.post(
   [
     body('configs')
       .notEmpty()
-      .withMessage('配置数据不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   systemConfigController.updateConfigs

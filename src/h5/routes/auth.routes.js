@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-27 18:33:47
+ * @LastEditTime: 2025-04-18 16:04:04
  * @Description: 
  */
 /**
@@ -29,12 +29,12 @@ router.post(
   [
     body('loginType')
       .notEmpty()
-      .withMessage('登录类型不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isIn(['phone', 'email'])
       .withMessage('登录类型必须为phone或email'),
     body('memberAccount')
       .notEmpty()
-      .withMessage('账号不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isString()
       .withMessage('账号必须为字符串'),
     body('areaCode')
@@ -43,7 +43,7 @@ router.post(
       .withMessage('区号必须为字符串'),
     body('password')
       .notEmpty()
-      .withMessage('密码不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 8, max: 20 })
       .withMessage('密码长度必须在8-20个字符之间')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
@@ -82,17 +82,17 @@ router.post(
   [
     body('currentPassword')
       .notEmpty()
-      .withMessage('当前密码不能为空'),
+      .withMessage('common.validation.mustNotBeEmpty'),
     body('newPassword')
       .notEmpty()
-      .withMessage('新密码不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 8, max: 20 })
       .withMessage('新密码长度必须在8-20个字符之间')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
       .withMessage('新密码必须包含字母和数字'),
     body('confirmPassword')
       .notEmpty()
-      .withMessage('确认密码不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .custom((value, { req }) => {
         if (value !== req.body.newPassword) {
           throw new Error('确认密码与新密码不一致');

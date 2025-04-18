@@ -51,7 +51,7 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],
@@ -70,12 +70,12 @@ router.post(
   [
     body('name')
       .notEmpty()
-      .withMessage('渠道名称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
       .withMessage('渠道名称长度不能超过50个字符'),
     body('icon')
       .notEmpty()
-      .withMessage('渠道图标不能为空'),
+      .withMessage('common.validation.mustNotBeEmpty'),
     body('customFields')
       .optional()
       .isArray()
@@ -96,7 +96,7 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
     body('name')
@@ -106,7 +106,7 @@ router.put(
     body('icon')
       .optional()
       .notEmpty()
-      .withMessage('渠道图标不能为空'),
+      .withMessage('common.validation.mustNotBeEmpty'),
     body('customFields')
       .optional()
       .isArray()
@@ -127,7 +127,7 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],

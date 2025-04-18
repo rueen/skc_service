@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 15:52:34
+ * @LastEditTime: 2025-04-18 16:04:51
  * @Description: 
  */
 /**
@@ -60,7 +60,7 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('任务ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],

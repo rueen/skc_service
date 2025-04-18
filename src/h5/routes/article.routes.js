@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 15:51:23
+ * @LastEditTime: 2025-04-18 16:03:56
  * @Description: 
  */
 /**
@@ -28,7 +28,7 @@ router.get(
   [
     param('location')
       .notEmpty()
-      .withMessage('位置标识不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isString()
       .withMessage('common.validation.mustBeString')
   ],
@@ -47,7 +47,7 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('文章ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],

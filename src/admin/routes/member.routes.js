@@ -57,7 +57,7 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],
@@ -76,12 +76,12 @@ router.post(
   [
     body('memberAccount')
       .notEmpty()
-      .withMessage('会员账号不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 4, max: 50 })
       .withMessage('会员账号长度必须在4-50个字符之间'),
     body('password')
       .notEmpty()
-      .withMessage('密码不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 8, max: 20 })
       .withMessage('密码长度必须在8-20位之间')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
@@ -138,7 +138,7 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
     body('memberNickname')
@@ -191,7 +191,7 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],
@@ -210,7 +210,7 @@ router.get(
   [
     param('memberId')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],
@@ -229,7 +229,7 @@ router.get(
   [
     param('memberId')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],
@@ -248,7 +248,7 @@ router.get(
   [
     param('memberId')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],
@@ -267,7 +267,7 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],
@@ -286,17 +286,17 @@ router.post(
   [
     body('memberId')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
     body('amount')
       .notEmpty()
-      .withMessage('奖励金额不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isFloat({ min: 0.01 })
       .withMessage('奖励金额必须为大于0的数字'),
     body('remark')
       .notEmpty()
-      .withMessage('备注说明不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 255 })
       .withMessage('备注说明不能超过255个字符')
   ],
@@ -315,17 +315,17 @@ router.post(
   [
     body('memberId')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
     body('amount')
       .notEmpty()
-      .withMessage('扣除金额不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isFloat({ min: 0.01 })
       .withMessage('扣除金额必须为大于0的数字'),
     body('remark')
       .notEmpty()
-      .withMessage('备注说明不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 255 })
       .withMessage('备注说明不能超过255个字符')
   ],
@@ -355,7 +355,7 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],

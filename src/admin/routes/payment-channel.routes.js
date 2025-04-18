@@ -36,22 +36,22 @@ router.post(
   [
     body('name')
       .notEmpty()
-      .withMessage('支付渠道名称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('支付渠道名称长度不能超过100个字符'),
     body('bank')
       .notEmpty()
-      .withMessage('银行名称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('银行名称长度不能超过100个字符'),
     body('merchantId')
       .notEmpty()
-      .withMessage('商户ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('商户ID长度不能超过100个字符'),
     body('secretKey')
       .notEmpty()
-      .withMessage('密钥不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 255 })
       .withMessage('密钥长度不能超过255个字符')
   ],
@@ -72,17 +72,17 @@ router.put(
       .withMessage('common.validation.mustBeInt'),
     body('name')
       .notEmpty()
-      .withMessage('支付渠道名称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('支付渠道名称长度不能超过100个字符'),
     body('bank')
       .notEmpty()
-      .withMessage('银行名称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('银行名称长度不能超过100个字符'),
     body('merchantId')
       .notEmpty()
-      .withMessage('商户ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('商户ID长度不能超过100个字符'),
     body('secretKey')

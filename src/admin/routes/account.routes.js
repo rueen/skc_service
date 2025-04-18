@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 15:43:19
+ * @LastEditTime: 2025-04-18 15:59:38
  * @Description: 
  */
 /**
@@ -80,7 +80,7 @@ router.post(
       .isArray()
       .withMessage('ids必须是数组')
       .notEmpty()
-      .withMessage('ids不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.batchResolve
@@ -98,7 +98,7 @@ router.post(
       .isArray()
       .withMessage('ids必须是数组')
       .notEmpty()
-      .withMessage('ids不能为空'),
+      .withMessage('common.validation.mustNotBeEmpty'),
     body('rejectReason')
       .optional()
       .isString()

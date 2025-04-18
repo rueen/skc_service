@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 15:57:08
+ * @LastEditTime: 2025-04-18 16:04:28
  * @Description: 
  */
 /**
@@ -62,7 +62,7 @@ router.post(
   [
     body('homeUrl')
       .notEmpty()
-      .withMessage('主页链接不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isURL()
       .withMessage('主页链接必须是有效的URL')
   ],
@@ -80,12 +80,12 @@ router.post(
   [
     body('channelId')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
     body('account')
       .notEmpty()
-      .withMessage('账号不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('账号长度不能超过100个字符'),
     body('uid')
@@ -123,7 +123,7 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('账号ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],
@@ -141,7 +141,7 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('账号ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
     body('account')
@@ -183,7 +183,7 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('账号ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],

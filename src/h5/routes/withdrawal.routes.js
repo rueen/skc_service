@@ -24,17 +24,17 @@ router.post(
   [
     body('paymentChannelId')
       .notEmpty()
-      .withMessage('支付渠道不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('无效的支付渠道ID'),
     body('account')
       .notEmpty()
-      .withMessage('账号不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('账号长度不能超过100个字符'),
     body('name')
       .notEmpty()
-      .withMessage('姓名不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
       .withMessage('姓名长度不能超过50个字符')
   ],
@@ -53,17 +53,17 @@ router.put(
     param('id').isInt().withMessage('无效的账户ID'),
     body('paymentChannelId')
       .notEmpty()
-      .withMessage('支付渠道不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('无效的支付渠道ID'),
     body('account')
       .notEmpty()
-      .withMessage('账号不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('账号长度不能超过100个字符'),
     body('name')
       .notEmpty()
-      .withMessage('姓名不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
       .withMessage('姓名长度不能超过50个字符')
   ],

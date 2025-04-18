@@ -70,12 +70,12 @@ router.post(
   [
     body('uid')
       .notEmpty()
-      .withMessage('FB账户不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isString()
       .withMessage('common.validation.mustBeString'),
     body('nickname')
       .notEmpty()
-      .withMessage('FB昵称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isString()
       .withMessage('common.validation.mustBeString'),
     body('homeUrl')
@@ -100,12 +100,12 @@ router.put(
       .withMessage('common.validation.mustBeInt'),
     body('uid')
       .notEmpty()
-      .withMessage('FB账户不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isString()
       .withMessage('common.validation.mustBeString'),
     body('nickname')
       .notEmpty()
-      .withMessage('FB昵称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isString()
       .withMessage('common.validation.mustBeString'),
     body('homeUrl')

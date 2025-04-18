@@ -63,7 +63,7 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('群组ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],
@@ -82,12 +82,12 @@ router.post(
   [
     body('groupName')
       .notEmpty()
-      .withMessage('群组名称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
       .withMessage('群组名称长度不能超过50个字符'),
     body('groupLink')
       .notEmpty()
-      .withMessage('群组链接不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isURL()
       .withMessage('群组链接必须是有效的URL'),
     body('ownerId')
@@ -110,7 +110,7 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('群组ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
     body('groupName')
@@ -146,7 +146,7 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('群组ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],

@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 15:51:07
+ * @LastEditTime: 2025-04-18 16:03:40
  * @Description: 
  */
 /**
@@ -89,7 +89,7 @@ router.post(
     body('ids.*').isInt().withMessage('common.validation.mustBeInt'),
     body('rejectReason')
       .notEmpty()
-      .withMessage('拒绝原因不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 255 })
       .withMessage('拒绝原因长度不能超过255个字符'),
     body('remark').optional().isString().withMessage('common.validation.mustBeString')

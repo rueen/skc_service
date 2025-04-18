@@ -60,7 +60,7 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('任务ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],
@@ -79,30 +79,30 @@ router.post(
   [
     body('taskName')
       .notEmpty()
-      .withMessage('任务名称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('任务名称长度不能超过100个字符'),
     body('channelId')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
     body('category')
       .notEmpty()
-      .withMessage('任务类别不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
       .withMessage('任务类别长度不能超过50个字符'),
     body('taskType')
       .notEmpty()
-      .withMessage('任务类型不能为空'),
+      .withMessage('common.validation.mustNotBeEmpty'),
     body('reward')
       .notEmpty()
-      .withMessage('任务奖励金额不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isFloat({ min: 0 })
       .withMessage('任务奖励金额必须是非负数'),
     body('brand')
       .notEmpty()
-      .withMessage('品牌名称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('品牌名称长度不能超过100个字符'),
     body('groupIds')
@@ -115,7 +115,7 @@ router.post(
       .withMessage('群组模式必须是布尔值'),
     body('userRange')
       .notEmpty()
-      .withMessage('用户范围不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isIn([0, 1])
       .withMessage('用户范围必须是0或1，0表示全部用户，1表示需要校验完成任务次数'),
     body('taskCount')
@@ -133,19 +133,19 @@ router.post(
       }),
     body('customFields')
       .notEmpty()
-      .withMessage('自定义字段不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isArray()
       .withMessage('自定义字段必须是数组'),
     body('startTime')
       .notEmpty()
-      .withMessage('开始时间不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isISO8601()
-      .withMessage('开始时间格式无效'),
+      .withMessage('common.validation.timeFormatInvalid'),
     body('endTime')
       .notEmpty()
-      .withMessage('结束时间不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isISO8601()
-      .withMessage('结束时间格式无效'),
+      .withMessage('common.validation.timeFormatInvalid'),
     body('unlimitedQuota')
       .optional()
       .isBoolean()
@@ -186,7 +186,7 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('任务ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
     body('taskName')
@@ -241,11 +241,11 @@ router.put(
     body('startTime')
       .optional()
       .isISO8601()
-      .withMessage('开始时间格式无效'),
+      .withMessage('common.validation.timeFormatInvalid'),
     body('endTime')
       .optional()
       .isISO8601()
-      .withMessage('结束时间格式无效'),
+      .withMessage('common.validation.timeFormatInvalid'),
     body('unlimitedQuota')
       .optional()
       .isBoolean()
@@ -286,7 +286,7 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('任务ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt')
   ],

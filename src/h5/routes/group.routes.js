@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 21:21:23
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 15:51:26
+ * @LastEditTime: 2025-04-18 16:04:25
  * @Description: 
  */
 /**
@@ -81,7 +81,7 @@ router.get(
   [
     param('groupId')
       .notEmpty()
-      .withMessage('群组ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
       query('page')

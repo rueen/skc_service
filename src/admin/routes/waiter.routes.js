@@ -37,12 +37,12 @@ router.post(
   [
     body('username')
       .notEmpty()
-      .withMessage('用户名不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 3, max: 20 })
       .withMessage('用户名长度应为3-20个字符'),
     body('password')
       .notEmpty()
-      .withMessage('密码不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 6 })
       .withMessage('密码长度至少为6个字符'),
     body('isAdmin')
@@ -75,7 +75,7 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('小二ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
     body('username')
@@ -116,7 +116,7 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('小二ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
       .withMessage('common.validation.mustBeInt'),
   ],
