@@ -15,7 +15,13 @@ const validateRequest = (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const firstError = errors.array()[0];
-    responseUtil.badRequest(res, firstError.msg);
+    const lang = req.lang || req.query.lang || req.body.lang || 'zh-CN';
+    
+    const message = i18n.t(firstError.msg, lang);
+    responseUtil.badRequest(res, message, {
+      errors: errors.array().map(error => error.msg),
+      errorFields: errors.array().map(error => error.param)
+    });
     return false;
   }
   return true;

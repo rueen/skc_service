@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:47
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 15:55:52
+ * @LastEditTime: 2025-04-18 10:14:26
  * @Description: 
  */
 /**
@@ -20,4 +20,8 @@ module.exports = {
   notFound: 'Resource not found',
   
   // Other common translations...
+  validation: {
+    page: 'Page number must be greater than 0',
+    pageSize: 'Page size must be greater than 0'
+  }
 }; 

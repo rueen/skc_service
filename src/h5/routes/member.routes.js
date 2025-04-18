@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 09:23:42
+ * @LastEditTime: 2025-04-18 10:13:48
  * @Description: 
  */
 /**
@@ -212,11 +212,11 @@ router.get(
     query('page')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('页码必须是大于0的整数'),
+      .withMessage('common.validation.page'),
     query('pageSize')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('每页条数必须是大于0的整数'),
+      .withMessage('common.validation.pageSize'),
     query('billType')
       .optional()
       .isIn(['withdrawal', 'task_reward', 'invite_reward', 'group_owner_commission'])
