@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-17 11:49:28
+ * @LastEditTime: 2025-04-17 10:53:53
  * @Description: 
  */
 /**
@@ -15,7 +15,6 @@ const accountController = require('../controllers/account.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
-const i18n = require('../../shared/utils/i18n.util');
 
 const router = express.Router();
 
@@ -23,11 +22,6 @@ const router = express.Router();
 router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 router.use(authMiddleware.hasPermission('account:list'));
-
-// 创建一个动态获取错误消息的方法
-const getErrorMessage = (key) => (req) => {
-  return i18n.t(`account.validation.${key}`, req.lang || 'zh-CN');
-};
 
 /**
  * @route GET /api/admin/accounts
@@ -40,7 +34,7 @@ router.get(
     query('keyword')
       .optional()
       .isString()
-      .withMessage(getErrorMessage('keywordString')),
+      .withMessage('关键词必须是字符串'),
     query('account')
       .optional()
       .isString()
