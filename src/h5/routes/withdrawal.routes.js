@@ -26,7 +26,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('无效的支付渠道ID'),
+      .withMessage('common.validation.mustBeInt'),
     body('account')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
@@ -50,12 +50,14 @@ router.post(
 router.put(
   '/accounts/:id',
   [
-    param('id').isInt().withMessage('无效的账户ID'),
+    param('id')
+      .isInt()
+      .withMessage('无效的账户ID'),
     body('paymentChannelId')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('无效的支付渠道ID'),
+      .withMessage('common.validation.mustBeInt'),
     body('account')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
@@ -89,7 +91,9 @@ router.get(
 router.delete(
   '/accounts/:id',
   [
-    param('id').isInt().withMessage('无效的账户ID')
+    param('id')
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.deleteWithdrawalAccount
@@ -105,7 +109,7 @@ router.post(
   [
     body('withdrawalAccountId')
       .isInt()
-      .withMessage('无效的提现账户ID'),
+      .withMessage('common.validation.mustBeInt'),
     body('amount')
       .isFloat({ min: 0.01 })
       .withMessage('提现金额必须大于0')
@@ -133,7 +137,7 @@ router.get(
     query('withdrawalStatus')
       .optional()
       .isIn(Object.values(WithdrawalStatus))
-      .withMessage('无效的提现状态')
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.getWithdrawals

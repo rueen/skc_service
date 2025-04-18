@@ -93,7 +93,7 @@ router.post(
     body('groupIds')
       .optional()
       .isArray()
-      .withMessage('群组ID必须是数组格式'),
+      .withMessage('common.validation.mustBeArray'),
     body('groupIds.*')
       .optional()
       .isInt()
@@ -105,7 +105,7 @@ router.post(
     body('occupation')
       .optional()
       .isIn(Object.values(OccupationType))
-      .withMessage('无效的职业类型'),
+      .withMessage('common.validation.invalid'),
     body('phone')
       .optional()
       .isString()
@@ -117,7 +117,7 @@ router.post(
     body('gender')
       .optional()
       .isIn([0, 1, 2])
-      .withMessage('性别值无效，应为 0(男)、1(女) 或 2(保密)'),
+      .withMessage('common.validation.invalid'),
     body('telegram')
       .optional()
       .isString()
@@ -158,7 +158,7 @@ router.put(
     body('groupIds')
       .optional()
       .isArray()
-      .withMessage('群组ID必须是数组格式'),
+      .withMessage('common.validation.mustBeArray'),
     body('groupIds.*')
       .optional()
       .isInt()
@@ -174,7 +174,7 @@ router.put(
     body('occupation')
       .optional()
       .isIn(Object.values(OccupationType))
-      .withMessage('无效的职业类型')
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.update

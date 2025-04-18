@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:13:01
+ * @LastEditTime: 2025-04-18 16:21:58
  * @Description: 
  */
 /**
@@ -33,11 +33,11 @@ router.get(
     query('submitStartTime')
       .optional()
       .isISO8601()
-      .withMessage('提交开始时间格式不正确，应为ISO8601格式(如:2025-03-01T00:00:00Z)'),
+      .withMessage('common.validation.timeFormatInvalid'),
     query('submitEndTime')
       .optional()
       .isISO8601()
-      .withMessage('提交结束时间格式不正确，应为ISO8601格式(如:2025-03-31T23:59:59Z)'),
+      .withMessage('common.validation.timeFormatInvalid'),
     query('completedTaskCount')
       .optional()
       .isInt({ min: 0 })
@@ -63,11 +63,11 @@ router.get(
     query('submitStartTime')
       .optional()
       .isISO8601()
-      .withMessage('提交开始时间格式不正确，应为ISO8601格式(如:2025-03-01T00:00:00Z)'),
+      .withMessage('common.validation.timeFormatInvalid'),
     query('submitEndTime')
       .optional()
       .isISO8601()
-      .withMessage('提交结束时间格式不正确，应为ISO8601格式(如:2025-03-31T23:59:59Z)'),
+      .withMessage('common.validation.timeFormatInvalid'),
     query('completedTaskCount')
       .optional()
       .isInt({ min: 0 })
@@ -89,11 +89,11 @@ router.get(
     query('submitStartTime')
       .optional()
       .isISO8601()
-      .withMessage('提交开始时间格式不正确，应为ISO8601格式(如:2025-03-01T00:00:00Z)'),
+      .withMessage('common.validation.timeFormatInvalid'),
     query('submitEndTime')
       .optional()
       .isISO8601()
-      .withMessage('提交结束时间格式不正确，应为ISO8601格式(如:2025-03-31T23:59:59Z)'),
+      .withMessage('common.validation.timeFormatInvalid'),
     query('completedTaskCount')
       .optional()
       .isInt({ min: 0 })
@@ -119,11 +119,11 @@ router.get(
     query('submitStartTime')
       .optional()
       .isISO8601()
-      .withMessage('提交开始时间格式不正确，应为ISO8601格式(如:2025-03-01T00:00:00Z)'),
+      .withMessage('common.validation.timeFormatInvalid'),
     query('submitEndTime')
       .optional()
       .isISO8601()
-      .withMessage('提交结束时间格式不正确，应为ISO8601格式(如:2025-03-31T23:59:59Z)'),
+      .withMessage('common.validation.timeFormatInvalid'),
     query('completedTaskCount')
       .optional()
       .isInt({ min: 0 })

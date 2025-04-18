@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:13:56
+ * @LastEditTime: 2025-04-18 16:26:39
  * @Description: 
  */
 /**
@@ -155,7 +155,7 @@ router.put(
     body('homeUrl')
       .optional()
       .isURL()
-      .withMessage('主页链接必须是有效的URL'),
+      .withMessage('common.validation.formatInvalid'),
     body('fansCount')
       .optional()
       .isInt({ min: 0 })

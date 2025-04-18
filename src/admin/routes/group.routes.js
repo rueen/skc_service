@@ -89,7 +89,7 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isURL()
-      .withMessage('群组链接必须是有效的URL'),
+      .withMessage('common.validation.formatInvalid'),
     body('ownerId')
       .optional()
       .isInt()
@@ -120,7 +120,7 @@ router.put(
     body('groupLink')
       .optional()
       .isURL()
-      .withMessage('群组链接必须是有效的URL'),
+      .withMessage('common.validation.formatInvalid'),
     body('ownerId')
       .optional()
       .custom((value) => {

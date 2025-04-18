@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:04:04
+ * @LastEditTime: 2025-04-18 16:24:24
  * @Description: 
  */
 /**
@@ -36,11 +36,11 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isString()
-      .withMessage('账号必须为字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('areaCode')
       .optional()
       .isString()
-      .withMessage('区号必须为字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('password')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')

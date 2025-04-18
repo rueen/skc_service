@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 21:21:23
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:04:25
+ * @LastEditTime: 2025-04-18 16:25:55
  * @Description: 
  */
 /**
@@ -58,14 +58,6 @@ router.get(
       .optional()
       .isInt({ min: 1 })
       .withMessage('common.validation.pageSize'),
-    query('startDate')
-      .optional()
-      .isDate()
-      .withMessage('开始日期格式必须为YYYY-MM-DD'),
-    query('endDate')
-      .optional()
-      .isDate()
-      .withMessage('结束日期格式必须为YYYY-MM-DD')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.getOwnerCommissionTasks

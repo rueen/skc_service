@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:10:10
+ * @LastEditTime: 2025-04-18 16:32:56
  * @Description: 
  */
 /**
@@ -43,7 +43,7 @@ router.get(
     query('withdrawalStatus')
       .optional()
       .isIn(Object.values(WithdrawalStatus))
-      .withMessage('无效的提现状态'),
+      .withMessage('common.validation.invalid'),
     query('memberId')
       .optional()
       .isInt()
@@ -69,9 +69,16 @@ router.get(
 router.post(
   '/batch-approve',
   [
-    body('ids').isArray().withMessage('common.validation.mustBeArray'),
-    body('ids.*').isInt().withMessage('common.validation.mustBeInt'),
-    body('remark').optional().isString().withMessage('common.validation.mustBeString')
+    body('ids')
+      .isArray()
+      .withMessage('common.validation.mustBeArray'),
+    body('ids.*')
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
+    body('remark')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.batchResolveWithdrawals
@@ -110,7 +117,7 @@ router.get(
     query('withdrawalStatus')
       .optional()
       .isIn(Object.values(WithdrawalStatus))
-      .withMessage('无效的提现状态'),
+      .withMessage('common.validation.invalid'),
     query('billNo').optional().isString().withMessage('common.validation.mustBeString'),
     query('startDate').optional().isString().withMessage('common.validation.timeFormatInvalid'),
     query('endDate').optional().isString().withMessage('common.validation.timeFormatInvalid')
