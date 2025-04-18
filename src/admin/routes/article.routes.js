@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-12 14:28:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:00:18
+ * @LastEditTime: 2025-04-18 17:06:10
  * @Description: 
  */
 /**
@@ -57,15 +57,15 @@ router.post(
     body('title')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
-      .isLength({ max: 100 })
-      .withMessage('标题长度不能超过100个字符'),
+      .isLength({ max: 50 })
+      .withMessage('common.validation.maxLength{max:50}'),
     body('content')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty'),
     body('location')
       .optional()
-      .isLength({ max: 50 })
-      .withMessage('位置标识长度不能超过50个字符')
+      .isLength({ max: 20 })
+      .withMessage('common.validation.maxLength{max:20}')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   articleController.add

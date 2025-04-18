@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:47
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:14:56
+ * @LastEditTime: 2025-04-18 17:03:35
  * @Description: 
  */
 /**
@@ -31,5 +31,6 @@ module.exports = {
     mustBeArray: '{field} must be an array',
     formatInvalid: '{field} format is invalid',
     mustBeNonNegativeInteger: '{field} must be a non-negative integer',
+    maxLength: '{field} must be less than {max} characters'
   }
 }; 
