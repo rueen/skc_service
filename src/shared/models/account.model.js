@@ -7,7 +7,6 @@ const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { convertToCamelCase } = require('../utils/data.util');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
-const i18n = require('../utils/i18n.util');
 
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
@@ -235,7 +234,7 @@ async function getByMemberAndChannel(memberId, channelId) {
  * @param {Object} accountData - 账户数据
  * @returns {Promise<Object>} 创建结果
  */
-async function create(accountData, lang) {
+async function create(accountData) {
   try {
     // 检查 UID 唯一性（如果提供了 UID）
     if (accountData.uid) {
@@ -245,7 +244,7 @@ async function create(accountData, lang) {
       );
       
       if (existingUid.length > 0) {
-        throw new Error(i18n.t('account.common.uidUsed', lang));
+        throw new Error('该账号已被使用，禁止重复绑定');
       }
     }
     
@@ -292,7 +291,7 @@ async function create(accountData, lang) {
  * @param {Object} accountData - 账户数据
  * @returns {Promise<Object>} 更新结果
  */
-async function update(accountData, lang) {
+async function update(accountData) {
   try {
     const id = accountData.id;
     
@@ -314,7 +313,7 @@ async function update(accountData, lang) {
       );
       
       if (existingUid.length > 0) {
-        throw new Error(i18n.t('account.common.uidUsed', lang));
+        throw new Error('该账号已被使用，禁止重复绑定');
       }
     }
     
