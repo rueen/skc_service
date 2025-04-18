@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS articles (
   id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '文章ID',
   title varchar(200) NOT NULL COMMENT '文章标题',
   content text NOT NULL COMMENT '文章内容',
-  location varchar(50) NULL DEFAULT NULL COMMENT '文章位置标识，可为空',
+  location varchar(50) NOT NULL DEFAULT 'help' COMMENT '文章位置：privacyPolicy-隐私政策，userAgreement-用户协议',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),

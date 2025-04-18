@@ -119,23 +119,20 @@ async function create(articleData) {
   try {
     await connection.beginTransaction();
 
-    // 如果提供了非空的location，则检查唯一性
-    if (articleData.location) {
-      // 检查 location 是否已存在
-      const [existing] = await connection.query(
-        'SELECT id FROM articles WHERE location = ?',
-        [articleData.location]
-      );
+    // 检查 location 是否已存在
+    const [existing] = await connection.query(
+      'SELECT id FROM articles WHERE location = ?',
+      [articleData.location]
+    );
 
-      if (existing.length > 0) {
-        throw new Error('文章位置标识已存在');
-      }
+    if (existing.length > 0) {
+      throw new Error('文章位置标识已存在');
     }
 
-    // 创建文章，location可以为null
+    // 创建文章
     const [result] = await connection.query(
       'INSERT INTO articles (title, content, location) VALUES (?, ?, ?)',
-      [articleData.title, articleData.content, articleData.location || null]
+      [articleData.title, articleData.content, articleData.location]
     );
 
     await connection.commit();
