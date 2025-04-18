@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:38
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 10:12:08
+ * @LastEditTime: 2025-04-17 15:55:57
  * @Description: 
  */
 /**
@@ -20,8 +20,4 @@ module.exports = {
   notFound: '资源不存在',
   
   // 其他通用翻译...
-  validation: {
-    page: '页码必须是大于0的整数',
-    pageSize: '每页条数必须是大于0的整数'
-  }
 }; 

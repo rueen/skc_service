@@ -29,11 +29,11 @@ router.get(
     query('page')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('common.validation.page'),
+      .withMessage('页码必须是大于0的整数'),
     query('pageSize')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('common.validation.pageSize'),
+      .withMessage('每页条数必须是大于0的整数'),
     query('keyword')
       .optional()
       .isString()

@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 21:21:23
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 10:13:34
+ * @LastEditTime: 2025-04-18 09:23:09
  * @Description: 
  */
 /**
@@ -53,11 +53,11 @@ router.get(
     query('page')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('common.validation.page'),
+      .withMessage('页码必须是大于0的整数'),
     query('pageSize')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('common.validation.pageSize'),
+      .withMessage('每页条数必须是大于0的整数'),
     query('startDate')
       .optional()
       .isDate()
@@ -84,14 +84,14 @@ router.get(
       .withMessage('群组ID不能为空')
       .isInt()
       .withMessage('群组ID必须是整数'),
-      query('page')
+    query('page')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('common.validation.page'),
+      .withMessage('页码必须是大于0的整数'),
     query('pageSize')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('common.validation.pageSize'),
+      .withMessage('每页条数必须是大于0的整数'),
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.getGroupMembers

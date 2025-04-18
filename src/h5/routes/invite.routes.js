@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 16:57:00
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 10:13:43
+ * @LastEditTime: 2025-04-18 09:23:37
  * @Description: 
  */
 /**
@@ -41,11 +41,11 @@ router.get(
     query('page')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('common.validation.page'),
+      .withMessage('页码必须是大于0的整数'),
     query('pageSize')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('common.validation.pageSize'),
+      .withMessage('每页条数必须是大于0的整数'),
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   inviteController.getInviteFriends

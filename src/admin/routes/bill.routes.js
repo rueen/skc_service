@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-24 20:43:21
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 10:13:04
+ * @LastEditTime: 2025-04-18 09:20:01
  * @Description: 
  */
 /**
@@ -34,11 +34,11 @@ router.get(
     query('page')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('common.validation.page'),
+      .withMessage('页码必须是大于0的整数'),
     query('pageSize')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('common.validation.pageSize'),
+      .withMessage('每页条数必须是大于0的整数'),
     query('memberNickname')
       .optional()
       .isString()
