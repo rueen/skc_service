@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 15:44:59
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-12 09:26:13
+ * @LastEditTime: 2025-04-18 09:08:43
  * @Description: 
  */
 /**
@@ -16,6 +16,7 @@ const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
 const FileStreamRotator = require('file-stream-rotator');
+const i18nMiddleware = require('./middlewares/i18n.middleware');
 
 /**
  * 创建一个配置好的Express应用
@@ -35,6 +36,9 @@ function createApp(options = {}) {
   
   // 安全中间件
   app.use(helmet());
+  
+  // 国际化中间件，提前到请求体解析之前，以便尽早设置语言
+  app.use(i18nMiddleware);
   
   // CORS配置
   app.use(cors({
