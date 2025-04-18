@@ -514,30 +514,60 @@ async function update(memberData) {
     
     // 处理群组关系更新
     if (memberData.groupIds !== undefined) {
-      // 先删除现有的所有群组关系
-      await connection.query(
-        'DELETE FROM member_groups WHERE member_id = ?',
+      // 1. 获取会员当前的所有群组关系
+      const [currentGroups] = await connection.query(
+        'SELECT group_id, is_owner FROM member_groups WHERE member_id = ?',
         [memberData.id]
       );
       
-      // 清除该会员可能担任的所有群主职位
-      await connection.query(
-        'UPDATE `groups` SET owner_id = NULL WHERE owner_id = ?',
-        [memberData.id]
-      );
+      // 将当前的群组ID和群主状态放入Map便于查询
+      const currentGroupMap = new Map();
+      currentGroups.forEach(group => {
+        currentGroupMap.set(group.group_id, group.is_owner);
+      });
       
-      // 如果提供了新的群组列表，则添加新关系
+      // 将传入的groupIds转为Set，便于快速查找
+      const newGroupIds = new Set();
       if (memberData.groupIds && memberData.groupIds.length > 0) {
-        // 构建批量插入的参数
+        memberData.groupIds.forEach(groupId => {
+          newGroupIds.add(parseInt(groupId, 10));
+        });
+      }
+      
+      // 2. 找出需要删除的群组关系（当前有但新列表没有的）
+      const groupsToDelete = [];
+      currentGroupMap.forEach((isOwner, groupId) => {
+        if (!newGroupIds.has(groupId)) {
+          groupsToDelete.push(groupId);
+        }
+      });
+      
+      // 3. 找出需要新增的群组关系（新列表有但当前没有的）
+      const groupsToAdd = [];
+      newGroupIds.forEach(groupId => {
+        if (!currentGroupMap.has(groupId)) {
+          groupsToAdd.push(groupId);
+        }
+      });
+      
+      // 删除不再需要的群组关系
+      if (groupsToDelete.length > 0) {
+        const placeholders = groupsToDelete.map(() => '?').join(',');
+        await connection.query(
+          `DELETE FROM member_groups WHERE member_id = ? AND group_id IN (${placeholders})`,
+          [memberData.id, ...groupsToDelete]
+        );
+      }
+      
+      // 添加新的群组关系
+      if (groupsToAdd.length > 0) {
         const groupValues = [];
-        
-        for (const groupId of memberData.groupIds) {
-          // 所有群组关系默认都不是群主
-          groupValues.push([memberData.id, parseInt(groupId, 10), 0]);
+        for (const groupId of groupsToAdd) {
+          // 新添加的群组关系默认不是群主
+          groupValues.push([memberData.id, groupId, 0]);
         }
         
         if (groupValues.length > 0) {
-          // 批量插入会员-群组关系
           await connection.query(
             `INSERT INTO member_groups 
              (member_id, group_id, is_owner)
@@ -546,8 +576,6 @@ async function update(memberData) {
           );
         }
       }
-    } else if (memberData.isGroupOwner !== undefined) {
-      // 移除处理群主状态变更的逻辑，因为创建/更新会员时不需要设置群主
     }
     
     await connection.commit();
