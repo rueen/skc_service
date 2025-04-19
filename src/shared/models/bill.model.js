@@ -282,7 +282,7 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
       LEFT JOIN tasks t ON b.task_id = t.id
       LEFT JOIN members rm ON b.related_member_id = rm.id
       LEFT JOIN \`groups\` g ON b.related_group_id = g.id
-      LEFT JOIN submitted_tasks st ON (b.task_id = st.task_id AND b.member_id = st.member_id)
+      LEFT JOIN submitted_tasks st ON (b.task_id = st.task_id AND b.related_member_id = st.member_id)
       LEFT JOIN waiters w ON b.waiter_id = w.id
       ${whereClause}
       ORDER BY b.update_time DESC

@@ -146,6 +146,7 @@ async function processTaskReward(data, connection) {
       billType: BillType.TASK_REWARD,
       amount: data.reward,
       taskId: data.taskId,
+      relatedMemberId: data.memberId,
       relatedGroupId: data.relatedGroupId
     }, connection);
     
