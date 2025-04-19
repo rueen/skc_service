@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-08 11:58:32
+ * @LastEditTime: 2025-04-19 20:04:05
  * @Description: 
  */
 /**
@@ -24,8 +24,12 @@ const withdrawalRoutes = require('./withdrawal.routes');
 const submittedTaskRoutes = require('./submitted-task.routes');
 const oldAccountsFbRoutes = require('./old-accounts-fb.routes');
 const paymentChannelRoutes = require('./payment-channel.routes');
+const apiSignMiddleware = require('../../shared/middlewares/api-sign.middleware');
 
 const router = express.Router();
+
+// 应用API签名验证 - 对所有路由生效
+router.use(apiSignMiddleware());
 
 // 用户认证路由
 router.use(`/auth`, authRoutes);
