@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 17:35:07
+ * @LastEditTime: 2025-04-19 20:20:29
  * @Description: 
  */
 /**
@@ -35,8 +35,6 @@ router.put(
       .withMessage('common.validation.maxLength{max:20}'),
     body('occupation')
       .optional()
-      .isIn(['housewife', 'freelancer', 'student'])
-      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.updateProfile
