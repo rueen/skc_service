@@ -536,9 +536,14 @@ async function update(memberData) {
       
       // 2. 找出需要删除的群组关系（当前有但新列表没有的）
       const groupsToDelete = [];
+      const ownerGroupsToUpdate = [];
       currentGroupMap.forEach((isOwner, groupId) => {
         if (!newGroupIds.has(groupId)) {
           groupsToDelete.push(groupId);
+          // 如果是群主，需要更新groups表的owner_id
+          if (isOwner === 1) {
+            ownerGroupsToUpdate.push(groupId);
+          }
         }
       });
       
@@ -552,11 +557,32 @@ async function update(memberData) {
       
       // 删除不再需要的群组关系
       if (groupsToDelete.length > 0) {
+        // 先更新groups表中的owner_id字段
+        if (ownerGroupsToUpdate.length > 0) {
+          const ownerPlaceholders = ownerGroupsToUpdate.map(() => '?').join(',');
+          await connection.query(
+            `UPDATE \`groups\` SET owner_id = NULL 
+             WHERE owner_id = ? AND id IN (${ownerPlaceholders})`,
+            [memberData.id, ...ownerGroupsToUpdate]
+          );
+        }
+        
+        // 删除会员-群组关系
         const placeholders = groupsToDelete.map(() => '?').join(',');
         await connection.query(
           `DELETE FROM member_groups WHERE member_id = ? AND group_id IN (${placeholders})`,
           [memberData.id, ...groupsToDelete]
         );
+        
+        // 更新groups表中的member_count字段
+        for (const groupId of groupsToDelete) {
+          await connection.query(
+            `UPDATE \`groups\` SET member_count = 
+             (SELECT COUNT(*) FROM member_groups WHERE group_id = ?) 
+             WHERE id = ?`,
+            [groupId, groupId]
+          );
+        }
       }
       
       // 添加新的群组关系
@@ -574,6 +600,16 @@ async function update(memberData) {
              VALUES ?`,
             [groupValues]
           );
+          
+          // 更新groups表中的member_count字段
+          for (const groupId of groupsToAdd) {
+            await connection.query(
+              `UPDATE \`groups\` SET member_count = 
+               (SELECT COUNT(*) FROM member_groups WHERE group_id = ?) 
+               WHERE id = ?`,
+              [groupId, groupId]
+            );
+          }
         }
       }
     }
