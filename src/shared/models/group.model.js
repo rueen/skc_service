@@ -228,54 +228,67 @@ async function update(groupData) {
       throw new Error('群组不存在');
     }
 
-    // 如果更换了群主
-    if (groupData.ownerId && currentGroup[0].owner_id !== groupData.ownerId) {
-      // 检查新群主是否存在
-      const [newOwner] = await connection.query(
-        'SELECT id FROM members WHERE id = ?',
-        [groupData.ownerId]
-      );
+    // 如果要设置新群主（ownerId不是undefined）
+    if (groupData.ownerId !== undefined) {
+      const currentOwnerId = currentGroup[0].owner_id;
+      
+      // 如果要删除群主（ownerId为null）
+      if (groupData.ownerId === null && currentOwnerId) {
+        // 将旧群主在关联表中的状态更新为非群主
+        await connection.query(
+          'UPDATE member_groups SET is_owner = 0 WHERE member_id = ? AND group_id = ?',
+          [currentOwnerId, groupData.id]
+        );
+      } 
+      // 如果要设置新群主（ownerId不为null）
+      else if (groupData.ownerId !== null && currentOwnerId !== groupData.ownerId) {
+        // 检查新群主是否存在
+        const [newOwner] = await connection.query(
+          'SELECT id FROM members WHERE id = ?',
+          [groupData.ownerId]
+        );
 
-      if (newOwner.length === 0) {
-        throw new Error('新群主不存在');
-      }
+        if (newOwner.length === 0) {
+          throw new Error('新群主不存在');
+        }
 
-      // 更新旧群主在关联表中的状态
-      if (currentGroup[0].owner_id) {
-        // 查找旧群主的关联记录
-        const [oldOwnerRelation] = await connection.query(
+        // 更新旧群主在关联表中的状态
+        if (currentOwnerId) {
+          // 查找旧群主的关联记录
+          const [oldOwnerRelation] = await connection.query(
+            'SELECT id FROM member_groups WHERE member_id = ? AND group_id = ?',
+            [currentOwnerId, groupData.id]
+          );
+          
+          if (oldOwnerRelation.length > 0) {
+            // 如果存在关联，更新为非群主
+            await connection.query(
+              'UPDATE member_groups SET is_owner = 0 WHERE member_id = ? AND group_id = ?',
+              [currentOwnerId, groupData.id]
+            );
+          }
+        }
+
+        // 处理新群主在关联表中的状态
+        // 查找新群主的关联记录
+        const [newOwnerRelation] = await connection.query(
           'SELECT id FROM member_groups WHERE member_id = ? AND group_id = ?',
-          [currentGroup[0].owner_id, groupData.id]
+          [groupData.ownerId, groupData.id]
         );
         
-        if (oldOwnerRelation.length > 0) {
-          // 如果存在关联，更新为非群主
+        if (newOwnerRelation.length > 0) {
+          // 如果存在关联，更新为群主
           await connection.query(
-            'UPDATE member_groups SET is_owner = 0 WHERE member_id = ? AND group_id = ?',
-            [currentGroup[0].owner_id, groupData.id]
+            'UPDATE member_groups SET is_owner = 1 WHERE member_id = ? AND group_id = ?',
+            [groupData.ownerId, groupData.id]
+          );
+        } else {
+          // 如果不存在关联，创建新关联
+          await connection.query(
+            'INSERT INTO member_groups (member_id, group_id, is_owner) VALUES (?, ?, 1)',
+            [groupData.ownerId, groupData.id]
           );
         }
-      }
-
-      // 处理新群主在关联表中的状态
-      // 查找新群主的关联记录
-      const [newOwnerRelation] = await connection.query(
-        'SELECT id FROM member_groups WHERE member_id = ? AND group_id = ?',
-        [groupData.ownerId, groupData.id]
-      );
-      
-      if (newOwnerRelation.length > 0) {
-        // 如果存在关联，更新为群主
-        await connection.query(
-          'UPDATE member_groups SET is_owner = 1 WHERE member_id = ? AND group_id = ?',
-          [groupData.ownerId, groupData.id]
-        );
-      } else {
-        // 如果不存在关联，创建新关联
-        await connection.query(
-          'INSERT INTO member_groups (member_id, group_id, is_owner) VALUES (?, ?, 1)',
-          [groupData.ownerId, groupData.id]
-        );
       }
     }
     
@@ -290,7 +303,7 @@ async function update(groupData) {
       updateFields.push('group_link = ?');
       params.push(groupData.groupLink);
     }
-    if (groupData.ownerId) {
+    if (groupData.ownerId !== undefined) {
       updateFields.push('owner_id = ?');
       params.push(groupData.ownerId);
     }

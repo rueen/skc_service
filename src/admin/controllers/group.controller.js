@@ -106,9 +106,9 @@ async function update(req, res) {
 
     // 处理 ownerId
     let parsedOwnerId;
-    if (ownerId === null || ownerId === undefined) {
-      // 不修改群主
-      parsedOwnerId = undefined;
+    if (ownerId === undefined || ownerId === null) {
+      // ownerId 为 undefined 或 null 都表示删除群主
+      parsedOwnerId = null;
     } else {
       // 如果提供了 ownerId，转换为整数
       parsedOwnerId = parseInt(ownerId, 10);
