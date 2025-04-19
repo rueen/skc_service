@@ -196,12 +196,6 @@ async function batchResolve(req, res) {
         // 审核通过账号
         await accountModel.batchApprove([id], waiterId);
         
-        // 更新群组成员计数
-        await pool.query(
-          'UPDATE `groups` SET member_count = ? WHERE id = ?',
-          [currentGroupMemberCount + 1, inviterGroup.group_id]
-        );
-        
         results.success.push({
           id,
           memberId,
@@ -263,12 +257,6 @@ async function batchResolve(req, res) {
         
         // 审核通过账号
         await accountModel.batchApprove([id], waiterId);
-        
-        // 更新群组成员计数
-        await pool.query(
-          'UPDATE `groups` SET member_count = ? WHERE id = ?',
-          [targetGroup.member_count + 1, targetGroup.id]
-        );
         
         results.success.push({
           id,

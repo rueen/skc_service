@@ -127,7 +127,6 @@ SKC 服务平台使用 MySQL 数据库，下面是主要数据表的结构说明
 | group_name | varchar(100) | 群组名称 |
 | group_link | varchar(255) | 群组链接 |
 | owner_id | bigint(20) | 群主ID |
-| member_count | int(11) | 成员数量 |
 | create_time | datetime | 创建时间 |
 | update_time | datetime | 更新时间 |
 

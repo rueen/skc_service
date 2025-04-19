@@ -164,7 +164,6 @@ src/
 | group_name | varchar(100) | NOT NULL | | 群组名称 |
 | group_link | varchar(255) | | NULL | 群组链接 |
 | owner_id | bigint(20) | | NULL | 群主ID |
-| member_count | int(11) | NOT NULL | 0 | 成员数量 |
 | create_time | datetime | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
 | update_time | datetime | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
 

@@ -307,7 +307,6 @@ async function update(groupData) {
       updateFields.push('owner_id = ?');
       params.push(groupData.ownerId);
     }
-    // 移除手动更新member_count的部分，使用同步脚本来更新实际的成员数量
 
     if (updateFields.length === 0) {
       return true; // 没有需要更新的字段

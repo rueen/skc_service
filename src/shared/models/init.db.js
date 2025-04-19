@@ -149,7 +149,6 @@ CREATE TABLE IF NOT EXISTS \`groups\` (
   group_name varchar(100) NOT NULL COMMENT '群组名称',
   group_link varchar(255) DEFAULT NULL COMMENT '群组链接',
   owner_id bigint(20) DEFAULT NULL COMMENT '群主ID',
-  member_count int(11) NOT NULL DEFAULT 0 COMMENT '成员数量',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),

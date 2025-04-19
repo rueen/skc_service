@@ -573,16 +573,6 @@ async function update(memberData) {
           `DELETE FROM member_groups WHERE member_id = ? AND group_id IN (${placeholders})`,
           [memberData.id, ...groupsToDelete]
         );
-        
-        // 更新groups表中的member_count字段
-        for (const groupId of groupsToDelete) {
-          await connection.query(
-            `UPDATE \`groups\` SET member_count = 
-             (SELECT COUNT(*) FROM member_groups WHERE group_id = ?) 
-             WHERE id = ?`,
-            [groupId, groupId]
-          );
-        }
       }
       
       // 添加新的群组关系
@@ -600,16 +590,6 @@ async function update(memberData) {
              VALUES ?`,
             [groupValues]
           );
-          
-          // 更新groups表中的member_count字段
-          for (const groupId of groupsToAdd) {
-            await connection.query(
-              `UPDATE \`groups\` SET member_count = 
-               (SELECT COUNT(*) FROM member_groups WHERE group_id = ?) 
-               WHERE id = ?`,
-              [groupId, groupId]
-            );
-          }
         }
       }
     }
