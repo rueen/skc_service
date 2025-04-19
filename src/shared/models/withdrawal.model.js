@@ -328,9 +328,9 @@ async function batchApproveWithdrawals(ids, waiterId, remark = null) {
 async function processThirdPartyPayment(withdrawalDetail) {
   const paymentUtil = require('../utils/payment.util');
   const paymentTransactionModel = require('./payment-transaction.model');
-  
+
   // 创建订单号
-  const orderId = paymentUtil.generateOrderId();
+  const orderId = withdrawalDetail.bill_no;
   
   try {
     // 记录请求开始

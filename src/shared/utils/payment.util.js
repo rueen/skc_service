@@ -54,25 +54,6 @@ function generateSignature(data, secretKey) {
 }
 
 /**
- * 生成唯一订单号
- * @returns {string} - 唯一订单号
- */
-function generateOrderId() {
-  const date = new Date();
-  const year = date.getFullYear().toString().slice(2); // 年份后两位
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  const hour = date.getHours().toString().padStart(2, '0');
-  const minute = date.getMinutes().toString().padStart(2, '0');
-  const second = date.getSeconds().toString().padStart(2, '0');
-  
-  // 使用年月日时分秒+UUID前6位生成订单号
-  const uuid = uuidv4().replace(/-/g, '').slice(0, 6);
-  
-  return `${year}${month}${day}${hour}${minute}${second}${uuid}`;
-}
-
-/**
  * 调用第三方代付API
  * @param {Object} paymentData - 支付数据
  * @param {string} paymentData.merchant - 渠道商户ID
@@ -134,6 +115,5 @@ async function callPaymentAPI(baseData, paymentData) {
 
 module.exports = {
   generateSignature,
-  generateOrderId,
   callPaymentAPI
 }; 
