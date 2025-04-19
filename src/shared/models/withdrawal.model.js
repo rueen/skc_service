@@ -11,6 +11,7 @@ const { BillType } = require('../config/enums');
 const { formatDateTime } = require('../utils/date.util');
 const { convertToCamelCase } = require('../utils/data.util');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
+const { decrypt, isEncrypted } = require('../utils/encryption.util');
 
 /**
  * 格式化提现记录，转换字段为驼峰命名
@@ -299,7 +300,7 @@ async function batchApproveWithdrawals(ids, waiterId, remark = null) {
           // 使用process.nextTick确保不阻塞主线程
           process.nextTick(async () => {
             try {
-              await processThirdPartyPayment(withdrawalDetails[0]);
+              await processThirdPartyPayment(formatWithdrawal(withdrawalDetails[0]));
             } catch (error) {
               logger.error(`提现ID ${id} 的第三方代付处理失败: ${error.message}`);
             }
@@ -329,20 +330,24 @@ async function processThirdPartyPayment(withdrawalDetail) {
   const paymentUtil = require('../utils/payment.util');
   const paymentTransactionModel = require('./payment-transaction.model');
 
+  // 如果是加密的密钥，先解密
+  if (isEncrypted(withdrawalDetail.secretKey)) {
+    withdrawalDetail.secretKey = decrypt(withdrawalDetail.secretKey);
+  }
   // 创建订单号
-  const orderId = withdrawalDetail.bill_no;
+  const orderId = withdrawalDetail.billNo;
   
   try {
     // 记录请求开始
     logger.info(`开始处理提现ID ${withdrawalDetail.id} 的第三方代付，订单号: ${orderId}`);
     // 创建支付交易记录
     const requestParams = {
-      merchant: withdrawalDetail.merchant_id,
+      merchant: withdrawalDetail.merchantId,
       order_id: orderId,
       bank: withdrawalDetail.bank,
       total_amount: withdrawalDetail.amount,
       bank_card_account: withdrawalDetail.account,
-      bank_card_name: withdrawalDetail.account_name,
+      bank_card_name: withdrawalDetail.accountName,
       bank_card_remark: 'no',
       callback_url: 'no'
     };
@@ -350,11 +355,11 @@ async function processThirdPartyPayment(withdrawalDetail) {
     const transactionData = {
       orderId: orderId,
       withdrawalId: withdrawalDetail.id,
-      memberId: withdrawalDetail.member_id,
-      paymentChannelId: withdrawalDetail.payment_channel_id,
+      memberId: withdrawalDetail.memberId,
+      paymentChannelId: withdrawalDetail.paymentChannelId,
       amount: withdrawalDetail.amount,
       account: withdrawalDetail.account,
-      accountName: withdrawalDetail.account_name,
+      accountName: withdrawalDetail.accountName,
       transactionStatus: 'pending',
       requestParams: requestParams,
       requestTime: new Date()
@@ -376,12 +381,12 @@ async function processThirdPartyPayment(withdrawalDetail) {
       throw new Error(`无效的金额类型: ${typeof withdrawalDetail.amount}`);
     }
     const paymentData = {
-      merchant: withdrawalDetail.merchant_id,
+      merchant: withdrawalDetail.merchantId,
       order_id: orderId,
       bank: withdrawalDetail.bank,
       total_amount: formattedAmount,
       bank_card_account: withdrawalDetail.account,
-      bank_card_name: withdrawalDetail.account_name,
+      bank_card_name: withdrawalDetail.accountName,
       bank_card_remark: 'no',
       callback_url: 'no',
     };
@@ -389,7 +394,7 @@ async function processThirdPartyPayment(withdrawalDetail) {
     // 调用支付API
     const response = await paymentUtil.callPaymentAPI({
       apiUrl,
-      secret_key: withdrawalDetail.secret_key,
+      secret_key: withdrawalDetail.secretKey,
     }, paymentData);
     
     // 处理响应结果

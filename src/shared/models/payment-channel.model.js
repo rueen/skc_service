@@ -6,6 +6,7 @@ const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { convertToCamelCase } = require('../utils/data.util');
+const { encrypt, decrypt, isEncrypted } = require('../utils/encryption.util');
 
 /**
  * 格式化支付渠道信息
@@ -23,8 +24,20 @@ function formatPaymentChannel(channel, includeSecretKey = false) {
     updateTime: formatDateTime(channel.update_time)
   });
   
-  // 如果不包含密钥，则删除密钥字段
-  if (!includeSecretKey && formattedChannel.secretKey) {
+  // 处理密钥
+  if (includeSecretKey && formattedChannel.secretKey) {
+    try {
+      // 如果是加密的密钥，先解密
+      if (isEncrypted(formattedChannel.secretKey)) {
+        formattedChannel.secretKey = decrypt(formattedChannel.secretKey);
+      }
+    } catch (error) {
+      logger.error(`解密支付渠道密钥失败: ${error.message}`);
+      // 出错时删除密钥，避免泄露加密的数据
+      delete formattedChannel.secretKey;
+    }
+  } else if (!includeSecretKey && formattedChannel.secretKey) {
+    // 不需要包含密钥时删除
     delete formattedChannel.secretKey;
   }
   
@@ -88,9 +101,18 @@ async function create(channelData) {
     const data = {
       name: channelData.name,
       bank: channelData.bank,
-      merchant_id: channelData.merchantId,
-      secret_key: channelData.secretKey
+      merchant_id: channelData.merchantId
     };
+    
+    // 加密密钥
+    if (channelData.secretKey) {
+      try {
+        data.secret_key = encrypt(channelData.secretKey);
+      } catch (encryptError) {
+        logger.error(`加密支付渠道密钥失败: ${encryptError.message}`);
+        throw new Error('密钥加密失败，请确保加密配置正确');
+      }
+    }
     
     // 执行插入
     const [result] = await connection.query(
@@ -143,9 +165,14 @@ async function update(channelData) {
       merchant_id: channelData.merchantId
     };
     
-    // 如果提供了secretKey，则更新secretKey
+    // 如果提供了secretKey，则加密后更新
     if (channelData.secretKey) {
-      data.secret_key = channelData.secretKey;
+      try {
+        data.secret_key = encrypt(channelData.secretKey);
+      } catch (encryptError) {
+        logger.error(`加密支付渠道密钥失败: ${encryptError.message}`);
+        throw new Error('密钥加密失败，请确保加密配置正确');
+      }
     }
     
     // 执行更新
