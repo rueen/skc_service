@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 22:39:33
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-19 07:49:41
+ * @LastEditTime: 2025-04-19 08:27:16
  * @Description: 
  */
 /**
@@ -33,7 +33,7 @@ module.exports = {
     noPermissionView: 'Walang pahintulot na tingnan ang account na ito',
     noPermissionUpdate: 'Walang pahintulot na i-update ang account na ito',
     noPermissionDelete: 'Walang pahintulot na tanggalin ang account na ito',
-    alreadyExists: 'Nakapagdagdag ka na ng account para sa channel na ito',
+    alreadyExists: 'Isang account bawat platform',
     addSuccess: 'Matagumpay na nadagdag ang account, mangyaring maghintay para sa pagsusuri',
     updateSuccess: 'Matagumpay na na-update ang account, mangyaring maghintay para sa pagsusuri',
     deleteSuccess: 'Matagumpay na natanggal ang account',

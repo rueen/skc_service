@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 19:53:45
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 22:53:52
+ * @LastEditTime: 2025-04-19 08:27:05
  * @Description: 
  */
 module.exports = {
@@ -30,7 +30,7 @@ module.exports = {
     noPermissionView: 'You do not have permission to view this account',
     noPermissionUpdate: 'You do not have permission to update this account',
     noPermissionDelete: 'You do not have permission to delete this account',
-    alreadyExists: 'You have already added an account for this channel',
+    alreadyExists: 'One account per platform',
     addSuccess: 'Account added successfully, please wait for review',
     updateSuccess: 'Account updated successfully, please wait for review',
     deleteSuccess: 'Account deleted successfully',

@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-04-18 22:38:15
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-19 08:26:58
+ * @Description: 
+ */
 /**
  * 繁體中文 H5 翻譯
  */
@@ -26,7 +33,7 @@ module.exports = {
     noPermissionView: '無權查看此賬號',
     noPermissionUpdate: '無權更新此賬號',
     noPermissionDelete: '無權刪除此賬號',
-    alreadyExists: '您已添加過該渠道的賬號',
+    alreadyExists: '每個平台僅能添加一個賬號',
     addSuccess: '添加賬號成功，請等待審核',
     updateSuccess: '更新賬號成功，請等待審核',
     deleteSuccess: '刪除賬號成功',

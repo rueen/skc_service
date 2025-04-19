@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 19:53:45
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 22:17:04
+ * @LastEditTime: 2025-04-19 08:26:51
  * @Description: 
  */
 module.exports = {
@@ -30,7 +30,7 @@ module.exports = {
     noPermissionView: '无权查看此账号',
     noPermissionUpdate: '无权更新此账号',
     noPermissionDelete: '无权删除此账号',
-    alreadyExists: '您已添加过该渠道的账号',
+    alreadyExists: '每个平台仅能添加一个账号',
     addSuccess: '添加账号成功，请等待审核',
     updateSuccess: '更新账号成功，请等待审核',
     deleteSuccess: '删除账号成功',
