@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 15:43:57
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-20 14:41:08
+ * @LastEditTime: 2025-04-20 14:58:53
  * @Description: 
  */
 /**
@@ -10,10 +10,6 @@
  */
 // 加载环境变量（放在最顶部，确保在所有模块导入前加载）
 require('dotenv').config({ path: '.env.h5' });
-// 加载通用环境变量
-// require('dotenv').config({ path: '.env' });
-// // 初始化环境变量配置
-// require('../shared/config/env.config');
 
 const createApp = require('../shared/app-common');
 const { initDatabase } = require('../shared/models/db');

@@ -4,7 +4,6 @@
  */
 const OSS = require('ali-oss');
 const fs = require('fs');
-const path = require('path');
 const logger = require('../config/logger.config');
 
 // 创建OSS客户端实例（延迟初始化）
@@ -42,7 +41,7 @@ function getClient() {
  * @param {string} directory - OSS中的目录(可选)
  * @returns {Promise<string>} 上传后的OSS URL
  */
-async function uploadFile(file, directory = 'skc') {
+async function uploadFile(file, directory = process.env.OSS_DIR) {
   try {
     // 获取OSS客户端
     const ossClient = getClient();
