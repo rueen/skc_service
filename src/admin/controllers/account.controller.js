@@ -485,18 +485,20 @@ async function exportAccounts(req, res) {
     worksheet.columns = [
       { header: '会员ID', key: 'memberNickname', width: 20 },
       { header: '会员账号', key: 'memberAccount', width: 20 },
-      { header: '注册时间', key: 'memberCreatetime', width: 20 }
+      { header: '注册时间', key: 'memberCreatetime', width: 20 },
+      { header: '所属群组', key: 'groupName', width: 20 },
+      { header: '邀请人', key: 'inviterName', width: 20 }
     ];
-    
-    // 引入日期格式化工具
-    const { formatDateTime } = require('../../shared/utils/date.util');
     
     // 添加数据行
     result.list.forEach(item => {
+      console.log("item:", item);
       worksheet.addRow({
         memberNickname: item.memberNickname || '',
         memberAccount: item.memberAccount || '',
-        memberCreatetime: formatDateTime(item.memberCreateTime) || ''
+        memberCreatetime: item.memberCreateTime || '',
+        groupName: item.groupName || '',
+        inviterName: item.inviterName || ''
       });
     });
     

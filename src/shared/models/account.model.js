@@ -8,6 +8,26 @@ const { formatDateTime } = require('../utils/date.util');
 const { convertToCamelCase } = require('../utils/data.util');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
 
+/**
+ * 格式化账户信息
+ * @param {Object} account - 账户信息
+ * @returns {Object} 格式化后的账户信息
+ */
+function formatAccount(account) {
+  if (!account) return null;
+  
+  // 转换字段名称为驼峰命名法
+  const formattedAccount = convertToCamelCase({
+    ...account,
+    createTime: formatDateTime(account.create_time),
+    updateTime: formatDateTime(account.update_time),
+    submitTime: formatDateTime(account.submit_time),
+    auditTime: formatDateTime(account.audit_time),
+    memberCreateTime: formatDateTime(account.member_create_time)
+  });
+  return formattedAccount;
+}
+
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
     const offset = (page - 1) * pageSize;
@@ -52,7 +72,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       SELECT a.*, 
              m.nickname as member_nickname,
              m.account as member_account,
-             m.create_time as member_createTime,
+             m.create_time as member_create_time,
              c.name as channel_name,
              c.icon as channel_icon,
              c.custom_fields as channel_custom_fields,
@@ -154,25 +174,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     throw error;
   }
 };
-
-/**
- * 格式化账户信息
- * @param {Object} account - 账户信息
- * @returns {Object} 格式化后的账户信息
- */
-function formatAccount(account) {
-  if (!account) return null;
-  
-  // 转换字段名称为驼峰命名法
-  const formattedAccount = convertToCamelCase({
-    ...account,
-    createTime: formatDateTime(account.create_time),
-    updateTime: formatDateTime(account.update_time),
-    submitTime: formatDateTime(account.submit_time),
-    auditTime: formatDateTime(account.audit_time)
-  });
-  return formattedAccount;
-}
 
 /**
  * 根据会员ID获取账户列表
