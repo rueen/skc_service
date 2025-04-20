@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-20 15:00:21
+ * @LastEditTime: 2025-04-20 22:50:19
  * @Description: 
  */
 // 加载环境变量（放在最顶部，确保在所有模块导入前加载）
@@ -27,7 +27,7 @@ const PORT = process.env.ADMIN_PORT;
 const app = createApp({
   appName: 'admin',
   corsOrigins: process.env.NODE_ENV === 'production' 
-    ? ['https://support.rueen.cn', 'http://support.rueen.cn'] 
+    ? ['https://support.skcpop.com', 'http://support.skcpop.com'] 
     : '*'
 });
 
