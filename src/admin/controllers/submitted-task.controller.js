@@ -243,6 +243,49 @@ async function exportPreAuditTasks(req, res) {
     res.write('\ufeff' + headers.join(',') + '\n');
     // 写入数据行
     result.list.forEach(item => {
+      // 解析和格式化submitContent
+      let formattedContent = '';
+      try {
+        if (item.submitContent) {
+          const contentObj = typeof item.submitContent === 'string' 
+            ? JSON.parse(item.submitContent) 
+            : item.submitContent;
+            
+          if (contentObj.customFields && Array.isArray(contentObj.customFields)) {
+            for (let i = 0; i < contentObj.customFields.length; i++) {
+              const field = contentObj.customFields[i];
+              
+              // 添加字段标题
+              formattedContent += field.title + ':';
+              
+              // 处理不同类型的字段
+              if (field.type === 'image' && Array.isArray(field.value)) {
+                // 图片类型：展开所有URL，每个URL单独一行
+                field.value.forEach((img, index) => {
+                  formattedContent += (index === 0 ? '' : '\n') + img.url;
+                });
+              } else {
+                // 其他类型（如链接）：直接添加值
+                formattedContent += field.value;
+              }
+              
+              // 字段之间添加换行
+              if (i < contentObj.customFields.length - 1) {
+                formattedContent += '\n';
+              }
+            }
+          }
+        }
+      } catch (err) {
+        logger.error(`解析submitContent失败: ${err.message}`);
+        formattedContent = String(item.submitContent || '');
+      }
+      
+      // 确保formattedContent是字符串
+      if (typeof formattedContent !== 'string') {
+        formattedContent = String(formattedContent);
+      }
+      
       const values = [
         item.submitTime || '',
         item.taskName || '',
@@ -252,10 +295,12 @@ async function exportPreAuditTasks(req, res) {
         getPreAuditStatusText(item.taskPreAuditStatus) || '',
         item.preWaiterName || '',
         item.brand || '',
-        item.submitContent || ''
+        // 替换双引号
+        formattedContent.replace(/"/g, '""')
       ];
       
-      res.write(values.join(',') + '\n');
+      // 用双引号包裹每个字段，特别是包含换行符的字段
+      res.write(values.map(v => `"${v}"`).join(',') + '\n');
     });
     
     return res.end();
