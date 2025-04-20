@@ -100,7 +100,7 @@ chmod +x scripts/deploy.sh
 
 脚本将执行以下操作：
 1. 安装项目依赖
-2. A创建必要的目录（logs, uploads）
+2. A创建必要的目录（logs）
 3. 检查和配置环境变量
 4. 执行数据库迁移
 5. 使用PM2启动服务

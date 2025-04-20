@@ -52,7 +52,7 @@ module.exports = {
       user: 'ubuntu', // 服务器用户名
       host: '服务器IP地址', // 例如: '123.123.123.123'
       ref: 'origin/master', // Git分支
-      repo: 'Git仓库地址', // 例如: 'git@github.com:username/skc_service.git'
+      repo: 'git@github.com:rueen/skc_service.git', // 例如: 'git@github.com:username/skc_service.git'
       path: '/var/www/skc_service', // 部署目录
       'pre-deploy': 'git fetch --all',
       'post-deploy': 'npm install && pm2 reload ecosystem.config.js --env production && pm2 save',
