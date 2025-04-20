@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-19 16:45:18
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-19 20:00:55
+ * @LastEditTime: 2025-04-20 11:37:29
  * @Description: 
  */
 /**
@@ -46,7 +46,7 @@ function generateSign(params) {
   // 附加密钥
   signStr += `&secret=${secret}`;
   
-  // console.log("后端签名前字符串:", signStr);
+  // console.log("签名前字符串:", signStr);
   // 使用MD5进行加密
   return crypto.createHash('md5').update(signStr).digest('hex');
 }
