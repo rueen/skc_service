@@ -59,15 +59,13 @@ main() {
   # 创建必要的目录
   print_message "创建必要的目录..."
   mkdir -p logs
-  mkdir -p uploads
   chmod 755 logs
-  chmod 755 uploads
 
   # 检查.env文件
   if [ ! -f .env ]; then
     print_warning ".env文件不存在。请创建并配置.env文件。"
-    cp .env.example .env
-    print_warning "已创建.env文件，请编辑它并配置正确的参数。"
+    cp .env.production.example .env
+    print_warning "已从.env.production.example创建.env文件，请编辑它并配置正确的参数。"
     print_warning "配置完成后，请重新运行此脚本。"
     exit 1
   else
@@ -84,6 +82,44 @@ main() {
       print_message "已将NODE_ENV设置为production。"
     fi
   fi
+
+  # 检查新增的关键环境变量
+  check_env_var() {
+    var_name=$1
+    grep -q "$var_name=" .env
+    if [ $? -ne 0 ]; then
+      print_warning "未在.env文件中检测到$var_name。"
+      # 从示例文件中提取默认值
+      default_value=$(grep "$var_name=" .env.production.example | cut -d= -f2)
+      read -p "是否添加$var_name=$default_value？(y/n): " add_var
+      if [[ "$add_var" == "y" || "$add_var" == "Y" ]]; then
+        echo "$var_name=$default_value" >> .env
+        print_message "已添加$var_name=$default_value到.env文件。"
+      fi
+    fi
+  }
+
+  # 检查JWT相关变量
+  check_env_var "ADMIN_JWT_SECRET"
+  check_env_var "ADMIN_JWT_EXPIRES_IN"
+  check_env_var "H5_JWT_SECRET"
+  check_env_var "H5_JWT_EXPIRES_IN"
+
+  # 检查基础URL变量
+  check_env_var "ADMIN_BASE_URL"
+  check_env_var "H5_BASE_URL"
+
+  # 检查API签名配置
+  check_env_var "API_SIGN_SECRET"
+  check_env_var "API_SIGN_EXPIRE_TIME"
+
+  # 检查OSS配置
+  check_env_var "OSS_ACCESS_KEY_ID"
+  check_env_var "OSS_ACCESS_KEY_SECRET"
+  check_env_var "OSS_REGION"
+  check_env_var "OSS_BUCKET"
+  check_env_var "H5_OSS_DIR"
+  check_env_var "ADMIN_OSS_DIR"
 
   # 数据库迁移
   print_message "执行数据库迁移..."
@@ -114,8 +150,9 @@ main() {
   fi
 
   print_message "部署完成!"
-  print_message "管理后台运行在: http://localhost:3002"
-  print_message "H5前端运行在: http://localhost:3001"
+  print_message "管理后台运行在: http://localhost:${ADMIN_PORT:-3002}${ADMIN_BASE_URL:-/api/support}"
+  print_message "H5前端运行在: http://localhost:${H5_PORT:-3001}${H5_BASE_URL:-/api/h5}"
+  print_message "API签名已经配置，请确保客户端正确实现签名验证"
   print_message "建议使用Nginx反向代理配置HTTPS和域名"
 }
 
