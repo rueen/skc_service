@@ -49,8 +49,8 @@ module.exports = {
   // 部署配置（需要根据实际情况修改）
   deploy: {
     production: {
-      user: 'ubuntu', // 服务器用户名
-      host: '服务器IP地址', // 例如: '123.123.123.123'
+      user: 'root', // 服务器用户名
+      host: '47.250.185.212', // 例如: '123.123.123.123'
       ref: 'origin/master', // Git分支
       repo: 'git@github.com:rueen/skc_service.git', // 例如: 'git@github.com:username/skc_service.git'
       path: '/var/www/skc_service', // 部署目录
