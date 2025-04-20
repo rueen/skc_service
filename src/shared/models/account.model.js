@@ -48,9 +48,11 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     }
     
     // 构建查询语句
-    const query = `
+    let query = `
       SELECT a.*, 
              m.nickname as member_nickname,
+             m.account as member_account,
+             m.create_time as member_createTime,
              c.name as channel_name,
              c.icon as channel_icon,
              c.custom_fields as channel_custom_fields,
@@ -61,11 +63,13 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       LEFT JOIN waiters w ON a.waiter_id = w.id
       WHERE ${whereClause}
       ORDER BY a.create_time DESC
-      LIMIT ? OFFSET ?
     `;
     
-    // 添加分页参数
-    queryParams.push(parseInt(pageSize, 10), offset);
+    // 根据是否为导出模式决定是否使用分页
+    if (!filters.exportMode) {
+      query += ' LIMIT ? OFFSET ?';
+      queryParams.push(parseInt(pageSize, 10), offset);
+    }
     
     // 执行查询
     const [rows] = await pool.query(query, queryParams);
@@ -77,7 +81,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       WHERE ${whereClause}
     `;
     
-    const [countRows] = await pool.query(countQuery, queryParams.slice(0, -2));
+    const [countRows] = await pool.query(countQuery, filters.exportMode ? queryParams : queryParams.slice(0, -2));
     const total = countRows[0].total;
     
     // 处理渠道自定义字段

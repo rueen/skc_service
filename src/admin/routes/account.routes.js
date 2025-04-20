@@ -146,6 +146,43 @@ router.put(
 );
 
 /**
+ * @route GET /api/admin/accounts/export
+ * @desc 导出账号列表
+ * @access Private - Admin
+ */
+router.get(
+  '/export',
+  [
+    query('keyword')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
+    query('account')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
+    query('channelId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
+    query('accountAuditStatus')
+      .optional()
+      .isIn(['pending', 'approved', 'rejected'])
+      .withMessage('common.validation.invalid'),
+    query('groupId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
+    query('memberId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  accountController.exportAccounts
+);
+
+/**
  * @route GET /api/admin/accounts/:id
  * @desc 获取账号详情
  * @access Private - Admin

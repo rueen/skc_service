@@ -448,11 +448,78 @@ async function deleteAccount(req, res) {
   }
 }
 
+/**
+ * 导出账号列表
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function exportAccounts(req, res) {
+  try {
+    const { account, keyword, channelId, accountAuditStatus, groupId, memberId } = req.query;
+    
+    // 构建筛选条件
+    const filters = {
+      exportMode: true // 标记为导出模式，不使用分页
+    };
+    
+    if (account) filters.account = account;
+    if (keyword) filters.keyword = keyword;
+    if (channelId) filters.channelId = parseInt(channelId, 10);
+    if (accountAuditStatus) filters.accountAuditStatus = accountAuditStatus;
+    if (groupId) filters.groupId = parseInt(groupId, 10);
+    if (memberId) filters.memberId = parseInt(memberId, 10);
+    
+    // 获取所有符合条件的账号
+    const result = await accountModel.getList(filters);
+    
+    if (!result.list || result.list.length === 0) {
+      return res.status(404).send('没有符合条件的账号数据');
+    }
+    
+    // 创建Excel工作簿和工作表
+    const Excel = require('exceljs');
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet('账号列表');
+    
+    // 设置列定义和宽度
+    worksheet.columns = [
+      { header: '会员ID', key: 'memberNickname', width: 20 },
+      { header: '会员账号', key: 'memberAccount', width: 20 },
+      { header: '注册时间', key: 'memberCreatetime', width: 20 }
+    ];
+    
+    // 引入日期格式化工具
+    const { formatDateTime } = require('../../shared/utils/date.util');
+    
+    // 添加数据行
+    result.list.forEach(item => {
+      worksheet.addRow({
+        memberNickname: item.memberNickname || '',
+        memberAccount: item.memberAccount || '',
+        memberCreatetime: formatDateTime(item.memberCreateTime) || ''
+      });
+    });
+    
+    // 设置响应头
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=accounts.xlsx');
+    
+    // 写入响应流
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    logger.error(`导出账号列表失败: ${error.message}`);
+    return responseUtil.serverError(res);
+  }
+}
+
+// 导出控制器方法
 module.exports = {
   getAccounts,
   batchResolve,
   batchReject,
   editAccount,
   getAccountDetail,
-  deleteAccount
+  deleteAccount,
+  exportAccounts
 }; 
