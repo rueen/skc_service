@@ -50,9 +50,9 @@ module.exports = {
   deploy: {
     production: {
       user: 'root', // 服务器用户名
-      host: '47.250.185.212', // 例如: '123.123.123.123'
+      host: process.env.DEPLOY_HOST || '47.250.185.212', // 从环境变量获取或使用默认值
       ref: 'origin/master', // Git分支
-      repo: 'git@github.com:rueen/skc_service.git', // 例如: 'git@github.com:username/skc_service.git'
+      repo: process.env.DEPLOY_REPO || 'git@github.com:rueen/skc_service.git', // 从环境变量获取或使用默认值
       path: '/var/www/skc_service', // 部署目录
       'pre-deploy': 'git fetch --all',
       'post-deploy': 'npm install && pm2 reload ecosystem.config.js --env production && pm2 save',

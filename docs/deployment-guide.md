@@ -22,7 +22,7 @@
 - 一台Linux服务器（推荐Ubuntu 20.04或更高版本）
 - 域名（如果需要通过域名访问）
 - MySQL数据库（版本5.7或更高）
-- Node.js环境（版本14.x或更高）
+- Node.js环境（版本16.x或更高）
 - 基本的Linux命令行知识
 
 ## 服务器准备
@@ -36,11 +36,11 @@
 sudo apt update
 
 # 安装Node.js和npm
-curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
 
 # 验证安装
-node -v  # 应显示16.x版本
+node -v  # 应显示18.x版本
 npm -v   # 应显示8.x或更高版本
 
 # 安装PM2进程管理器
@@ -100,7 +100,7 @@ chmod +x scripts/deploy.sh
 
 脚本将执行以下操作：
 1. 安装项目依赖
-2. A创建必要的目录（logs）
+2. 创建必要的目录（logs）
 3. 检查和配置环境变量
 4. 执行数据库迁移
 5. 使用PM2启动服务
@@ -121,6 +121,12 @@ cp .env.production.example .env
 ```
 # 环境
 NODE_ENV=production
+
+# 服务端口和API路径
+ADMIN_PORT=3002
+ADMIN_BASE_URL=/api/support
+H5_PORT=3001
+H5_BASE_URL=/api/h5
 
 # 数据库配置
 DB_HOST=<数据库主机地址>
@@ -211,7 +217,9 @@ sudo cp scripts/nginx-config.example /etc/nginx/sites-available/skc
 sudo nano /etc/nginx/sites-available/skc
 ```
 
-修改配置文件中的域名和证书路径等信息。
+修改配置文件中的域名和证书路径等信息。确保Nginx配置中的API路径与应用配置一致：
+- 管理后台API: `/api/support` -> `http://localhost:3002`
+- H5前端API: `/api/h5` -> `http://localhost:3001`
 
 ### 启用站点
 

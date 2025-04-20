@@ -47,6 +47,17 @@ main() {
   # 获取Node.js版本信息
   node_version=$(node -v)
   print_message "当前Node.js版本: $node_version"
+  
+  # 检查Node.js版本
+  node_major_version=$(node -v | cut -d. -f1 | tr -d 'v')
+  if [ "$node_major_version" -lt 14 ]; then
+    print_warning "Node.js版本过低，建议使用v14或更高版本"
+    read -p "是否继续部署？ (y/n): " continue_deploy
+    if [[ "$continue_deploy" != "y" && "$continue_deploy" != "Y" ]]; then
+      print_message "部署已取消。"
+      exit 0
+    fi
+  fi
 
   # 安装依赖
   print_message "安装依赖..."
@@ -148,6 +159,12 @@ main() {
     print_message "请手动执行以下命令设置PM2开机自启:"
     echo $pm2_startup
   fi
+
+  # 从.env文件中获取端口和基础URL配置
+  ADMIN_PORT=$(grep "ADMIN_PORT=" .env | cut -d= -f2 || echo "3002")
+  ADMIN_BASE_URL=$(grep "ADMIN_BASE_URL=" .env | cut -d= -f2 || echo "/api/support")
+  H5_PORT=$(grep "H5_PORT=" .env | cut -d= -f2 || echo "3001")
+  H5_BASE_URL=$(grep "H5_BASE_URL=" .env | cut -d= -f2 || echo "/api/h5")
 
   print_message "部署完成!"
   print_message "管理后台运行在: http://localhost:${ADMIN_PORT:-3002}${ADMIN_BASE_URL:-/api/support}"
