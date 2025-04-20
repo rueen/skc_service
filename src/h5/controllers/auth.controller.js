@@ -53,10 +53,13 @@ async function login(req, res) {
       const hashedPassword = await authUtil.hashPassword(password);
       
       // 创建会员数据 - 使用原始账号，不带前缀
+      // 设置默认头像
+      const defaultAvatar = 'http://skc-statics.oss-ap-southeast-6.aliyuncs.com/skc/defaultAvatar.png';
       const memberData = {
         memberNickname: randomNickname,
         memberAccount: memberAccount,
         password: hashedPassword,
+        avatar: defaultAvatar,
         registerSource: 'h5' // 标识为 h5 端注册
       };
       
