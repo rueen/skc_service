@@ -133,7 +133,7 @@ async function create(req, res) {
     const actualNickname = memberNickname || `user${Math.floor(Math.random() * 1000000)}`;
 
     // 设置默认头像
-    const defaultAvatar = '';
+    const defaultAvatar = 'http://skc-statics.oss-ap-southeast-6.aliyuncs.com/skc/defaultAvatar.png';
     const actualAvatar = avatar || defaultAvatar;
 
     const result = await memberModel.create({
