@@ -255,6 +255,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         st.*,
         t.task_name,
         t.channel_id,
+        t.brand,
         t.reward,
         c.name AS channel_name,
         c.icon AS channel_icon,

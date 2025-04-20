@@ -235,27 +235,24 @@ async function exportPreAuditTasks(req, res) {
     
     // CSV 表头
     const headers = [
-      '提交ID', '任务名称', '渠道', '会员昵称', '提交时间', 
-      '预审状态', '初审员', '审核状态', '审核员', '已完成任务数', '群组'
+      '提交时间', '任务名称', '平台渠道', '会员ID', '所属群组', 
+      '初审状态', '初审员', '品牌', '提交内容'
     ];
     
     // 写入表头 (添加BOM以确保Excel正确识别UTF-8)
     res.write('\ufeff' + headers.join(',') + '\n');
-    
     // 写入数据行
     result.list.forEach(item => {
       const values = [
-        item.id || '',
-        (item.taskName || '').replace(/,/g, '，'), // 替换逗号防止影响 CSV 格式
-        (item.channelName || '').replace(/,/g, '，'),
-        (item.memberNickname || '').replace(/,/g, '，'),
-        (item.submitTime || '').replace(/,/g, '，'),
-        (getPreAuditStatusText(item.taskPreAuditStatus) || '').replace(/,/g, '，'),
-        (item.preWaiterName || '').replace(/,/g, '，'),
-        (getAuditStatusText(item.taskAuditStatus) || '').replace(/,/g, '，'),
-        (item.waiterName || '').replace(/,/g, '，'),
-        item.completedTaskCount || 0,
-        (item.groupName || '').replace(/,/g, '，')
+        item.submitTime || '',
+        item.taskName || '',
+        item.channelName || '',
+        item.memberId || '',
+        item.groupName || '',
+        getPreAuditStatusText(item.taskPreAuditStatus) || '',
+        item.preWaiterName || '',
+        item.brand || '',
+        item.submitContent || ''
       ];
       
       res.write(values.join(',') + '\n');

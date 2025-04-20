@@ -20,8 +20,7 @@ function getApiSignConfig() {
     // 不需要验证签名的路径前缀
     excludePaths: [
       '/health',
-      '/csrf-token',
-      '/uploads'
+      '/csrf-token'
     ]
   };
 }
