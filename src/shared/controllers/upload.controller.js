@@ -4,6 +4,7 @@
  */
 const responseUtil = require('../utils/response.util');
 const logger = require('../config/logger.config');
+const ossUtil = require('../utils/oss.util');
 
 /**
  * 上传图片
@@ -16,11 +17,10 @@ async function uploadImage(req, res) {
       return responseUtil.badRequest(res, '请选择要上传的图片');
     }
     
-    const baseUrl = process.env.IMAGE_BASE_URL;
+    // 使用OSS上传文件
+    const ossUrl = await ossUtil.uploadFile(req.file);
     
-    const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
-    return responseUtil.success(res, { url: imageUrl });
-
+    return responseUtil.success(res, { url: ossUrl });
   } catch (error) {
     logger.error(`上传图片失败: ${error.message}`);
     return responseUtil.serverError(res, '上传图片失败');

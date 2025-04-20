@@ -5,6 +5,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { UPLOAD_CONFIG } = require('../config/api.config');
 const uploadController = require('../controllers/upload.controller');
 const rateLimiterMiddleware = require('../middlewares/rateLimiter.middleware');
@@ -12,14 +13,15 @@ const responseUtil = require('../utils/response.util');
 
 const router = express.Router();
 
+// 确保上传目录存在
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 // 配置 multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(process.cwd(), 'uploads');
-    // 确保上传目录存在
-    if (!require('fs').existsSync(uploadDir)) {
-      require('fs').mkdirSync(uploadDir, { recursive: true });
-    }
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
