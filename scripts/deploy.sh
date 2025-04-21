@@ -183,12 +183,12 @@ main() {
 
   # 从.env文件中获取端口和基础URL配置
   ADMIN_PORT=$(grep "ADMIN_PORT=" .env | cut -d= -f2 || echo "3002")
-  ADMIN_BASE_URL=$(grep "ADMIN_BASE_URL=" .env | cut -d= -f2 || echo "/api/support")
+  ADMIN_BASE_URL=$(grep "ADMIN_BASE_URL=" .env | cut -d= -f2 || echo "/api/admin")
   H5_PORT=$(grep "H5_PORT=" .env | cut -d= -f2 || echo "3001")
   H5_BASE_URL=$(grep "H5_BASE_URL=" .env | cut -d= -f2 || echo "/api/h5")
 
   print_message "部署完成!"
-  print_message "管理后台运行在: http://localhost:${ADMIN_PORT:-3002}${ADMIN_BASE_URL:-/api/support}"
+  print_message "管理后台运行在: http://localhost:${ADMIN_PORT:-3002}${ADMIN_BASE_URL:-/api/admin}"
   print_message "H5前端运行在: http://localhost:${H5_PORT:-3001}${H5_BASE_URL:-/api/h5}"
   print_message "API签名已经配置，请确保客户端正确实现签名验证"
   print_message "建议使用Nginx反向代理配置HTTPS和域名"

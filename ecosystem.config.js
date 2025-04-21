@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-20 22:59:48
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-21 12:22:05
+ * @LastEditTime: 2025-04-21 16:41:14
  * @Description: 
  */
 /**
@@ -28,7 +28,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         ADMIN_PORT: 3002,
-        ADMIN_BASE_URL: '/api/support',
+        ADMIN_BASE_URL: '/api/admin',
       }
     },
     {

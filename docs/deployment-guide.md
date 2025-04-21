@@ -124,7 +124,7 @@ NODE_ENV=production
 
 # 服务端口和API路径
 ADMIN_PORT=3002
-ADMIN_BASE_URL=/api/support
+ADMIN_BASE_URL=/api/admin
 H5_PORT=3001
 H5_BASE_URL=/api/h5
 
@@ -218,7 +218,7 @@ sudo nano /etc/nginx/sites-available/skc
 ```
 
 修改配置文件中的域名和证书路径等信息。确保Nginx配置中的API路径与应用配置一致：
-- 管理后台API: `/api/support` -> `http://localhost:3002`
+- 管理后台API: `/api/admin` -> `http://localhost:3002`
 - H5前端API: `/api/h5` -> `http://localhost:3001`
 
 ### 启用站点
