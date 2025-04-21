@@ -82,7 +82,7 @@ sudo mkdir -p /var/www/skc_service
 sudo chown $USER:$USER /var/www/skc_service
 
 # 克隆代码仓库
-git clone <您的仓库地址> /var/www/skc_service
+git clone git@github.com:rueen/skc_service.git /var/www/skc_service
 cd /var/www/skc_service
 ```
 
