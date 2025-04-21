@@ -111,14 +111,31 @@ main() {
   }
 
   # 检查JWT相关变量
-  check_env_var "ADMIN_JWT_SECRET"
-  check_env_var "ADMIN_JWT_EXPIRES_IN"
-  check_env_var "H5_JWT_SECRET"
-  check_env_var "H5_JWT_EXPIRES_IN"
+  check_env_var "JWT_SECRET"
+  check_env_var "JWT_EXPIRES_IN"
 
   # 检查基础URL变量
   check_env_var "ADMIN_BASE_URL"
   check_env_var "H5_BASE_URL"
+
+  # 检查端口配置
+  check_env_var "ADMIN_PORT"
+  check_env_var "H5_PORT"
+
+  # 检查数据库配置
+  check_env_var "DB_HOST"
+  check_env_var "DB_PORT"
+  check_env_var "DB_USER"
+  check_env_var "DB_PASSWORD"
+  check_env_var "DB_NAME"
+  check_env_var "DB_POOL_LIMIT"
+
+  # 检查日志配置
+  check_env_var "LOG_LEVEL"
+
+  # 检查支付配置
+  check_env_var "PAYMENT_API_URL"
+  check_env_var "PAYMENT_QUERY_API_URL"
 
   # 检查API签名配置
   check_env_var "API_SIGN_SECRET"
@@ -131,6 +148,10 @@ main() {
   check_env_var "OSS_BUCKET"
   check_env_var "H5_OSS_DIR"
   check_env_var "ADMIN_OSS_DIR"
+
+  # 检查部署配置
+  check_env_var "DEPLOY_HOST"
+  check_env_var "DEPLOY_REPO"
 
   # 数据库迁移
   print_message "执行数据库迁移..."
