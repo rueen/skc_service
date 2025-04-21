@@ -4,7 +4,6 @@
  */
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const authConfig = require('../config/auth.config');
 const logger = require('../config/logger.config');
 
 /**
@@ -14,7 +13,7 @@ const logger = require('../config/logger.config');
  */
 const generateToken = (payload) => {
   try {
-    return jwt.sign(payload, authConfig.secret, { expiresIn: authConfig.expiresIn });
+    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
   } catch (error) {
     logger.error(`生成JWT令牌失败: ${error.message}`);
     throw new Error('生成令牌失败');
@@ -28,7 +27,7 @@ const generateToken = (payload) => {
  */
 const verifyToken = (token) => {
   try {
-    const decoded = jwt.verify(token, authConfig.secret);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     return decoded;
   } catch (error) {
     logger.error(`验证JWT令牌失败: ${error.message}`);

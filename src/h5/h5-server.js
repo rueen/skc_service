@@ -2,14 +2,14 @@
  * @Author: diaochan
  * @Date: 2025-03-15 15:43:57
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-20 22:50:00
+ * @LastEditTime: 2025-04-21 11:47:40
  * @Description: 
  */
 /**
  * H5端服务入口文件
  */
 // 加载环境变量（放在最顶部，确保在所有模块导入前加载）
-require('dotenv').config({ path: '.env.h5' });
+require('dotenv').config({ path: '.env' });
 
 const createApp = require('../shared/app-common');
 const { initDatabase } = require('../shared/models/db');

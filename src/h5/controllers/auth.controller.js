@@ -101,7 +101,7 @@ async function login(req, res) {
       const token = authUtil.generateToken({
         id: createdMember.id,
         account: createdMember.memberAccount,
-        loginType: loginType // 在令牌中添加登录类型
+        loginType: loginType, // 在令牌中添加登录类型
       });
       
       // 构建用户信息
@@ -153,7 +153,7 @@ async function login(req, res) {
       const token = authUtil.generateToken({
         id: member.id,
         account: member.memberAccount,
-        loginType: loginType // 在令牌中添加登录类型
+        loginType: loginType, // 在令牌中添加登录类型
       });
       
       // 构建用户信息

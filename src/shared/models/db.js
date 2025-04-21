@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:09:55
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-10 11:22:29
+ * @LastEditTime: 2025-04-21 11:51:54
  * @Description: 
  */
 /**
@@ -35,7 +35,7 @@ const h5Pool = mysql.createPool(getDbConfig());
 // 根据应用类型获取连接池
 function getPool() {
   // 根据环境变量判断当前应用类型
-  const isH5 = process.env.BASE_URL === '/api/h5';
+  const isH5 = process.env.H5_BASE_URL;
   return isH5 ? h5Pool : adminPool;
 }
 

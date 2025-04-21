@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 15:54:14
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-19 19:18:57
+ * @LastEditTime: 2025-04-21 11:53:32
  * @Description: 
  */
 /**
@@ -29,7 +29,9 @@ const apiSignMiddleware = require('../../shared/middlewares/api-sign.middleware'
 const router = express.Router();
 
 // 应用API签名验证 - 对所有路由生效
-router.use(apiSignMiddleware());
+router.use(apiSignMiddleware({
+  baseUrl: process.env.H5_BASE_URL
+}));
 
 // 用户认证路由
 router.use('/auth', authRoutes);

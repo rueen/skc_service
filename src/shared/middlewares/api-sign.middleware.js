@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-04-19 16:45:38
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-21 11:53:42
+ * @Description: 
+ */
 /**
  * API签名验证中间件
  */
@@ -35,7 +42,7 @@ function apiSignMiddleware(options = {}) {
   
   return (req, res, next) => {
     // 获取请求路径（去掉BASE_URL前缀）
-    const baseUrl = process.env.BASE_URL || '';
+    const baseUrl = options.baseUrl || '';
     const path = req.path.startsWith(baseUrl) 
       ? req.path.substring(baseUrl.length) 
       : req.path;

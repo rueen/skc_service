@@ -2,11 +2,11 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-20 22:50:19
+ * @LastEditTime: 2025-04-21 11:47:27
  * @Description: 
  */
 // 加载环境变量（放在最顶部，确保在所有模块导入前加载）
-require('dotenv').config({ path: '.env.admin' });
+require('dotenv').config({ path: '.env' });
 
 const createApp = require('../shared/app-common');
 const { initDatabase } = require('../shared/models/db');
