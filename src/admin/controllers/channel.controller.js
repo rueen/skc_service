@@ -5,7 +5,8 @@
 const channelModel = require('../../shared/models/channel.model');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
-const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取渠道列表
@@ -26,7 +27,7 @@ async function list(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取渠道列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取渠道列表失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -46,13 +47,13 @@ async function get(req, res) {
     // 获取渠道
     const channel = await channelModel.getById(id);
     if (!channel) {
-      return responseUtil.notFound(res, '渠道不存在');
+      return responseUtil.notFound(res, i18n.t('admin.channel.notFound', req.lang));
     }
     
     return responseUtil.success(res, channel);
   } catch (error) {
     logger.error(`获取渠道详情失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取渠道详情失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -76,13 +77,13 @@ async function add(req, res) {
       customFields
     });
     
-    return responseUtil.success(res, result, '创建渠道成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     if (error.message === '渠道名称已存在') {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.channel.nameExists', req.lang));
     }
     logger.error(`创建渠道失败: ${error.message}`);
-    return responseUtil.serverError(res, '创建渠道失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -103,7 +104,7 @@ async function edit(req, res) {
     // 检查渠道是否存在
     const channel = await channelModel.getById(id);
     if (!channel) {
-      return responseUtil.notFound(res, '渠道不存在');
+      return responseUtil.notFound(res, i18n.t('admin.channel.notFound', req.lang));
     }
     
     // 更新渠道
@@ -115,16 +116,16 @@ async function edit(req, res) {
     });
     
     if (!success) {
-      return responseUtil.serverError(res, '更新渠道失败');
+      return responseUtil.serverError(res);
     }
     
-    return responseUtil.success(res, null, '更新渠道成功');
+    return responseUtil.success(res, null);
   } catch (error) {
     if (error.message === '渠道名称已存在') {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.channel.nameExists', req.lang));
     }
     logger.error(`更新渠道失败: ${error.message}`);
-    return responseUtil.serverError(res, '更新渠道失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -145,16 +146,19 @@ async function remove(req, res) {
     const success = await channelModel.remove(id);
     
     if (!success) {
-      return responseUtil.notFound(res, '渠道不存在');
+      return responseUtil.notFound(res, i18n.t('admin.channel.notFound', req.lang));
     }
     
-    return responseUtil.success(res, null, '删除渠道成功');
+    return responseUtil.success(res, null);
   } catch (error) {
-    if (error.message.includes('存在关联')) {
-      return responseUtil.badRequest(res, error.message);
+    if (error.message === '该渠道下存在关联账号，无法删除') {
+      return responseUtil.badRequest(res, i18n.t('admin.channel.associatedAccount', req.lang));
+    }
+    if (error.message === '该渠道下存在关联任务，无法删除') {
+      return responseUtil.badRequest(res, i18n.t('admin.channel.associatedTask', req.lang));
     }
     logger.error(`删除渠道失败: ${error.message}`);
-    return responseUtil.serverError(res, '删除渠道失败');
+    return responseUtil.serverError(res);
   }
 }
 

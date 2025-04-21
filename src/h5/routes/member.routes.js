@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-19 14:09:26
+ * @LastEditTime: 2025-04-19 20:20:29
  * @Description: 
  */
 /**
@@ -12,11 +12,14 @@
 const express = require('express');
 const { body, param, query } = require('express-validator');
 const memberController = require('../controllers/member.controller');
-const authMiddleware = require('../../shared/middlewares/auth.middleware');
+const memberAccountController = require('../controllers/member-account.controller');
+const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
  * @route PUT /api/h5/members/profile
@@ -25,17 +28,13 @@ const router = express.Router();
  */
 router.put(
   '/profile',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     body('memberNickname')
       .optional()
       .isLength({ max: 20 })
-      .withMessage('昵称长度不能超过20个字符'),
+      .withMessage('common.validation.maxLength{max:20}'),
     body('occupation')
       .optional()
-      .isIn(['housewife', 'freelancer', 'student'])
-      .withMessage('职业类型无效')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.updateProfile
@@ -48,9 +47,25 @@ router.put(
  */
 router.get(
   '/accounts',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
-  memberController.getAccounts
+  memberAccountController.getAccounts
+);
+
+/**
+ * @route POST /api/h5/members/accounts/find-uid-by-home-url
+ * @desc 根据主页链接查找UID
+ * @access Private
+ */
+router.post(
+  '/accounts/find-uid-by-home-url',
+  [
+    body('homeUrl')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isURL()
+      .withMessage('common.validation.formatInvalid')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberAccountController.findUidByHomeUrl
 );
 
 /**
@@ -60,38 +75,40 @@ router.get(
  */
 router.post(
   '/accounts',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     body('channelId')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('渠道ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('account')
       .notEmpty()
-      .withMessage('账号不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('账号长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
+    body('uid')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('common.validation.maxLength{max:100}'),
     body('homeUrl')
       .optional()
       .isURL()
-      .withMessage('主页链接必须是有效的URL'),
+      .withMessage('common.validation.formatInvalid'),
     body('fansCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('粉丝数量必须是非负整数'),
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     body('friendsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('好友数量必须是非负整数'),
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     body('postsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('发布数量必须是非负整数')
+      .withMessage('common.validation.mustBeNonNegativeInteger')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  memberController.addAccount
+  memberAccountController.addAccount
 );
 
 /**
@@ -101,17 +118,15 @@ router.post(
  */
 router.get(
   '/accounts/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()
-      .withMessage('账号ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('账号ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  memberController.getAccountDetail
+  memberAccountController.getAccountDetail
 );
 
 /**
@@ -121,37 +136,39 @@ router.get(
  */
 router.put(
   '/accounts/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()
-      .withMessage('账号ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('账号ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('account')
       .optional()
       .isLength({ max: 100 })
-      .withMessage('账号长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
+    body('uid')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('common.validation.maxLength{max:100}'),
     body('homeUrl')
       .optional()
       .isURL()
-      .withMessage('主页链接必须是有效的URL'),
+      .withMessage('common.validation.formatInvalid'),
     body('fansCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('粉丝数量必须是非负整数'),
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     body('friendsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('好友数量必须是非负整数'),
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     body('postsCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('发布数量必须是非负整数')
+      .withMessage('common.validation.mustBeNonNegativeInteger')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  memberController.updateAccount
+  memberAccountController.updateAccount
 );
 
 /**
@@ -161,49 +178,54 @@ router.put(
  */
 router.delete(
   '/accounts/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
     param('id')
       .notEmpty()
-      .withMessage('账号ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('账号ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  memberController.deleteAccount
+  memberAccountController.deleteAccount
 );
 
 /**
- * @route GET /api/h5/members/owned-groups
- * @desc 获取当前会员作为群主的群组列表
+ * @route GET /api/h5/members/balance
+ * @desc 获取会员账户余额
  * @access Private
  */
 router.get(
-  '/owned-groups',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
-  memberController.getOwnedGroups
+  '/balance',
+  memberController.getBalance
 );
 
 /**
- * @route GET /api/h5/members/group-members
- * @desc 获取以该会员为群主的群成员列表
+ * @route GET /api/h5/members/bills
+ * @desc 获取会员账单列表
  * @access Private
  */
 router.get(
-  '/group-members',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
+  '/bills',
   [
-    query('groupId')
-      .notEmpty()
-      .withMessage('群组ID不能为空')
-      .isInt()
-      .withMessage('群组ID必须是整数')
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('common.validation.page'),
+    query('pageSize')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('common.validation.pageSize'),
+    query('billType')
+      .optional()
+      .isIn(['withdrawal', 'task_reward', 'invite_reward', 'group_owner_commission'])
+      .withMessage('common.validation.invalid'),
+    query('settlementStatus')
+      .optional()
+      .isIn(['success', 'failed', 'pending'])
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  memberController.getGroupMembers
+  memberController.getBills
 );
 
 module.exports = router; 

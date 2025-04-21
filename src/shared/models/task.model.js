@@ -6,7 +6,7 @@ const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
-const { TaskStatus } = require('../config/enums');
+const { convertToCamelCase } = require('../utils/data.util');
 
 /**
  * 格式化任务信息
@@ -15,24 +15,15 @@ const { TaskStatus } = require('../config/enums');
  */
 function formatTask(task) {
   if (!task) return null;
-  
-  // 提取基本字段
-  const formattedTask = { ...task };
-  
-  // 格式化时间字段，返回'YYYY-MM-DD HH:mm:ss'格式的时间字符串
-  formattedTask.startTime = formatDateTime(task.start_time);
-  formattedTask.endTime = formatDateTime(task.end_time);
-  formattedTask.createTime = formatDateTime(task.create_time);
-  formattedTask.updateTime = formatDateTime(task.update_time);
-  
+
   // 转换字段名称为驼峰命名法
-  formattedTask.taskName = task.task_name;
-  formattedTask.channelId = task.channel_id;
-  formattedTask.taskType = task.task_type;
-  formattedTask.channelName = task.channel_name;
-  formattedTask.channelIcon = task.channel_icon;
-  formattedTask.reward = task.reward;
-  formattedTask.category = task.category;
+  const formattedTask = convertToCamelCase({
+    ...task,
+    startTime: formatDateTime(task.start_time),
+    endTime: formatDateTime(task.end_time),
+    createTime: formatDateTime(task.create_time),
+    updateTime: formatDateTime(task.update_time),
+  });
   
   // 安全解析 JSON 字段
   try {
@@ -48,11 +39,6 @@ function formatTask(task) {
     logger.error(`解析 group_ids 失败: ${error.message}, 原始值: ${task.group_ids}`);
     formattedTask.groupIds = [];
   }
-  
-  // 将 groupMode 保持为数字类型，与入参保持一致
-  formattedTask.groupMode = task.group_mode;
-  formattedTask.userRange = task.user_range;
-  formattedTask.taskCount = task.task_count;
   
   // 安全解析 JSON 字段
   try {
@@ -70,107 +56,41 @@ function formatTask(task) {
   }
   
   formattedTask.unlimitedQuota = task.unlimited_quota === 1;
-  formattedTask.quota = task.quota || 0;
-  formattedTask.fansRequired = task.fans_required;
-  formattedTask.contentRequirement = task.content_requirement;
-  formattedTask.taskInfo = task.task_info;
-  formattedTask.taskStatus = task.task_status;
   
-  // 添加已提交数量和剩余名额字段
-  formattedTask.submittedCount = task.submitted_count || 0;
-  // 计算剩余名额：如果不限制名额，返回-1表示无限制；否则返回剩余名额数量
-  formattedTask.remainingQuota = formattedTask.unlimitedQuota ? -1 : Math.max(0, formattedTask.quota - formattedTask.submittedCount);
-  
-  // 删除原始字段
-  delete formattedTask.start_time;
-  delete formattedTask.end_time;
-  delete formattedTask.create_time;
-  delete formattedTask.update_time;
-  delete formattedTask.task_name;
-  delete formattedTask.channel_id;
-  delete formattedTask.task_type;
-  delete formattedTask.group_ids;
-  delete formattedTask.group_mode;
-  delete formattedTask.user_range;
-  delete formattedTask.task_count;
-  delete formattedTask.custom_fields;
-  delete formattedTask.unlimited_quota;
-  delete formattedTask.fans_required;
-  delete formattedTask.content_requirement;
-  delete formattedTask.task_info;
-  delete formattedTask.task_status;
-  delete formattedTask.channel_name;
-  delete formattedTask.submitted_count;
+  // 计算剩余名额
+  if (formattedTask.unlimitedQuota) {
+    formattedTask.remainingQuota = null; // 无限名额
+  } else if (task.submitted_count !== undefined) {
+    // 剩余名额 = 总名额 - 已提交数量
+    formattedTask.remainingQuota = Math.max(0, formattedTask.quota - task.submitted_count);
+  }
   
   return formattedTask;
 }
 
 /**
- * 根据开始时间和结束时间自动更新任务状态
- * @param {number} taskId - 任务ID
- * @param {Date} startTime - 开始时间
- * @param {Date} endTime - 结束时间
- * @param {string} currentStatus - 当前任务状态
- * @returns {Promise<boolean>} 是否更新了状态
+ * 将 ISO 格式的日期时间字符串转换为 MySQL 兼容的格式
+ * @param {string} dateTimeString - ISO 格式的日期时间字符串
+ * @returns {string} MySQL 兼容的日期时间字符串
  */
-async function autoUpdateTaskStatus(taskId, startTime, endTime, currentStatus) {
+function formatDateTimeForMySQL(dateTimeString) {
+  if (!dateTimeString) return null;
+  
   try {
-    if (!taskId || !startTime || !endTime) {
-      return false;
+    // 将 ISO 字符串转换为 Date 对象
+    const date = new Date(dateTimeString);
+    
+    // 检查日期是否有效
+    if (isNaN(date.getTime())) {
+      logger.error(`无效的日期时间字符串: ${dateTimeString}`);
+      return null;
     }
     
-    const now = new Date();
-    let newStatus = currentStatus;
-    
-    // 根据时间判断任务状态
-    if (now >= startTime && now < endTime && currentStatus === TaskStatus.NOT_STARTED) {
-      // 当前时间在开始时间之后，结束时间之前，且状态为未开始，则更新为进行中
-      newStatus = TaskStatus.PROCESSING;
-    } else if (now >= endTime && currentStatus !== TaskStatus.ENDED) {
-      // 当前时间在结束时间之后，且状态不为已结束，则更新为已结束
-      newStatus = TaskStatus.ENDED;
-    } else {
-      // 状态无需更新
-      return false;
-    }
-    
-    // 如果状态需要更新，执行更新
-    if (newStatus !== currentStatus) {
-      const [result] = await pool.query(
-        'UPDATE tasks SET task_status = ? WHERE id = ?',
-        [newStatus, taskId]
-      );
-      
-      logger.info(`自动更新任务状态: 任务 ${taskId} 从 ${currentStatus} 更新为 ${newStatus}`);
-      
-      return result.affectedRows > 0;
-    }
-    
-    return false;
+    // 格式化为 MySQL 兼容的格式: YYYY-MM-DD HH:MM:SS
+    return date.toISOString().slice(0, 19).replace('T', ' ');
   } catch (error) {
-    logger.error(`自动更新任务状态失败: ${error.message}`);
-    return false;
-  }
-}
-
-/**
- * 获取任务已提交数量
- * @param {number} taskId - 任务ID
- * @returns {Promise<number>} 已提交数量
- */
-async function getTaskSubmittedCount(taskId) {
-  try {
-    const [rows] = await pool.query(
-      `SELECT COUNT(*) as count
-       FROM task_applications
-       WHERE task_id = ? AND status = 'submitted'`,
-      [taskId]
-    );
-    
-    return rows[0].count || 0;
-  } catch (error) {
-    logger.error(`获取任务已提交数量失败: ${error.message}`);
-    return 0;
+    logger.error(`日期时间格式转换失败: ${error.message}, 原始值: ${dateTimeString}`);
+    return null;
   }
 }
 
@@ -179,13 +99,14 @@ async function getTaskSubmittedCount(taskId) {
  * @param {Object} filters - 筛选条件
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
- * @returns {Promise<Object>} 任务列表和总数
+ * @param {number} memberId - 会员ID (可选)，用于查询是否已报名
+ * @returns {Promise<Object>} 包含列表、总数、页码、页大小的对象
  */
-async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
+async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberId = null) {
   try {
     let query = `
       SELECT t.*, c.name as channel_name, c.icon as channel_icon,
-      (SELECT COUNT(*) FROM task_applications WHERE task_id = t.id AND status = 'submitted') as submitted_count
+        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND st.task_audit_status != 'rejected') as submitted_count
       FROM tasks t
       LEFT JOIN channels c ON t.channel_id = c.id
     `;
@@ -232,52 +153,118 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const [rows] = await pool.query(query, queryParams);
     const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
     
-    // 安全处理每个任务记录并自动更新状态
+    // 导入相关模型
+    const enrolledTaskModel = memberId ? require('./enrolled-task.model') : null;
+    const taskStatsModel = memberId ? require('./task-stats.model') : null;
+    const groupModel = memberId ? require('./group.model') : null;
+    
+    // 如果有会员ID，获取会员完成任务次数
+    let memberCompletedTaskCount = null;
+    if (memberId && taskStatsModel) {
+      try {
+        memberCompletedTaskCount = await taskStatsModel.getMemberCompletedTaskCount(memberId);
+        logger.debug(`会员已完成任务次数 - 会员ID: ${memberId}, 完成次数: ${memberCompletedTaskCount}`);
+      } catch (error) {
+        logger.error(`获取会员完成任务次数失败 - 会员ID: ${memberId}, 错误: ${error.message}`);
+        memberCompletedTaskCount = 0;
+      }
+    }
+    
+    // 安全处理每个任务记录
     const formattedList = [];
+    let filteredOutCount = 0; // 记录被过滤掉的任务数量
+    
     for (const task of rows) {
       try {
-        // 自动更新任务状态
-        if (task.start_time && task.end_time) {
-          await autoUpdateTaskStatus(
-            task.id, 
-            new Date(task.start_time), 
-            new Date(task.end_time), 
-            task.task_status
-          );
+        // 使用formatTask格式化任务数据
+        const formattedTask = formatTask(task);
+        const taskId = formattedTask.id;
+        
+        // 根据userRange和taskCount判断是否显示给当前会员
+        // userRange=1表示需要根据会员完成任务次数做显示限制
+        if (memberId && formattedTask.userRange === 1 && memberCompletedTaskCount !== null) {
+          // taskCount=0表示只有从未完成过任务的会员可以看到
+          // taskCount>0表示完成次数<=taskCount的会员可以看到
+          if (formattedTask.taskCount === 0) {
+            // 新人任务：只有未完成任务的新会员可以查看
+            if (memberCompletedTaskCount > 0) {
+              // 会员已完成过任务，不符合条件，跳过该任务
+              filteredOutCount++;
+              continue;
+            }
+          } else {
+            // 普通任务：只有完成次数不超过taskCount的会员可以查看
+            if (memberCompletedTaskCount > formattedTask.taskCount) {
+              // 会员完成任务次数超出限制，跳过该任务
+              filteredOutCount++;
+              continue;
+            }
+          }
         }
         
-        const formattedTask = formatTask(task);
-        // 返回更多的任务信息
-        formattedList.push({
-          id: formattedTask.id,
-          taskName: formattedTask.taskName,
-          taskStatus: formattedTask.taskStatus,
-          channelId: formattedTask.channelId,
-          channelName: formattedTask.channelName,
-          channelIcon: formattedTask.channelIcon,
-          reward: formattedTask.reward,
-          category: formattedTask.category,
-          taskType: formattedTask.taskType,
-          fansRequired: formattedTask.fansRequired,
-          startTime: formattedTask.startTime,
-          endTime: formattedTask.endTime,
-          unlimitedQuota: formattedTask.unlimitedQuota,
-          quota: formattedTask.quota,
-          submittedCount: formattedTask.submittedCount,
-          remainingQuota: formattedTask.remainingQuota,
-          groupMode: formattedTask.groupMode,
-          groupIds: formattedTask.groupIds,
-          createTime: formattedTask.createTime
-        });
+        // 检查指定群组的任务，如果不在相应群组则隐藏
+        if (memberId && formattedTask.groupMode === 1 && groupModel) {
+          try {
+            let groupIds = formattedTask.groupIds;
+
+            // 如果任务有指定群组
+            if (groupIds.length > 0) {
+              // 检查会员是否在这些群组中
+              const isMemberInGroups = await groupModel.isMemberInGroups(memberId, groupIds);
+              
+              if (!isMemberInGroups) {
+                // 会员不在指定群组中，跳过该任务
+                filteredOutCount++;
+                logger.debug(`会员不在指定群组中 - 会员ID: ${memberId}, 任务ID: ${taskId}`);
+                continue;
+              }
+            }
+          } catch (error) {
+            logger.error(`检查会员是否在指定群组中失败 - 会员ID: ${memberId}, 任务ID: ${taskId}, 错误: ${error.message}`);
+            // 发生错误时默认跳过该任务，以保证安全
+            filteredOutCount++;
+            continue;
+          }
+        }
+        
+        // 初始化报名状态
+        let isEnrolled = false;
+        let enrollmentId = null;
+        
+        // 如果提供了会员ID，使用checkEnrollment检查报名状态
+        if (memberId) {
+          try {
+            // 使用与getDetail相同的方法检查报名状态
+            const enrollmentResult = await enrolledTaskModel.checkEnrollment(taskId, memberId);
+            isEnrolled = enrollmentResult.isEnrolled;
+            enrollmentId = enrollmentResult.enrollmentId;
+            
+            // 记录日志，用于调试报名状态
+            logger.debug(`任务列表项(使用checkEnrollment) - 任务ID: ${taskId}, 会员ID: ${memberId}, 是否已报名: ${isEnrolled}, 报名ID: ${enrollmentId || '无'}`);
+          } catch (error) {
+            logger.error(`检查任务列表项报名状态失败 - 任务ID: ${taskId}, 会员ID: ${memberId}, 错误: ${error.message}`);
+            isEnrolled = false;
+            enrollmentId = null;
+          }
+        }
+        
+        formattedTask.isEnrolled = isEnrolled;
+        formattedTask.enrollmentId = enrollmentId;
+        formattedTask.submittedCount = parseInt(task.submitted_count || 0, 10);
+        
+        formattedList.push(formattedTask);
       } catch (error) {
         logger.error(`格式化任务失败，任务ID: ${task.id}, 错误: ${error.message}`);
         // 跳过这条记录，继续处理其他记录
       }
     }
     
+    // 计算调整后的总数
+    const adjustedTotal = countResult[0].total - filteredOutCount;
+    
     return {
       list: formattedList,
-      total: countResult[0].total,
+      total: adjustedTotal,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
     };
@@ -288,18 +275,19 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 }
 
 /**
- * 根据ID获取任务详情
+ * 获取任务详情
  * @param {number} id - 任务ID
- * @returns {Promise<Object|null>} 任务详情或null
+ * @param {number} memberId - 会员ID (可选)，用于查询是否已报名
+ * @returns {Promise<Object>} 任务详情
  */
-async function getById(id) {
+async function getDetail(id, memberId = null) {
   try {
-    let [rows] = await pool.query(
+    const [rows] = await pool.query(
       `SELECT t.*, c.name as channel_name, c.icon as channel_icon,
-      (SELECT COUNT(*) FROM task_applications WHERE task_id = t.id AND status = 'submitted') as submitted_count
-      FROM tasks t
-      LEFT JOIN channels c ON t.channel_id = c.id
-      WHERE t.id = ?`,
+        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND st.task_audit_status != 'rejected') as submitted_count
+       FROM tasks t
+       LEFT JOIN channels c ON t.channel_id = c.id
+       WHERE t.id = ?`,
       [id]
     );
     
@@ -307,61 +295,136 @@ async function getById(id) {
       return null;
     }
     
-    let task = rows[0];
+    const task = formatTask(rows[0]);
     
-    // 自动更新任务状态
-    if (task.start_time && task.end_time) {
-      const statusUpdated = await autoUpdateTaskStatus(
-        task.id, 
-        new Date(task.start_time), 
-        new Date(task.end_time), 
-        task.task_status
-      );
-      
-      // 如果状态被更新，重新获取最新的任务信息
-      if (statusUpdated) {
-        [rows] = await pool.query(
-          `SELECT t.*, c.name as channel_name, c.icon as channel_icon,
-          (SELECT COUNT(*) FROM task_applications WHERE task_id = t.id AND status = 'submitted') as submitted_count
-          FROM tasks t
-          LEFT JOIN channels c ON t.channel_id = c.id
-          WHERE t.id = ?`,
-          [id]
-        );
-        
-        if (rows.length === 0) {
-          return null;
-        }
-        
-        task = rows[0];
-      }
-    }
-    
-    const formattedTask = formatTask(task);
-    
-    // 如果任务有关联的组，获取组信息
-    if (formattedTask.groupIds && formattedTask.groupIds.length > 0) {
+    // 如果有群组ID，获取群组名称
+    if (task.groupIds && task.groupIds.length > 0) {
       try {
-        const [groupRows] = await pool.query(
-          `SELECT id, group_name
-           FROM groups
-           WHERE id IN (${formattedTask.groupIds.map(() => '?').join(',')})`,
-          formattedTask.groupIds
+        // 使用 MySQL 的 IN 查询
+        const placeholders = task.groupIds.map(() => '?').join(',');
+        const [groups] = await pool.query(
+          `SELECT id, group_name FROM \`groups\` WHERE id IN (${placeholders})`,
+          task.groupIds
         );
         
-        formattedTask.groups = groupRows.map(group => ({
+        task.groups = groups.map(group => ({
           id: group.id,
           groupName: group.group_name
         }));
       } catch (error) {
-        logger.error(`获取任务关联组信息失败: ${error.message}`);
-        formattedTask.groups = [];
+        logger.error(`获取任务关联群组失败，任务ID: ${id}, 错误: ${error.message}`);
+        task.groups = [];
       }
     } else {
-      formattedTask.groups = [];
+      task.groups = [];
     }
     
-    return formattedTask;
+    // 如果提供了会员ID，获取会员完成任务次数
+    let memberCompletedTaskCount = null;
+    if (memberId) {
+      try {
+        const taskStatsModel = require('./task-stats.model');
+        memberCompletedTaskCount = await taskStatsModel.getMemberCompletedTaskCount(memberId);
+        logger.debug(`会员已完成任务次数 - 会员ID: ${memberId}, 完成次数: ${memberCompletedTaskCount}`);
+      } catch (error) {
+        logger.error(`获取会员完成任务次数失败 - 会员ID: ${memberId}, 错误: ${error.message}`);
+        memberCompletedTaskCount = 0;
+      }
+    }
+    
+    // 添加会员是否符合任务条件
+    task.eligibleToEnroll = true; // 默认可以报名
+    
+    // 如果是限制任务且有会员ID，判断是否符合条件
+    if (memberId && task.userRange === 1 && memberCompletedTaskCount !== null) {
+      if (task.taskCount === 0) {
+        // 新人任务：只有未完成任务的新会员可以报名
+        task.eligibleToEnroll = memberCompletedTaskCount === 0;
+      } else {
+        // 普通任务：只有完成次数不超过taskCount的会员可以报名
+        task.eligibleToEnroll = memberCompletedTaskCount <= task.taskCount;
+      }
+      
+      // 如果不符合条件，添加提示信息
+      if (!task.eligibleToEnroll) {
+        task.ineligibleReason = `该任务限已完成${task.taskCount}次任务的会员可报名`;
+      }
+    }
+    
+    // 检查指定群组的任务，判断会员是否有资格报名
+    if (memberId && task.groupMode === 1 && task.groupIds && task.groupIds.length > 0) {
+      try {
+        const groupModel = require('./group.model');
+        // 检查会员是否在这些群组中
+        const isMemberInGroups = await groupModel.isMemberInGroups(memberId, task.groupIds);
+        
+        if (!isMemberInGroups) {
+          // 会员不在指定群组中，不能报名
+          task.eligibleToEnroll = false;
+          task.ineligibleReason = '该任务仅限指定群组的会员可报名';
+          logger.debug(`会员不在指定群组中 - 会员ID: ${memberId}, 任务ID: ${id}`);
+        }
+      } catch (error) {
+        logger.error(`检查会员是否在指定群组中失败 - 会员ID: ${memberId}, 任务ID: ${id}, 错误: ${error.message}`);
+        // 发生错误时默认不可报名，以保证安全
+        task.eligibleToEnroll = false;
+        task.ineligibleReason = '无法验证群组信息，请稍后再试';
+      }
+    }
+    
+    // 如果提供了会员ID，检查是否已报名
+    if (memberId) {
+      try {
+        // 直接使用enrolled-task模型的checkEnrollment函数
+        const enrolledTaskModel = require('./enrolled-task.model');
+        const enrollmentResult = await enrolledTaskModel.checkEnrollment(task.id, memberId);
+        
+        task.isEnrolled = enrollmentResult.isEnrolled;
+        task.enrollmentId = enrollmentResult.enrollmentId;
+        
+        // 记录日志，用于调试报名状态
+        logger.info(`任务详情(使用checkEnrollment) - 任务ID: ${id}, 会员ID: ${memberId}, 是否已报名: ${task.isEnrolled}, 报名ID: ${task.enrollmentId}`);
+      } catch (error) {
+        logger.error(`检查任务报名状态失败: ${error.message}`);
+        task.isEnrolled = false;
+        task.enrollmentId = null;
+      }
+      
+      // 检查任务是否已提交
+      try {
+        const [submittedResult] = await pool.query(
+          'SELECT id, task_audit_status FROM submitted_tasks WHERE task_id = ? AND member_id = ?',
+          [id, memberId]
+        );
+        
+        task.isSubmitted = submittedResult.length > 0;
+        task.submittedId = task.isSubmitted ? submittedResult[0].id : null;
+        task.taskAuditStatus = task.isSubmitted ? submittedResult[0].task_audit_status : null;
+        
+        // 记录日志，用于调试提交状态
+        logger.info(`任务详情(提交状态) - 任务ID: ${id}, 会员ID: ${memberId}, 是否已提交: ${task.isSubmitted}, 提交ID: ${task.submittedId || '无'}`);
+      } catch (error) {
+        logger.error(`检查任务提交状态失败: ${error.message}`);
+        task.isSubmitted = false;
+        task.submittedId = null;
+        task.taskAuditStatus = null;
+      }
+    } else {
+      task.isEnrolled = false;
+      task.enrollmentId = null;
+      task.isSubmitted = false;
+      task.submittedId = null;
+      task.taskAuditStatus = null;
+    }
+    
+    // 获取报名人数
+    const [enrollCountResult] = await pool.query(
+      'SELECT COUNT(*) as count FROM enrolled_tasks WHERE task_id = ?',
+      [id]
+    );
+    task.enrollCount = enrollCountResult[0].count;
+    
+    return task;
   } catch (error) {
     logger.error(`获取任务详情失败: ${error.message}`);
     throw error;
@@ -446,8 +509,8 @@ async function create(taskData) {
     }
     
     // 格式化日期时间为 MySQL 兼容格式
-    const startTime = taskData.startTime ? new Date(taskData.startTime) : null;
-    const endTime = taskData.endTime ? new Date(taskData.endTime) : null;
+    const startTime = formatDateTimeForMySQL(taskData.startTime);
+    const endTime = formatDateTimeForMySQL(taskData.endTime);
     
     // 处理 quota 字段
     const quota = taskData.quota !== undefined ? taskData.quota : 0;
@@ -480,7 +543,7 @@ async function create(taskData) {
         taskData.contentRequirement || null,
         taskData.taskInfo || null,
         taskData.notice || null,
-        taskData.taskStatus || TaskStatus.NOT_STARTED
+        taskData.taskStatus || 'not_started'
       ]
     );
     
@@ -684,15 +747,15 @@ async function update(taskData) {
     }
     
     if (taskData.startTime !== undefined) {
-      const startTime = new Date(taskData.startTime);
+      const formattedStartTime = formatDateTimeForMySQL(taskData.startTime);
       updateFields.push('start_time = ?');
-      params.push(startTime);
+      params.push(formattedStartTime);
     }
     
     if (taskData.endTime !== undefined) {
-      const endTime = new Date(taskData.endTime);
+      const formattedEndTime = formatDateTimeForMySQL(taskData.endTime);
       updateFields.push('end_time = ?');
-      params.push(endTime);
+      params.push(formattedEndTime);
     }
     
     if (taskData.unlimitedQuota !== undefined) {
@@ -775,7 +838,7 @@ async function remove(id) {
     
     // 检查是否有关联的已提交任务
     const [submitted] = await connection.query(
-      'SELECT COUNT(*) as count FROM task_submitted WHERE task_id = ?',
+      'SELECT COUNT(*) as count FROM submitted_tasks WHERE task_id = ?',
       [id]
     );
     
@@ -802,9 +865,8 @@ async function remove(id) {
 
 module.exports = {
   getList,
-  getById,
+  getDetail,
   create,
   update,
-  remove,
-  formatTask
+  remove
 }; 

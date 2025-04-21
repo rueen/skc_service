@@ -3,10 +3,16 @@
  * 处理会员相关的数据库操作
  */
 const { pool } = require('./db');
-const logger = require('../config/logger.config');
-const { formatDateTime } = require('../utils/date.util');
-const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 const crypto = require('crypto');
+const billModel = require('./bill.model');
+const logger = require('../config/logger.config');
+const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
+const { BillType } = require('../config/enums');
+const { formatDateTime } = require('../utils/date.util');
+const { convertToCamelCase } = require('../utils/data.util');
+const groupModel = require('./group.model');
+const accountModel = require('./account.model');
+const memberBalanceModel = require('./member-balance.model');
 
 /**
  * 格式化会员信息
@@ -15,25 +21,16 @@ const crypto = require('crypto');
  */
 function formatMember(member) {
   if (!member) return null;
-  
-  return {
-    id: member.id,
-    memberNickname: member.member_nickname,
-    memberAccount: member.member_account,
-    password: member.password,
-    inviterId: member.inviter_id,
-    inviterNickname: member.inviter_nickname,
-    occupation: member.occupation,
-    inviteCode: member.invite_code,
+
+  const formattedMember = convertToCamelCase({
+    ...member,
     hasPassword: !!member.password,
-    phone: member.phone || '',
-    email: member.email || '',
-    avatar: member.avatar || '',
     gender: member.gender !== undefined ? member.gender : 2, // 默认为保密
-    telegram: member.telegram || '',
     createTime: formatDateTime(member.create_time),
-    updateTime: formatDateTime(member.update_time)
-  };
+    updateTime: formatDateTime(member.update_time),
+  });
+  
+  return formattedMember;
 }
 
 /**
@@ -68,7 +65,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     // 修改基础查询，不再直接关联群组表
     let baseQuery = `
       SELECT m.*, 
-             inv.member_nickname as inviter_nickname
+             inv.nickname as inviter_nickname
       FROM members m
       LEFT JOIN members inv ON m.inviter_id = inv.id
     `;
@@ -83,7 +80,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 
     // 添加筛选条件
     if (filters.memberNickname) {
-      conditions.push('m.member_nickname LIKE ?');
+      conditions.push('m.nickname LIKE ?');
       queryParams.push(`%${filters.memberNickname}%`);
     }
     
@@ -137,12 +134,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         groupsMap[group.member_id] = [];
       }
       
-      groupsMap[group.member_id].push({
-        groupId: group.group_id,
-        groupName: group.group_name,
-        groupLink: group.group_link,
-        isGroupOwner: group.is_owner === 1
-      });
+      groupsMap[group.member_id].push(groupModel.formatGroup(group));
     });
     
     // 获取每个会员的账号列表
@@ -162,19 +154,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         if (!accountsMap[account.member_id]) {
           accountsMap[account.member_id] = [];
         }
-        accountsMap[account.member_id].push({
-          id: account.id,
-          account: account.account,
-          homeUrl: account.home_url,
-          channelId: account.channel_id,
-          channelName: account.channel_name,
-          channelIcon: account.channel_icon,
-          fansCount: account.fans_count,
-          friendsCount: account.friends_count,
-          postsCount: account.posts_count,
-          accountAuditStatus: account.account_audit_status,
-          createTime: formatDateTime(account.create_time)
-        });
+        accountsMap[account.member_id].push(accountModel.formatAccount(account));
       });
     }
     
@@ -182,6 +162,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const formattedMembers = members.map(member => {
       // 使用成员基本信息格式化
       const formattedMember = formatMember(member);
+      // 移除敏感信息
+      delete formattedMember.password;
       
       // 添加群组信息数组
       formattedMember.groups = groupsMap[member.id] || [];
@@ -213,7 +195,7 @@ async function getById(id) {
   try {
     // 获取会员基本信息
     const [rows] = await pool.query(
-      `SELECT m.*, inv.member_nickname as inviter_nickname
+      `SELECT m.*, inv.nickname as inviter_nickname
        FROM members m
        LEFT JOIN members inv ON m.inviter_id = inv.id
        WHERE m.id = ?`,
@@ -247,27 +229,10 @@ async function getById(id) {
     const member = formatMember(rows[0]);
     
     // 添加群组数组
-    member.groups = memberGroups.map(group => ({
-      groupId: group.group_id,
-      groupName: group.group_name,
-      groupLink: group.group_link,
-      isGroupOwner: group.is_owner === 1
-    }));
+    member.groups = memberGroups.map(group => (groupModel.formatGroup(group)));
     
     // 添加账号列表
-    member.accountList = accounts.map(account => ({
-      id: account.id,
-      channelId: account.channel_id,
-      channelName: account.channel_name,
-      channelIcon: account.channel_icon,
-      account: account.account,
-      homeUrl: account.home_url,
-      fansCount: account.fans_count,
-      friendsCount: account.friends_count,
-      postsCount: account.posts_count,
-      accountAuditStatus: account.account_audit_status,
-      createTime: formatDateTime(account.create_time)
-    }));
+    member.accountList = accounts.map(account => (accountModel.formatAccount(account)));
     
     return member;
   } catch (error) {
@@ -285,10 +250,10 @@ async function getByAccount(account) {
   try {
     // 获取会员基本信息
     const [rows] = await pool.query(
-      `SELECT m.*, inv.member_nickname as inviter_nickname
+      `SELECT m.*, inv.nickname as inviter_nickname
        FROM members m
        LEFT JOIN members inv ON m.inviter_id = inv.id
-       WHERE m.member_account = ?`,
+       WHERE m.account = ?`,
       [account]
     );
     
@@ -311,12 +276,7 @@ async function getByAccount(account) {
     const member = formatMember(rows[0]);
     
     // 添加群组数组
-    member.groups = memberGroups.map(group => ({
-      groupId: group.group_id,
-      groupName: group.group_name,
-      groupLink: group.group_link,
-      isGroupOwner: group.is_owner === 1
-    }));
+    member.groups = memberGroups.map(group => (groupModel.formatGroup(group)));
     
     return member;
   } catch (error) {
@@ -337,7 +297,7 @@ async function create(memberData) {
     
     // 检查会员账号是否已存在
     const [existingAccount] = await connection.query(
-      'SELECT id FROM members WHERE member_account = ?',
+      'SELECT id FROM members WHERE account = ?',
       [memberData.memberAccount]
     );
     
@@ -378,8 +338,8 @@ async function create(memberData) {
     // 创建会员
     const [result] = await connection.query(
       `INSERT INTO members 
-       (member_nickname, member_account, password, inviter_id, occupation, invite_code, phone, email, avatar, gender, telegram)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (nickname, account, password, inviter_id, occupation, invite_code, phone, area_code, email, avatar, gender, telegram, register_source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         memberData.memberNickname,
         memberData.memberAccount,
@@ -388,10 +348,12 @@ async function create(memberData) {
         memberData.occupation || null,
         inviteCode,
         memberData.phone || null,
+        memberData.areaCode || null, // 默认为null
         memberData.email || null,
         memberData.avatar || null,
         memberData.gender !== undefined ? memberData.gender : 2, // 默认为保密
-        memberData.telegram || null
+        memberData.telegram || null,
+        memberData.registerSource || 'h5' // 默认为h5端注册
       ]
     );
     
@@ -452,7 +414,7 @@ async function update(memberData) {
     // 检查会员账号是否已被其他会员使用
     if (memberData.memberAccount) {
       const [existingAccount] = await connection.query(
-        'SELECT id FROM members WHERE member_account = ? AND id != ?',
+        'SELECT id FROM members WHERE account = ? AND id != ?',
         [memberData.memberAccount, memberData.id]
       );
       
@@ -478,23 +440,41 @@ async function update(memberData) {
     const params = [];
     
     if (memberData.memberNickname !== undefined) {
-      updateFields.push('member_nickname = ?');
+      updateFields.push('nickname = ?');
       params.push(memberData.memberNickname);
     }
     
     if (memberData.memberAccount !== undefined) {
-      updateFields.push('member_account = ?');
+      updateFields.push('account = ?');
       params.push(memberData.memberAccount);
     }
     
     if (memberData.password !== undefined) {
       updateFields.push('password = ?');
       params.push(memberData.password);
+      
+      // 密码变更时，更新密码修改时间字段
+      updateFields.push('password_changed_time = NOW()');
+    }
+    
+    if (memberData.inviterId !== undefined) {
+      updateFields.push('inviter_id = ?');
+      params.push(memberData.inviterId);
+    }
+    
+    if (memberData.occupation !== undefined) {
+      updateFields.push('occupation = ?');
+      params.push(memberData.occupation);
     }
     
     if (memberData.phone !== undefined) {
       updateFields.push('phone = ?');
       params.push(memberData.phone);
+    }
+    
+    if (memberData.areaCode !== undefined) {
+      updateFields.push('area_code = ?');
+      params.push(memberData.areaCode);
     }
     
     if (memberData.email !== undefined) {
@@ -517,14 +497,9 @@ async function update(memberData) {
       params.push(memberData.telegram);
     }
     
-    if (memberData.inviterId !== undefined) {
-      updateFields.push('inviter_id = ?');
-      params.push(memberData.inviterId);
-    }
-    
-    if (memberData.occupation !== undefined) {
-      updateFields.push('occupation = ?');
-      params.push(memberData.occupation);
+    if (memberData.registerSource !== undefined) {
+      updateFields.push('register_source = ?');
+      params.push(memberData.registerSource);
     }
     
     if (updateFields.length > 0) {
@@ -539,30 +514,76 @@ async function update(memberData) {
     
     // 处理群组关系更新
     if (memberData.groupIds !== undefined) {
-      // 先删除现有的所有群组关系
-      await connection.query(
-        'DELETE FROM member_groups WHERE member_id = ?',
+      // 1. 获取会员当前的所有群组关系
+      const [currentGroups] = await connection.query(
+        'SELECT group_id, is_owner FROM member_groups WHERE member_id = ?',
         [memberData.id]
       );
       
-      // 清除该会员可能担任的所有群主职位
-      await connection.query(
-        'UPDATE `groups` SET owner_id = NULL WHERE owner_id = ?',
-        [memberData.id]
-      );
+      // 将当前的群组ID和群主状态放入Map便于查询
+      const currentGroupMap = new Map();
+      currentGroups.forEach(group => {
+        currentGroupMap.set(group.group_id, group.is_owner);
+      });
       
-      // 如果提供了新的群组列表，则添加新关系
+      // 将传入的groupIds转为Set，便于快速查找
+      const newGroupIds = new Set();
       if (memberData.groupIds && memberData.groupIds.length > 0) {
-        // 构建批量插入的参数
-        const groupValues = [];
+        memberData.groupIds.forEach(groupId => {
+          newGroupIds.add(parseInt(groupId, 10));
+        });
+      }
+      
+      // 2. 找出需要删除的群组关系（当前有但新列表没有的）
+      const groupsToDelete = [];
+      const ownerGroupsToUpdate = [];
+      currentGroupMap.forEach((isOwner, groupId) => {
+        if (!newGroupIds.has(groupId)) {
+          groupsToDelete.push(groupId);
+          // 如果是群主，需要更新groups表的owner_id
+          if (isOwner === 1) {
+            ownerGroupsToUpdate.push(groupId);
+          }
+        }
+      });
+      
+      // 3. 找出需要新增的群组关系（新列表有但当前没有的）
+      const groupsToAdd = [];
+      newGroupIds.forEach(groupId => {
+        if (!currentGroupMap.has(groupId)) {
+          groupsToAdd.push(groupId);
+        }
+      });
+      
+      // 删除不再需要的群组关系
+      if (groupsToDelete.length > 0) {
+        // 先更新groups表中的owner_id字段
+        if (ownerGroupsToUpdate.length > 0) {
+          const ownerPlaceholders = ownerGroupsToUpdate.map(() => '?').join(',');
+          await connection.query(
+            `UPDATE \`groups\` SET owner_id = NULL 
+             WHERE owner_id = ? AND id IN (${ownerPlaceholders})`,
+            [memberData.id, ...ownerGroupsToUpdate]
+          );
+        }
         
-        for (const groupId of memberData.groupIds) {
-          // 所有群组关系默认都不是群主
-          groupValues.push([memberData.id, parseInt(groupId, 10), 0]);
+        // 删除会员-群组关系
+        const placeholders = groupsToDelete.map(() => '?').join(',');
+        await connection.query(
+          `DELETE FROM member_groups WHERE member_id = ? AND group_id IN (${placeholders})`,
+          [memberData.id, ...groupsToDelete]
+        );
+      }
+      
+      // 添加新的群组关系
+      if (groupsToAdd.length > 0) {
+        const groupValues = [];
+        for (const groupId of groupsToAdd) {
+          // 新添加的群组关系默认不是群主
+          groupValues.push([memberData.id, groupId, 0]);
         }
         
         if (groupValues.length > 0) {
-          // 批量插入会员-群组关系
           await connection.query(
             `INSERT INTO member_groups 
              (member_id, group_id, is_owner)
@@ -571,8 +592,6 @@ async function update(memberData) {
           );
         }
       }
-    } else if (memberData.isGroupOwner !== undefined) {
-      // 移除处理群主状态变更的逻辑，因为创建/更新会员时不需要设置群主
     }
     
     await connection.commit();
@@ -629,7 +648,7 @@ async function remove(id) {
     
     // 检查是否有关联的已提交任务
     const [tasks] = await connection.query(
-      'SELECT COUNT(*) as count FROM task_submitted WHERE member_id = ?',
+      'SELECT COUNT(*) as count FROM submitted_tasks WHERE member_id = ?',
       [id]
     );
     
@@ -699,6 +718,275 @@ async function checkGroupExists(groupId) {
   }
 }
 
+/**
+ * 更新会员余额
+ * @param {number} memberId - 会员ID
+ * @param {number} amount - 变动金额（正数增加，负数减少）
+ * @param {string} [remark] - 变动备注
+ * @returns {Promise<boolean>} 更新是否成功
+ */
+async function updateMemberBalance(memberId, amount, remark = '') {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 检查会员是否存在并获取当前余额
+    const [member] = await connection.query(
+      'SELECT id FROM members WHERE id = ?',
+      [memberId]
+    );
+    
+    if (member.length === 0) {
+      throw new Error('会员不存在');
+    }
+    
+    // 确保金额是数字类型
+    const changeAmount = parseFloat(amount);
+    
+    // 使用 memberBalanceModel 统一更新余额
+    await memberBalanceModel.updateBalance(
+      memberId, 
+      changeAmount,
+      {
+        transactionType: remark || 'balance_change',
+        connection
+      }
+    );
+    
+    await connection.commit();
+    return true;
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`更新会员余额失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * 更新会员新人状态为非新人
+ * @param {number} memberId - 会员ID
+ * @param {Object} connection - 数据库连接（可选，用于事务）
+ * @returns {Promise<boolean>} 更新是否成功
+ */
+async function updateIsNewStatus(memberId, connection) {
+  const conn = connection || await pool.getConnection();
+  const shouldRelease = !connection; // 如果是外部传入的连接，则不需要释放
+  
+  try {
+    if (shouldRelease) {
+      await conn.beginTransaction();
+    }
+    
+    // 更新会员新人状态为非新人
+    const [result] = await conn.query(
+      'UPDATE members SET is_new = 0 WHERE id = ? AND is_new = 1',
+      [memberId]
+    );
+    
+    if (shouldRelease) {
+      await conn.commit();
+    }
+    
+    return result.affectedRows > 0;
+  } catch (error) {
+    if (shouldRelease) {
+      await conn.rollback();
+    }
+    logger.error(`更新会员新人状态失败: ${error.message}`);
+    throw error;
+  } finally {
+    if (shouldRelease) {
+      conn.release();
+    }
+  }
+}
+
+/**
+ * 获取会员是否为新人
+ * @param {number} memberId - 会员ID
+ * @returns {Promise<boolean>} 是否为新人
+ */
+async function isNewMember(memberId) {
+  try {
+    const [rows] = await pool.query(
+      'SELECT is_new FROM members WHERE id = ?',
+      [memberId]
+    );
+    
+    if (rows.length === 0) {
+      throw new Error('会员不存在');
+    }
+    
+    return rows[0].is_new === 1;
+  } catch (error) {
+    logger.error(`获取会员新人状态失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * 发放奖励给会员
+ * @param {number} memberId - 会员ID
+ * @param {number} amount - 奖励金额
+ * @param {string} remark - 备注说明
+ * @param {number} waiterId - 操作人ID
+ * @returns {Promise<Object>} 操作结果
+ */
+async function grantReward(memberId, amount, remark, waiterId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 验证会员是否存在
+    const [memberRows] = await connection.query(
+      'SELECT id, balance FROM members WHERE id = ?',
+      [memberId]
+    );
+    
+    if (memberRows.length === 0) {
+      throw new Error('会员不存在');
+    }
+    
+    // 验证金额是否合法
+    const rewardAmount = parseFloat(amount);
+    if (isNaN(rewardAmount) || rewardAmount <= 0) {
+      throw new Error('奖励金额必须大于0');
+    }
+    
+    // 获取当前余额用于返回结果
+    const currentBalance = parseFloat(memberRows[0].balance) || 0;
+    
+    // 使用 memberBalanceModel 统一更新余额
+    await memberBalanceModel.updateBalance(
+      memberId, 
+      rewardAmount, 
+      {
+        transactionType: BillType.REWARD_GRANT,
+        connection
+      }
+    );
+    
+    // 创建账单记录，设置结算状态为success而不是默认的pending
+    const billData = {
+      memberId,
+      billType: BillType.REWARD_GRANT,
+      amount: rewardAmount.toFixed(2),
+      remark,
+      taskId: null,
+      relatedMemberId: null,
+      settlementStatus: 'success',
+      waiterId
+    };
+    
+    await billModel.createBill(billData, connection);
+    
+    await connection.commit();
+    
+    // 计算新余额
+    const newBalance = currentBalance + rewardAmount;
+    
+    return {
+      success: true,
+      message: '奖励发放成功',
+      data: {
+        memberId,
+        amount: rewardAmount.toFixed(2),
+        beforeBalance: currentBalance.toFixed(2),
+        afterBalance: newBalance.toFixed(2)
+      }
+    };
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`发放奖励失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * 从会员账户扣除奖励
+ * @param {number} memberId - 会员ID
+ * @param {number} amount - 扣除金额
+ * @param {string} remark - 备注说明
+ * @param {number} waiterId - 操作人ID
+ * @returns {Promise<Object>} 操作结果
+ */
+async function deductReward(memberId, amount, remark, waiterId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 验证会员是否存在
+    const [memberRows] = await connection.query(
+      'SELECT id, balance FROM members WHERE id = ?',
+      [memberId]
+    );
+    
+    if (memberRows.length === 0) {
+      throw new Error('会员不存在');
+    }
+    
+    // 验证金额是否合法
+    const deductAmount = parseFloat(amount);
+    if (isNaN(deductAmount) || deductAmount <= 0) {
+      throw new Error('扣除金额必须大于0');
+    }
+    
+    // 获取当前余额用于返回结果
+    const currentBalance = parseFloat(memberRows[0].balance) || 0;
+    
+    // 使用 memberBalanceModel 统一更新余额
+    await memberBalanceModel.updateBalance(
+      memberId, 
+      -deductAmount, // 负数表示扣除
+      {
+        transactionType: BillType.REWARD_DEDUCTION,
+        connection,
+        allowNegativeBalance: true // 允许余额为负数
+      }
+    );
+    
+    // 创建账单记录，设置结算状态为success而不是默认的pending
+    const billData = {
+      memberId,
+      billType: BillType.REWARD_DEDUCTION,
+      amount: deductAmount.toFixed(2), // 使用正数，账单类型决定了是扣除
+      remark,
+      taskId: null,
+      relatedMemberId: null,
+      settlementStatus: 'success',
+      waiterId
+    };
+    
+    await billModel.createBill(billData, connection);
+    
+    await connection.commit();
+    
+    // 计算新余额
+    const newBalance = currentBalance - deductAmount;
+    
+    return {
+      success: true,
+      message: '奖励扣除成功',
+      data: {
+        memberId,
+        amount: deductAmount.toFixed(2),
+        beforeBalance: currentBalance.toFixed(2),
+        afterBalance: newBalance.toFixed(2)
+      }
+    };
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`扣除奖励失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   getList,
   getById,
@@ -706,5 +994,10 @@ module.exports = {
   create,
   update,
   remove,
-  checkGroupExists
+  checkGroupExists,
+  updateMemberBalance,
+  updateIsNewStatus,
+  isNewMember,
+  grantReward,
+  deductReward
 }; 

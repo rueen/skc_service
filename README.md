@@ -1,168 +1,107 @@
-# SKC Service
+# SKC 服务平台
 
-SKC Service 是一个支持管理后台和H5端的服务平台，提供任务管理、会员管理、渠道管理和文章管理等功能。
+SKC 服务平台是一个任务管理系统，支持多渠道任务分发、会员管理、收益结算等功能。
 
 ## 项目架构
 
-项目采用同一代码库部署两个独立应用实例的架构：
+该项目采用Node.js + Express + MySQL技术栈，分为管理端和H5端两个服务：
 
-- **管理后台**：提供给管理员使用的后台管理系统API
-- **H5端**：提供给普通用户使用的H5应用API
+- 管理端 (Admin): 提供给管理员使用的后台管理系统API
+- H5端 (H5): 提供给普通用户使用的移动端API
 
-两个应用共享数据模型和工具函数，但有独立的路由、控制器和中间件。
+## 主要功能
 
-## 技术栈
+- 会员管理：注册、登录、个人信息管理
+- 任务管理：发布、参与、提交、审核任务
+- 账号管理：多渠道账号管理
+- 群组管理：群组创建、成员管理
+- 收益管理：任务奖励、邀请奖励、提现管理
+- 系统配置：灵活的系统参数配置
 
-- Node.js
-- Express
-- MySQL
-- JWT认证
-- Winston日志
+## 技术架构
 
-## 目录结构
+- 后端框架：Express.js
+- 数据库：MySQL
+- 身份验证：JWT
+- 文件存储：本地文件系统
+- 部署：Docker, PM2
 
-```
-src/
-├── shared/               # 共享代码
-│   ├── app-common.js     # 共享的应用配置
-│   ├── models/           # 数据模型（共享）
-│   ├── utils/            # 工具函数（共享）
-│   ├── config/           # 配置文件（共享）
-│   ├── middlewares/      # 共享中间件
-│   └── routes/           # 共享路由
-├── admin/                # 管理后台代码
-│   ├── admin-server.js   # 管理后台服务入口
-│   ├── routes/           # 管理后台路由
-│   ├── controllers/      # 管理后台控制器
-│   └── middlewares/      # 管理后台中间件
-├── h5/                   # H5端代码
-│   ├── h5-server.js      # H5端服务入口
-│   ├── routes/           # H5端路由
-│   ├── controllers/      # H5端控制器
-│   └── middlewares/      # H5端中间件
-└── logs/                 # 日志文件
-```
+## 快速开始
 
-## 环境要求
+### 环境要求
 
-- Node.js >= 16.0.0
+- Node.js >= 14.x
 - MySQL >= 5.7
+- Docker (可选)
 
-## 安装
-
-1. 克隆仓库
-
-```bash
-git clone https://github.com/yourusername/skc_service.git
-cd skc_service
-```
-
-2. 安装依赖
+### 安装依赖
 
 ```bash
 npm install
 ```
 
-3. 配置环境变量
+### 环境配置
 
-复制环境变量示例文件并根据需要修改：
+根据环境创建或修改以下环境变量文件：
+- .env - 通用环境变量
+- .env.admin - 管理端环境变量
+- .env.h5 - H5端环境变量
 
+### 启动服务
+
+开发模式：
 ```bash
-cp .env.admin.example .env.admin
-cp .env.h5.example .env.h5
-```
-
-4. 初始化数据库
-
-确保MySQL服务已启动，并创建了相应的数据库。
-
-## 启动服务
-
-### 开发环境
-
-启动管理后台服务：
-
-```bash
+# 启动管理端服务
 npm run dev:admin
-```
 
-启动H5端服务：
-
-```bash
+# 启动H5端服务
 npm run dev:h5
-```
 
-同时启动两个服务：
-
-```bash
+# 同时启动两个服务
 npm run dev:all
 ```
 
-### 生产环境
-
-启动管理后台服务：
-
+生产模式：
 ```bash
+# 启动管理端服务
 npm run start:admin
-```
 
-启动H5端服务：
-
-```bash
+# 启动H5端服务
 npm run start:h5
-```
 
-同时启动两个服务：
-
-```bash
+# 同时启动两个服务
 npm run start:all
 ```
 
-## API文档
-
-### 管理后台API
-
-管理后台API基础路径：`/api/support`
-
-- 认证相关：`/api/support/users`
-- 任务管理：`/api/support/tasks`
-- 会员管理：`/api/support/members`
-- 渠道管理：`/api/support/channels`
-- 群组管理：`/api/support/groups`
-- 文章管理：`/api/support/articles`
-
-### H5端API
-
-H5端API基础路径：`/api/h5`
-
-- 认证相关：`/api/h5/auth`
-- 任务相关：`/api/h5/tasks`
-- 会员相关：`/api/h5/members`
-- 渠道相关：`/api/h5/channels`
-- 文章相关：`/api/h5/articles`
-
-## 部署
-
-### 使用PM2
+### 数据库迁移
 
 ```bash
-# 安装PM2
-npm install -g pm2
-
-# 启动服务
-pm2 start ecosystem.config.js
+npm run migrate
 ```
+
+## 部署
 
 ### 使用Docker
 
 ```bash
-# 构建镜像
-docker-compose build
-
-# 启动服务
 docker-compose up -d
 ```
 
+### 使用PM2
+
+```bash
+pm2 start ecosystem.config.js
+```
+
+## 文档
+
+详细文档请查看 `docs` 目录：
+
+- [项目架构说明](docs/architecture.md)
+- [业务规则说明](docs/business-rules.md)
+- [数据库表结构说明](docs/database.md)
+- [API文档说明](docs/api.md)
+
 ## 许可证
 
-[MIT](LICENSE) 
+ISC 

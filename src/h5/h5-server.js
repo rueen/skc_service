@@ -1,6 +1,16 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-15 15:43:57
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-20 22:50:00
+ * @Description: 
+ */
 /**
  * H5端服务入口文件
  */
+// 加载环境变量（放在最顶部，确保在所有模块导入前加载）
+require('dotenv').config({ path: '.env.h5' });
+
 const createApp = require('../shared/app-common');
 const { initDatabase } = require('../shared/models/db');
 const h5Routes = require('./routes');
@@ -8,10 +18,8 @@ const healthRoutes = require('../shared/routes/health.routes');
 const { router: sharedRoutes, setAppType } = require('../shared/routes');
 const logger = require('../shared/config/logger.config');
 const errorHandler = require('../shared/middlewares/errorHandler.middleware');
-const { startScheduledTasks } = require('../shared/models/scheduled-tasks');
-
-// 加载环境变量
-require('dotenv').config({ path: '.env.h5' });
+const { startScheduler } = require('../shared/services/task-scheduler.service');
+const { taskStatusUpdateConfig, schedulerServiceConfig } = require('../shared/config/scheduler.config');
 
 // 设置端口
 const PORT = process.env.H5_PORT || 3001;
@@ -20,7 +28,7 @@ const PORT = process.env.H5_PORT || 3001;
 const app = createApp({
   appName: 'h5',
   corsOrigins: process.env.NODE_ENV === 'production' 
-    ? ['https://h5.example.com'] 
+    ? ['https://m.skcpop.com', 'http://m.skcpop.com']
     : '*'
 });
 
@@ -53,16 +61,23 @@ async function startServer() {
     // 启动服务器
     app.listen(PORT, () => {
       logger.info(`H5端服务已启动，监听端口 ${PORT}`);
-      logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`环境: ${process.env.NODE_ENV}`);
       
       if (process.env.NODE_ENV !== 'production') {
         logger.info('开发模式: H5端API可在 http://localhost:3001/api/h5 访问');
       }
       
-      // 启动定时任务（仅在admin服务未启动时才启动）
-      // 通过环境变量控制是否启动定时任务，避免任务被重复执行
-      if (process.env.ENABLE_SCHEDULED_TASKS === 'true') {
-        startScheduledTasks();
+      // 仅当配置指定H5服务负责定时任务时才启动
+      const currentService = 'h5';
+      if (schedulerServiceConfig.taskStatusUpdateService === currentService) {
+        // 启动任务状态更新定时任务
+        const env = process.env.NODE_ENV || 'development';
+        const schedulerConfig = taskStatusUpdateConfig[env] || taskStatusUpdateConfig.development;
+        
+        startScheduler(schedulerConfig);
+        logger.info(`已启动任务状态更新定时任务，环境: ${env}，调度周期: ${schedulerConfig.schedule}`);
+      } else {
+        logger.info(`任务状态更新定时任务配置为在 ${schedulerServiceConfig.taskStatusUpdateService} 服务中运行，不在此实例中启动`);
       }
     });
   } catch (error) {
@@ -72,4 +87,4 @@ async function startServer() {
 }
 
 // 启动服务器
-startServer(); 
+startServer();

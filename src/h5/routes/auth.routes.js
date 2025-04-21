@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-17 21:45:46
+ * @LastEditTime: 2025-04-18 17:33:38
  * @Description: 
  */
 /**
@@ -14,46 +14,9 @@ const { body } = require('express-validator');
 const authController = require('../controllers/auth.controller');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
-const authMiddleware = require('../../shared/middlewares/auth.middleware');
+const authMiddleware = require('../middlewares/auth.middleware');
 
 const router = express.Router();
-
-/**
- * @route POST /api/h5/auth/register
- * @desc 用户注册
- * @access Public
- */
-router.post(
-  '/register',
-  rateLimiterMiddleware.apiLimiter,
-  [
-    body('memberAccount')
-      .notEmpty()
-      .withMessage('账号不能为空')
-      .isLength({ min: 4, max: 20 })
-      .withMessage('账号长度必须在4-20个字符之间')
-      .matches(/^[a-zA-Z0-9_]+$/)
-      .withMessage('账号只能包含字母、数字和下划线'),
-    body('password')
-      .notEmpty()
-      .withMessage('密码不能为空')
-      .isLength({ min: 8, max: 20 })
-      .withMessage('密码长度必须在8-20个字符之间')
-      .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
-      .withMessage('密码必须包含字母和数字'),
-    body('memberNickname')
-      .notEmpty()
-      .withMessage('昵称不能为空')
-      .isLength({ max: 20 })
-      .withMessage('昵称长度不能超过20个字符'),
-    body('inviteCode')
-      .optional()
-      .isLength({ max: 20 })
-      .withMessage('邀请码长度不能超过20个字符')
-  ],
-  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  authController.register
-);
 
 /**
  * @route POST /api/h5/auth/login
@@ -66,31 +29,31 @@ router.post(
   [
     body('loginType')
       .notEmpty()
-      .withMessage('登录类型不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isIn(['phone', 'email'])
-      .withMessage('登录类型必须为phone或email'),
+      .withMessage('common.validation.invalid'),
     body('memberAccount')
       .notEmpty()
-      .withMessage('账号不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isString()
-      .withMessage('账号必须为字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('areaCode')
       .optional()
       .isString()
-      .withMessage('区号必须为字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('password')
       .notEmpty()
-      .withMessage('密码不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 8, max: 20 })
-      .withMessage('密码长度必须在8-20个字符之间')
+      .withMessage('common.validation.memberPasswordLength')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
-      .withMessage('密码必须包含字母和数字'),
+      .withMessage('common.validation.memberPasswordFormat'),
     body('inviteCode')
       .optional()
       .isString()
-      .withMessage('邀请码必须为字符串')
+      .withMessage('common.validation.mustBeString')
       .isLength({ max: 20 })
-      .withMessage('邀请码长度不能超过20个字符')
+      .withMessage('common.validation.maxLength{max:20}')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authController.login
@@ -119,20 +82,20 @@ router.post(
   [
     body('currentPassword')
       .notEmpty()
-      .withMessage('当前密码不能为空'),
+      .withMessage('common.validation.mustNotBeEmpty'),
     body('newPassword')
       .notEmpty()
-      .withMessage('新密码不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 8, max: 20 })
-      .withMessage('新密码长度必须在8-20个字符之间')
+      .withMessage('common.validation.memberPasswordLength')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
-      .withMessage('新密码必须包含字母和数字'),
+      .withMessage('common.validation.memberPasswordFormat'),
     body('confirmPassword')
       .notEmpty()
-      .withMessage('确认密码不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .custom((value, { req }) => {
         if (value !== req.body.newPassword) {
-          throw new Error('确认密码与新密码不一致');
+          throw new Error('common.validation.confirmPasswordNotMatch');
         }
         return true;
       })

@@ -3,7 +3,6 @@
  * 处理H5端渠道相关的业务逻辑
  */
 const channelModel = require('../../shared/models/channel.model');
-const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 
@@ -20,7 +19,7 @@ async function getList(req, res) {
     return responseUtil.success(res, result.list);
   } catch (error) {
     logger.error(`获取渠道列表失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res);
   }
 }
 

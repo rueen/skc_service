@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 15:44:59
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-15 15:58:39
+ * @LastEditTime: 2025-04-18 09:08:43
  * @Description: 
  */
 /**
@@ -15,8 +15,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
-const errorHandler = require('./middlewares/errorHandler.middleware');
-const logger = require('./config/logger.config');
+const FileStreamRotator = require('file-stream-rotator');
+const i18nMiddleware = require('./middlewares/i18n.middleware');
 
 /**
  * 创建一个配置好的Express应用
@@ -30,9 +30,15 @@ function createApp(options = {}) {
   
   // 创建Express应用
   const app = express();
+  // 设置trust proxy，因为应用运行在反向代理（如Nginx）后面
+  app.set("trust proxy", 1);
+
   
   // 安全中间件
   app.use(helmet());
+  
+  // 国际化中间件，提前到请求体解析之前，以便尽早设置语言
+  app.use(i18nMiddleware);
   
   // CORS配置
   app.use(cors({
@@ -63,19 +69,22 @@ function createApp(options = {}) {
   }, express.static(path.join(process.cwd(), 'uploads')));
   
   // 日志中间件
-  // 在生产环境中将日志写入文件
+  // 确保日志目录存在
+  const logDirectory = path.join(process.cwd(), 'logs');
+  fs.existsSync(logDirectory) || fs.mkdirSync(logDirectory);
+  
+  // 根据环境配置日志
   if (process.env.NODE_ENV === 'production') {
-    // 确保日志目录存在
-    const logDirectory = path.join(process.cwd(), 'logs');
-    fs.existsSync(logDirectory) || fs.mkdirSync(logDirectory);
+    // 在生产环境中使用日志轮换
+    const accessLogStream = FileStreamRotator.getStream({
+      date_format: 'YYYY-MM-DD',
+      filename: path.join(logDirectory, `${appName}-access-%DATE%.log`),
+      frequency: 'daily',
+      verbose: false,
+      max_logs: '14d',
+      size: '20m'
+    });
     
-    // 创建日志写入流
-    const accessLogStream = fs.createWriteStream(
-      path.join(logDirectory, `${appName}-access.log`),
-      { flags: 'a' }
-    );
-    
-    // 使用combined格式并写入文件
     app.use(morgan('combined', { stream: accessLogStream }));
   } else {
     // 在开发环境中使用dev格式并输出到控制台

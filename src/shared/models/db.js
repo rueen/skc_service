@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:09:55
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-15 16:30:25
+ * @LastEditTime: 2025-04-10 11:22:29
  * @Description: 
  */
 /**
@@ -15,13 +15,13 @@ const logger = require('../config/logger.config');
 // 获取数据库配置
 function getDbConfig() {
   return {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '3306', 10),
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'skc',
+    host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT, 10),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     waitForConnections: true,
-    connectionLimit: parseInt(process.env.DB_POOL_LIMIT || '10', 10),
+    connectionLimit: parseInt(process.env.DB_POOL_LIMIT, 10),
     queueLimit: 0
   };
 }

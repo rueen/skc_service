@@ -1,6 +1,13 @@
-/**
- * 管理后台服务入口文件
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-25 10:15:13
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-20 22:50:19
+ * @Description: 
  */
+// 加载环境变量（放在最顶部，确保在所有模块导入前加载）
+require('dotenv').config({ path: '.env.admin' });
+
 const createApp = require('../shared/app-common');
 const { initDatabase } = require('../shared/models/db');
 const { initTables } = require('../shared/models/init.db');
@@ -9,19 +16,18 @@ const healthRoutes = require('../shared/routes/health.routes');
 const { router: sharedRoutes, setAppType } = require('../shared/routes');
 const logger = require('../shared/config/logger.config');
 const errorHandler = require('../shared/middlewares/errorHandler.middleware');
-const { startScheduledTasks } = require('../shared/models/scheduled-tasks');
+const { startScheduler } = require('../shared/services/task-scheduler.service');
+const { startLogCleanupScheduler } = require('../shared/services/log-cleaner.service');
+const { taskStatusUpdateConfig, schedulerServiceConfig } = require('../shared/config/scheduler.config');
 
-// 加载环境变量
-require('dotenv').config({ path: '.env.admin' });
-
-// 设置端口
-const PORT = process.env.ADMIN_PORT || 3002;
+// 设置服务器端口
+const PORT = process.env.ADMIN_PORT;
 
 // 创建管理后台应用
 const app = createApp({
   appName: 'admin',
   corsOrigins: process.env.NODE_ENV === 'production' 
-    ? ['https://admin.example.com'] 
+    ? ['https://support.skcpop.com', 'http://support.skcpop.com'] 
     : '*'
 });
 
@@ -33,13 +39,16 @@ app.use(setAppType('admin'));
 app.use(sharedRoutes);
 
 // 注册管理后台路由
-app.use(adminRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 添加404处理中间件
 app.use(errorHandler.notFoundHandler);
 
 // 添加全局错误处理中间件
 app.use(errorHandler.errorHandler);
+
+// 注册关闭时的清理逻辑
+setupShutdownHandlers(app);
 
 // 初始化数据库并启动服务器
 async function startServer() {
@@ -60,15 +69,53 @@ async function startServer() {
     
     // 启动服务器
     app.listen(PORT, () => {
-      logger.info(`管理后台服务已启动，监听端口 ${PORT}`);
-      logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`管理后台服务器启动成功`);
+      logger.info(`端口: ${PORT}`);
+      logger.info(`环境: ${process.env.NODE_ENV}`);
       
       if (process.env.NODE_ENV !== 'production') {
-        logger.info('开发模式: 管理后台API可在 http://localhost:3002/api/support 访问');
+        logger.info('开发模式: 管理后台API可在 http://localhost:3002/api/admin 访问');
       }
       
-      // 启动定时任务
-      startScheduledTasks();
+      // 仅当配置指定管理后台服务负责定时任务时才启动
+      const currentService = 'admin';
+      if (schedulerServiceConfig.taskStatusUpdateService === currentService) {
+        // 启动任务状态更新定时任务
+        const env = process.env.NODE_ENV || 'development';
+        const schedulerConfig = taskStatusUpdateConfig[env] || taskStatusUpdateConfig.development;
+        
+        logger.info(`尝试启动任务状态定时更新服务，环境: ${env}，调度表达式: ${schedulerConfig.schedule}`);
+        try {
+          const scheduler = startScheduler(schedulerConfig);
+          if (scheduler) {
+            logger.info(`✅ 任务状态更新定时任务已成功启动，环境: ${env}，调度周期: ${schedulerConfig.schedule}`);
+          } else {
+            logger.error(`❌ 任务状态更新定时任务启动失败`);
+          }
+        } catch (error) {
+          logger.error(`❌ 任务状态更新定时任务启动时发生错误: ${error.message}`);
+        }
+        
+        // 启动日志清理定时任务
+        const logCleanupSchedulerConfig = require('../shared/config/scheduler.config').logCleanupConfig[env] || 
+                                         require('../shared/config/scheduler.config').logCleanupConfig.development;
+        
+        logger.info(`尝试启动日志清理定时任务，环境: ${env}，调度表达式: ${logCleanupSchedulerConfig.schedule}`);
+        
+        const logCleanupScheduler = startLogCleanupScheduler(logCleanupSchedulerConfig);
+        
+        if (logCleanupScheduler) {
+          logger.info(`✅ 日志清理定时任务已成功启动，环境: ${env}，调度周期: ${logCleanupSchedulerConfig.schedule}`);
+        } else {
+          logger.error(`❌ 日志清理定时任务启动失败`);
+        }
+      } else {
+        logger.info(`任务状态更新定时任务配置为在 ${schedulerServiceConfig.taskStatusUpdateService} 服务中运行，不在此实例中启动`);
+      }
+      
+      // 初始化支付交易监控任务
+      const paymentTransactionMonitor = require('../shared/services/payment-transaction-monitor.js');
+      paymentTransactionMonitor.initTasks();
     });
   } catch (error) {
     logger.error(`启动管理后台服务失败: ${error.message}`);
@@ -77,4 +124,9 @@ async function startServer() {
 }
 
 // 启动服务器
-startServer(); 
+startServer();
+
+// 设置关闭处理程序
+function setupShutdownHandlers(app) {
+  // ... existing code ...
+} 

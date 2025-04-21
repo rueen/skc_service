@@ -3,11 +3,11 @@
  * 处理管理端账号相关的业务逻辑
  */
 const accountModel = require('../../shared/models/account.model');
-const memberModel = require('../../shared/models/member.model');
-const channelModel = require('../../shared/models/channel.model');
-const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
 const logger = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
+const notificationModel = require('../../shared/models/notification.model');
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取账号列表
@@ -16,13 +16,17 @@ const responseUtil = require('../../shared/utils/response.util');
  */
 async function getAccounts(req, res) {
   try {
-    const { page = 1, pageSize = 10, account, channelId, accountAuditStatus, groupId, memberId } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, account, keyword, channelId, accountAuditStatus, groupId, memberId } = req.query;
     
     // 构建筛选条件
     const filters = {};
     
     if (account) {
       filters.account = account;
+    }
+    
+    if (keyword) {
+      filters.keyword = keyword;
     }
     
     if (channelId) {
@@ -41,100 +45,8 @@ async function getAccounts(req, res) {
       filters.memberId = parseInt(memberId, 10);
     }
     
-    // 调用模型获取账号列表
+    // 调用模型获取账号列表（包含群组和渠道详细信息）
     const result = await accountModel.getList(filters, page, pageSize);
-    
-    // 扩展账号信息，添加会员所属群组和是否为群主的信息
-    if (result.list && result.list.length > 0) {
-      // 获取相关会员的群组信息
-      const memberIds = [...new Set(result.list.map(account => account.memberId))].filter(Boolean);
-      
-      // 查询会员群组信息（仅当有会员ID时）
-      const memberGroupMap = {};
-      if (memberIds.length > 0) {
-        const { pool } = require('../../shared/models/db');
-        
-        // 使用 member_groups 关联表查询
-        const placeholders = memberIds.map(() => '?').join(',');
-        const [memberGroups] = await pool.query(`
-          SELECT mg.member_id, mg.group_id, g.group_name, mg.is_owner
-          FROM member_groups mg
-          JOIN \`groups\` g ON mg.group_id = g.id
-          WHERE mg.member_id IN (${placeholders})
-        `, memberIds);
-        
-        // 整理群组信息
-        memberGroups.forEach(mg => {
-          if (!memberGroupMap[mg.member_id]) {
-            memberGroupMap[mg.member_id] = {
-              groupId: mg.group_id,
-              groupName: mg.group_name,
-              isGroupOwner: Boolean(mg.is_owner)
-            };
-          }
-        });
-      }
-      
-      // 获取渠道的自定义字段（仅当有渠道ID时）
-      const channelIds = [...new Set(result.list.map(account => account.channelId))].filter(Boolean);
-      const channelMap = {};
-      
-      if (channelIds.length > 0) {
-        const { pool } = require('../../shared/models/db');
-        
-        // 对每个渠道ID单独查询
-        const channelPromises = channelIds.map(async (channelId) => {
-          const [channels] = await pool.query(`
-            SELECT id, name, custom_fields
-            FROM channels
-            WHERE id = ?
-          `, [channelId]);
-          
-          return channels;
-        });
-        
-        // 合并所有查询结果
-        const channelsResults = await Promise.all(channelPromises);
-        const channels = channelsResults.flat();
-        
-        channels.forEach(channel => {
-          let channelCustomFields = [];
-          if (channel.custom_fields) {
-            try {
-              // 如果已经是对象（MySQL 8可能返回解析好的JSON）
-              if (typeof channel.custom_fields === 'object') {
-                channelCustomFields = channel.custom_fields;
-              } else if (typeof channel.custom_fields === 'string') {
-                // 安全地解析JSON字符串
-                channelCustomFields = JSON.parse(channel.custom_fields);
-              }
-            } catch (error) {
-              logger.error(`解析渠道 ${channel.id} 自定义字段失败: ${error.message}`);
-              // 解析失败时使用空数组
-              channelCustomFields = [];
-            }
-          }
-          
-          channelMap[channel.id] = {
-            channelName: channel.name,
-            channelCustomFields: channelCustomFields
-          };
-        });
-      }
-      
-      // 扩展账号信息
-      result.list = result.list.map(account => {
-        const groupInfo = memberGroupMap[account.memberId] || { groupName: '', isGroupOwner: false };
-        const channelInfo = channelMap[account.channelId] || { channelName: '', channelCustomFields: [] };
-        
-        return {
-          ...account,
-          groupName: groupInfo.groupName,
-          isGroupOwner: groupInfo.isGroupOwner,
-          channelCustomFields: channelInfo.channelCustomFields
-        };
-      });
-    }
     
     return responseUtil.success(res, {
       total: result.pagination.total,
@@ -144,7 +56,7 @@ async function getAccounts(req, res) {
     });
   } catch (error) {
     logger.error(`获取账号列表失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res);
   }
 }
 
@@ -156,6 +68,7 @@ async function getAccounts(req, res) {
 async function batchResolve(req, res) {
   try {
     const { ids } = req.body;
+    const waiterId = req.user.id;
     
     if (!Array.isArray(ids) || ids.length === 0) {
       return responseUtil.badRequest(res, '账号ID列表不能为空');
@@ -185,7 +98,7 @@ async function batchResolve(req, res) {
       if (accountRows.length === 0) {
         results.failed.push({
           id,
-          reason: '账号不存在'
+          reason: i18n.t('admin.account.notFound', req.lang)
         });
         continue;
       }
@@ -196,7 +109,7 @@ async function batchResolve(req, res) {
       if (!memberId) {
         results.failed.push({
           id,
-          reason: '账号未关联会员'
+          reason: i18n.t('admin.account.notAssociatedWithMember', req.lang)
         });
         continue;
       }
@@ -209,17 +122,15 @@ async function batchResolve(req, res) {
       
       if (memberGroupRows.length > 0) {
         // 会员已有群组，直接审核通过
-        await pool.query(
-          'UPDATE accounts SET account_audit_status = "approved", update_time = NOW() WHERE id = ?',
-          [id]
-        );
+        await accountModel.batchApprove([id], waiterId);
         results.success.push({
           id,
           memberId,
           groupId: memberGroupRows[0].group_id,
           groupName: memberGroupRows[0].group_name,
-          message: '会员已有群组，审核通过'
+          message: i18n.t('admin.account.alreadyInGroup', req.lang)
         });
+        // 会员已有群组，不触发通知
         continue;
       }
       
@@ -232,7 +143,7 @@ async function batchResolve(req, res) {
       if (memberRows.length === 0) {
         results.failed.push({
           id,
-          reason: '会员不存在'
+          reason: i18n.t('admin.account.memberNotFound', req.lang)
         });
         continue;
       }
@@ -240,23 +151,26 @@ async function batchResolve(req, res) {
       const inviterId = memberRows[0].inviter_id;
       
       if (!inviterId) {
+        const nickname = memberRows[0].nickname;
         results.failed.push({
           id,
-          reason: '会员没有邀请人，无法自动分配群组'
+          reason: i18n.t('admin.account.noInviter', req.lang, {
+            nickname
+          })
         });
         continue;
       }
       
       // 获取邀请人的群组信息
       const [inviterGroupRows] = await pool.query(
-        'SELECT mg.*, g.group_name, g.owner_id FROM member_groups mg JOIN `groups` g ON mg.group_id = g.id WHERE mg.member_id = ?',
+        'SELECT mg.*, g.group_name, g.group_link, g.owner_id FROM member_groups mg JOIN `groups` g ON mg.group_id = g.id WHERE mg.member_id = ?',
         [inviterId]
       );
       
       if (inviterGroupRows.length === 0) {
         results.failed.push({
           id,
-          reason: '邀请人没有所属群，无法自动分配群组'
+          reason: i18n.t('admin.account.inviterNoGroup', req.lang)
         });
         continue;
       }
@@ -280,24 +194,27 @@ async function batchResolve(req, res) {
         );
         
         // 审核通过账号
-        await pool.query(
-          'UPDATE accounts SET account_audit_status = "approved", update_time = NOW() WHERE id = ?',
-          [id]
-        );
-        
-        // 更新群组成员计数
-        await pool.query(
-          'UPDATE `groups` SET member_count = ? WHERE id = ?',
-          [currentGroupMemberCount + 1, inviterGroup.group_id]
-        );
+        await accountModel.batchApprove([id], waiterId);
         
         results.success.push({
           id,
           memberId,
           groupId: inviterGroup.group_id,
           groupName: inviterGroup.group_name,
-          message: '分配到邀请人的群组'
+          message: i18n.t('admin.account.assignedToInviterGroup', req.lang)
         });
+        
+        // 发送账号审核通过通知
+        try {
+          await notificationModel.createAccountApprovedNotification(
+            memberId, 
+            account.account, 
+            inviterGroup.group_name, 
+            inviterGroup.group_link || ''
+          );
+        } catch (notificationError) {
+          logger.error(`发送账号审核通过通知失败: ${notificationError.message}`);
+        }
       } else {
         // 邀请人的群组已满，查找该群主名下的其他未满群组
         const ownerId = inviterGroup.owner_id;
@@ -305,14 +222,14 @@ async function batchResolve(req, res) {
         if (!ownerId) {
           results.failed.push({
             id,
-            reason: '邀请人所在群组已满且没有群主'
+            reason: i18n.t('admin.account.inviterNoOwner', req.lang)
           });
           continue;
         }
         
         // 查找群主名下的其他未满群组
         const [ownerGroupsRows] = await pool.query(
-          `SELECT g.id, g.group_name, COUNT(mg.member_id) as member_count 
+          `SELECT g.id, g.group_name, g.group_link, COUNT(mg.member_id) as member_count 
            FROM \`groups\` g 
            LEFT JOIN member_groups mg ON g.id = mg.group_id 
            WHERE g.owner_id = ? 
@@ -325,7 +242,7 @@ async function batchResolve(req, res) {
         if (ownerGroupsRows.length === 0) {
           results.failed.push({
             id,
-            reason: '邀请人所在群组已满，且该群主名下所有群组均已满员'
+            reason: i18n.t('admin.account.inviterAllGroupFull', req.lang)
           });
           continue;
         }
@@ -339,24 +256,27 @@ async function batchResolve(req, res) {
         );
         
         // 审核通过账号
-        await pool.query(
-          'UPDATE accounts SET account_audit_status = "approved", update_time = NOW() WHERE id = ?',
-          [id]
-        );
-        
-        // 更新群组成员计数
-        await pool.query(
-          'UPDATE `groups` SET member_count = ? WHERE id = ?',
-          [targetGroup.member_count + 1, targetGroup.id]
-        );
+        await accountModel.batchApprove([id], waiterId);
         
         results.success.push({
           id,
           memberId,
           groupId: targetGroup.id,
           groupName: targetGroup.group_name,
-          message: '邀请人所在群组已满，分配到群主名下的其他群组'
+          message: i18n.t('admin.account.assignedToOtherGroup', req.lang)
         });
+        
+        // 发送账号审核通过通知
+        try {
+          await notificationModel.createAccountApprovedNotification(
+            memberId, 
+            account.account, 
+            targetGroup.group_name, 
+            targetGroup.group_link || ''
+          );
+        } catch (notificationError) {
+          logger.error(`发送账号审核通过通知失败: ${notificationError.message}`);
+        }
       }
     }
     
@@ -365,10 +285,13 @@ async function batchResolve(req, res) {
       failed: results.failed,
       successCount: results.success.length,
       failedCount: results.failed.length
-    }, `成功审核通过 ${results.success.length} 个账号，${results.failed.length} 个账号审核失败`);
+    }, i18n.t('admin.account.auditSuccess', req.lang, {
+      success: results.success.length,
+      failed: results.failed.length
+    }));
   } catch (error) {
     logger.error(`批量审核通过账号失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res);
   }
 }
 
@@ -380,31 +303,222 @@ async function batchResolve(req, res) {
 async function batchReject(req, res) {
   try {
     const { ids, rejectReason } = req.body;
+    const waiterId = req.user.id;
     
     if (!Array.isArray(ids) || ids.length === 0) {
       return responseUtil.badRequest(res, '账号ID列表不能为空');
     }
     
+    // 获取账号详情，包含会员ID和账号信息
+    const { pool } = require('../../shared/models/db');
+    const [accountsInfo] = await pool.query(
+      'SELECT id, member_id, account FROM accounts WHERE id IN (?)',
+      [ids]
+    );
+    
     // 执行批量拒绝操作
-    const updatePromises = ids.map(id => {
-      return accountModel.update({
-        id,
-        accountAuditStatus: 'rejected',
-        rejectReason: rejectReason || '审核未通过'
+    const result = await accountModel.batchReject(ids, rejectReason || '审核未通过', waiterId);
+    
+    // 发送账号审核拒绝通知
+    const notificationPromises = accountsInfo.map(accountInfo => {
+      return notificationModel.createAccountRejectedNotification(
+        accountInfo.member_id,
+        accountInfo.account,
+        rejectReason || '审核未通过'
+      ).catch(error => {
+        logger.error(`发送账号审核拒绝通知失败: ${error.message}`);
       });
     });
     
-    await Promise.all(updatePromises);
+    await Promise.all(notificationPromises);
     
-    return responseUtil.success(res, { success: true }, `成功拒绝 ${ids.length} 个账号`);
+    return responseUtil.success(res, { 
+      success: true,
+      updatedCount: result.updatedCount 
+    }, i18n.t('admin.account.rejectSuccess', req.lang, {
+      count: result.updatedCount
+    }));
   } catch (error) {
     logger.error(`批量审核拒绝账号失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || MESSAGES.SERVER_ERROR);
+    return responseUtil.serverError(res);
   }
 }
 
+/**
+ * 编辑账号
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function editAccount(req, res) {
+  try {
+    const { id } = req.params;
+    const { homeUrl, uid, account, fansCount, friendsCount, postsCount } = req.body;
+    
+    // 检查账号是否存在
+    const { pool } = require('../../shared/models/db');
+    const [accountRows] = await pool.query('SELECT * FROM accounts WHERE id = ?', [id]);
+    
+    if (accountRows.length === 0) {
+      return responseUtil.notFound(res, i18n.t('admin.account.notFound', req.lang));
+    }
+    
+    // 准备更新数据
+    const accountData = {
+      id: parseInt(id, 10)
+    };
+    
+    // 仅包含提交的字段，未提交的字段不更新
+    if (homeUrl !== undefined) accountData.homeUrl = homeUrl;
+    if (uid !== undefined) accountData.uid = uid;
+    if (account !== undefined) accountData.account = account;
+    if (fansCount !== undefined) accountData.fansCount = parseInt(fansCount, 10);
+    if (friendsCount !== undefined) accountData.friendsCount = parseInt(friendsCount, 10);
+    if (postsCount !== undefined) accountData.postsCount = parseInt(postsCount, 10);
+    
+    // 调用模型更新账号信息
+    const result = await accountModel.update(accountData);
+    
+    return responseUtil.success(res, result);
+  } catch (error) {
+    logger.error(`编辑账号失败: ${error.message}`);
+    
+    // 处理唯一性验证错误
+    if (error.message.includes('UID 已被使用')) {
+      return responseUtil.badRequest(res, error.message);
+    }
+    
+    return responseUtil.serverError(res);
+  }
+}
+
+/**
+ * 获取账号详情
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getAccountDetail(req, res) {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return responseUtil.badRequest(res, '账号ID不能为空');
+    }
+    
+    // 获取账号详情
+    const account = await accountModel.getById(parseInt(id, 10));
+    
+    if (!account) {
+      return responseUtil.notFound(res, i18n.t('admin.account.notFound', req.lang));
+    }
+    
+    return responseUtil.success(res, account);
+  } catch (error) {
+    logger.error(`获取账号详情失败: ${error.message}`);
+    return responseUtil.serverError(res);
+  }
+}
+
+/**
+ * 删除账号
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function deleteAccount(req, res) {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return responseUtil.badRequest(res, '账号ID不能为空');
+    }
+    
+    // 检查账号是否存在
+    const account = await accountModel.getById(parseInt(id, 10));
+    
+    if (!account) {
+      return responseUtil.notFound(res, i18n.t('admin.account.notFound', req.lang));
+    }
+    
+    // 删除账号
+    const result = await accountModel.remove(parseInt(id, 10));
+    
+    return responseUtil.success(res, result);
+  } catch (error) {
+    logger.error(`删除账号失败: ${error.message}`);
+    return responseUtil.serverError(res);
+  }
+}
+
+/**
+ * 导出账号列表
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function exportAccounts(req, res) {
+  try {
+    const { account, keyword, channelId, accountAuditStatus, groupId, memberId } = req.query;
+    
+    // 构建筛选条件
+    const filters = {
+      exportMode: true // 标记为导出模式，不使用分页
+    };
+    
+    if (account) filters.account = account;
+    if (keyword) filters.keyword = keyword;
+    if (channelId) filters.channelId = parseInt(channelId, 10);
+    if (accountAuditStatus) filters.accountAuditStatus = accountAuditStatus;
+    if (groupId) filters.groupId = parseInt(groupId, 10);
+    if (memberId) filters.memberId = parseInt(memberId, 10);
+    
+    // 获取所有符合条件的账号
+    const result = await accountModel.getList(filters);
+    
+    if (!result.list || result.list.length === 0) {
+      return res.status(404).send('没有符合条件的账号数据');
+    }
+    
+    // 创建Excel工作簿和工作表
+    const Excel = require('exceljs');
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet('账号列表');
+    
+    // 设置列定义和宽度
+    worksheet.columns = [
+      { header: '会员ID', key: 'memberNickname', width: 20 },
+      { header: '会员账号', key: 'memberAccount', width: 20 },
+      { header: '注册时间', key: 'memberCreatetime', width: 20 },
+      { header: '所属群组', key: 'groupName', width: 20 },
+    ];
+    
+    // 添加数据行
+    result.list.forEach(item => {
+      worksheet.addRow({
+        memberNickname: item.memberNickname || '',
+        memberAccount: item.memberAccount || '',
+        memberCreatetime: item.memberCreateTime || '',
+        groupName: item.groupName || '',
+      });
+    });
+    
+    // 设置响应头
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=accounts.xlsx');
+    
+    // 写入响应流
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    logger.error(`导出账号列表失败: ${error.message}`);
+    return responseUtil.serverError(res);
+  }
+}
+
+// 导出控制器方法
 module.exports = {
   getAccounts,
   batchResolve,
-  batchReject
+  batchReject,
+  editAccount,
+  getAccountDetail,
+  deleteAccount,
+  exportAccounts
 }; 

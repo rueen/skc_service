@@ -16,7 +16,7 @@ router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
- * @route GET /api/support/tasks
+ * @route GET /api/admin/tasks
  * @desc 获取任务列表
  * @access Private (需要 task:list 权限)
  */
@@ -24,54 +24,52 @@ router.get(
   '/',
   authMiddleware.hasPermission('task:list'),
   [
-    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
-    query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
-    query('taskName').optional().isString().withMessage('任务名称必须是字符串'),
-    query('taskStatus').optional().isIn(['not_started', 'processing', 'ended']).withMessage('任务状态值无效'),
-    query('channelId').optional().isInt().withMessage('渠道ID必须是整数')
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('common.validation.page'),
+    query('pageSize')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('common.validation.pageSize'),
+    query('taskName')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
+    query('taskStatus')
+      .optional()
+      .isIn(['not_started', 'processing', 'ended'])
+      .withMessage('common.validation.invalid'),
+    query('channelId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.getList
 );
 
 /**
- * @route GET /api/support/tasks/export
- * @desc 导出任务数据
- * @access Private (需要 task:list 权限)
- */
-router.get(
-  '/export',
-  authMiddleware.hasPermission('task:list'),
-  [
-    query('taskName').optional().isString().withMessage('任务名称必须是字符串'),
-    query('taskStatus').optional().isIn(['not_started', 'processing', 'ended']).withMessage('任务状态值无效'),
-    query('channelId').optional().isInt().withMessage('渠道ID必须是整数')
-  ],
-  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  taskController.exportTasks
-);
-
-/**
- * @route GET /api/support/tasks/:id
+ * @route GET /api/admin/tasks/:id
  * @desc 获取任务详情
  * @access Private (需要 task:list 权限)
  */
 router.get(
   '/:id',
-  authMiddleware.hasPermission('task:list'),
+  authMiddleware.hasPermission('task:edit'),
   [
     param('id')
       .notEmpty()
-      .withMessage('任务ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('任务ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.getDetail
 );
 
 /**
- * @route POST /api/support/tasks
+ * @route POST /api/admin/tasks
  * @desc 创建任务
  * @access Private (需要 task:create 权限)
  */
@@ -81,47 +79,45 @@ router.post(
   [
     body('taskName')
       .notEmpty()
-      .withMessage('任务名称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('任务名称长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('channelId')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('渠道ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('category')
       .notEmpty()
-      .withMessage('任务类别不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
-      .withMessage('任务类别长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('taskType')
       .notEmpty()
-      .withMessage('任务类型不能为空')
-      .isIn(['image_text', 'video'])
-      .withMessage('任务类型值无效'),
+      .withMessage('common.validation.mustNotBeEmpty'),
     body('reward')
       .notEmpty()
-      .withMessage('任务奖励金额不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isFloat({ min: 0 })
-      .withMessage('任务奖励金额必须是非负数'),
+      .withMessage('common.validation.amountFormat'),
     body('brand')
       .notEmpty()
-      .withMessage('品牌名称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
-      .withMessage('品牌名称长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('groupIds')
       .optional()
       .isArray()
-      .withMessage('群组ID列表必须是数组'),
+      .withMessage('common.validation.mustBeArray'),
     body('groupMode')
       .optional()
       .isBoolean()
-      .withMessage('群组模式必须是布尔值'),
+      .withMessage('common.validation.formatInvalid'),
     body('userRange')
       .notEmpty()
-      .withMessage('用户范围不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isIn([0, 1])
-      .withMessage('用户范围必须是0或1，0表示全部用户，1表示需要校验完成任务次数'),
+      .withMessage('common.validation.invalid'),
     body('taskCount')
       .custom((value, { req }) => {
         // 当 userRange 为 1 时，taskCount 必须存在且为非负整数
@@ -137,50 +133,50 @@ router.post(
       }),
     body('customFields')
       .notEmpty()
-      .withMessage('自定义字段不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isArray()
-      .withMessage('自定义字段必须是数组'),
+      .withMessage('common.validation.mustBeArray'),
     body('startTime')
       .notEmpty()
-      .withMessage('开始时间不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isISO8601()
-      .withMessage('开始时间格式无效'),
+      .withMessage('common.validation.timeFormatInvalid'),
     body('endTime')
       .notEmpty()
-      .withMessage('结束时间不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isISO8601()
-      .withMessage('结束时间格式无效'),
+      .withMessage('common.validation.timeFormatInvalid'),
     body('unlimitedQuota')
       .optional()
       .isBoolean()
-      .withMessage('是否不限名额必须是布尔值'),
+      .withMessage('common.validation.formatInvalid'),
     body('fansRequired')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('粉丝要求必须是大于等于0的整数'),
+      .withMessage('common.validation.formatInvalid'),
     body('contentRequirement')
       .optional()
       .isString()
-      .withMessage('内容要求必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('taskInfo')
       .optional()
       .isString()
-      .withMessage('任务说明必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('notice')
       .optional()
       .isString()
-      .withMessage('温馨提示必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('taskStatus')
       .optional()
       .isIn(['not_started', 'processing', 'ended'])
-      .withMessage('任务状态值无效')
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.create
 );
 
 /**
- * @route PUT /api/support/tasks/:id
+ * @route PUT /api/admin/tasks/:id
  * @desc 更新任务
  * @access Private (需要 task:edit 权限)
  */
@@ -190,45 +186,43 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('任务ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('任务ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('taskName')
       .optional()
       .isLength({ max: 100 })
-      .withMessage('任务名称长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('channelId')
       .optional()
       .isInt()
-      .withMessage('渠道ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('category')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('任务类别长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('taskType')
-      .optional()
-      .isIn(['image_text', 'video'])
-      .withMessage('任务类型值无效'),
+      .optional(),
     body('reward')
       .optional()
       .isFloat({ min: 0 })
-      .withMessage('任务奖励金额必须是非负数'),
+      .withMessage('common.validation.amountFormat'),
     body('brand')
       .optional()
       .isLength({ max: 100 })
-      .withMessage('品牌名称长度不能超过100个字符'),
+      .withMessage('common.validation.maxLength{max:100}'),
     body('groupIds')
       .optional()
       .isArray()
-      .withMessage('群组ID列表必须是数组'),
+      .withMessage('common.validation.mustBeArray'),
     body('groupMode')
       .optional()
       .isBoolean()
-      .withMessage('群组模式必须是布尔值'),
+      .withMessage('common.validation.formatInvalid'),
     body('userRange')
       .optional()
       .isIn([0, 1])
-      .withMessage('用户范围必须是0或1，0表示全部用户，1表示需要校验完成任务次数'),
+      .withMessage('common.validation.invalid'),
     body('taskCount')
       .optional()
       .custom((value, { req }) => {
@@ -243,46 +237,46 @@ router.put(
     body('customFields')
       .optional()
       .isArray()
-      .withMessage('自定义字段必须是数组'),
+      .withMessage('common.validation.mustBeArray'),
     body('startTime')
       .optional()
       .isISO8601()
-      .withMessage('开始时间格式无效'),
+      .withMessage('common.validation.timeFormatInvalid'),
     body('endTime')
       .optional()
       .isISO8601()
-      .withMessage('结束时间格式无效'),
+      .withMessage('common.validation.timeFormatInvalid'),
     body('unlimitedQuota')
       .optional()
       .isBoolean()
-      .withMessage('是否不限名额必须是布尔值'),
+      .withMessage('common.validation.formatInvalid'),
     body('fansRequired')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('粉丝要求必须是大于等于0的整数'),
+      .withMessage('common.validation.formatInvalid'),
     body('contentRequirement')
       .optional()
       .isString()
-      .withMessage('内容要求必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('taskInfo')
       .optional()
       .isString()
-      .withMessage('任务说明必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('notice')
       .optional()
       .isString()
-      .withMessage('温馨提示必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('taskStatus')
       .optional()
       .isIn(['not_started', 'processing', 'ended'])
-      .withMessage('任务状态值无效')
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.update
 );
 
 /**
- * @route DELETE /api/support/tasks/:id
+ * @route DELETE /api/admin/tasks/:id
  * @desc 删除任务
  * @access Private (需要 task:edit 权限)
  */
@@ -292,9 +286,9 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('任务ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('任务ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.remove

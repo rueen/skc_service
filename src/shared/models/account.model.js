@@ -5,7 +5,8 @@
 const { pool } = require('./db');
 const logger = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
-const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
+const { convertToCamelCase } = require('../utils/data.util');
+const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
 
 /**
  * 格式化账户信息
@@ -15,33 +16,18 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 function formatAccount(account) {
   if (!account) return null;
   
-  // 创建一个只包含需要的驼峰命名字段的对象
-  return {
-    id: account.id,
-    account: account.account,
-    memberId: account.member_id,
-    channelId: account.channel_id,
-    channelName: account.channel_name,
-    channelIcon: account.channel_icon,
-    homeUrl: account.home_url,
-    fansCount: account.fans_count,
-    friendsCount: account.friends_count,
-    postsCount: account.posts_count,
-    accountAuditStatus: account.account_audit_status,
-    rejectReason: account.reject_reason,
-    memberNickname: account.member_name,
+  // 转换字段名称为驼峰命名法
+  const formattedAccount = convertToCamelCase({
+    ...account,
     createTime: formatDateTime(account.create_time),
-    updateTime: formatDateTime(account.update_time)
-  };
+    updateTime: formatDateTime(account.update_time),
+    submitTime: formatDateTime(account.submit_time),
+    auditTime: formatDateTime(account.audit_time),
+    memberCreateTime: formatDateTime(account.member_create_time)
+  });
+  return formattedAccount;
 }
 
-/**
- * 获取账户列表
- * @param {Object} filters - 筛选条件
- * @param {number} page - 页码
- * @param {number} pageSize - 每页数量
- * @returns {Promise<Object>} 账户列表和总数
- */
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
     const offset = (page - 1) * pageSize;
@@ -70,28 +56,40 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(`%${filters.account}%`);
     }
     
+    // 添加对 keyword 的支持，搜索 account 和 uid 字段
+    if (filters.keyword) {
+      whereClause += ' AND (a.account LIKE ? OR a.uid LIKE ?)';
+      queryParams.push(`%${filters.keyword}%`, `%${filters.keyword}%`);
+    }
+    
     if (filters.groupId) {
       whereClause += ' AND EXISTS (SELECT 1 FROM member_groups mg WHERE mg.member_id = a.member_id AND mg.group_id = ?)';
       queryParams.push(filters.groupId);
     }
     
     // 构建查询语句
-    const query = `
+    let query = `
       SELECT a.*, 
-             m.member_nickname as member_name,
+             m.nickname as member_nickname,
+             m.account as member_account,
+             m.create_time as member_create_time,
              c.name as channel_name,
              c.icon as channel_icon,
-             c.custom_fields as channel_custom_fields
+             c.custom_fields as channel_custom_fields,
+             w.username as waiter_name
       FROM accounts a
       LEFT JOIN members m ON a.member_id = m.id
       LEFT JOIN channels c ON a.channel_id = c.id
+      LEFT JOIN waiters w ON a.waiter_id = w.id
       WHERE ${whereClause}
       ORDER BY a.create_time DESC
-      LIMIT ? OFFSET ?
     `;
     
-    // 添加分页参数
-    queryParams.push(parseInt(pageSize, 10), offset);
+    // 根据是否为导出模式决定是否使用分页
+    if (!filters.exportMode) {
+      query += ' LIMIT ? OFFSET ?';
+      queryParams.push(parseInt(pageSize, 10), offset);
+    }
     
     // 执行查询
     const [rows] = await pool.query(query, queryParams);
@@ -103,7 +101,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       WHERE ${whereClause}
     `;
     
-    const [countRows] = await pool.query(countQuery, queryParams.slice(0, -2));
+    const [countRows] = await pool.query(countQuery, filters.exportMode ? queryParams : queryParams.slice(0, -2));
     const total = countRows[0].total;
     
     // 处理渠道自定义字段
@@ -113,7 +111,9 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       // 处理渠道自定义字段
       if (row.channel_custom_fields) {
         try {
-          formattedAccount.channelCustomFields = JSON.parse(row.channel_custom_fields);
+          formattedAccount.channelCustomFields = typeof row.channel_custom_fields === 'object' 
+            ? row.channel_custom_fields 
+            : JSON.parse(row.channel_custom_fields);
         } catch (e) {
           formattedAccount.channelCustomFields = [];
         }
@@ -123,6 +123,43 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       
       return formattedAccount;
     });
+    
+    // 获取相关会员的群组信息
+    if (formattedRows.length > 0) {
+      // 获取相关会员的群组信息
+      const memberIds = [...new Set(formattedRows.map(account => account.memberId))].filter(Boolean);
+      
+      // 查询会员群组信息（仅当有会员ID时）
+      const memberGroupMap = {};
+      if (memberIds.length > 0) {
+        // 使用 member_groups 关联表查询
+        const placeholders = memberIds.map(() => '?').join(',');
+        const [memberGroups] = await pool.query(`
+          SELECT mg.member_id, mg.group_id, g.group_name, mg.is_owner
+          FROM member_groups mg
+          JOIN \`groups\` g ON mg.group_id = g.id
+          WHERE mg.member_id IN (${placeholders})
+        `, memberIds);
+        
+        // 整理群组信息
+        memberGroups.forEach(mg => {
+          if (!memberGroupMap[mg.member_id]) {
+            memberGroupMap[mg.member_id] = {
+              groupId: mg.group_id,
+              groupName: mg.group_name,
+              isGroupOwner: Boolean(mg.is_owner)
+            };
+          }
+        });
+      }
+      
+      // 扩展账号信息
+      formattedRows.forEach(account => {
+        const groupInfo = memberGroupMap[account.memberId] || { groupName: '', isGroupOwner: false };
+        account.groupName = groupInfo.groupName;
+        account.isGroupOwner = groupInfo.isGroupOwner;
+      });
+    }
     
     return {
       list: formattedRows,
@@ -136,7 +173,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     logger.error(`获取账户列表失败: ${error.message}`);
     throw error;
   }
-}
+};
 
 /**
  * 根据会员ID获取账户列表
@@ -147,11 +184,9 @@ async function getByMemberId(memberId) {
   try {
     const query = `
       SELECT a.*, 
-             m.member_nickname as member_name,
-             c.name as channel_name,
-             c.icon as channel_icon
+         c.name as channel_name,
+         c.icon as channel_icon
       FROM accounts a
-      LEFT JOIN members m ON a.member_id = m.id
       LEFT JOIN channels c ON a.channel_id = c.id
       WHERE a.member_id = ?
       ORDER BY a.channel_id
@@ -177,11 +212,9 @@ async function getByMemberAndChannel(memberId, channelId) {
   try {
     const query = `
       SELECT a.*,
-             m.member_nickname as member_name,
              c.name as channel_name,
              c.icon as channel_icon
       FROM accounts a
-      LEFT JOIN members m ON a.member_id = m.id
       LEFT JOIN channels c ON a.channel_id = c.id
       WHERE a.member_id = ? AND a.channel_id = ?
       LIMIT 1
@@ -208,50 +241,49 @@ async function getByMemberAndChannel(memberId, channelId) {
  */
 async function create(accountData) {
   try {
+    // 检查 UID 唯一性（如果提供了 UID）
+    if (accountData.uid) {
+      const [existingUid] = await pool.query(
+        'SELECT id FROM accounts WHERE uid = ?',
+        [accountData.uid]
+      );
+      
+      if (existingUid.length > 0) {
+        throw new Error('该账号已被使用，禁止重复绑定');
+      }
+    }
+    
     // 准备数据
     const data = {
       member_id: accountData.memberId,
       channel_id: accountData.channelId,
       account: accountData.account,
-      home_url: accountData.homeUrl,
+      uid: accountData.uid || null,
+      home_url: accountData.homeUrl || null,
       fans_count: accountData.fansCount || 0,
       friends_count: accountData.friendsCount || 0,
       posts_count: accountData.postsCount || 0,
       account_audit_status: accountData.accountAuditStatus || 'pending',
-      create_time: new Date(),
-      update_time: new Date()
+      submit_time: new Date()
     };
     
     // 执行插入
-    const query = `
-      INSERT INTO accounts SET ?
-    `;
-    
-    const [result] = await pool.query(query, [data]);
+    const [result] = await pool.query(
+      'INSERT INTO accounts SET ?',
+      [data]
+    );
     
     if (result.affectedRows === 0) {
       throw new Error('创建账户失败');
     }
     
-    // 查询新创建的账号(包含渠道信息)
-    const newAccountQuery = `
-      SELECT a.*, 
-             m.member_nickname as member_name,
-             c.name as channel_name,
-             c.icon as channel_icon
-      FROM accounts a
-      LEFT JOIN members m ON a.member_id = m.id
-      LEFT JOIN channels c ON a.channel_id = c.id
-      WHERE a.id = ?
-    `;
+    // 获取新创建的账户信息
+    const [accounts] = await pool.query(
+      'SELECT * FROM accounts WHERE id = ?',
+      [result.insertId]
+    );
     
-    const [accounts] = await pool.query(newAccountQuery, [result.insertId]);
-    
-    if (accounts.length === 0) {
-      throw new Error('获取新创建的账户信息失败');
-    }
-    
-    // 格式化并返回结果
+    // 格式化结果
     return formatAccount(accounts[0]);
   } catch (error) {
     logger.error(`创建账户失败: ${error.message}`);
@@ -260,48 +292,68 @@ async function create(accountData) {
 }
 
 /**
- * 更新账户
+ * 更新账户信息
  * @param {Object} accountData - 账户数据
  * @returns {Promise<Object>} 更新结果
  */
 async function update(accountData) {
   try {
-    // 准备数据
-    const data = {
-      account: accountData.account,
-      home_url: accountData.homeUrl,
-      fans_count: accountData.fansCount,
-      friends_count: accountData.friendsCount,
-      posts_count: accountData.postsCount,
-      account_audit_status: accountData.accountAuditStatus,
-      reject_reason: accountData.rejectReason,
-      update_time: new Date()
-    };
+    const id = accountData.id;
     
-    // 删除未定义的字段
-    Object.keys(data).forEach(key => {
-      if (data[key] === undefined) {
-        delete data[key];
-      }
-    });
+    // 检查账号是否存在
+    const [existingAccount] = await pool.query(
+      'SELECT * FROM accounts WHERE id = ?',
+      [id]
+    );
     
-    // 执行更新
-    const query = `
-      UPDATE accounts
-      SET ?
-      WHERE id = ?
-    `;
-    
-    const [result] = await pool.query(query, [data, accountData.id]);
-    
-    if (result.affectedRows === 0) {
-      throw new Error('更新账户失败');
+    if (existingAccount.length === 0) {
+      throw new Error('账号不存在');
     }
     
-    return {
-      success: true,
-      message: '账户更新成功'
-    };
+    // 检查UID唯一性（如果提供了UID且不同于原值）
+    if (accountData.uid !== undefined && accountData.uid !== existingAccount[0].uid) {
+      const [existingUid] = await pool.query(
+        'SELECT id FROM accounts WHERE uid = ? AND id != ?',
+        [accountData.uid, id]
+      );
+      
+      if (existingUid.length > 0) {
+        throw new Error('该账号已被使用，禁止重复绑定');
+      }
+    }
+    
+    // 准备更新数据
+    const updateData = {};
+    
+    // 只更新提供的字段
+    if (accountData.account !== undefined) updateData.account = accountData.account;
+    if (accountData.uid !== undefined) updateData.uid = accountData.uid;
+    if (accountData.homeUrl !== undefined) updateData.home_url = accountData.homeUrl;
+    if (accountData.fansCount !== undefined) updateData.fans_count = parseInt(accountData.fansCount, 10);
+    if (accountData.friendsCount !== undefined) updateData.friends_count = parseInt(accountData.friendsCount, 10);
+    if (accountData.postsCount !== undefined) updateData.posts_count = parseInt(accountData.postsCount, 10);
+    if (accountData.accountAuditStatus !== undefined) updateData.account_audit_status = accountData.accountAuditStatus;
+    if (accountData.rejectReason !== undefined) updateData.reject_reason = accountData.rejectReason;
+    if (accountData.waiterId !== undefined) updateData.waiter_id = accountData.waiterId;
+    
+    // 如果有更新字段，才执行更新操作
+    if (Object.keys(updateData).length > 0) {
+      // 更新提交时间
+      updateData.submit_time = new Date();
+      
+      // 执行更新
+      const [result] = await pool.query(
+        'UPDATE accounts SET ? WHERE id = ?',
+        [updateData, id]
+      );
+      
+      if (result.affectedRows === 0) {
+        throw new Error('更新账户失败');
+      }
+    }
+    
+    // 返回更新结果
+    return { success: true, id };
   } catch (error) {
     logger.error(`更新账户失败: ${error.message}`);
     throw error;
@@ -336,11 +388,131 @@ async function remove(id) {
   }
 }
 
+/**
+ * 批量审核通过账号
+ * @param {Array<number>} ids - 账号ID数组
+ * @param {number} waiterId - 审核员ID
+ * @returns {Promise<Object>} 操作结果
+ */
+async function batchApprove(ids, waiterId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 更新账号状态为已通过
+    const [result] = await connection.query(
+      `UPDATE accounts 
+       SET account_audit_status = 'approved', waiter_id = ?, audit_time = NOW() 
+       WHERE id IN (?) AND account_audit_status = 'pending'`,
+      [waiterId, ids]
+    );
+    
+    await connection.commit();
+    
+    return {
+      success: true,
+      updatedCount: result.affectedRows
+    };
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`批量审核通过账号失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * 批量拒绝账号
+ * @param {Array<number>} ids - 账号ID数组
+ * @param {string} reason - 拒绝原因
+ * @param {number} waiterId - 审核员ID
+ * @returns {Promise<Object>} 操作结果
+ */
+async function batchReject(ids, reason, waiterId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 更新账号状态为已拒绝
+    const [result] = await connection.query(
+      `UPDATE accounts 
+       SET account_audit_status = 'rejected', reject_reason = ?, waiter_id = ?, audit_time = NOW() 
+       WHERE id IN (?) AND account_audit_status = 'pending'`,
+      [reason, waiterId, ids]
+    );
+    
+    await connection.commit();
+    
+    return {
+      success: true,
+      updatedCount: result.affectedRows
+    };
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`批量拒绝账号失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * 根据ID获取账号详情
+ * @param {number} id - 账号ID
+ * @returns {Promise<Object>} 账号详情
+ */
+async function getById(id) {
+  try {
+    const query = `
+      SELECT a.*, 
+             c.name as channel_name,
+             c.icon as channel_icon,
+             c.custom_fields as channel_custom_fields
+      FROM accounts a
+      LEFT JOIN channels c ON a.channel_id = c.id
+      WHERE a.id = ?
+      LIMIT 1
+    `;
+    
+    const [rows] = await pool.query(query, [id]);
+    
+    if (rows.length === 0) {
+      return null;
+    }
+    
+    // 格式化账号信息
+    const formattedAccount = formatAccount(rows[0]);
+    
+    // 处理渠道自定义字段
+    if (rows[0].channel_custom_fields) {
+      try {
+        formattedAccount.channelCustomFields = typeof rows[0].channel_custom_fields === 'object' 
+          ? rows[0].channel_custom_fields 
+          : JSON.parse(rows[0].channel_custom_fields);
+      } catch (e) {
+        formattedAccount.channelCustomFields = [];
+      }
+    } else {
+      formattedAccount.channelCustomFields = [];
+    }
+    
+    return formattedAccount;
+  } catch (error) {
+    logger.error(`根据ID获取账号详情失败: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   getList,
+  formatAccount,
   getByMemberId,
   getByMemberAndChannel,
   create,
   update,
-  remove
+  remove,
+  batchApprove,
+  batchReject,
+  getById
 }; 

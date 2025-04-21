@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:10:51
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-21 19:21:47
+ * @LastEditTime: 2025-04-11 11:08:11
  * @Description: 
  */
 /**
@@ -12,6 +12,7 @@
 const { createLogger, format, transports } = require('winston');
 const { combine, timestamp, printf, colorize } = format;
 const path = require('path');
+require('winston-daily-rotate-file');
 
 // 自定义日志格式
 const logFormat = printf(({ level, message, timestamp }) => {
@@ -20,6 +21,19 @@ const logFormat = printf(({ level, message, timestamp }) => {
 
 // 日志目录路径
 const logDirectory = path.join(process.cwd(), 'logs');
+
+// 日志轮换配置
+const fileRotateTransportOptions = {
+  dirname: logDirectory,
+  datePattern: 'YYYY-MM-DD',
+  maxSize: '20m',
+  maxFiles: '14d',
+  zippedArchive: true,
+  format: combine(
+    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    logFormat
+  )
+};
 
 // 创建日志记录器
 const logger = createLogger({
@@ -37,14 +51,16 @@ const logger = createLogger({
         logFormat
       )
     }),
-    // 错误日志文件
-    new transports.File({ 
-      filename: path.join(logDirectory, 'error.log'), 
-      level: 'error' 
+    // 错误日志文件 - 使用日志轮换
+    new transports.DailyRotateFile({ 
+      ...fileRotateTransportOptions,
+      filename: 'error-%DATE%.log',
+      level: 'error'
     }),
-    // 所有日志文件
-    new transports.File({ 
-      filename: path.join(logDirectory, 'combined.log') 
+    // 所有日志文件 - 使用日志轮换
+    new transports.DailyRotateFile({ 
+      ...fileRotateTransportOptions,
+      filename: 'combined-%DATE%.log'
     })
   ]
 });

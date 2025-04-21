@@ -8,6 +8,12 @@ const logger = require('../../shared/config/logger.config');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 const { OccupationType } = require('../../shared/config/enums');
 const groupModel = require('../../shared/models/group.model');
+const inviteModel = require('../../shared/models/invite.model');
+const taskStatsModel = require('../../shared/models/task-stats.model');
+const memberBalanceModel = require('../../shared/models/member-balance.model');
+const withdrawalAccountModel = require('../../shared/models/withdrawal-account.model');
+const i18n = require('../../shared/utils/i18n.util');
+
 /**
  * 获取会员列表
  * @param {Object} req - 请求对象
@@ -28,7 +34,7 @@ async function list(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取会员列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取会员列表失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -48,13 +54,13 @@ async function getDetail(req, res) {
     const member = await memberModel.getById(parseInt(id, 10));
     
     if (!member) {
-      return responseUtil.notFound(res, '会员不存在');
+      return responseUtil.notFound(res, i18n.t('admin.member.notFound', req.lang));
     }
 
     return responseUtil.success(res, member);
   } catch (error) {
     logger.error(`获取会员详情失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取会员详情失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -78,7 +84,7 @@ async function create(req, res) {
     // 验证密码强度
     const validatorUtil = require('../../shared/utils/validator.util');
     if (!validatorUtil.isStrongPassword(password)) {
-      return responseUtil.badRequest(res, '密码不符合要求，密码长度必须在8-20位之间，且必须包含字母和数字');
+      return responseUtil.badRequest(res, i18n.t('admin.member.passwordInvalid', req.lang));
     }
 
     // 如果指定了群组，检查群组成员数是否达到上限
@@ -89,13 +95,18 @@ async function create(req, res) {
         // 检查群组是否存在
         const groupExists = await memberModel.checkGroupExists(parsedGroupId);
         if (!groupExists) {
-          return responseUtil.badRequest(res, `群组ID ${parsedGroupId} 不存在`);
+          return responseUtil.badRequest(res, i18n.t('admin.member.groupByIdNotFound', req.lang, {
+            parsedGroupId
+          }));
         }
         
         // 检查群组成员数是否达到上限
         const groupLimit = await groupModel.checkGroupLimit(parsedGroupId);
         if (groupLimit.isFull) {
-          return responseUtil.badRequest(res, `群组(ID:${parsedGroupId})成员数已达到上限（${groupLimit.maxMembers}人）`);
+          return responseUtil.badRequest(res, i18n.t('admin.group.groupLimit', req.lang, {
+            parsedGroupId,
+            maxMembers: groupLimit.maxMembers
+          }));
         }
       }
     }
@@ -119,10 +130,10 @@ async function create(req, res) {
     }
 
     // 生成默认昵称（如果没有提供）
-    const actualNickname = memberNickname || `用户${Math.floor(Math.random() * 1000000)}`;
+    const actualNickname = memberNickname || `user${Math.floor(Math.random() * 1000000)}`;
 
     // 设置默认头像
-    const defaultAvatar = '';
+    const defaultAvatar = 'http://skc-statics.oss-ap-southeast-6.aliyuncs.com/skc/defaultAvatar.png';
     const actualAvatar = avatar || defaultAvatar;
 
     const result = await memberModel.create({
@@ -136,20 +147,21 @@ async function create(req, res) {
       email: actualEmail,
       avatar: actualAvatar,
       gender: gender !== undefined ? Number(gender) : 2, // 默认为保密
-      telegram
+      telegram,
+      registerSource: 'admin' // 标识为管理端添加
     });
 
-    return responseUtil.success(res, result, '创建会员成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     if (error.message === '会员账号已存在') {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.member.accountExists', req.lang));
     } else if (error.message.includes('群组不存在')) {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.member.groupNotFound', req.lang));
     } else if (error.message === '邀请人不存在') {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.member.inviterNotFound', req.lang));
     }
     logger.error(`创建会员失败: ${error.message}`);
-    return responseUtil.serverError(res, '创建会员失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -165,44 +177,13 @@ async function update(req, res) {
       memberNickname, memberAccount, password, groupIds, inviterId, 
       occupation, phone, email, avatar, gender, telegram 
     } = req.body;
-
-    if (!id) {
-      return responseUtil.badRequest(res, '会员ID不能为空');
-    }
-
-    // 参数验证
-    if (memberNickname && memberNickname.length > 50) {
-      return responseUtil.badRequest(res, '会员昵称长度不能超过50个字符');
-    }
-    
-    if (memberAccount && memberAccount.length > 50) {
-      return responseUtil.badRequest(res, '会员账号长度不能超过50个字符');
-    }
-    
-    // 验证职业类型
-    if (occupation && !Object.values(OccupationType).includes(occupation)) {
-      return responseUtil.badRequest(res, '无效的职业类型');
-    }
-    
-    // 验证性别值是否有效
-    if (gender !== undefined && ![0, 1, 2].includes(Number(gender))) {
-      return responseUtil.badRequest(res, '无效的性别值，应为 0(男)、1(女) 或 2(保密)');
-    }
-
-    // 验证密码强度
-    if (password) {
-      const validatorUtil = require('../../shared/utils/validator.util');
-      if (!validatorUtil.isStrongPassword(password)) {
-        return responseUtil.badRequest(res, '密码不符合要求，密码长度必须在8-20位之间，且必须包含字母和数字');
-      }
-    }
     
     // 如果要更新群组ID，检查群组成员数是否达到上限
     if (groupIds !== undefined) {
       // 获取会员当前所在群组
       const currentMember = await memberModel.getById(parseInt(id, 10));
       if (!currentMember) {
-        return responseUtil.notFound(res, '会员不存在');
+        return responseUtil.notFound(res, i18n.t('admin.member.notFound', req.lang));
       }
       
       // 获取当前会员所在的群组ID列表
@@ -216,7 +197,9 @@ async function update(req, res) {
           // 检查群组是否存在
           const groupExists = await memberModel.checkGroupExists(parsedGroupId);
           if (!groupExists) {
-            return responseUtil.badRequest(res, `群组ID ${parsedGroupId} 不存在`);
+            return responseUtil.badRequest(res, i18n.t('admin.member.groupByIdNotFound', req.lang, {
+              parsedGroupId
+            }));
           }
           
           // 如果是新的群组（不在当前群组列表中），才检查成员数量限制
@@ -224,7 +207,10 @@ async function update(req, res) {
             // 检查群组成员数是否达到上限
             const groupLimit = await groupModel.checkGroupLimit(parsedGroupId);
             if (groupLimit.isFull) {
-              return responseUtil.badRequest(res, `群组(ID:${parsedGroupId})成员数已达到上限（${groupLimit.maxMembers}人）`);
+              return responseUtil.badRequest(res, i18n.t('admin.group.groupLimit', req.lang, {
+                parsedGroupId,
+                maxMembers: groupLimit.maxMembers
+              }));
             }
           }
         }
@@ -254,25 +240,25 @@ async function update(req, res) {
     });
 
     if (!result) {
-      return responseUtil.notFound(res, '会员不存在');
+      return responseUtil.notFound(res, i18n.t('admin.member.notFound', req.lang));
     }
 
-    return responseUtil.success(res, null, '更新会员成功');
+    return responseUtil.success(res, null);
   } catch (error) {
     if (error.message === '会员不存在') {
-      return responseUtil.notFound(res, error.message);
+      return responseUtil.notFound(res, i18n.t('admin.member.notFound', req.lang));
     }
     if (error.message === '会员账号已被其他会员使用') {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.member.accountUsed', req.lang));
     }
     if (error.message.includes('群组不存在')) {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.member.groupNotFound', req.lang));
     }
     if (error.message === '邀请人不存在') {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.member.inviterNotFound', req.lang));
     }
     logger.error(`更新会员失败: ${error.message}`);
-    return responseUtil.serverError(res, '更新会员失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -292,19 +278,207 @@ async function remove(req, res) {
     const result = await memberModel.remove(parseInt(id, 10));
 
     if (!result) {
-      return responseUtil.notFound(res, '会员不存在');
+      return responseUtil.notFound(res, i18n.t('admin.member.notFound', req.lang));
     }
 
-    return responseUtil.success(res, null, '删除会员成功');
+    return responseUtil.success(res, null);
   } catch (error) {
     if (error.message === '会员不存在') {
-      return responseUtil.notFound(res, error.message);
+      return responseUtil.notFound(res, i18n.t('admin.member.notFound', req.lang));
     }
-    if (error.message.includes('该会员下存在关联')) {
-      return responseUtil.badRequest(res, error.message);
+    if (error.message === '该会员下存在关联账号，无法删除') {
+      return responseUtil.badRequest(res, i18n.t('admin.member.associatedAccount', req.lang));
+    }
+    if (error.message === '该会员下存在关联任务，无法删除') {
+      return responseUtil.badRequest(res, i18n.t('admin.member.associatedTask', req.lang));
+    }
+    if (error.message === '该会员下存在关联账单，无法删除') {
+      return responseUtil.badRequest(res, i18n.t('admin.member.associatedBill', req.lang));
     }
     logger.error(`删除会员失败: ${error.message}`);
-    return responseUtil.serverError(res, '删除会员失败');
+    return responseUtil.serverError(res);
+  }
+}
+
+/**
+ * 获取会员邀请数据统计
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getInviteStats(req, res) {
+  try {
+    const { memberId } = req.params;
+    
+    if (!memberId) {
+      return responseUtil.badRequest(res, '会员ID不能为空');
+    }
+    
+    const member = await memberModel.getById(parseInt(memberId, 10));
+    
+    if (!member) {
+      return responseUtil.notFound(res, i18n.t('admin.member.notFound', req.lang));
+    }
+
+    const inviteStats = await inviteModel.getInviteStats(parseInt(memberId, 10));
+    
+    return responseUtil.success(res, inviteStats);
+  } catch (error) {
+    logger.error(`获取会员邀请数据统计失败: ${error.message}`);
+    return responseUtil.serverError(res);
+  }
+}
+
+/**
+ * 获取会员任务数据统计
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getTaskStats(req, res) {
+  try {
+    const { memberId } = req.params;
+    
+    if (!memberId) {
+      return responseUtil.badRequest(res, '会员ID不能为空');
+    }
+    
+    const member = await memberModel.getById(parseInt(memberId, 10));
+    
+    if (!member) {
+      return responseUtil.notFound(res, i18n.t('admin.member.notFound', req.lang));
+    }
+
+    const taskStats = await taskStatsModel.getMemberTaskStats(parseInt(memberId, 10));
+    
+    return responseUtil.success(res, taskStats);
+  } catch (error) {
+    logger.error(`获取会员任务数据统计失败: ${error.message}`);
+    return responseUtil.serverError(res);
+  }
+}
+
+/**
+ * 发放奖励给会员
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function grantReward(req, res) {
+  try {
+    const { memberId, amount, remark } = req.body;
+    
+    // 获取操作员信息
+    const operatorId = req.user.id;
+    
+    // 调用模型层方法发放奖励，直接传递操作人ID
+    const result = await memberModel.grantReward(
+      parseInt(memberId, 10),
+      parseFloat(amount),
+      remark,
+      operatorId
+    );
+    
+    // 记录操作日志
+    logger.info(`会员奖励发放 - 操作员ID: ${operatorId}, 会员ID: ${memberId}, 金额: ${amount}, 备注: ${remark}`);
+    
+    return responseUtil.success(res, result.data);
+  } catch (error) {
+    logger.error(`发放会员奖励失败: ${error.message}`);
+    
+    // 处理特定错误
+    if (error.message === '会员不存在') {
+      return responseUtil.notFound(res, i18n.t('admin.member.notFound', req.lang));
+    } else if (error.message === '奖励金额必须大于0') {
+      return responseUtil.badRequest(res, i18n.t('admin.member.rewardAmountInvalid', req.lang));
+    }
+    
+    return responseUtil.serverError(res);
+  }
+}
+
+/**
+ * 从会员账户扣除奖励
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function deductReward(req, res) {
+  try {
+    const { memberId, amount, remark } = req.body;
+    
+    // 获取操作员信息
+    const operatorId = req.user.id;
+    
+    // 调用模型层方法扣除奖励，直接传递操作人ID
+    const result = await memberModel.deductReward(
+      parseInt(memberId, 10),
+      parseFloat(amount),
+      remark,
+      operatorId
+    );
+    
+    // 记录操作日志
+    logger.info(`会员奖励扣除 - 操作员ID: ${operatorId}, 会员ID: ${memberId}, 金额: ${amount}, 备注: ${remark}`);
+    
+    return responseUtil.success(res, result.data);
+  } catch (error) {
+    logger.error(`扣除会员奖励失败: ${error.message}`);
+    
+    // 处理特定错误
+    if (error.message === '会员不存在') {
+      return responseUtil.notFound(res, i18n.t('admin.member.notFound', req.lang));
+    } else if (error.message === '扣除金额必须大于0') {
+      return responseUtil.badRequest(res, i18n.t('admin.member.deductAmountInvalid', req.lang));
+    }
+    
+    return responseUtil.serverError(res);
+  }
+}
+
+/**
+ * 获取会员账户余额信息
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getMemberBalance(req, res) {
+  try {
+    const memberId = parseInt(req.params.id, 10);
+    
+    if (!memberId || isNaN(memberId)) {
+      return responseUtil.badRequest(res, '无效的会员ID');
+    }
+    
+    // 获取会员余额
+    const balance = await memberBalanceModel.getBalance(memberId);
+    const withdrawalAmount = await memberBalanceModel.getWithdrawalAmount(memberId);
+    
+    // 返回余额信息
+    return responseUtil.success(res, {
+      balance,
+      withdrawalAmount
+    });
+  } catch (error) {
+    logger.error(`获取会员账户余额失败: ${error.message}`);
+    return responseUtil.serverError(res);
+  }
+}
+
+/**
+ * 获取会员提现账户列表
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getWithdrawalAccounts(req, res) {
+  try {
+    const { id: memberId } = req.params;
+    
+    if (!memberId) {
+      return responseUtil.badRequest(res, '会员ID不能为空');
+    }
+    
+    const accounts = await withdrawalAccountModel.getWithdrawalAccountsByMemberId(parseInt(memberId, 10));
+    
+    return responseUtil.success(res, accounts);
+  } catch (error) {
+    logger.error(`获取会员提现账户列表失败: ${error.message}`);
+    return responseUtil.serverError(res);
   }
 }
 
@@ -313,5 +487,11 @@ module.exports = {
   getDetail,
   create,
   update,
-  remove
+  remove,
+  getInviteStats,
+  getTaskStats,
+  grantReward,
+  deductReward,
+  getMemberBalance,
+  getWithdrawalAccounts
 }; 

@@ -11,118 +11,125 @@ const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.midd
 
 const router = express.Router();
 
+// 所有任务路由都需要认证
+router.use(authMiddleware.verifyToken);
+router.use(rateLimiterMiddleware.apiLimiter);
+
 /**
- * @route GET /api/support/channels
+ * @route GET /api/admin/channels
  * @desc 获取渠道列表
  * @access Private
  */
 router.get(
   '/',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
   [
-    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
-    query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
-    query('keyword').optional().isString().withMessage('关键字必须是字符串')
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('common.validation.page'),
+    query('pageSize')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('common.validation.pageSize'),
+    query('keyword')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.list
 );
 
 /**
- * @route GET /api/support/channels/:id
+ * @route GET /api/admin/channels/:id
  * @desc 获取渠道详情
  * @access Private
  */
 router.get(
   '/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
+  authMiddleware.hasPermission('channel:list'),
   [
     param('id')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('渠道ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.get
 );
 
 /**
- * @route POST /api/support/channels
+ * @route POST /api/admin/channels
  * @desc 添加渠道
  * @access Private
  */
 router.post(
   '/',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
+  authMiddleware.hasPermission('channel:list'),
   [
     body('name')
       .notEmpty()
-      .withMessage('渠道名称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
-      .withMessage('渠道名称长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('icon')
       .notEmpty()
-      .withMessage('渠道图标不能为空'),
+      .withMessage('common.validation.mustNotBeEmpty'),
     body('customFields')
       .optional()
       .isArray()
-      .withMessage('customFields必须是数组')
+      .withMessage('common.validation.mustBeArray')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.add
 );
 
 /**
- * @route PUT /api/support/channels/:id
+ * @route PUT /api/admin/channels/:id
  * @desc 更新渠道
  * @access Private
  */
 router.put(
   '/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
+  authMiddleware.hasPermission('channel:list'),
   [
     param('id')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('渠道ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('name')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('渠道名称长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('icon')
       .optional()
       .notEmpty()
-      .withMessage('渠道图标不能为空'),
+      .withMessage('common.validation.mustNotBeEmpty'),
     body('customFields')
       .optional()
       .isArray()
-      .withMessage('customFields必须是数组')
+      .withMessage('common.validation.mustBeArray')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.edit
 );
 
 /**
- * @route DELETE /api/support/channels/:id
+ * @route DELETE /api/admin/channels/:id
  * @desc 删除渠道
  * @access Private
  */
 router.delete(
   '/:id',
-  authMiddleware.verifyToken,
-  rateLimiterMiddleware.apiLimiter,
+  authMiddleware.hasPermission('channel:list'),
   [
     param('id')
       .notEmpty()
-      .withMessage('渠道ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('渠道ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   channelController.remove

@@ -14,7 +14,7 @@ const logger = require('../config/logger.config');
 async function getEnum(req, res) {
   try {
     const { enumType } = req.params;
-    const lang = req.query.lang || 'zh-CN';
+    const lang = req.query.lang || 'en-US';
     
     // 检查枚举类型是否存在
     if (!enums[enumType]) {
@@ -57,7 +57,7 @@ async function getEnum(req, res) {
  */
 async function getAllEnums(req, res) {
   try {
-    const lang = req.query.lang || 'zh-CN';
+    const lang = req.query.lang || 'en-US';
     const result = {};
     
     // 遍历所有枚举类型

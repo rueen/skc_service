@@ -6,6 +6,6 @@
 // require('dotenv').config();
 
 module.exports = {
-  secret: process.env.JWT_SECRET || 'your_jwt_secret_key_here',
-  expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+  secret: process.env.JWT_SECRET,
+  expiresIn: process.env.JWT_EXPIRES_IN,
 }; 

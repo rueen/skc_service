@@ -7,7 +7,8 @@ const authUtil = require('../../shared/utils/auth.util');
 const validatorUtil = require('../../shared/utils/validator.util');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
-const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取小二列表
@@ -16,7 +17,7 @@ const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
  */
 async function getList(req, res) {
   try {
-    const { page = 1, pageSize = 10, keyword } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, keyword } = req.query;
     
     // 获取小二列表
     const result = await waiterModel.getList({ keyword }, page, pageSize);
@@ -24,7 +25,7 @@ async function getList(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取小二列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取小二列表失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -40,7 +41,7 @@ async function create(req, res) {
     // 检查用户名是否已存在
     const existingWaiter = await waiterModel.findByUsername(username);
     if (existingWaiter) {
-      return responseUtil.badRequest(res, '用户名已存在');
+      return responseUtil.badRequest(res, i18n.t('admin.waiter.usernameExists', req.lang));
     }
     
     // 哈希密码
@@ -55,10 +56,10 @@ async function create(req, res) {
       permissions
     });
     
-    return responseUtil.success(res, { id: result.id }, '创建小二成功');
+    return responseUtil.success(res, { id: result.id });
   } catch (error) {
     logger.error(`创建小二失败: ${error.message}`);
-    return responseUtil.serverError(res, '创建小二失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -79,14 +80,14 @@ async function update(req, res) {
     // 检查小二是否存在
     const waiter = await waiterModel.findById(id);
     if (!waiter) {
-      return responseUtil.notFound(res, '小二不存在');
+      return responseUtil.notFound(res, i18n.t('admin.waiter.notFound', req.lang));
     }
 
     // 如果要更新用户名，检查是否已存在
     if (username && username !== waiter.username) {
       const existingWaiter = await waiterModel.findByUsername(username);
       if (existingWaiter) {
-        return responseUtil.badRequest(res, '用户名已存在');
+        return responseUtil.badRequest(res, i18n.t('admin.waiter.usernameExists', req.lang));
       }
     }
     
@@ -108,13 +109,13 @@ async function update(req, res) {
     const success = await waiterModel.update(id, updateData);
     
     if (!success) {
-      return responseUtil.serverError(res, '更新小二信息失败');
+      return responseUtil.serverError(res);
     }
     
-    return responseUtil.success(res, {}, '更新小二信息成功');
+    return responseUtil.success(res, {});
   } catch (error) {
     logger.error(`更新小二信息失败: ${error.message}`);
-    return responseUtil.serverError(res, '更新小二信息失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -135,25 +136,25 @@ async function remove(req, res) {
     // 检查小二是否存在
     const waiter = await waiterModel.findById(id);
     if (!waiter) {
-      return responseUtil.notFound(res, '小二不存在');
+      return responseUtil.notFound(res, i18n.t('admin.waiter.notFound', req.lang));
     }
     
     // 不允许删除管理员账号
-    if (waiter.is_admin === 1) {
-      return responseUtil.forbidden(res, '不允许删除管理员账号');
+    if (waiter.isAdmin) {
+      return responseUtil.forbidden(res, i18n.t('admin.waiter.notAllowedDeleteAdmin', req.lang));
     }
     
     // 删除小二
     const success = await waiterModel.remove(id);
     
     if (!success) {
-      return responseUtil.serverError(res, '删除小二失败');
+      return responseUtil.serverError(res);
     }
     
-    return responseUtil.success(res, {}, '删除小二成功');
+    return responseUtil.success(res, {});
   } catch (error) {
     logger.error(`删除小二失败: ${error.message}`);
-    return responseUtil.serverError(res, '删除小二失败');
+    return responseUtil.serverError(res);
   }
 }
 

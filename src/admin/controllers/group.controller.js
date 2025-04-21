@@ -5,7 +5,8 @@
 const groupModel = require('../../shared/models/group.model');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
-const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取群组列表
@@ -14,7 +15,7 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, STATUS_CODES, MESSAGES } = require('../
  */
 async function list(req, res) {
   try {
-    const { page = 1, pageSize = 10, groupName, ownerId, memberId, keyword } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, groupName, ownerId, memberId, keyword } = req.query;
     
     // 构建筛选条件
     const filters = {};
@@ -29,7 +30,7 @@ async function list(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取群组列表失败: ${error.message}`);
-    return responseUtil.serverError(res, error.message || '获取群组列表失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -44,13 +45,13 @@ async function get(req, res) {
     const group = await groupModel.getById(parseInt(id, 10));
     
     if (!group) {
-      return responseUtil.notFound(res, '群组不存在');
+      return responseUtil.notFound(res, i18n.t('admin.group.notFound', req.lang));
     }
 
     return responseUtil.success(res, group);
   } catch (error) {
     logger.error(`获取群组详情失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取群组详情失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -78,13 +79,13 @@ async function create(req, res) {
       ownerId: ownerId ? parseInt(ownerId, 10) : null
     });
 
-    return responseUtil.success(res, result, '创建群组成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     if (error.message === '群主不存在') {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.group.ownerNotFound', req.lang));
     }
     logger.error(`创建群组失败: ${error.message}`);
-    return responseUtil.serverError(res, '创建群组失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -105,9 +106,9 @@ async function update(req, res) {
 
     // 处理 ownerId
     let parsedOwnerId;
-    if (ownerId === null || ownerId === undefined) {
-      // 不修改群主
-      parsedOwnerId = undefined;
+    if (ownerId === undefined || ownerId === null) {
+      // ownerId 为 undefined 或 null 都表示删除群主
+      parsedOwnerId = null;
     } else {
       // 如果提供了 ownerId，转换为整数
       parsedOwnerId = parseInt(ownerId, 10);
@@ -121,19 +122,19 @@ async function update(req, res) {
     });
 
     if (!result) {
-      return responseUtil.notFound(res, '群组不存在');
+      return responseUtil.notFound(res, i18n.t('admin.group.notFound', req.lang));
     }
 
-    return responseUtil.success(res, null, '更新群组成功');
+    return responseUtil.success(res, null);
   } catch (error) {
     if (error.message === '群组不存在') {
-      return responseUtil.notFound(res, error.message);
+      return responseUtil.notFound(res, i18n.t('admin.group.notFound', req.lang));
     }
     if (error.message === '新群主不存在') {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.group.ownerNotFound', req.lang));
     }
     logger.error(`更新群组失败: ${error.message}`);
-    return responseUtil.serverError(res, '更新群组失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -148,19 +149,41 @@ async function remove(req, res) {
     const result = await groupModel.remove(parseInt(id, 10));
 
     if (!result) {
-      return responseUtil.notFound(res, '群组不存在');
+      return responseUtil.notFound(res, i18n.t('admin.group.notFound', req.lang));
     }
 
-    return responseUtil.success(res, null, '删除群组成功');
+    return responseUtil.success(res, null);
   } catch (error) {
     if (error.message === '群组不存在') {
-      return responseUtil.notFound(res, error.message);
+      return responseUtil.notFound(res, i18n.t('admin.group.notFound', req.lang));
     }
     if (error.message === '该群组下存在关联会员，无法删除') {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.group.associatedMember', req.lang));
     }
     logger.error(`删除群组失败: ${error.message}`);
-    return responseUtil.serverError(res, '删除群组失败');
+    return responseUtil.serverError(res);
+  }
+}
+
+/**
+ * 获取群主名下群统计信息
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getOwnerGroupStats(req, res) {
+  try {
+    const { memberId } = req.params;
+    
+    if (!memberId) {
+      return responseUtil.badRequest(res, '会员ID不能为空');
+    }
+    
+    const stats = await groupModel.getOwnerGroupStats(parseInt(memberId, 10));
+    
+    return responseUtil.success(res, stats);
+  } catch (error) {
+    logger.error(`获取群主统计信息失败: ${error.message}`);
+    return responseUtil.serverError(res);
   }
 }
 
@@ -169,5 +192,6 @@ module.exports = {
   get,
   create,
   update,
-  remove
+  remove,
+  getOwnerGroupStats
 }; 

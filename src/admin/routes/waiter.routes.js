@@ -16,7 +16,7 @@ router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
- * @route GET /api/support/waiters
+ * @route GET /api/admin/waiters
  * @desc 获取小二列表
  * @access Private (需要 waiter:list 权限)
  */
@@ -27,7 +27,7 @@ router.get(
 );
 
 /**
- * @route POST /api/support/waiters
+ * @route POST /api/admin/waiters
  * @desc 创建小二
  * @access Private (需要管理员权限)
  */
@@ -37,22 +37,22 @@ router.post(
   [
     body('username')
       .notEmpty()
-      .withMessage('用户名不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 3, max: 20 })
-      .withMessage('用户名长度应为3-20个字符'),
+      .withMessage('common.validation.waiterUsernameLength'),
     body('password')
       .notEmpty()
-      .withMessage('密码不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 6 })
-      .withMessage('密码长度至少为6个字符'),
+      .withMessage('common.validation.minLength{min:6}'),
     body('isAdmin')
       .optional()
       .isBoolean()
-      .withMessage('isAdmin必须是布尔值'),
+      .withMessage('common.validation.formatInvalid'),
     body('permissions')
       .optional()
       .isString()
-      .withMessage('permissions必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => {
     // 验证请求参数
@@ -65,7 +65,7 @@ router.post(
 );
 
 /**
- * @route PUT /api/support/waiters/:id
+ * @route PUT /api/admin/waiters/:id
  * @desc 更新小二信息
  * @access Private (需要管理员权限)
  */
@@ -75,25 +75,25 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('小二ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('小二ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('username')
       .optional()
       .isLength({ min: 3, max: 20 })
-      .withMessage('用户名长度应为3-20个字符'),
+      .withMessage('common.validation.waiterUsernameLength'),
     body('password')
       .optional()
       .isLength({ min: 6 })
-      .withMessage('密码长度至少为6个字符'),
+      .withMessage('common.validation.minLength{min:6}'),
     body('isAdmin')
       .optional()
       .isBoolean()
-      .withMessage('isAdmin必须是布尔值'),
+      .withMessage('common.validation.formatInvalid'),
     body('permissions')
       .optional()
       .isString()
-      .withMessage('permissions必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => {
     // 验证请求参数
@@ -106,7 +106,7 @@ router.put(
 );
 
 /**
- * @route DELETE /api/support/waiters/:id
+ * @route DELETE /api/admin/waiters/:id
  * @desc 删除小二
  * @access Private (需要管理员权限)
  */
@@ -116,9 +116,9 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('小二ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('小二ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
   ],
   (req, res, next) => {
     // 验证请求参数

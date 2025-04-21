@@ -16,90 +16,111 @@ router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
- * @route GET /api/support/groups
+ * @route GET /api/admin/groups
  * @desc 获取群组列表
  * @access Private
  */
 router.get(
   '/',
   [
-    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
-    query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
-    query('groupName').optional().isString().withMessage('群组名称必须是字符串'),
-    query('ownerId').optional().isInt().withMessage('群主ID必须是整数'),
-    query('memberId').optional().isInt().withMessage('成员ID必须是整数'),
-    query('keyword').optional().isString().withMessage('关键词必须是字符串')
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('common.validation.page'),
+    query('pageSize')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('common.validation.pageSize'),
+    query('groupName')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
+    query('ownerId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
+    query('memberId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
+    query('keyword')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.list
 );
 
 /**
- * @route GET /api/support/groups/:id
+ * @route GET /api/admin/groups/:id
  * @desc 获取群组详情
  * @access Private
  */
 router.get(
   '/:id',
+  authMiddleware.hasPermission('group:list'),
   [
     param('id')
       .notEmpty()
-      .withMessage('群组ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('群组ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.get
 );
 
 /**
- * @route POST /api/support/groups
+ * @route POST /api/admin/groups
  * @desc 创建群组
  * @access Private
  */
 router.post(
   '/',
+  authMiddleware.hasPermission('group:list'),
   [
     body('groupName')
       .notEmpty()
-      .withMessage('群组名称不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
-      .withMessage('群组名称长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('groupLink')
       .notEmpty()
-      .withMessage('群组链接不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isURL()
-      .withMessage('群组链接必须是有效的URL'),
+      .withMessage('common.validation.formatInvalid'),
     body('ownerId')
       .optional()
       .isInt()
-      .withMessage('群主ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.create
 );
 
 /**
- * @route PUT /api/support/groups/:id
+ * @route PUT /api/admin/groups/:id
  * @desc 更新群组
  * @access Private
  */
 router.put(
   '/:id',
+  authMiddleware.hasPermission('group:list'),
   [
     param('id')
       .notEmpty()
-      .withMessage('群组ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('群组ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('groupName')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('群组名称长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('groupLink')
       .optional()
       .isURL()
-      .withMessage('群组链接必须是有效的URL'),
+      .withMessage('common.validation.formatInvalid'),
     body('ownerId')
       .optional()
       .custom((value) => {
@@ -108,25 +129,26 @@ router.put(
         // 如果传值了，必须是整数
         return Number.isInteger(Number(value));
       })
-      .withMessage('群主ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.update
 );
 
 /**
- * @route DELETE /api/support/groups/:id
+ * @route DELETE /api/admin/groups/:id
  * @desc 删除群组
  * @access Private
  */
 router.delete(
   '/:id',
+  authMiddleware.hasPermission('group:list'),
   [
     param('id')
       .notEmpty()
-      .withMessage('群组ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('群组ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   groupController.remove

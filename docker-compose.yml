@@ -38,7 +38,7 @@ services:
       - JWT_SECRET=${ADMIN_JWT_SECRET}
       - JWT_EXPIRES_IN=${ADMIN_JWT_EXPIRES_IN}
       - PORT=${ADMIN_PORT:-3002}
-      - BASE_URL=${ADMIN_BASE_URL:-/api/support}
+      - BASE_URL=${ADMIN_BASE_URL:-/api/admin}
       - UPLOAD_DIR=${UPLOAD_DIR:-uploads}
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-5242880}
       - LOG_LEVEL=${LOG_LEVEL:-info}
@@ -73,8 +73,6 @@ services:
       - UPLOAD_DIR=${UPLOAD_DIR:-uploads/h5}
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-5242880}
       - LOG_LEVEL=${LOG_LEVEL:-info}
-      - WX_APPID=${WX_APPID}
-      - WX_SECRET=${WX_SECRET}
     volumes:
       - ./uploads:/app/uploads
       - ./logs:/app/logs

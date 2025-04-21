@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-20 21:58:45
+ * @LastEditTime: 2025-04-18 16:03:56
  * @Description: 
  */
 /**
@@ -10,7 +10,7 @@
  * 处理文章相关的路由
  */
 const express = require('express');
-const { param, query } = require('express-validator');
+const { param } = require('express-validator');
 const articleController = require('../controllers/article.controller');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
@@ -28,9 +28,9 @@ router.get(
   [
     param('location')
       .notEmpty()
-      .withMessage('位置标识不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isString()
-      .withMessage('位置标识必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   articleController.getDetailByLocation
@@ -47,12 +47,12 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('文章ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('文章ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
-  articleController.getDetail
+  articleController.getDetailById
 );
 
 module.exports = router; 

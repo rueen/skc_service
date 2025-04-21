@@ -6,7 +6,7 @@ const waiterModel = require('../../shared/models/waiter.model');
 const authUtil = require('../../shared/utils/auth.util');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
-const { STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 用户登录
@@ -20,13 +20,13 @@ async function login(req, res) {
     // 查找用户
     const waiter = await waiterModel.findByUsername(username);
     if (!waiter) {
-      return responseUtil.unauthorized(res, '用户名或密码错误');
+      return responseUtil.unauthorized(res, i18n.t('admin.usernameOrPasswordError', req.lang));
     }
 
     // 验证密码
     const isPasswordValid = await authUtil.comparePassword(password, waiter.password);
     if (!isPasswordValid) {
-      return responseUtil.unauthorized(res, '用户名或密码错误');
+      return responseUtil.unauthorized(res, i18n.t('admin.usernameOrPasswordError', req.lang));
     }
 
     // 更新最后登录时间
@@ -36,7 +36,7 @@ async function login(req, res) {
     const token = authUtil.generateToken({
       id: waiter.id,
       username: waiter.username,
-      isAdmin: waiter.is_admin === 1,
+      isAdmin: waiter.isAdmin,
       permissions: waiter.permissions
     });
 
@@ -46,13 +46,13 @@ async function login(req, res) {
       user: {
         id: waiter.id,
         username: waiter.username,
-        isAdmin: waiter.is_admin === 1,
+        isAdmin: waiter.isAdmin,
         permissions: waiter.permissions
       }
-    }, '登录成功');
+    }, i18n.t('admin.loginSuccess', req.lang));
   } catch (error) {
     logger.error(`登录失败: ${error.message}`);
-    return responseUtil.serverError(res, '登录过程中发生错误');
+    return responseUtil.serverError(res, i18n.t('admin.loginFailed', req.lang));
   }
 }
 
@@ -68,20 +68,20 @@ async function getCurrentUser(req, res) {
     // 查找用户
     const waiter = await waiterModel.findById(userId);
     if (!waiter) {
-      return responseUtil.notFound(res, '用户不存在');
+      return responseUtil.notFound(res, i18n.t('admin.userNotFound', req.lang));
     }
 
     // 返回用户信息
     return responseUtil.success(res, {
       id: waiter.id,
       username: waiter.username,
-      isAdmin: waiter.is_admin === 1,
+      isAdmin: waiter.isAdmin,
       permissions: waiter.permissions,
       lastLoginTime: waiter.last_login_time
     });
   } catch (error) {
     logger.error(`获取当前用户信息失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取用户信息过程中发生错误');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -93,10 +93,10 @@ async function getCurrentUser(req, res) {
 async function logout(req, res) {
   try {
     // 客户端需要清除token，服务端无需特殊处理
-    return responseUtil.success(res, null, '退出登录成功');
+    return responseUtil.success(res, null);
   } catch (error) {
     logger.error(`退出登录失败: ${error.message}`);
-    return responseUtil.serverError(res, '退出登录失败');
+    return responseUtil.serverError(res);
   }
 }
 

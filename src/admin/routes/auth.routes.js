@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-25 10:15:13
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-18 16:00:39
+ * @Description: 
+ */
 /**
  * 认证路由
  * 处理用户登录和认证相关的路由
@@ -12,7 +19,7 @@ const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.midd
 const router = express.Router();
 
 /**
- * @route POST /api/support/auth/login
+ * @route POST /api/admin/auth/login
  * @desc 用户登录
  * @access Public
  */
@@ -22,10 +29,10 @@ router.post(
   [
     body('username')
       .notEmpty()
-      .withMessage('用户名不能为空'),
+      .withMessage('common.validation.mustNotBeEmpty'),
     body('password')
       .notEmpty()
-      .withMessage('密码不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
   ],
   (req, res, next) => {
     // 验证请求参数
@@ -38,7 +45,7 @@ router.post(
 );
 
 /**
- * @route POST /api/support/auth/logout
+ * @route POST /api/admin/auth/logout
  * @desc 用户退出登录
  * @access Private
  */
@@ -49,12 +56,12 @@ router.post(
 );
 
 /**
- * @route GET /api/support/user/info
+ * @route GET /api/admin/userInfo
  * @desc 获取当前用户信息
  * @access Private
  */
 router.get(
-  '/info',
+  '/userInfo',
   authMiddleware.verifyToken,
   authController.getCurrentUser
 );

@@ -9,6 +9,7 @@ const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 const { OccupationType } = require('../../shared/config/enums');
+const groupController = require('../controllers/group.controller');
 
 const router = express.Router();
 
@@ -17,25 +18,36 @@ router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
- * @route GET /api/support/members
+ * @route GET /api/admin/members
  * @desc 获取会员列表
  * @access Private (需要 member:list 权限)
  */
 router.get(
   '/',
-  authMiddleware.hasPermission('member:list'),
   [
-    query('page').optional().isInt({ min: 1 }).withMessage('页码必须是大于0的整数'),
-    query('pageSize').optional().isInt({ min: 1 }).withMessage('每页条数必须是大于0的整数'),
-    query('memberNickname').optional().isString().withMessage('会员昵称必须是字符串'),
-    query('groupId').optional().isInt().withMessage('群组ID必须是整数')
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('common.validation.page'),
+    query('pageSize')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('common.validation.pageSize'),
+    query('memberNickname')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
+    query('groupId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.list
 );
 
 /**
- * @route GET /api/support/members/:id
+ * @route GET /api/admin/members/:id
  * @desc 获取会员详情
  * @access Private (需要 member:view 权限)
  */
@@ -45,16 +57,16 @@ router.get(
   [
     param('id')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('会员ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.getDetail
 );
 
 /**
- * @route POST /api/support/members
+ * @route POST /api/admin/members
  * @desc 创建会员
  * @access Private (需要 member:create 权限)
  */
@@ -64,59 +76,59 @@ router.post(
   [
     body('memberAccount')
       .notEmpty()
-      .withMessage('会员账号不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 4, max: 50 })
-      .withMessage('会员账号长度必须在4-50个字符之间'),
+      .withMessage('common.validation.memberAccountLength'),
     body('password')
       .notEmpty()
-      .withMessage('密码不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ min: 8, max: 20 })
-      .withMessage('密码长度必须在8-20位之间')
+      .withMessage('common.validation.memberPasswordLength')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
-      .withMessage('密码必须包含字母和数字'),
+      .withMessage('common.validation.memberPasswordFormat'),
     body('memberNickname')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('会员昵称长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('groupIds')
       .optional()
       .isArray()
-      .withMessage('群组ID必须是数组格式'),
+      .withMessage('common.validation.mustBeArray'),
     body('groupIds.*')
       .optional()
       .isInt()
-      .withMessage('群组ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('inviterId')
       .optional()
       .isInt()
-      .withMessage('邀请人ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('occupation')
       .optional()
       .isIn(Object.values(OccupationType))
-      .withMessage('无效的职业类型'),
+      .withMessage('common.validation.invalid'),
     body('phone')
       .optional()
       .isString()
-      .withMessage('手机号必须是字符串'),
+      .withMessage('common.validation.mustBeString'),
     body('email')
       .optional()
       .isEmail()
-      .withMessage('邮箱格式不正确'),
+      .withMessage('common.validation.formatInvalid'),
     body('gender')
       .optional()
       .isIn([0, 1, 2])
-      .withMessage('性别值无效，应为 0(男)、1(女) 或 2(保密)'),
+      .withMessage('common.validation.invalid'),
     body('telegram')
       .optional()
       .isString()
-      .withMessage('Telegram账号必须是字符串')
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.create
 );
 
 /**
- * @route PUT /api/support/members/:id
+ * @route PUT /api/admin/members/:id
  * @desc 更新会员
  * @access Private (需要 member:edit 权限)
  */
@@ -126,31 +138,31 @@ router.put(
   [
     param('id')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('会员ID必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('memberNickname')
       .optional()
       .isLength({ max: 50 })
-      .withMessage('会员昵称长度不能超过50个字符'),
+      .withMessage('common.validation.maxLength{max:50}'),
     body('memberAccount')
       .optional()
-      .isLength({ max: 50 })
-      .withMessage('会员账号长度不能超过50个字符'),
+      .isLength({ min: 4, max: 50 })
+      .withMessage('common.validation.memberAccountLength'),
     body('password')
       .optional()
       .isLength({ min: 8, max: 20 })
-      .withMessage('密码长度必须在8-20个字符之间')
+      .withMessage('common.validation.memberPasswordLength')
       .matches(/^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/)
-      .withMessage('密码必须包含字母和数字'),
+      .withMessage('common.validation.memberPasswordFormat'),
     body('groupIds')
       .optional()
       .isArray()
-      .withMessage('群组ID必须是数组格式'),
+      .withMessage('common.validation.mustBeArray'),
     body('groupIds.*')
       .optional()
       .isInt()
-      .withMessage('群组ID数组中的值必须是整数'),
+      .withMessage('common.validation.mustBeInt'),
     body('inviterId')
       .optional()
       .custom((value) => {
@@ -158,18 +170,18 @@ router.put(
         if (value === null) return true;
         return Number.isInteger(Number(value));
       })
-      .withMessage('邀请人ID必须是整数或null'),
+      .withMessage('common.validation.inviterIdFormat'),
     body('occupation')
       .optional()
       .isIn(Object.values(OccupationType))
-      .withMessage('无效的职业类型')
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.update
 );
 
 /**
- * @route DELETE /api/support/members/:id
+ * @route DELETE /api/admin/members/:id
  * @desc 删除会员
  * @access Private (需要 member:edit 权限)
  */
@@ -179,12 +191,176 @@ router.delete(
   [
     param('id')
       .notEmpty()
-      .withMessage('会员ID不能为空')
+      .withMessage('common.validation.mustNotBeEmpty')
       .isInt()
-      .withMessage('会员ID必须是整数')
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.remove
+);
+
+/**
+ * @route GET /api/admin/members/:memberId/groups/stats
+ * @desc 获取指定会员作为群主的统计信息
+ * @access Private (需要 member:view 权限)
+ */
+router.get(
+  '/:memberId/groups/stats',
+  authMiddleware.hasPermission('member:view'),
+  [
+    param('memberId')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  groupController.getOwnerGroupStats
+);
+
+/**
+ * @route GET /api/admin/members/:memberId/invite/stats
+ * @desc 获取指定会员的邀请数据统计信息
+ * @access Private (需要 member:view 权限)
+ */
+router.get(
+  '/:memberId/invite/stats',
+  authMiddleware.hasPermission('member:view'),
+  [
+    param('memberId')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.getInviteStats
+);
+
+/**
+ * @route GET /api/admin/members/:memberId/task/stats
+ * @desc 获取指定会员的任务数据统计信息
+ * @access Private (需要 member:view 权限)
+ */
+router.get(
+  '/:memberId/task/stats',
+  authMiddleware.hasPermission('member:view'),
+  [
+    param('memberId')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.getTaskStats
+);
+
+/**
+ * @route GET /api/admin/members/:id/withdrawal-accounts
+ * @desc 获取指定会员的提现账户列表
+ * @access Private (需要 member:view 权限)
+ */
+router.get(
+  '/:id/withdrawal-accounts',
+  authMiddleware.hasPermission('member:view'),
+  [
+    param('id')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.getWithdrawalAccounts
+);
+
+/**
+ * @route POST /api/admin/members/grant-reward
+ * @desc 发放奖励给会员
+ * @access Private (需要 member:edit 权限)
+ */
+router.post(
+  '/grant-reward',
+  authMiddleware.hasPermission('member:edit'),
+  [
+    body('memberId')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
+    body('amount')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isFloat({ min: 0.01 })
+      .withMessage('common.validation.amountFormat'),
+    body('remark')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isLength({ max: 255 })
+      .withMessage('common.validation.maxLength{max:255}')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.grantReward
+);
+
+/**
+ * @route POST /api/admin/members/deduct-reward
+ * @desc 从会员账户扣除奖励
+ * @access Private (需要 member:edit 权限)
+ */
+router.post(
+  '/deduct-reward',
+  authMiddleware.hasPermission('member:edit'),
+  [
+    body('memberId')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
+    body('amount')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isFloat({ min: 0.01 })
+      .withMessage('common.validation.amountFormat'),
+    body('remark')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isLength({ max: 255 })
+      .withMessage('common.validation.maxLength{max:255}')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.deductReward
+);
+
+// 获取会员账户余额
+/**
+ * @api {get} /api/admin/members/:id/balance 获取会员账户余额
+ * @apiName GetMemberBalance
+ * @apiGroup Member
+ * @apiPermission member:view
+ * 
+ * @apiParam {Number} id 会员ID
+ * 
+ * @apiSuccess {Object} data 余额信息
+ * @apiSuccess {Number} data.balance 账户余额
+ * @apiSuccess {Number} data.withdrawalAmount 已提现金额
+ * 
+ * @apiError (404) NotFound 会员不存在
+ * @apiError (500) ServerError 服务器错误
+ */
+router.get(
+  '/:id/balance',
+  authMiddleware.hasPermission('member:view'),
+  [
+    param('id')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.getMemberBalance
 );
 
 module.exports = router; 

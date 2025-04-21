@@ -5,29 +5,8 @@
 const articleModel = require('../../shared/models/article.model');
 const responseUtil = require('../../shared/utils/response.util');
 const logger = require('../../shared/config/logger.config');
-const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, STATUS_CODES, MESSAGES } = require('../../shared/config/api.config');
-
-/**
- * 获取文章
- * @param {Object} req - Express请求对象
- * @param {Object} res - Express响应对象
- */
-async function get(req, res) {
-  try {
-    const { location } = req.query;
-    
-    if (!location) {
-      return responseUtil.badRequest(res, '文章位置标识不能为空');
-    }
-    
-    // 获取文章
-    const article = await articleModel.getByLocation(location);
-    return responseUtil.success(res, article || null);
-  } catch (error) {
-    logger.error(`获取文章失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取文章失败');
-  }
-}
+const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
+const i18n = require('../../shared/utils/i18n.util');
 
 /**
  * 获取文章列表
@@ -48,7 +27,7 @@ async function list(req, res) {
     return responseUtil.success(res, result);
   } catch (error) {
     logger.error(`获取文章列表失败: ${error.message}`);
-    return responseUtil.serverError(res, '获取文章列表失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -72,13 +51,13 @@ async function add(req, res) {
       location
     });
     
-    return responseUtil.success(res, result, '创建文章成功');
+    return responseUtil.success(res, result);
   } catch (error) {
     if (error.message === '文章位置标识已存在') {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.article.locationExists', req.lang));
     }
     logger.error(`创建文章失败: ${error.message}`);
-    return responseUtil.serverError(res, '创建文章失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -105,16 +84,16 @@ async function edit(req, res) {
     });
     
     if (!success) {
-      return responseUtil.notFound(res, '文章不存在');
+      return responseUtil.notFound(res, i18n.t('admin.article.notFound', req.lang));
     }
     
-    return responseUtil.success(res, null, '更新文章成功');
+    return responseUtil.success(res, null);
   } catch (error) {
     if (error.message === '文章位置标识已存在') {
-      return responseUtil.badRequest(res, error.message);
+      return responseUtil.badRequest(res, i18n.t('admin.article.locationExists', req.lang));
     }
     logger.error(`更新文章失败: ${error.message}`);
-    return responseUtil.serverError(res, '更新文章失败');
+    return responseUtil.serverError(res);
   }
 }
 
@@ -135,18 +114,17 @@ async function remove(req, res) {
     const success = await articleModel.remove({ id, location });
     
     if (!success) {
-      return responseUtil.notFound(res, '文章不存在');
+      return responseUtil.notFound(res, i18n.t('admin.article.notFound', req.lang));
     }
     
-    return responseUtil.success(res, null, '删除文章成功');
+    return responseUtil.success(res, null);
   } catch (error) {
     logger.error(`删除文章失败: ${error.message}`);
-    return responseUtil.serverError(res, '删除文章失败');
+    return responseUtil.serverError(res);
   }
 }
 
 module.exports = {
-  get,
   list,
   add,
   edit,

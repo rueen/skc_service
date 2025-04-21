@@ -28,11 +28,33 @@ const generateToken = (payload) => {
  */
 const verifyToken = (token) => {
   try {
-    return jwt.verify(token, authConfig.secret);
+    const decoded = jwt.verify(token, authConfig.secret);
+    return decoded;
   } catch (error) {
     logger.error(`验证JWT令牌失败: ${error.message}`);
     return null;
   }
+};
+
+/**
+ * 检查令牌是否在密码修改后签发
+ * @param {Object} decoded - 解码后的令牌
+ * @param {Date} passwordChangedTime - 密码修改时间
+ * @returns {boolean} 是否有效
+ */
+const isTokenIssuedAfterPasswordChange = (decoded, passwordChangedTime) => {
+  if (!passwordChangedTime) {
+    return true; // 如果没有密码修改记录，则令牌有效
+  }
+  
+  // 将密码修改时间转换为时间戳（秒）
+  const changedTimestamp = parseInt(passwordChangedTime.getTime() / 1000, 10);
+  
+  // 令牌签发时间
+  const issuedAt = decoded.iat || 0;
+  
+  // 如果令牌在密码修改之前签发，则令牌无效
+  return issuedAt >= changedTimestamp;
 };
 
 /**
@@ -81,6 +103,7 @@ const extractTokenFromHeader = (req) => {
 module.exports = {
   generateToken,
   verifyToken,
+  isTokenIssuedAfterPasswordChange,
   hashPassword,
   comparePassword,
   extractTokenFromHeader
