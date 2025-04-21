@@ -8,6 +8,7 @@ yarn-error.log
 .env
 .env.*
 !.env.production.example
+!.env.example
 
 # 日志
 logs/
