@@ -7,9 +7,7 @@ yarn-error.log
 # 环境变量
 .env
 .env.*
-!.env.example
-!.env.admin.example
-!.env.h5.example
+!.env.production.example
 
 # 日志
 logs/
