@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:47
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 17:37:17
+ * @LastEditTime: 2025-04-22 15:10:20
  * @Description: 
  */
 /**
@@ -18,6 +18,8 @@ module.exports = {
   unauthorized: 'Unauthorized, please login first',
   forbidden: 'Access denied',
   notFound: 'Resource not found',
+  rateLimit: 'Request too frequent, please try again later',
+  loginRateLimit: 'Login attempt too frequent, please try again in 1 hour',
   
   // Other common translations...
   validation: {

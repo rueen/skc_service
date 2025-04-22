@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:12:24
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-30 20:01:01
+ * @LastEditTime: 2025-04-22 15:17:30
  * @Description: 
  */
 /**
@@ -13,6 +13,7 @@ const rateLimit = require('express-rate-limit');
 const logger = require('../config/logger.config');
 const responseUtil = require('../utils/response.util');
 const { apiLimiterConfig, loginLimiterConfig } = require('../config/rateLimiter.config');
+const i18n = require('../utils/i18n.util');
 
 /**
  * 创建通用限流中间件
@@ -26,7 +27,7 @@ const apiLimiter = rateLimit({
   },
   handler: (req, res, next, options) => {
     logger.warn(`IP ${req.ip} 超过请求限制`);
-    responseUtil.error(res, '请求过于频繁，请稍后再试', 4290, 429);
+    responseUtil.error(res, i18n.t('common.rateLimit', req.lang), 4290, 429);
   }
 });
 
@@ -43,7 +44,7 @@ const loginLimiter = rateLimit({
   },
   handler: (req, res, next, options) => {
     logger.warn(`IP ${req.ip} 登录尝试次数过多`);
-    responseUtil.error(res, '登录尝试次数过多，请1小时后再试', 4290, 429);
+    responseUtil.error(res, i18n.t('common.loginRateLimit', req.lang), 4290, 429);
   }
 });
 

@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-04-18 22:39:08
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-22 15:11:59
+ * @Description: 
+ */
 /**
  * Pangkalahatang pagsasalin sa Tagalog
  * Naglalaman ng pangkalahatang mga mensahe at teksto ng sistema
@@ -11,6 +18,8 @@ module.exports = {
   unauthorized: 'Hindi awtorisado, mangyaring mag-login muna',
   forbidden: 'Walang pahintulot na gumawa',
   notFound: 'Hindi mahanap ang resource',
+  rateLimit: 'Magkakasalang mag-request sa server, mangyaring subukan muli mamaya',
+  loginRateLimit: 'Magkakasalang mag-login sa server, mangyaring subukan muli mamaya',
   
   // Iba pang mga pangkalahatang pagsasalin
   validation: {

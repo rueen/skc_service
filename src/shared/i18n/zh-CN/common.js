@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:38
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 21:03:56
+ * @LastEditTime: 2025-04-22 15:08:23
  * @Description: 
  */
 /**
@@ -18,6 +18,8 @@ module.exports = {
   unauthorized: '未授权，请先登录',
   forbidden: '无权操作',
   notFound: '资源不存在',
+  rateLimit: '请求过于频繁，请稍后再试',
+  loginRateLimit: '登录尝试次数过多，请1小时后再试',
   
   // 其他通用翻译...
   validation: {
