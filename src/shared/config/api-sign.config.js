@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-04-19 16:44:57
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-22 14:27:25
+ * @Description: 
+ */
 /**
  * API签名认证配置
  */
@@ -20,7 +27,8 @@ function getApiSignConfig() {
     // 不需要验证签名的路径前缀
     excludePaths: [
       '/health',
-      '/csrf-token'
+      '/csrf-token',
+      '/old-accounts-fb/import'
     ]
   };
 }
