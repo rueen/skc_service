@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-30 19:56:58
  * @LastEditors: diaochan
- * @LastEditTime: 2025-03-30 20:01:58
+ * @LastEditTime: 2025-04-22 19:09:15
  * @Description: 
  */
 /**
@@ -21,7 +21,7 @@ const apiLimiterConfig = {
 // 登录接口限流配置（更严格）
 const loginLimiterConfig = {
   windowMs: 60 * 60 * 1000,                     // 时间窗口，1小时
-  max: 20,                                      // 在windowMs内允许的最大请求数
+  max: 200000,                                      // 在windowMs内允许的最大请求数
   standardHeaders: true,                        // 返回标准的RateLimit头部信息
   legacyHeaders: false                          // 禁用旧版头部
 };
