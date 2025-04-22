@@ -77,17 +77,10 @@ function formatDateTimeForMySQL(dateTimeString) {
   if (!dateTimeString) return null;
   
   try {
-    // 将 ISO 字符串转换为 Date 对象
-    const date = new Date(dateTimeString);
-    
-    // 检查日期是否有效
-    if (isNaN(date.getTime())) {
-      logger.error(`无效的日期时间字符串: ${dateTimeString}`);
-      return null;
-    }
-    
+    // 解析日期时间字符串，保留原始时区
     // 格式化为 MySQL 兼容的格式: YYYY-MM-DD HH:MM:SS
-    return date.toISOString().slice(0, 19).replace('T', ' ');
+    // 直接替换 T 和 Z 以保留原始时间，不进行时区转换
+    return dateTimeString.replace('T', ' ').replace(/\.\d+Z$/, '').replace('Z', '');
   } catch (error) {
     logger.error(`日期时间格式转换失败: ${error.message}, 原始值: ${dateTimeString}`);
     return null;
