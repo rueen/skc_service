@@ -329,42 +329,59 @@ async function importAccounts(accounts) {
   try {
     await connection.beginTransaction();
     
-    // 获取当前所有已关联会员的老账号UID
-    const [boundAccounts] = await connection.query(
-      'SELECT uid FROM old_accounts_fb WHERE member_id IS NOT NULL'
+    // 获取当前所有FB老账号UID和关联状态
+    const [existingAccounts] = await connection.query(
+      'SELECT id, uid, member_id FROM old_accounts_fb'
     );
     
-    const boundUids = boundAccounts.map(acc => acc.uid);
+    // 创建UID到账号ID的映射
+    const uidToIdMap = {};
+    // 已关联会员的UID列表
+    const boundUids = [];
     
-    // 先清空所有未关联会员的老账号
-    await connection.query(
-      'DELETE FROM old_accounts_fb WHERE member_id IS NULL'
-    );
+    existingAccounts.forEach(acc => {
+      uidToIdMap[acc.uid] = acc.id;
+      if (acc.member_id !== null) {
+        boundUids.push(acc.uid);
+      }
+    });
     
-    // 按照UID筛选出未在已关联列表中的新账号
-    const newAccounts = accounts.filter(acc => !boundUids.includes(acc.uid));
+    let updated = 0;
+    let inserted = 0;
+    let skipped = 0;
     
-    // 插入新账号
-    if (newAccounts.length > 0) {
-      const values = newAccounts.map(acc => [
-        acc.uid,
-        acc.nickname,
-        acc.homeUrl || null,
-        null // member_id 初始设为 null
-      ]);
+    // 处理每个导入的账号
+    for (const acc of accounts) {
+      // 如果UID已存在且已关联会员，则跳过
+      if (boundUids.includes(acc.uid)) {
+        skipped++;
+        continue;
+      }
       
-      await connection.query(
-        'INSERT INTO old_accounts_fb (uid, nickname, home_url, member_id) VALUES ?',
-        [values]
-      );
+      // 如果UID已存在且未关联会员，则更新
+      if (uidToIdMap[acc.uid]) {
+        await connection.query(
+          'UPDATE old_accounts_fb SET nickname = ?, home_url = ? WHERE id = ?',
+          [acc.nickname, acc.homeUrl || null, uidToIdMap[acc.uid]]
+        );
+        updated++;
+      } else {
+        // 如果UID不存在，则插入
+        await connection.query(
+          'INSERT INTO old_accounts_fb (uid, nickname, home_url, member_id) VALUES (?, ?, ?, NULL)',
+          [acc.uid, acc.nickname, acc.homeUrl || null]
+        );
+        inserted++;
+      }
     }
     
     await connection.commit();
     
     return {
       total: accounts.length,
-      imported: newAccounts.length,
-      skipped: accounts.length - newAccounts.length
+      updated: updated,
+      inserted: inserted,
+      skipped: skipped
     };
   } catch (error) {
     await connection.rollback();

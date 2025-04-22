@@ -99,7 +99,7 @@ async function importOldAccountsFb(req, res) {
     // 调用模型导入数据
     const result = await oldAccountsFbModel.importAccounts(accounts);
     
-    return responseUtil.success(res, result, `导入成功: 总计${result.total}条数据，成功导入${result.imported}条，跳过${result.skipped}条(已关联会员的记录)`);
+    return responseUtil.success(res, result, `导入成功: 总计${result.total}条数据，更新${result.updated}条，新增${result.inserted}条，跳过${result.skipped}条(已关联会员的记录)`);
   } catch (error) {
     logger.error(`导入FB老账号失败: ${error.message}`);
     return responseUtil.serverError(res, '导入FB老账号失败');
