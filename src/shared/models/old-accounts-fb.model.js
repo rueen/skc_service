@@ -410,6 +410,8 @@ async function bindMember(uid, memberId) {
     );
     
     let oldAccountId;
+    let oldMemberId = null;
+    let replacedBinding = false;
     
     if (oldAccounts.length === 0) {
       // 老账号不存在，直接返回成功但不创建关联
@@ -420,8 +422,15 @@ async function bindMember(uid, memberId) {
       
       // 检查是否已关联其他会员
       if (oldAccounts[0].member_id !== null && oldAccounts[0].member_id !== memberId) {
-        await connection.commit();
-        return { success: true, associated: false, message: '该FB老账号已关联其他会员' };
+        oldMemberId = oldAccounts[0].member_id;
+        
+        // 删除老会员与老账号的关联记录
+        await connection.query(
+          'DELETE FROM member_old_accounts_fb WHERE member_id = ? AND old_accounts_fb_id = ?',
+          [oldMemberId, oldAccountId]
+        );
+        
+        replacedBinding = true;
       }
       
       // 更新老账号的member_id
@@ -452,7 +461,16 @@ async function bindMember(uid, memberId) {
     
     await connection.commit();
     
-    return { success: true, associated: true, message: '成功关联FB老账号' };
+    const message = replacedBinding 
+      ? `成功关联FB老账号，替换了之前关联的会员(ID: ${oldMemberId})`
+      : '成功关联FB老账号';
+    
+    return { 
+      success: true, 
+      associated: true, 
+      message: message,
+      replacedMemberId: replacedBinding ? oldMemberId : null
+    };
   } catch (error) {
     await connection.rollback();
     logger.error(`关联FB老账号与会员失败: ${error.message}`);
