@@ -174,8 +174,7 @@ async function update(req, res) {
   try {
     const { id } = req.params;
     const { 
-      memberNickname, memberAccount, password, groupIds, inviterId, 
-      occupation, phone, email, avatar, gender, telegram 
+      memberNickname, memberAccount, password, groupIds, inviterId, isNew
     } = req.body;
     
     // 如果要更新群组ID，检查群组成员数是否达到上限
@@ -231,12 +230,7 @@ async function update(req, res) {
       password: password !== undefined ? hashedPassword : undefined,
       groupIds: groupIds !== undefined ? groupIds : undefined, // 传递群组ID数组
       inviterId: inviterId !== undefined ? (inviterId ? parseInt(inviterId, 10) : null) : undefined,
-      occupation,
-      phone,
-      email,
-      avatar,
-      gender: gender !== undefined ? Number(gender) : undefined,
-      telegram
+      isNew: isNew !== undefined ? Number(isNew) : undefined
     });
 
     if (!result) {

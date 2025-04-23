@@ -497,6 +497,11 @@ async function update(memberData) {
       params.push(memberData.telegram);
     }
     
+    if (memberData.isNew !== undefined) {
+      updateFields.push('is_new = ?');
+      params.push(memberData.isNew);
+    }
+    
     if (memberData.registerSource !== undefined) {
       updateFields.push('register_source = ?');
       params.push(memberData.registerSource);

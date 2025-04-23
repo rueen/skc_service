@@ -171,9 +171,9 @@ router.put(
         return Number.isInteger(Number(value));
       })
       .withMessage('common.validation.inviterIdFormat'),
-    body('occupation')
+    body('isNew')
       .optional()
-      .isIn(Object.values(OccupationType))
+      .isIn([0, 1])
       .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
