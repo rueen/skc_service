@@ -513,14 +513,22 @@ async function exportMembers(req, res) {
       { header: '邀请人', key: 'inviterNickname', width: 20 },
       { header: '完成任务次数', key: 'completedTaskCount', width: 20 },
       { header: '所属群组', key: 'groups', width: 30 },
+      { header: '账号列表', key: 'accountList', width: 40 },
     ];
     
     // 添加数据行
-    result.list.forEach(item => {
+    result.list.forEach((item, index) => {
       // 格式化群组信息：群主的群组显示为"群组名(群主)"
       const groupsText = item.groups.map(group => {
         return group.isOwner ? `${group.groupName} (群主)` : group.groupName;
       }).join('\n');
+      
+      // 格式化账号列表
+      const accountsText = item.accountList.map(account => {
+        return `账号：${account.account || ''}\n主页：${account.homeUrl || ''}`;
+      }).join('\n\n');
+      
+      const rowIndex = index + 2; // 头部行是第1行，所以数据从第2行开始
       
       worksheet.addRow({
         nickname: item.nickname || '',
@@ -529,8 +537,34 @@ async function exportMembers(req, res) {
         inviterNickname: item.inviterNickname || '',
         completedTaskCount: item.completedTaskCount || 0,
         groups: groupsText || '',
+        accountList: accountsText || '',
       });
+      
+      // 设置单元格自动换行
+      const groupsCell = worksheet.getCell(`F${rowIndex}`);
+      groupsCell.alignment = { wrapText: true, vertical: 'top' };
+      
+      const accountsCell = worksheet.getCell(`G${rowIndex}`);
+      accountsCell.alignment = { wrapText: true, vertical: 'top' };
+      
+      // 计算行高 - 根据内容多少自适应
+      // 计算群组行数和账号列表行数
+      const groupsLineCount = groupsText ? groupsText.split('\n').length : 0;
+      // 账号列表中每个账号占用2行，账号之间有1行空行
+      const accountsCount = item.accountList.length;
+      const accountsLineCount = accountsCount > 0 ? (accountsCount * 2) + (accountsCount - 1) : 0;
+      
+      // 取两者的较大值，每行内容约占15像素高度，最小行高为20像素
+      const contentLines = Math.max(groupsLineCount, accountsLineCount);
+      const rowHeight = contentLines > 0 ? Math.max(contentLines * 18, 20) : 20;
+      
+      // 设置行高
+      worksheet.getRow(rowIndex).height = rowHeight;
     });
+    
+    // 设置表格首行样式
+    worksheet.getRow(1).height = 25; // 表头行高
+    worksheet.getRow(1).font = { bold: true }; // 加粗表头
     
     // 设置响应头
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
