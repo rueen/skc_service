@@ -14,9 +14,15 @@ let scheduledTask = null;
  * @returns {Promise<number>} 更新的记录数
  */
 async function updateTasksToProcessing(connection) {
-  // 获取当前时间
+  // 获取当前时间（使用本地时间而不是UTC时间）
   const now = new Date();
-  const currentTime = now.toISOString().slice(0, 19).replace('T', ' ');
+  // 格式化为 YYYY-MM-DD HH:MM:SS 格式
+  const currentTime = now.getFullYear() + '-' +
+    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+    String(now.getDate()).padStart(2, '0') + ' ' +
+    String(now.getHours()).padStart(2, '0') + ':' +
+    String(now.getMinutes()).padStart(2, '0') + ':' +
+    String(now.getSeconds()).padStart(2, '0');
   
   // 将未开始状态且开始时间已过的任务更新为进行中
   const [result] = await connection.query(
@@ -36,9 +42,15 @@ async function updateTasksToProcessing(connection) {
  * @returns {Promise<number>} 更新的记录数
  */
 async function updateTasksToEnded(connection) {
-  // 获取当前时间
+  // 获取当前时间（使用本地时间而不是UTC时间）
   const now = new Date();
-  const currentTime = now.toISOString().slice(0, 19).replace('T', ' ');
+  // 格式化为 YYYY-MM-DD HH:MM:SS 格式
+  const currentTime = now.getFullYear() + '-' +
+    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+    String(now.getDate()).padStart(2, '0') + ' ' +
+    String(now.getHours()).padStart(2, '0') + ':' +
+    String(now.getMinutes()).padStart(2, '0') + ':' +
+    String(now.getSeconds()).padStart(2, '0');
   
   // 将进行中状态且结束时间已过的任务更新为已结束
   const [result] = await connection.query(
