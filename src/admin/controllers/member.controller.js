@@ -512,16 +512,23 @@ async function exportMembers(req, res) {
       { header: '注册时间', key: 'createTime', width: 20 },
       { header: '邀请人', key: 'inviterNickname', width: 20 },
       { header: '完成任务次数', key: 'completedTaskCount', width: 20 },
+      { header: '所属群组', key: 'groups', width: 30 },
     ];
     
     // 添加数据行
     result.list.forEach(item => {
+      // 格式化群组信息：群主的群组显示为"群组名(群主)"
+      const groupsText = item.groups.map(group => {
+        return group.isOwner ? `${group.groupName} (群主)` : group.groupName;
+      }).join('\n');
+      
       worksheet.addRow({
         nickname: item.nickname || '',
         account: item.account || '',
         createTime: item.createTime || '',
         inviterNickname: item.inviterNickname || '',
         completedTaskCount: item.completedTaskCount || 0,
+        groups: groupsText || '',
       });
     });
     
