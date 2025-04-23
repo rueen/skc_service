@@ -82,7 +82,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       LEFT JOIN channels c ON a.channel_id = c.id
       LEFT JOIN waiters w ON a.waiter_id = w.id
       WHERE ${whereClause}
-      ORDER BY a.create_time DESC
+      ORDER BY a.submit_time DESC
     `;
     
     // 根据是否为导出模式决定是否使用分页
