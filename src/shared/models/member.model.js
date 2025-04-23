@@ -13,6 +13,7 @@ const { convertToCamelCase } = require('../utils/data.util');
 const groupModel = require('./group.model');
 const accountModel = require('./account.model');
 const memberBalanceModel = require('./member-balance.model');
+const taskStatsModel = require('./task-stats.model');
 
 /**
  * 格式化会员信息
@@ -187,6 +188,18 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       
       return formattedMember;
     });
+    
+    // 获取每个会员已完成任务的次数
+    const completedTaskCountPromises = formattedMembers.map(member => 
+      taskStatsModel.getMemberCompletedTaskCount(member.id)
+        .then(count => {
+          member.completedTaskCount = count;
+          return member;
+        })
+    );
+    
+    // 等待所有任务计数查询完成
+    await Promise.all(completedTaskCountPromises);
     
     return {
       list: formattedMembers,

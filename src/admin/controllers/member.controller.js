@@ -511,6 +511,7 @@ async function exportMembers(req, res) {
       { header: '会员账号', key: 'account', width: 20 },
       { header: '注册时间', key: 'createTime', width: 20 },
       { header: '邀请人', key: 'inviterNickname', width: 20 },
+      { header: '完成任务次数', key: 'completedTaskCount', width: 20 },
     ];
     
     // 添加数据行
@@ -520,6 +521,7 @@ async function exportMembers(req, res) {
         account: item.account || '',
         createTime: item.createTime || '',
         inviterNickname: item.inviterNickname || '',
+        completedTaskCount: item.completedTaskCount || 0,
       });
     });
     
