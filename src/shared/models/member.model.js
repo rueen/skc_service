@@ -97,13 +97,27 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       countQuery += whereClause;
     }
 
-    // 添加排序和分页
-    baseQuery += ' ORDER BY m.create_time DESC LIMIT ? OFFSET ?';
-    queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
+    // 添加排序
+    baseQuery += ' ORDER BY m.create_time DESC';
+    
+    // 判断是否是导出模式，如果不是则添加分页
+    if (!filters.exportMode) {
+      baseQuery += ' LIMIT ? OFFSET ?';
+      queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
+    }
 
     // 执行会员基础信息查询
     const [members] = await pool.query(baseQuery, queryParams);
-    const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
+    
+    // 只有在非导出模式下才执行计数查询
+    let total = 0;
+    if (!filters.exportMode) {
+      const countQueryParams = queryParams.slice(0, -2); // 去掉分页参数
+      const [countResult] = await pool.query(countQuery, countQueryParams);
+      total = countResult[0].total;
+    } else {
+      total = members.length;
+    }
     
     if (members.length === 0) {
       return {
@@ -176,7 +190,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     return {
       list: formattedMembers,
-      total: countResult[0].total,
+      total: total,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
     };

@@ -476,6 +476,66 @@ async function getWithdrawalAccounts(req, res) {
   }
 }
 
+/**
+ * 导出会员列表
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function exportMembers(req, res) {
+  try {
+    const { memberNickname, groupId } = req.query;
+    
+    // 构建筛选条件
+    const filters = {
+      exportMode: true // 标记为导出模式，不使用分页
+    };
+    
+    if (memberNickname) filters.memberNickname = memberNickname;
+    if (groupId) filters.groupId = parseInt(groupId, 10);
+    
+    // 获取所有符合条件的会员
+    const result = await memberModel.getList(filters);
+    
+    if (!result.list || result.list.length === 0) {
+      return res.status(404).send('没有符合条件的会员数据');
+    }
+    
+    // 创建Excel工作簿和工作表
+    const Excel = require('exceljs');
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet('会员列表');
+    
+    // 设置列定义和宽度
+    worksheet.columns = [
+      { header: '会员ID', key: 'nickname', width: 20 },
+      { header: '会员账号', key: 'account', width: 20 },
+      { header: '注册时间', key: 'createTime', width: 20 },
+      { header: '邀请人', key: 'inviterNickname', width: 20 },
+    ];
+    
+    // 添加数据行
+    result.list.forEach(item => {
+      worksheet.addRow({
+        nickname: item.nickname || '',
+        account: item.account || '',
+        createTime: item.createTime || '',
+        inviterNickname: item.inviterNickname || '',
+      });
+    });
+    
+    // 设置响应头
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=members.xlsx');
+    
+    // 写入响应流
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    logger.error(`导出会员列表失败: ${error.message}`);
+    return responseUtil.serverError(res);
+  }
+}
+
 module.exports = {
   list,
   getDetail,
@@ -487,5 +547,6 @@ module.exports = {
   grantReward,
   deductReward,
   getMemberBalance,
-  getWithdrawalAccounts
+  getWithdrawalAccounts,
+  exportMembers
 }; 

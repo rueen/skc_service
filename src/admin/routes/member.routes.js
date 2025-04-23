@@ -47,6 +47,28 @@ router.get(
 );
 
 /**
+ * @route GET /api/admin/members/export
+ * @desc 导出会员列表
+ * @access Private (需要 member:list 权限)
+ */
+router.get(
+  '/export',
+  authMiddleware.hasPermission('member:list'),
+  [
+    query('memberNickname')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
+    query('groupId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.exportMembers
+);
+
+/**
  * @route GET /api/admin/members/:id
  * @desc 获取会员详情
  * @access Private (需要 member:view 权限)
