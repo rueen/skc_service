@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 17:27:26
+ * @LastEditTime: 2025-04-24 16:55:06
  * @Description: 
  */
 /**
@@ -45,7 +45,9 @@ router.get(
     query('taskPreAuditStatus')
       .optional()
       .isIn(['pending', 'approved', 'rejected'])
-      .withMessage('common.validation.invalid')
+      .withMessage('common.validation.invalid'),
+    query('preWaiterId')
+      .optional()
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:preAudit'),
@@ -101,7 +103,9 @@ router.get(
     query('taskPreAuditStatus')
       .optional()
       .isIn(['pending', 'approved', 'rejected'])
-      .withMessage('common.validation.invalid')
+      .withMessage('common.validation.invalid'),
+    query('preWaiterId')
+      .optional()
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:preAudit'),

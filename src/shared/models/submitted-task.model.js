@@ -181,6 +181,7 @@ async function create(submitData) {
  * @param {string} filters.submitStartTime - 提交开始时间
  * @param {string} filters.submitEndTime - 提交结束时间
  * @param {number} filters.completedTaskCount - 已完成任务次数筛选条件
+ * @param {number} filters.preWaiterId - 初审员ID
  * @param {boolean} filters.exportMode - 是否为导出模式，为true时不使用分页
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
@@ -231,6 +232,11 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     if (filters.submitEndTime) {
       whereClause += ' AND st.submit_time <= ?';
       queryParams.push(filters.submitEndTime);
+    }
+    
+    if (filters.preWaiterId) {
+      whereClause += ' AND st.pre_waiter_id = ?';
+      queryParams.push(filters.preWaiterId);
     }
     
     // 添加已完成任务次数筛选条件
