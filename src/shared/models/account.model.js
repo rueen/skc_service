@@ -67,6 +67,21 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.groupId);
     }
     
+    if (filters.waiterId) {
+      whereClause += ' AND a.waiter_id = ?';
+      queryParams.push(filters.waiterId);
+    }
+    
+    if (filters.submitStartTime) {
+      whereClause += ' AND a.submit_time >= ?';
+      queryParams.push(filters.submitStartTime);
+    }
+    
+    if (filters.submitEndTime) {
+      whereClause += ' AND a.submit_time <= ?';
+      queryParams.push(filters.submitEndTime);
+    }
+    
     // 构建查询语句
     let query = `
       SELECT a.*, 

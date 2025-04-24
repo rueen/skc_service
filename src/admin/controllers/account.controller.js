@@ -16,7 +16,19 @@ const i18n = require('../../shared/utils/i18n.util');
  */
 async function getAccounts(req, res) {
   try {
-    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, account, keyword, channelId, accountAuditStatus, groupId, memberId } = req.query;
+    const { 
+      page = DEFAULT_PAGE, 
+      pageSize = DEFAULT_PAGE_SIZE, 
+      account, 
+      keyword, 
+      channelId, 
+      accountAuditStatus, 
+      groupId, 
+      memberId,
+      waiterId,
+      submitStartTime,
+      submitEndTime
+    } = req.query;
     
     // 构建筛选条件
     const filters = {};
@@ -43,6 +55,18 @@ async function getAccounts(req, res) {
     
     if (memberId) {
       filters.memberId = parseInt(memberId, 10);
+    }
+    
+    if (waiterId) {
+      filters.waiterId = parseInt(waiterId, 10);
+    }
+    
+    if (submitStartTime) {
+      filters.submitStartTime = submitStartTime;
+    }
+    
+    if (submitEndTime) {
+      filters.submitEndTime = submitEndTime;
     }
     
     // 调用模型获取账号列表（包含群组和渠道详细信息）

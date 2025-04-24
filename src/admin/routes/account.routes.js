@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 16:12:50
+ * @LastEditTime: 2025-04-24 17:11:17
  * @Description: 
  */
 /**
@@ -62,7 +62,19 @@ router.get(
     query('memberId')
       .optional()
       .isInt()
-      .withMessage('common.validation.mustBeInt')
+      .withMessage('common.validation.mustBeInt'),
+    query('waiterId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
+    query('submitStartTime')
+      .optional()
+      .isISO8601()
+      .withMessage('common.validation.timeFormatInvalid'),
+    query('submitEndTime')
+      .optional()
+      .isISO8601()
+      .withMessage('common.validation.timeFormatInvalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.getAccounts
