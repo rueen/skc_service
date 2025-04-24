@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-24 16:55:06
+ * @LastEditTime: 2025-04-24 17:02:01
  * @Description: 
  */
 /**
@@ -73,7 +73,9 @@ router.get(
     query('completedTaskCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('common.validation.mustBeNonNegativeInteger')
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
+    query('waiterId')
+      .optional()
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:confirmAudit'),
@@ -131,7 +133,9 @@ router.get(
     query('completedTaskCount')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('common.validation.mustBeNonNegativeInteger')
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
+    query('waiterId')
+      .optional()
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:confirmAudit'),
