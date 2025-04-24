@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 22:37:54
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-22 15:10:27
+ * @LastEditTime: 2025-04-24 15:49:07
  * @Description: 
  */
 /**
@@ -20,6 +20,10 @@ module.exports = {
   notFound: '資源不存在',
   rateLimit: '請求過於頻繁，請稍後再試',
   loginRateLimit: '登錄嘗試次數過多，請1小時後再試',
+  missingToken:'未提供認證權杖',
+  invalidToken:'認證權杖無效或已過期',
+  passwordChanged:'密碼已更改，請重新登錄',
+  authFailed:'認證失敗',
   
   // 其他通用翻译...
   validation: {

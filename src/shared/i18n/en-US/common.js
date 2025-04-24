@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:47
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-22 15:10:20
+ * @LastEditTime: 2025-04-24 15:49:11
  * @Description: 
  */
 /**
@@ -20,6 +20,10 @@ module.exports = {
   notFound: 'Resource not found',
   rateLimit: 'Request too frequent, please try again later',
   loginRateLimit: 'Login attempt too frequent, please try again in 1 hour',
+  missingToken:'No token provided',
+  invalidToken:'Invalid token',
+  passwordChanged:'Password changed, please login again',
+  authFailed:'Authentication failed',
   
   // Other common translations...
   validation: {

@@ -5,6 +5,7 @@
 const authUtil = require('../utils/auth.util');
 const responseUtil = require('../utils/response.util');
 const logger = require('../config/logger.config');
+const i18n = require('../utils/i18n.util');
 
 /**
  * 验证JWT令牌
@@ -17,13 +18,13 @@ const verifyToken = (req, res, next) => {
     // 从请求头中提取令牌
     const token = authUtil.extractTokenFromHeader(req);
     if (!token) {
-      return responseUtil.unauthorized(res, '未提供认证令牌');
+      return responseUtil.unauthorized(res, i18n.t('common.missingToken', req.lang));
     }
     
     // 验证令牌
     const decoded = authUtil.verifyToken(token);
     if (!decoded) {
-      return responseUtil.unauthorized(res, '认证令牌无效或已过期');
+      return responseUtil.unauthorized(res, i18n.t('common.invalidToken', req.lang));
     }
     
     // 检查令牌是否在密码修改后签发
@@ -46,7 +47,7 @@ const verifyToken = (req, res, next) => {
               );
               
               if (!isValid) {
-                return responseUtil.unauthorized(res, '密码已更改，请重新登录');
+                return responseUtil.unauthorized(res, i18n.t('common.passwordChanged', req.lang));
               }
             }
             
@@ -55,14 +56,14 @@ const verifyToken = (req, res, next) => {
             next();
           } catch (error) {
             logger.error(`验证密码更改时间失败: ${error.message}`);
-            return responseUtil.unauthorized(res, '认证失败');
+            return responseUtil.unauthorized(res, i18n.t('common.authFailed', req.lang));
           } finally {
             connection.release();
           }
         })
         .catch(error => {
           logger.error(`获取数据库连接失败: ${error.message}`);
-          return responseUtil.unauthorized(res, '认证失败');
+          return responseUtil.unauthorized(res, i18n.t('common.authFailed', req.lang));
         });
     } else {
       // 管理端令牌或其他类型令牌，不需要检查密码修改时间
@@ -71,7 +72,7 @@ const verifyToken = (req, res, next) => {
     }
   } catch (error) {
     logger.error(`验证令牌失败: ${error.message}`);
-    return responseUtil.unauthorized(res, '认证失败');
+    return responseUtil.unauthorized(res, i18n.t('common.authFailed', req.lang));
   }
 };
 

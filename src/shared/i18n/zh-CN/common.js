@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:38
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-22 15:08:23
+ * @LastEditTime: 2025-04-24 15:49:03
  * @Description: 
  */
 /**
@@ -20,6 +20,10 @@ module.exports = {
   notFound: '资源不存在',
   rateLimit: '请求过于频繁，请稍后再试',
   loginRateLimit: '登录尝试次数过多，请1小时后再试',
+  missingToken:'未提供认证令牌',
+  invalidToken:'认证令牌无效或已过期',
+  passwordChanged:'密码已更改，请重新登录',
+  authFailed:'认证失败',
   
   // 其他通用翻译...
   validation: {

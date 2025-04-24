@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 22:39:08
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-22 15:11:59
+ * @LastEditTime: 2025-04-24 15:48:17
  * @Description: 
  */
 /**
@@ -20,6 +20,10 @@ module.exports = {
   notFound: 'Hindi mahanap ang resource',
   rateLimit: 'Magkakasalang mag-request sa server, mangyaring subukan muli mamaya',
   loginRateLimit: 'Magkakasalang mag-login sa server, mangyaring subukan muli mamaya',
+  missingToken:'No token provided',
+  invalidToken:'Invalid token',
+  passwordChanged:'Password changed, please login again',
+  authFailed:'Authentication failed',
   
   // Iba pang mga pangkalahatang pagsasalin
   validation: {
