@@ -21,11 +21,12 @@ const i18n = require('../../shared/utils/i18n.util');
  */
 async function list(req, res) {
   try {
-    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberNickname, groupId } = req.query;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberNickname, groupId, keyword } = req.query;
     const filters = {};
     
     if (memberNickname) filters.memberNickname = memberNickname;
     if (groupId) filters.groupId = parseInt(groupId, 10);
+    if (keyword) filters.keyword = keyword;
 
     // 获取带有账号信息的会员列表
     const result = await memberModel.getList(filters, page, pageSize);
@@ -483,7 +484,7 @@ async function getWithdrawalAccounts(req, res) {
  */
 async function exportMembers(req, res) {
   try {
-    const { memberNickname, groupId } = req.query;
+    const { memberNickname, groupId, keyword } = req.query;
     
     // 构建筛选条件
     const filters = {
@@ -492,6 +493,7 @@ async function exportMembers(req, res) {
     
     if (memberNickname) filters.memberNickname = memberNickname;
     if (groupId) filters.groupId = parseInt(groupId, 10);
+    if (keyword) filters.keyword = keyword; // 添加关键字筛选
     
     // 获取所有符合条件的会员
     const result = await memberModel.getList(filters);

@@ -85,6 +85,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(`%${filters.memberNickname}%`);
     }
     
+    // 关键词搜索 - 同时搜索 account 和 nickname
+    if (filters.keyword) {
+      conditions.push('(m.nickname LIKE ? OR m.account LIKE ?)');
+      queryParams.push(`%${filters.keyword}%`, `%${filters.keyword}%`);
+    }
+    
     // 如果需要按群组筛选，使用子查询
     if (filters.groupId) {
       conditions.push('m.id IN (SELECT member_id FROM member_groups WHERE group_id = ?)');

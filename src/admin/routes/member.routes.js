@@ -40,7 +40,11 @@ router.get(
     query('groupId')
       .optional()
       .isInt()
-      .withMessage('common.validation.mustBeInt')
+      .withMessage('common.validation.mustBeInt'),
+    query('keyword')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.list
@@ -62,7 +66,11 @@ router.get(
     query('groupId')
       .optional()
       .isInt()
-      .withMessage('common.validation.mustBeInt')
+      .withMessage('common.validation.mustBeInt'),
+    query('keyword')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.exportMembers
