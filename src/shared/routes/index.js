@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-04-19 20:29:36
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-24 13:13:36
+ * @Description: 
+ */
 /**
  * 共享路由索引
  * 集中导出所有共享路由
@@ -7,6 +14,7 @@ const healthRoutes = require('./health.routes');
 const { router: uploadRoutes, setAppType } = require('./upload.routes');
 const enumRoutes = require('./enum.routes');
 const taskSchedulerRoutes = require('./task-scheduler.routes');
+const timeRoutes = require('./time.routes');
 
 const router = express.Router();
 
@@ -21,6 +29,9 @@ router.use('/api/enums', enumRoutes);
 
 // 任务调度路由
 router.use('/api/task-scheduler', taskSchedulerRoutes);
+
+// 时间接口路由
+router.use('/api/time', timeRoutes);
 
 module.exports = {
   router,
