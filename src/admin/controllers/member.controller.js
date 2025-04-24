@@ -527,7 +527,7 @@ async function exportMembers(req, res) {
       
       // 格式化账号列表
       const accountsText = item.accountList.map(account => {
-        return `账号：${account.account || ''}\n主页：${account.homeUrl || ''}`;
+        return `账号：${account.account || ''}\n主页：${account.homeUrl || ''}\nuid：${account.uid || ''}`;
       }).join('\n\n');
       
       const rowIndex = index + 2; // 头部行是第1行，所以数据从第2行开始
@@ -552,11 +552,11 @@ async function exportMembers(req, res) {
       // 计算行高 - 根据内容多少自适应
       // 计算群组行数和账号列表行数
       const groupsLineCount = groupsText ? groupsText.split('\n').length : 0;
-      // 账号列表中每个账号占用2行，账号之间有1行空行
+      // 账号列表中每个账号占用3行，账号之间有2行空行
       const accountsCount = item.accountList.length;
-      const accountsLineCount = accountsCount > 0 ? (accountsCount * 2) + (accountsCount - 1) : 0;
+      const accountsLineCount = accountsCount > 0 ? (accountsCount * 3) + (accountsCount - 1) : 0;
       
-      // 取两者的较大值，每行内容约占15像素高度，最小行高为20像素
+      // 取两者的较大值，每行内容约占18像素高度，最小行高为20像素
       const contentLines = Math.max(groupsLineCount, accountsLineCount);
       const rowHeight = contentLines > 0 ? Math.max(contentLines * 18, 20) : 20;
       
