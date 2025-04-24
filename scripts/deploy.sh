@@ -146,8 +146,7 @@ main() {
   check_env_var "OSS_ACCESS_KEY_SECRET"
   check_env_var "OSS_REGION"
   check_env_var "OSS_BUCKET"
-  check_env_var "H5_OSS_DIR"
-  check_env_var "ADMIN_OSS_DIR"
+  check_env_var "OSS_DIR"
 
   # 检查部署配置
   check_env_var "DEPLOY_HOST"
