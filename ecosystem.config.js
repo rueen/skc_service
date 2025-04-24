@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-20 22:59:48
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-21 16:41:14
+ * @LastEditTime: 2025-04-24 18:58:45
  * @Description: 
  */
 /**
@@ -15,16 +15,19 @@ module.exports = {
       // 管理后台服务
       name: 'skc-admin',
       script: 'src/admin/admin-server.js',
-      instances: "max", // 根据CPU核心数自动设置实例数
+      instances: 2, // 为4核CPU分配2个实例以避免资源竞争
       exec_mode: 'cluster', // 使用集群模式以实现负载均衡
       watch: false, // 生产环境中不启用文件监视
-      max_memory_restart: '500M', // 内存超过500M时自动重启
+      max_memory_restart: '400M', // 内存超过400M时自动重启
       exp_backoff_restart_delay: 100, // 失败后重启延迟（毫秒）
       merge_logs: true, // 合并所有实例的日志输出
       log_date_format: 'YYYY-MM-DD HH:mm:ss',
       error_file: "logs/skc-admin-err.log",
       out_file: "logs/skc-admin-out.log",
       time: true, // 为日志添加时间戳
+      node_args: "--max-old-space-size=400", // 限制V8引擎老生代内存上限
+      cron_restart: "0 4 * * *", // 每天凌晨4点重启以防止内存泄漏
+      kill_timeout: 3000, // 等待3秒后强制关闭进程
       env: {
         NODE_ENV: 'production',
         ADMIN_PORT: 3002,
@@ -35,16 +38,19 @@ module.exports = {
       // H5前端服务
       name: 'skc-h5',
       script: 'src/h5/h5-server.js',
-      instances: "max", // 根据CPU核心数自动设置实例数
+      instances: 2, // 为4核CPU分配2个实例以避免资源竞争
       exec_mode: 'cluster', // 使用集群模式以实现负载均衡
       watch: false, // 生产环境中不启用文件监视
-      max_memory_restart: '500M', // 内存超过500M时自动重启
+      max_memory_restart: '400M', // 内存超过400M时自动重启
       exp_backoff_restart_delay: 100, // 失败后重启延迟（毫秒）
       merge_logs: true, // 合并所有实例的日志输出
       log_date_format: 'YYYY-MM-DD HH:mm:ss',
       error_file: "logs/skc-h5-err.log",
       out_file: "logs/skc-h5-out.log",
       time: true, // 为日志添加时间戳
+      node_args: "--max-old-space-size=400", // 限制V8引擎老生代内存上限
+      cron_restart: "0 3 * * *", // 每天凌晨3点重启以防止内存泄漏（错开与admin服务重启时间）
+      kill_timeout: 3000, // 等待3秒后强制关闭进程
       env: {
         NODE_ENV: 'production',
         H5_PORT: 3001,
