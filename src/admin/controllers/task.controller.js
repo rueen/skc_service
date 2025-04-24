@@ -154,7 +154,7 @@ async function remove(req, res) {
     return responseUtil.success(res, { success: result });
   } catch (error) {
     logger.error(`删除任务失败: ${error.message}`);
-    return responseUtil.serverError(res);
+    return responseUtil.serverError(res, error.message);
   }
 }
 
