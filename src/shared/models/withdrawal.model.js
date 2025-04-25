@@ -212,11 +212,13 @@ async function getAllWithdrawals(options = {}) {
               wa.name as withdrawal_name, 
               m.nickname, 
               m.account as member_account, 
-              pc.name as payment_channel_name
+              pc.name as payment_channel_name,
+              wtr.username as waiter_name
        FROM withdrawals w
        LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
        LEFT JOIN members m ON w.member_id = m.id
        LEFT JOIN payment_channels pc ON wa.payment_channel_id = pc.id
+       LEFT JOIN waiters wtr ON w.waiter_id = wtr.id
        ${whereClause}
        ORDER BY w.create_time DESC
        LIMIT ?, ?`,
@@ -539,10 +541,12 @@ async function exportWithdrawals(filters = {}) {
              m.nickname,
              wa.payment_channel_id,
              wa.account,
-             wa.name as withdrawal_name
+             wa.name as withdrawal_name,
+             wtr.username as waiter_name
       FROM withdrawals w
       LEFT JOIN members m ON w.member_id = m.id
       LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
+      LEFT JOIN waiters wtr ON w.waiter_id = wtr.id
     `;
     
     const queryParams = [];
