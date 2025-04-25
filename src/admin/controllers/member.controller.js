@@ -511,6 +511,7 @@ async function exportMembers(req, res) {
     worksheet.columns = [
       { header: '会员ID', key: 'nickname', width: 20 },
       { header: '会员账号', key: 'account', width: 20 },
+      { header: '是否新用户', key: 'isNew', width: 20 },
       { header: '注册时间', key: 'createTime', width: 20 },
       { header: '邀请人', key: 'inviterNickname', width: 20 },
       { header: '完成任务次数', key: 'completedTaskCount', width: 20 },
@@ -535,6 +536,7 @@ async function exportMembers(req, res) {
       worksheet.addRow({
         nickname: item.nickname || '',
         account: item.account || '',
+        isNew: item.isNew ? '是' : '否',
         createTime: item.createTime || '',
         inviterNickname: item.inviterNickname || '',
         completedTaskCount: item.completedTaskCount || 0,
@@ -543,10 +545,10 @@ async function exportMembers(req, res) {
       });
       
       // 设置单元格自动换行
-      const groupsCell = worksheet.getCell(`F${rowIndex}`);
+      const groupsCell = worksheet.getCell(`G${rowIndex}`);
       groupsCell.alignment = { wrapText: true, vertical: 'top' };
       
-      const accountsCell = worksheet.getCell(`G${rowIndex}`);
+      const accountsCell = worksheet.getCell(`H${rowIndex}`);
       accountsCell.alignment = { wrapText: true, vertical: 'top' };
       
       // 计算行高 - 根据内容多少自适应
