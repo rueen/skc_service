@@ -35,3 +35,6 @@ coverage/
 
 # SSL证书
 nginx/ssl/
+
+# 审计文件
+audit.json
