@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:38
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-24 15:49:03
+ * @LastEditTime: 2025-04-27 15:33:42
  * @Description: 
  */
 /**
@@ -45,5 +45,6 @@ module.exports = {
     confirmPasswordNotMatch: '确认密码与新密码不一致',
     amountFormat: '{field}金额格式不正确',
     waiterUsernameLength: '小二用户名长度必须在3-20个字符之间',
+    mustBeObject: '{field}必须是对象',
   }
 }; 

@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:47
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-24 15:49:11
+ * @LastEditTime: 2025-04-27 15:34:09
  * @Description: 
  */
 /**
@@ -45,5 +45,6 @@ module.exports = {
     confirmPasswordNotMatch: 'Confirm password does not match new password',
     amountFormat: 'Amount format is invalid',
     waiterUsernameLength: 'Waiter username length must be between 3 and 20 characters',
+    mustBeObject: '{field} must be an object',
   }
 }; 

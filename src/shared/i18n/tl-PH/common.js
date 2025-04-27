@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 22:39:08
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-24 15:48:17
+ * @LastEditTime: 2025-04-27 15:34:01
  * @Description: 
  */
 /**
@@ -45,5 +45,6 @@ module.exports = {
     confirmPasswordNotMatch: 'Ang kumpirmasyon ng password ay hindi tumutugma sa bagong password',
     amountFormat: 'Hindi tama ang format ng halaga ng {field}',
     waiterUsernameLength: 'Ang haba ng username ay dapat na nasa pagitan ng 3-20 na karakter',
+    mustBeObject: 'Ang {field} ay dapat na object',
   }
 }; 
