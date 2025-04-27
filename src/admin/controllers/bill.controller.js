@@ -21,7 +21,9 @@ async function list(req, res) {
       billType, 
       settlementStatus,
       billNo,
-      taskName
+      taskName,
+      startTime,
+      endTime
     } = req.query;
     
     const filters = {};
@@ -31,6 +33,8 @@ async function list(req, res) {
     if (settlementStatus) filters.settlementStatus = settlementStatus;
     if (billNo) filters.billNo = billNo;
     if (taskName) filters.taskName = taskName;
+    if (startTime) filters.startTime = startTime;
+    if (endTime) filters.endTime = endTime;
 
     // 获取账单列表
     const result = await billModel.getAllBills(filters, page, pageSize);

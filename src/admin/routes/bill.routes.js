@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-24 20:43:21
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 15:54:50
+ * @LastEditTime: 2025-04-27 10:45:40
  * @Description: 
  */
 /**
@@ -52,7 +52,15 @@ router.get(
     query('taskName')
       .optional()
       .isString()
-      .withMessage('common.validation.mustBeString')
+      .withMessage('common.validation.mustBeString'),
+    query('startTime')
+      .optional()
+      .isISO8601()
+      .withMessage('common.validation.mustBeISODate'),
+    query('endTime')
+      .optional()
+      .isISO8601()
+      .withMessage('common.validation.mustBeISODate')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   billController.list
