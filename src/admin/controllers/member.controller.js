@@ -13,6 +13,8 @@ const taskStatsModel = require('../../shared/models/task-stats.model');
 const memberBalanceModel = require('../../shared/models/member-balance.model');
 const withdrawalAccountModel = require('../../shared/models/withdrawal-account.model');
 const i18n = require('../../shared/utils/i18n.util');
+const { pool } = require('../../shared/models/db');
+const { formatDateTime } = require('../../shared/utils/date.util');
 
 /**
  * 获取会员列表
@@ -583,6 +585,83 @@ async function exportMembers(req, res) {
   }
 }
 
+/**
+ * 获取会员余额变更记录
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getBalanceLogs(req, res) {
+  try {
+    const { id } = req.params;
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE } = req.query;
+    
+    if (!id) {
+      return responseUtil.badRequest(res, '会员ID不能为空');
+    }
+    
+    // 检查会员是否存在
+    const member = await memberModel.getById(parseInt(id, 10));
+    if (!member) {
+      return responseUtil.notFound(res, i18n.t('admin.member.notFound', req.lang));
+    }
+    
+    // 查询余额变更记录
+    const connection = await pool.getConnection();
+    try {
+      // 计算分页参数
+      const offset = (parseInt(page) - 1) * parseInt(pageSize);
+      const limit = parseInt(pageSize);
+      
+      // 查询总记录数
+      const [countRows] = await connection.query(
+        'SELECT COUNT(*) as total FROM balance_logs WHERE member_id = ?',
+        [id]
+      );
+      const total = countRows[0].total;
+      
+      // 查询余额变更记录
+      const [balanceLogs] = await connection.query(
+        `SELECT 
+           id, 
+           member_id, 
+           amount, 
+           before_balance, 
+           after_balance, 
+           transaction_type, 
+           create_time
+         FROM balance_logs 
+         WHERE member_id = ? 
+         ORDER BY create_time DESC 
+         LIMIT ?, ?`,
+        [id, offset, limit]
+      );
+      
+      // 格式化返回结果
+      const result = {
+        total,
+        page: parseInt(page),
+        pageSize: parseInt(pageSize),
+        list: balanceLogs.map(log => ({
+          id: log.id,
+          memberId: log.member_id,
+          amount: parseFloat(log.amount),
+          beforeBalance: parseFloat(log.before_balance),
+          afterBalance: parseFloat(log.after_balance),
+          transactionType: log.transaction_type,
+          createTime: formatDateTime(log.create_time)
+        }))
+      };
+      
+      return responseUtil.success(res, result);
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    logger.error(`获取会员余额变更记录失败: ${error.message}`);
+    return responseUtil.serverError(res);
+  }
+}
+
 module.exports = {
   list,
   getDetail,
@@ -595,5 +674,6 @@ module.exports = {
   deductReward,
   getMemberBalance,
   getWithdrawalAccounts,
-  exportMembers
+  exportMembers,
+  getBalanceLogs
 }; 

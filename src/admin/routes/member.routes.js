@@ -393,4 +393,31 @@ router.get(
   memberController.getMemberBalance
 );
 
+/**
+ * @route GET /api/admin/members/:id/balance-logs
+ * @desc 获取会员余额变更记录
+ * @access Private (需要 member:view 权限)
+ */
+router.get(
+  '/:id/balance-logs',
+  authMiddleware.hasPermission('member:view'),
+  [
+    param('id')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('common.validation.page'),
+    query('pageSize')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('common.validation.pageSize')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  memberController.getBalanceLogs
+);
+
 module.exports = router; 
