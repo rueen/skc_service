@@ -67,9 +67,13 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.groupId);
     }
     
-    if (filters.waiterId) {
-      whereClause += ' AND a.waiter_id = ?';
-      queryParams.push(filters.waiterId);
+    if (filters.waiterId != null) {
+      if (filters.waiterId == 0) {
+        whereClause += ' AND a.waiter_id IS NULL';
+      } else {
+        whereClause += ' AND a.waiter_id = ?';
+        queryParams.push(filters.waiterId);
+      }
     }
     
     if (filters.submitStartTime) {

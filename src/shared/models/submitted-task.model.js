@@ -237,14 +237,22 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.submitEndTime);
     }
     
-    if (filters.preWaiterId) {
-      whereClause += ' AND st.pre_waiter_id = ?';
-      queryParams.push(filters.preWaiterId);
+    if (filters.preWaiterId != null) {
+      if (filters.preWaiterId == 0) {
+        whereClause += ' AND st.pre_waiter_id IS NULL';
+      } else {
+        whereClause += ' AND st.pre_waiter_id = ?';
+        queryParams.push(filters.preWaiterId);
+      }
     }
     
-    if (filters.waiterId) {
-      whereClause += ' AND st.waiter_id = ?';
-      queryParams.push(filters.waiterId);
+    if (filters.waiterId != null) {
+      if (filters.waiterId == 0) {
+        whereClause += ' AND st.waiter_id IS NULL';
+      } else {
+        whereClause += ' AND st.waiter_id = ?';
+        queryParams.push(filters.waiterId);
+      }
     }
     
     // 添加已完成任务次数筛选条件
