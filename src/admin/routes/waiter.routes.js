@@ -22,7 +22,7 @@ router.use(rateLimiterMiddleware.apiLimiter);
  */
 router.get(
   '/',
-  authMiddleware.hasPermission('waiter:list'),
+  // authMiddleware.hasPermission('waiter:list'),
   waiterController.getList
 );
 

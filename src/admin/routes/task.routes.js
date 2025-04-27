@@ -56,7 +56,7 @@ router.get(
  */
 router.get(
   '/:id',
-  authMiddleware.hasPermission('task:edit'),
+  // authMiddleware.hasPermission('task:edit'),
   [
     param('id')
       .notEmpty()
