@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-24 20:43:21
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-27 10:45:40
+ * @LastEditTime: 2025-04-27 13:47:52
  * @Description: 
  */
 /**
@@ -60,7 +60,11 @@ router.get(
     query('endTime')
       .optional()
       .isISO8601()
-      .withMessage('common.validation.mustBeISODate')
+      .withMessage('common.validation.mustBeISODate'),
+    query('relatedGroupId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   billController.list

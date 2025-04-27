@@ -228,12 +228,13 @@ async function getMemberBills(memberId, options = {}) {
  * @param {string} filters.taskName - 任务名称
  * @param {string} filters.startTime - 开始时间（ISO8601格式）
  * @param {string} filters.endTime - 结束时间（ISO8601格式）
+ * @param {number} filters.relatedGroupId - 关联群组ID
  * @param {number} page - 页码
  * @param {number} pageSize - 每页数量
  * @returns {Promise<Object>} 账单列表和统计信息
  */
 async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
-  const { memberNickname, billType, settlementStatus, billNo, taskName, startTime, endTime } = filters;
+  const { memberNickname, billType, settlementStatus, billNo, taskName, startTime, endTime, relatedGroupId } = filters;
   const params = [];
   let whereClause = 'WHERE 1=1';
   
@@ -270,6 +271,11 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
   if (endTime) {
     whereClause += ' AND b.create_time <= ?';
     params.push(endTime);
+  }
+  
+  if (relatedGroupId) {
+    whereClause += ' AND b.related_group_id = ?';
+    params.push(relatedGroupId);
   }
   
   const offset = (page - 1) * pageSize;

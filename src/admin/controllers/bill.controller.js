@@ -23,7 +23,8 @@ async function list(req, res) {
       billNo,
       taskName,
       startTime,
-      endTime
+      endTime,
+      relatedGroupId
     } = req.query;
     
     const filters = {};
@@ -35,6 +36,7 @@ async function list(req, res) {
     if (taskName) filters.taskName = taskName;
     if (startTime) filters.startTime = startTime;
     if (endTime) filters.endTime = endTime;
+    if (relatedGroupId) filters.relatedGroupId = parseInt(relatedGroupId, 10);
 
     // 获取账单列表
     const result = await billModel.getAllBills(filters, page, pageSize);
