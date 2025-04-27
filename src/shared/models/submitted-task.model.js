@@ -21,7 +21,9 @@ function formatSubmittedTask(submittedTask) {
     taskPreAuditStatus: submittedTask.task_pre_audit_status,
     taskAuditStatus: submittedTask.task_audit_status,
     createTime: formatDateTime(submittedTask.create_time),
-    updateTime: formatDateTime(submittedTask.update_time)
+    updateTime: formatDateTime(submittedTask.update_time),
+    startTime: formatDateTime(submittedTask.start_time),
+    endTime: formatDateTime(submittedTask.end_time)
   });
   return formattedSubmittedTask;
 }
@@ -906,6 +908,8 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
         t.task_name,
         t.channel_id,
         t.reward,
+        t.start_time,
+        t.end_time,
         c.name AS channel_name,
         c.icon AS channel_icon,
         pre_w.username AS pre_waiter_name,

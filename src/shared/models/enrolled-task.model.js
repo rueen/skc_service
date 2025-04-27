@@ -23,6 +23,8 @@ function formatEnrolledTask(enrolledTask) {
     enrollTime: formatDateTime(enrolledTask.enroll_time),
     createTime: formatDateTime(enrolledTask.create_time),
     updateTime: formatDateTime(enrolledTask.update_time),
+    startTime: formatDateTime(enrolledTask.start_time),
+    endTime: formatDateTime(enrolledTask.end_time),
   });
   
   return formattedEnrolledTask;
