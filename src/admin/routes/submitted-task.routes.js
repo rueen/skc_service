@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-24 17:02:01
+ * @LastEditTime: 2025-04-27 15:26:39
  * @Description: 
  */
 /**
@@ -10,7 +10,7 @@
  * 处理任务审核相关路由配置
  */
 const express = require('express');
-const { query } = require('express-validator');
+const { query, body } = require('express-validator');
 const submittedTaskController = require('../controllers/submitted-task.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
@@ -143,17 +143,24 @@ router.get(
 );
 
 /**
- * @route GET /api/admin/submitted-tasks/:id
+ * @route POST /api/admin/submitted-tasks/detail
  * @desc 获取已提交任务详情
  * @access Private (需要 task:submittedDetail 权限)
  */
-router.get(
-  '/:id',
+router.post(
+  '/detail',
   [
-    query('auditType')
+    body('id')
+      .isInt({ min: 1 })
+      .withMessage('common.validation.idRequired'),
+    body('auditType')
       .optional()
       .isIn(['confirm', 'pre'])
-      .withMessage('common.validation.invalid')
+      .withMessage('common.validation.invalid'),
+    body('filtersParam')
+      .optional()
+      .isObject()
+      .withMessage('common.validation.mustBeObject')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:submittedDetail'),

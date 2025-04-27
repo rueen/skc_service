@@ -429,9 +429,20 @@ async function getPreAuditedList(filters = {}, page = DEFAULT_PAGE, pageSize = D
  * 获取已提交任务详情
  * @param {number} id - 提交ID
  * @param {string} auditType - 审核类型 ('confirm' 或 'pre')
+ * @param {Object} filtersParam - 筛选参数
+ * @param {string} filtersParam.taskName - 任务名称
+ * @param {number} filtersParam.channelId - 渠道ID
+ * @param {string} filtersParam.taskPreAuditStatus - 预审状态
+ * @param {number} filtersParam.preWaiterId - 初审员ID
+ * @param {string} filtersParam.taskAuditStatus - 审核状态
+ * @param {number} filtersParam.waiterId - 审核员ID
+ * @param {number} filtersParam.groupId - 群组ID
+ * @param {number} filtersParam.completedTaskCount - 已完成任务次数
+ * @param {string} filtersParam.submitStartTime - 提交开始时间
+ * @param {string} filtersParam.submitEndTime - 提交结束时间
  * @returns {Promise<Object>} 任务详情
  */
-async function getById(id, auditType = 'confirm') {
+async function getById(id, auditType = 'confirm', filtersParam = {}) {
   try {
     const [rows] = await pool.query(
       `SELECT 
@@ -478,69 +489,139 @@ async function getById(id, auditType = 'confirm') {
     // 根据审核类型设置审核状态
     formattedTask.auditStatus = auditType === 'pre' ? formattedTask.taskPreAuditStatus : formattedTask.taskAuditStatus;
     
-    // 获取对应审核类型的待审核任务ID列表，按提交时间降序排列
-    let pendingTasksQuery = '';
-    if (auditType === 'pre') {
-      // 预审：获取所有预审状态为pending的任务
-      pendingTasksQuery = `SELECT id, submit_time FROM submitted_tasks 
-                          WHERE task_pre_audit_status = 'pending' 
-                          ORDER BY submit_time DESC`;
-    } else {
-      // 复审：获取所有预审已通过且复审状态为pending的任务
-      pendingTasksQuery = `SELECT id, submit_time FROM submitted_tasks 
-                          WHERE task_audit_status = 'pending' AND task_pre_audit_status = 'approved' 
-                          ORDER BY submit_time DESC`;
+    // 构建获取前后任务的筛选条件
+    const filters = { ...filtersParam };
+    
+    // 构建 WHERE 子句
+    let whereClause = '1 = 1';
+    const queryParams = [];
+    
+    // 添加筛选条件
+    if (filters.taskName) {
+      whereClause += ' AND t.task_name LIKE ?';
+      queryParams.push(`%${filters.taskName}%`);
     }
     
-    const [pendingTasks] = await pool.query(pendingTasksQuery);
+    if (filters.channelId) {
+      whereClause += ' AND t.channel_id = ?';
+      queryParams.push(filters.channelId);
+    }
+    
+    if (filters.taskAuditStatus) {
+      whereClause += ' AND st.task_audit_status = ?';
+      queryParams.push(filters.taskAuditStatus);
+    }
+    
+    if (filters.taskPreAuditStatus) {
+      whereClause += ' AND st.task_pre_audit_status = ?';
+      queryParams.push(filters.taskPreAuditStatus);
+    }
+    
+    if (filters.groupId) {
+      whereClause += ' AND st.related_group_id = ?';
+      queryParams.push(filters.groupId);
+    }
+    
+    if (filters.submitStartTime) {
+      whereClause += ' AND st.submit_time >= ?';
+      queryParams.push(filters.submitStartTime);
+    }
+    
+    if (filters.submitEndTime) {
+      whereClause += ' AND st.submit_time <= ?';
+      queryParams.push(filters.submitEndTime);
+    }
+    
+    if (filters.preWaiterId !== undefined) {
+      if (filters.preWaiterId == 0) {
+        whereClause += ' AND st.pre_waiter_id IS NULL';
+      } else {
+        whereClause += ' AND st.pre_waiter_id = ?';
+        queryParams.push(filters.preWaiterId);
+      }
+    }
+    
+    if (filters.waiterId !== undefined) {
+      if (filters.waiterId == 0) {
+        whereClause += ' AND st.waiter_id IS NULL';
+      } else {
+        whereClause += ' AND st.waiter_id = ?';
+        queryParams.push(filters.waiterId);
+      }
+    }
+    
+    // 添加审核类型相关条件
+    if (auditType === 'pre') {
+      // 预审：获取所有预审任务，使用filtersParam中的筛选条件
+    } else {
+      // 复审：获取所有预审已通过且复审任务，使用filtersParam中的筛选条件
+      whereClause += ' AND st.task_pre_audit_status = "approved"';
+    }
+    
+    // 根据submitTime排序
+    const tasksQuery = `
+      SELECT st.id, st.submit_time 
+      FROM submitted_tasks st
+      JOIN tasks t ON st.task_id = t.id
+      LEFT JOIN members m ON st.member_id = m.id
+      LEFT JOIN channels c ON t.channel_id = c.id
+      LEFT JOIN (
+        SELECT member_id, group_id, is_owner
+        FROM member_groups
+        WHERE (member_id, id) IN (
+          SELECT member_id, MIN(id)
+          FROM member_groups
+          GROUP BY member_id
+        )
+      ) mg ON st.member_id = mg.member_id
+      LEFT JOIN \`groups\` g ON mg.group_id = g.id
+      WHERE ${whereClause}
+      ORDER BY st.submit_time DESC
+    `;
+    
+    const [filteredTasks] = await pool.query(tasksQuery, queryParams);
     
     // 初始化前后任务ID为null
     formattedTask.prevTaskId = null;
     formattedTask.nextTaskId = null;
     
-    if (pendingTasks.length > 0) {
-      // 将所有待审核任务ID转为数组
-      const pendingTaskIds = pendingTasks.map(task => task.id);
+    if (filteredTasks.length > 0) {
+      // 将所有任务ID转为数组
+      const taskIds = filteredTasks.map(task => task.id);
       
-      // 根据审核类型判断当前任务是否在待审核状态
-      const isCurrentTaskPending = (auditType === 'pre' && row.task_pre_audit_status === 'pending') || 
-                                  (auditType === 'confirm' && row.task_audit_status === 'pending' && row.task_pre_audit_status === 'approved');
+      // 查找当前任务在列表中的位置
+      const currentIndex = taskIds.findIndex(taskId => taskId === Number(id));
       
-      if (isCurrentTaskPending) {
-        // 如果当前任务是待审核状态，找出它在列表中的位置
-        const currentIndex = pendingTaskIds.findIndex(taskId => taskId === Number(id));
+      if (currentIndex !== -1) {
+        // 前一个任务是列表中的前一个索引（较新的任务）
+        if (currentIndex > 0) {
+          formattedTask.prevTaskId = taskIds[currentIndex - 1];
+        }
         
-        if (currentIndex !== -1) {
-          // 前一个任务是列表中的前一个索引（较新的任务）
-          if (currentIndex > 0) {
-            formattedTask.prevTaskId = pendingTaskIds[currentIndex - 1];
-          }
-          
-          // 后一个任务是列表中的后一个索引（较旧的任务）
-          if (currentIndex + 1 < pendingTaskIds.length) {
-            formattedTask.nextTaskId = pendingTaskIds[currentIndex + 1];
-          }
+        // 后一个任务是列表中的后一个索引（较旧的任务）
+        if (currentIndex + 1 < taskIds.length) {
+          formattedTask.nextTaskId = taskIds[currentIndex + 1];
         }
       } else {
-        // 如果当前任务不是待审核状态，查找Submit Time最接近当前任务的待审核任务
+        // 如果当前任务不在列表中，查找Submit Time最接近当前任务的任务
         const currentSubmitTime = new Date(row.submit_time).getTime();
         
-        // 查找提交时间比当前任务更新的第一个待审核任务（前一个任务）
-        const newerTask = pendingTasks.find(task => 
+        // 查找提交时间比当前任务更新的第一个任务（前一个任务）
+        const newerTask = filteredTasks.find(task => 
           new Date(task.submit_time).getTime() > currentSubmitTime
         );
         
-        // 查找提交时间比当前任务更旧的第一个待审核任务（后一个任务）
-        const olderTask = pendingTasks.find(task => 
+        // 查找提交时间比当前任务更旧的第一个任务（后一个任务）
+        const olderTask = filteredTasks.find(task => 
           new Date(task.submit_time).getTime() < currentSubmitTime
         );
         
         // 设置前一个和后一个任务ID
         if (newerTask) {
           formattedTask.prevTaskId = newerTask.id;
-        } else if (pendingTasks.length > 0) {
-          // 如果没有更新的任务，返回最新的待审核任务
-          formattedTask.prevTaskId = pendingTaskIds[0];
+        } else if (filteredTasks.length > 0) {
+          // 如果没有更新的任务，返回最新的任务
+          formattedTask.prevTaskId = taskIds[0];
         }
         
         if (olderTask) {

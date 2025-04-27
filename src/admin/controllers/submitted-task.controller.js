@@ -110,15 +110,21 @@ async function getConfirmAuditTasks(req, res) {
  */
 async function getSubmittedTaskDetail(req, res) {
   try {
-    const { id } = req.params;
-    const { auditType = 'confirm' } = req.query; // 默认为 'confirm'
+    const { id, auditType = 'confirm', filtersParam = {} } = req.body;
     
     if (!id) {
       return responseUtil.badRequest(res, '提交ID不能为空');
     }
     
+    // 处理filtersParam中的数字类型参数
+    if (filtersParam.channelId) filtersParam.channelId = parseInt(filtersParam.channelId, 10);
+    if (filtersParam.groupId) filtersParam.groupId = parseInt(filtersParam.groupId, 10);
+    if (filtersParam.preWaiterId !== undefined) filtersParam.preWaiterId = parseInt(filtersParam.preWaiterId, 10);
+    if (filtersParam.waiterId !== undefined) filtersParam.waiterId = parseInt(filtersParam.waiterId, 10);
+    if (filtersParam.completedTaskCount) filtersParam.completedTaskCount = parseInt(filtersParam.completedTaskCount, 10);
+    
     // 获取提交详情
-    const task = await submittedTaskModel.getById(parseInt(id, 10), auditType);
+    const task = await submittedTaskModel.getById(parseInt(id, 10), auditType, filtersParam);
     
     if (!task) {
       return responseUtil.notFound(res, i18n.t('admin.submittedTask.notFound', req.lang));
