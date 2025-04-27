@@ -44,13 +44,15 @@ router.get(
       .isString()
       .withMessage('common.validation.mustBeString'),
     query('billType')
-      .optional()
-      .isIn(['withdrawal', 'task_reward', 'invite_reward', 'group_owner_commission'])
-      .withMessage('common.validation.invalid'),
+      .optional(),
     query('settlementStatus')
       .optional()
       .isIn(['success', 'failed', 'pending'])
-      .withMessage('common.validation.invalid')
+      .withMessage('common.validation.invalid'),
+    query('taskName')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   billController.list

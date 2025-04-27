@@ -20,7 +20,8 @@ async function list(req, res) {
       memberNickname, 
       billType, 
       settlementStatus,
-      billNo
+      billNo,
+      taskName
     } = req.query;
     
     const filters = {};
@@ -29,6 +30,7 @@ async function list(req, res) {
     if (billType) filters.billType = billType;
     if (settlementStatus) filters.settlementStatus = settlementStatus;
     if (billNo) filters.billNo = billNo;
+    if (taskName) filters.taskName = taskName;
 
     // 获取账单列表
     const result = await billModel.getAllBills(filters, page, pageSize);

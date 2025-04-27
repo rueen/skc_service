@@ -225,12 +225,13 @@ async function getMemberBills(memberId, options = {}) {
  * @param {string} filters.billType - 账单类型
  * @param {string} filters.settlementStatus - 结算状态
  * @param {string} filters.billNo - 账单编号
+ * @param {string} filters.taskName - 任务名称
  * @param {number} page - 页码
  * @param {number} pageSize - 每页数量
  * @returns {Promise<Object>} 账单列表和统计信息
  */
 async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
-  const { memberNickname, billType, settlementStatus, billNo } = filters;
+  const { memberNickname, billType, settlementStatus, billNo, taskName } = filters;
   const params = [];
   let whereClause = 'WHERE 1=1';
   
@@ -254,6 +255,11 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
     params.push(`%${billNo}%`);
   }
   
+  if (taskName) {
+    whereClause += ' AND t.task_name LIKE ?';
+    params.push(`%${taskName}%`);
+  }
+  
   const offset = (page - 1) * pageSize;
   
   try {
@@ -262,6 +268,7 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
       `SELECT COUNT(*) as total 
        FROM bills b
        JOIN members m ON b.member_id = m.id
+       LEFT JOIN tasks t ON b.task_id = t.id
        ${whereClause}`,
       params
     );
