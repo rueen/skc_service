@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-27 15:26:39
+ * @LastEditTime: 2025-04-27 16:20:22
  * @Description: 
  */
 /**
@@ -75,6 +75,8 @@ router.get(
       .isInt({ min: 0 })
       .withMessage('common.validation.mustBeNonNegativeInteger'),
     query('waiterId')
+      .optional(),
+    query('preWaiterId')
       .optional()
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
@@ -135,6 +137,8 @@ router.get(
       .isInt({ min: 0 })
       .withMessage('common.validation.mustBeNonNegativeInteger'),
     query('waiterId')
+      .optional(),
+    query('preWaiterId')
       .optional()
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,

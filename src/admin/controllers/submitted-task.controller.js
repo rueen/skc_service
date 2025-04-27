@@ -74,7 +74,8 @@ async function getConfirmAuditTasks(req, res) {
       submitStartTime,
       submitEndTime,
       completedTaskCount,
-      waiterId
+      waiterId,
+      preWaiterId
     } = req.query;
     
     // 构建筛选条件
@@ -88,6 +89,7 @@ async function getConfirmAuditTasks(req, res) {
     if (submitEndTime) filters.submitEndTime = submitEndTime;
     if (completedTaskCount) filters.completedTaskCount = completedTaskCount;
     if (waiterId) filters.waiterId = parseInt(waiterId, 10);
+    if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
     
     // 获取预审已通过的任务列表
     const result = await submittedTaskModel.getPreAuditedList(
@@ -356,7 +358,8 @@ async function exportConfirmAuditTasks(req, res) {
       submitStartTime,
       submitEndTime,
       completedTaskCount,
-      waiterId
+      waiterId,
+      preWaiterId
     } = req.query;
     
     // 构建筛选条件
@@ -373,6 +376,7 @@ async function exportConfirmAuditTasks(req, res) {
     if (submitEndTime) filters.submitEndTime = submitEndTime;
     if (completedTaskCount) filters.completedTaskCount = completedTaskCount;
     if (waiterId) filters.waiterId = parseInt(waiterId, 10);
+    if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
     
     // 获取所有符合条件的预审已通过任务提交记录
     const result = await submittedTaskModel.getList(filters);
