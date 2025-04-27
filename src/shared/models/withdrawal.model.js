@@ -166,7 +166,8 @@ async function getAllWithdrawals(options = {}) {
       startTime,
       endTime,
       billNo,
-      memberNickname
+      memberNickname,
+      exportMode = false
     } = options;
     const offset = (page - 1) * pageSize;
     
@@ -212,9 +213,8 @@ async function getAllWithdrawals(options = {}) {
     );
     const total = countResult[0].total;
     
-    // 查询提现记录列表，增加关联payment_channels表获取支付渠道名称
-    const [withdrawals] = await pool.query(
-      `SELECT w.*, 
+    // 构建基础查询
+    let query = `SELECT w.*, 
               wa.payment_channel_id, 
               wa.account, 
               wa.name as withdrawal_name, 
@@ -228,10 +228,16 @@ async function getAllWithdrawals(options = {}) {
        LEFT JOIN payment_channels pc ON wa.payment_channel_id = pc.id
        LEFT JOIN waiters wtr ON w.waiter_id = wtr.id
        ${whereClause}
-       ORDER BY w.create_time DESC
-       LIMIT ?, ?`,
-      [...queryParams, offset, parseInt(pageSize)]
-    );
+       ORDER BY w.create_time DESC`;
+    
+    // 根据exportMode决定是否添加分页
+    if (!exportMode) {
+      query += ' LIMIT ?, ?';
+      queryParams.push(offset, parseInt(pageSize));
+    }
+    
+    // 查询提现记录列表
+    const [withdrawals] = await pool.query(query, queryParams);
     
     // 使用 formatWithdrawal 方法格式化列表数据
     const formattedList = withdrawals.map(withdrawal => formatWithdrawal(withdrawal));
@@ -532,88 +538,6 @@ async function batchRejectWithdrawals(ids, rejectReason, waiterId, remark = null
 }
 
 /**
- * 导出提现列表数据（不分页，用于导出）
- * @param {Object} filters - 筛选条件
- * @param {number} filters.memberId - 会员ID
- * @param {string} filters.memberNickname - 会员昵称
- * @param {number} filters.withdrawalStatus - 提现状态
- * @param {string} filters.billNo - 账单编号
- * @param {string} filters.startDate - 开始日期
- * @param {string} filters.endDate - 结束日期
- * @returns {Promise<Array>} 提现记录列表
- */
-async function exportWithdrawals(filters = {}) {
-  try {
-    let baseQuery = `
-      SELECT w.*, 
-             m.nickname,
-             wa.payment_channel_id,
-             wa.account,
-             wa.name as withdrawal_name,
-             wtr.username as waiter_name
-      FROM withdrawals w
-      LEFT JOIN members m ON w.member_id = m.id
-      LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
-      LEFT JOIN waiters wtr ON w.waiter_id = wtr.id
-    `;
-    
-    const queryParams = [];
-    const conditions = [];
-
-    // 添加筛选条件
-    if (filters.memberId) {
-      conditions.push('w.member_id = ?');
-      queryParams.push(filters.memberId);
-    }
-    
-    if (filters.memberNickname) {
-      conditions.push('m.nickname LIKE ?');
-      queryParams.push(`%${filters.memberNickname}%`);
-    }
-    
-    if (filters.withdrawalStatus) {
-      conditions.push('w.withdrawal_status = ?');
-      queryParams.push(filters.withdrawalStatus);
-    }
-    
-    if (filters.billNo) {
-      conditions.push('w.bill_no LIKE ?');
-      queryParams.push(`%${filters.billNo}%`);
-    }
-    
-    // 日期范围过滤
-    if (filters.startDate) {
-      conditions.push('w.create_time >= ?');
-      queryParams.push(`${filters.startDate} 00:00:00`);
-    }
-    
-    if (filters.endDate) {
-      conditions.push('w.create_time <= ?');
-      queryParams.push(`${filters.endDate} 23:59:59`);
-    }
-
-    // 组合查询条件
-    if (conditions.length > 0) {
-      baseQuery += ' WHERE ' + conditions.join(' AND ');
-    }
-
-    // 添加排序
-    baseQuery += ' ORDER BY w.create_time DESC';
-
-    // 执行查询
-    const [withdrawals] = await pool.query(baseQuery, queryParams);
-    
-    // 使用 formatWithdrawal 方法格式化提现记录
-    const formattedWithdrawals = withdrawals.map(withdrawal => formatWithdrawal(withdrawal));
-    
-    return formattedWithdrawals;
-  } catch (error) {
-    logger.error(`导出提现列表失败: ${error.message}`);
-    throw error;
-  }
-}
-
-/**
  * 检查会员是否有待处理的提现申请
  * @param {number} memberId - 会员ID
  * @returns {Promise<boolean>} - 是否有待处理的提现申请
@@ -639,6 +563,5 @@ module.exports = {
   getAllWithdrawals,
   batchApproveWithdrawals,
   batchRejectWithdrawals,
-  exportWithdrawals,
   hasPendingWithdrawal
 };

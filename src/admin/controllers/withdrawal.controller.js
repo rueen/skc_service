@@ -134,62 +134,106 @@ async function exportWithdrawals(req, res) {
     const { memberNickname, withdrawalStatus, billNo, startDate, endDate } = req.query;
     
     // 构建筛选条件
-    const filters = {};
-    if (memberNickname) filters.memberNickname = memberNickname;
-    if (withdrawalStatus) filters.withdrawalStatus = withdrawalStatus;
-    if (billNo) filters.billNo = billNo;
-    if (startDate) filters.startDate = startDate;
-    if (endDate) filters.endDate = endDate;
+    const options = {
+      exportMode: true, // 使用导出模式，不分页
+      memberNickname,
+      withdrawalStatus,
+      billNo
+    };
     
-    // 导出提现列表
-    const withdrawals = await withdrawalModel.exportWithdrawals(filters);
+    if (startDate) options.startTime = `${startDate} 00:00:00`;
+    if (endDate) options.endTime = `${endDate} 23:59:59`;
+    
+    // 获取提现列表数据
+    const result = await withdrawalModel.getAllWithdrawals(options);
+    const withdrawals = result.list;
     
     if (!withdrawals || withdrawals.length === 0) {
       return res.status(404).send('没有符合条件的提现数据');
     }
     
-    // 设置响应头，指定为 CSV 文件下载
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename=withdrawals.csv');
+    // 创建Excel工作簿和工作表
+    const Excel = require('exceljs');
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet('提现列表');
     
-    // CSV 表头
-    const headers = [
-      'ID', '会员ID', '会员昵称', '金额', '提现状态', '账单编号', 
-      '支付渠道ID', '提现账户', '提现账户姓名', '拒绝原因', '审核员ID', 
-      '处理时间', '备注', '创建时间', '更新时间'
+    // 设置列定义和宽度
+    worksheet.columns = [
+      { header: '账单编号', key: 'billNo', width: 25 },
+      { header: '会员ID', key: 'nickname', width: 15 },
+      { header: '会员账号', key: 'memberAccount', width: 20 },
+      { header: '提现账户', key: 'account', width: 25 },
+      { header: '账户类型', key: 'paymentChannelName', width: 15 },
+      { header: '提现金额', key: 'amount', width: 12 },
+      { header: '姓名', key: 'withdrawalName', width: 15 },
+      { header: '申请时间', key: 'createTime', width: 20 },
+      { header: '提现状态', key: 'withdrawalStatus', width: 12 },
+      { header: '提现备注', key: 'rejectReason', width: 30 },
+      { header: '操作员', key: 'waiterName', width: 15 }
     ];
     
-    // 写入表头
-    res.write('\ufeff' + headers.join(',') + '\n');
-    
-    // 写入数据行
+    // 添加数据行
     withdrawals.forEach(item => {
-      const values = [
-        item.id || '',
-        item.memberId || '',
-        (item.memberNickname || '').replace(/,/g, '，'), // 替换逗号防止影响 CSV 格式
-        item.amount || '',
-        (item.withdrawalStatus || '').replace(/,/g, '，'),
-        (item.billNo || '').replace(/,/g, '，'),
-        item.paymentChannelId || '',
-        (item.withdrawalAccount || '').replace(/,/g, '，'),
-        (item.withdrawalName || '').replace(/,/g, '，'),
-        (item.rejectReason || '').replace(/,/g, '，'),
-        item.waiterId || '',
-        (item.processTime || '').replace(/,/g, '，'),
-        (item.remark || '').replace(/,/g, '，'),
-        (item.createTime || '').replace(/,/g, '，'),
-        (item.updateTime || '').replace(/,/g, '，')
-      ];
-      
-      res.write(values.join(',') + '\n');
+      worksheet.addRow({
+        billNo: item.billNo || '',
+        nickname: item.nickname || '',
+        memberAccount: item.memberAccount || '',
+        account: item.account || '',
+        paymentChannelName: item.paymentChannelName || '',
+        amount: item.amount || 0,
+        withdrawalName: item.withdrawalName || '',
+        createTime: item.createTime || '',
+        withdrawalStatus: getStatusText(item.withdrawalStatus) || '',
+        rejectReason: item.rejectReason || item.remark || '',
+        waiterName: item.waiterName || ''
+      });
     });
     
-    return res.end();
+    // 设置表格首行样式
+    worksheet.getRow(1).height = 25; // 表头行高
+    worksheet.getRow(1).font = { bold: true }; // 加粗表头
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }; // 居中对齐
+    
+    // 设置金额列的格式
+    const amountColumn = worksheet.getColumn('amount');
+    amountColumn.numFmt = '0.00';
+    
+    // 设置整个表格的样式
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber > 1) { // 跳过表头行
+        row.eachCell({ includeEmpty: false }, cell => {
+          cell.alignment = { vertical: 'middle' };
+        });
+      }
+    });
+    
+    // 设置响应头
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=withdrawals.xlsx');
+    
+    // 写入响应流
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (error) {
     logger.error(`导出提现数据失败: ${error.message}`);
     return responseUtil.serverError(res, '导出提现数据失败，请稍后重试');
   }
+}
+
+/**
+ * 获取提现状态对应的中文描述
+ * @param {string} status - 状态代码
+ * @returns {string} - 状态中文描述
+ */
+function getStatusText(status) {
+  const statusMap = {
+    'pending': '待审核',
+    'processing': '处理中',
+    'success': '成功',
+    'failed': '失败'
+  };
+  
+  return statusMap[status] || status;
 }
 
 /**
