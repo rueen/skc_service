@@ -95,8 +95,11 @@ async function checkPendingTransactions() {
           logger.info(`交易 ${transaction.orderId} 仍在处理中`);
         }
         
-        // 如果状态有变化或查询失败，更新交易记录
-        if (transactionStatus !== transaction.transactionStatus || Number(response.status) !== 5) {
+        // 只有当交易状态真正发生变化时才更新交易记录和处理相关业务
+        if (transactionStatus !== transaction.transactionStatus) {
+          logger.info(`交易 ${transaction.orderId} 状态从 ${transaction.transactionStatus} 变更为 ${transactionStatus}`);
+          
+          // 更新交易记录
           await paymentTransactionModel.updateTransactionResult(transaction.orderId, {
             transactionStatus: transactionStatus,
             responseData: response,
@@ -112,6 +115,8 @@ async function checkPendingTransactions() {
             // 处理失败交易
             await transactionHandler.handleFailedTransaction(transaction.orderId, errorMessage || '交易失败');
           }
+        } else {
+          logger.info(`交易 ${transaction.orderId} 状态未变化，仍为 ${transactionStatus}`);
         }
       } catch (error) {
         logger.error(`查询交易 ${transaction.orderId} 状态失败: ${error.message}`);
