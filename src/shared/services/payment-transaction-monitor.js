@@ -129,9 +129,9 @@ async function checkPendingTransactions() {
  */
 function initTasks() {
   // 每10分钟处理一次超时交易
-  cron.schedule('*/10 * * * *', async () => {
-    await handleTimeoutTransactions();
-  });
+  // cron.schedule('*/10 * * * *', async () => {
+  //   await handleTimeoutTransactions();
+  // });
   
   // 每5分钟查询一次待处理交易状态
   cron.schedule('*/5 * * * *', async () => {

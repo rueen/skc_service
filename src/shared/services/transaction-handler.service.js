@@ -32,6 +32,25 @@ async function handleFailedTransaction(orderId, reason) {
     const withdrawalId = transaction.withdrawal_id;
     const memberId = transaction.member_id;
     const amount = transaction.amount;
+
+    // 检查提现状态，避免重复退款
+    const [withdrawalRows] = await connection.query(
+      'SELECT withdrawal_status FROM withdrawals WHERE id = ?',
+      [withdrawalId]
+    );
+    
+    if (withdrawalRows.length === 0) {
+      logger.error(`找不到提现记录 ${withdrawalId}`);
+      await connection.rollback();
+      return;
+    }
+    
+    // 如果提现已经标记为失败，避免重复处理
+    if (withdrawalRows[0].withdrawal_status === 'failed') {
+      logger.info(`提现 ${withdrawalId} 已经处理过失败状态，避免重复退款`);
+      await connection.commit();
+      return true;
+    }
     
     // 1. 更新提现记录状态为失败
     await connection.query(
@@ -109,8 +128,6 @@ async function handleSuccessTransaction(orderId) {
     
     const transaction = transactions[0];
     const withdrawalId = transaction.withdrawal_id;
-    const memberId = transaction.member_id;
-    const amount = transaction.amount;
     
     // 1. 更新提现记录状态为成功
     await connection.query(
@@ -163,6 +180,13 @@ async function updateWithdrawalStatus(withdrawalId, status, reason = null) {
     const withdrawal = withdrawals[0];
     const memberId = withdrawal.member_id;
     const amount = withdrawal.amount;
+    
+    // 检查提现状态，避免重复退款
+    if (withdrawal.withdrawal_status === 'failed') {
+      logger.info(`提现 ${withdrawalId} 已经处理过失败状态，避免重复退款`);
+      await connection.commit();
+      return true;
+    }
     
     if (status === 'success') {
       // 更新提现记录状态为成功
