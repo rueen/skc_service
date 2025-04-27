@@ -165,7 +165,8 @@ async function getAllWithdrawals(options = {}) {
       memberId,
       startTime,
       endTime,
-      billNo
+      billNo,
+      memberNickname
     } = options;
     const offset = (page - 1) * pageSize;
     
@@ -197,9 +198,16 @@ async function getAllWithdrawals(options = {}) {
       queryParams.push(`%${billNo}%`);
     }
     
+    if (memberNickname) {
+      whereClause += ' AND m.nickname LIKE ?';
+      queryParams.push(`%${memberNickname}%`);
+    }
+    
     // 查询总数
     const [countResult] = await pool.query(
-      `SELECT COUNT(*) as total FROM withdrawals w ${whereClause}`,
+      `SELECT COUNT(*) as total FROM withdrawals w 
+       LEFT JOIN members m ON w.member_id = m.id
+       ${whereClause}`,
       queryParams
     );
     const total = countResult[0].total;

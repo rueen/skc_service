@@ -24,7 +24,8 @@ async function getWithdrawals(req, res) {
       memberId, 
       startTime, 
       endTime,
-      billNo
+      billNo,
+      memberNickname
     } = req.query;
     
     const options = {
@@ -50,6 +51,10 @@ async function getWithdrawals(req, res) {
     
     if (billNo) {
       options.billNo = billNo;
+    }
+    
+    if (memberNickname) {
+      options.memberNickname = memberNickname;
     }
     
     const withdrawals = await withdrawalModel.getAllWithdrawals(options);
