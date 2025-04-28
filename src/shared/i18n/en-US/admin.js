@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 21:25:01
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 21:25:43
+ * @LastEditTime: 2025-04-29 07:34:03
  * @Description: 
  */
 module.exports = {
@@ -65,7 +65,8 @@ module.exports = {
     approveSuccess: 'Successfully approved {updatedCount} tasks',
     rejectSuccess: 'Successfully rejected {updatedCount} tasks',
     preApproveSuccess: 'Successfully pre-approved {updatedCount} tasks',
-    preRejectSuccess: 'Successfully pre-rejected {updatedCount} tasks'
+    preRejectSuccess: 'Successfully pre-rejected {updatedCount} tasks',
+    noTasks: 'no tasks'
   },
 
   task: {

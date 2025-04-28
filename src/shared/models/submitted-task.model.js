@@ -648,29 +648,23 @@ async function batchApprove(ids, waiterId) {
   try {
     await connection.beginTransaction();
     
-    // 先查询任务状态并加排他锁(X锁)，防止并发问题
+    // 先查询状态为pending的任务并加排他锁(X锁)，防止并发问题
     const [pendingTasks] = await connection.query(
       `SELECT 
-        st.id, st.task_id, st.member_id, st.related_group_id, st.task_audit_status, t.reward
+        st.id, st.task_id, st.member_id, st.related_group_id, t.reward
       FROM submitted_tasks st
       JOIN tasks t ON st.task_id = t.id
-      WHERE st.id IN (?) 
+      WHERE st.id IN (?) AND st.task_audit_status = 'pending'
       FOR UPDATE`,
       [ids]
     );
     
-    // 过滤出状态为pending的任务ID
-    const pendingTaskIds = pendingTasks
-      .filter(task => task.task_audit_status === 'pending')
-      .map(task => task.id);
+    // 直接获取符合条件的任务ID
+    const pendingTaskIds = pendingTasks.map(task => task.id);
     
     if (pendingTaskIds.length === 0) {
       await connection.commit();
-      return {
-        success: true,
-        updatedCount: 0,
-        rewardResults: []
-      };
+      return false;
     }
     
     // 更新任务状态为已通过，只更新pending状态的任务
@@ -681,19 +675,9 @@ async function batchApprove(ids, waiterId) {
       [waiterId, pendingTaskIds]
     );
     
-    // 获取已通过任务的关联信息
-    const [approvedTasks] = await connection.query(
-      `SELECT 
-        st.id, st.task_id, st.member_id, st.related_group_id, t.reward
-      FROM submitted_tasks st
-      JOIN tasks t ON st.task_id = t.id
-      WHERE st.id IN (?) AND st.task_audit_status = 'approved'`,
-      [pendingTaskIds]
-    );
-    
     // 处理任务奖励
     const rewardResults = [];
-    for (const task of approvedTasks) {
+    for (const task of pendingTasks) {
       try {
         // 获取任务提交时记录的群组ID
         const relatedGroupId = task.related_group_id;
@@ -802,28 +786,24 @@ async function batchReject(ids, reason, waiterId) {
   try {
     await connection.beginTransaction();
     
-    // 先查询任务状态并加排他锁(X锁)，防止并发问题
+    // 先查询状态为pending的任务并加排他锁(X锁)，防止并发问题
     const [pendingTasks] = await connection.query(
       `SELECT 
-        st.id, st.task_audit_status
+        st.id
       FROM submitted_tasks st
-      WHERE st.id IN (?) 
+      WHERE st.id IN (?) AND st.task_audit_status = 'pending'
       FOR UPDATE`,
       [ids]
     );
     
-    // 过滤出状态为pending的任务ID
-    const pendingTaskIds = pendingTasks
-      .filter(task => task.task_audit_status === 'pending')
-      .map(task => task.id);
+    // 直接获取符合条件的任务ID
+    const pendingTaskIds = pendingTasks.map(task => task.id);
     
     if (pendingTaskIds.length === 0) {
       await connection.commit();
-      return {
-        success: true,
-        updatedCount: 0
-      };
+      return false;
     }
+    
     // 更新任务状态为已拒绝，只更新pending状态的任务
     const [result] = await connection.query(
       `UPDATE submitted_tasks 
@@ -914,28 +894,24 @@ async function batchPreApprove(ids, waiterId) {
   try {
     await connection.beginTransaction();
     
-    // 先查询任务预审状态并加排他锁(X锁)，防止并发问题
+    // 先查询预审状态为pending的任务并加排他锁(X锁)，防止并发问题
     const [pendingTasks] = await connection.query(
       `SELECT 
-        st.id, st.task_pre_audit_status
+        st.id
       FROM submitted_tasks st
-      WHERE st.id IN (?) 
+      WHERE st.id IN (?) AND st.task_pre_audit_status = 'pending'
       FOR UPDATE`,
       [ids]
     );
     
-    // 过滤出预审状态为pending的任务ID
-    const pendingTaskIds = pendingTasks
-      .filter(task => task.task_pre_audit_status === 'pending')
-      .map(task => task.id);
+    // 直接获取符合条件的任务ID
+    const pendingTaskIds = pendingTasks.map(task => task.id);
     
     if (pendingTaskIds.length === 0) {
       await connection.commit();
-      return {
-        success: true,
-        updatedCount: 0
-      };
+      return false;
     }
+    
     // 更新任务预审状态为已通过，只更新预审状态为pending的任务
     const [result] = await connection.query(
       `UPDATE submitted_tasks 
@@ -971,27 +947,21 @@ async function batchPreReject(ids, reason, waiterId) {
   try {
     await connection.beginTransaction();
     
-    // 先查询任务预审状态并加排他锁(X锁)，防止并发问题
+    // 先查询预审状态为pending的任务并加排他锁(X锁)，防止并发问题
     const [pendingTasks] = await connection.query(
       `SELECT 
-        st.id, st.task_pre_audit_status
+        st.id
       FROM submitted_tasks st
-      WHERE st.id IN (?) 
+      WHERE st.id IN (?) AND st.task_pre_audit_status = 'pending'
       FOR UPDATE`,
       [ids]
     );
     
-    // 过滤出预审状态为pending的任务ID
-    const pendingTaskIds = pendingTasks
-      .filter(task => task.task_pre_audit_status === 'pending')
-      .map(task => task.id);
-    
+    // 直接获取符合条件的任务ID
+    const pendingTaskIds = pendingTasks.map(task => task.id);
     if (pendingTaskIds.length === 0) {
       await connection.commit();
-      return {
-        success: true,
-        updatedCount: 0
-      };
+      return false;
     }
     
     // 更新任务预审状态为已拒绝，只更新预审状态为pending的任务

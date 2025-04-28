@@ -156,6 +156,10 @@ async function batchApproveSubmissions(req, res) {
     // 批量审核通过
     const result = await submittedTaskModel.batchApprove(ids, waiterId);
     
+    if(!result) {
+      return responseUtil.badRequest(res, i18n.t('admin.submittedTask.noTasks', req.lang));
+    }
+
     return responseUtil.success(
       res, 
       { updatedCount: result.updatedCount },
@@ -190,6 +194,10 @@ async function batchRejectSubmissions(req, res) {
     // 批量拒绝
     const result = await submittedTaskModel.batchReject(ids, reason, waiterId);
     
+    if(!result) {
+      return responseUtil.badRequest(res, i18n.t('admin.submittedTask.noTasks', req.lang));
+    }
+
     return responseUtil.success(
       res, 
       { updatedCount: result.updatedCount },
@@ -505,6 +513,10 @@ async function batchPreApproveSubmissions(req, res) {
     // 批量预审通过
     const result = await submittedTaskModel.batchPreApprove(ids, waiterId);
     
+    if(!result) {
+      return responseUtil.badRequest(res, i18n.t('admin.submittedTask.noTasks', req.lang));
+    }
+    
     return responseUtil.success(
       res, 
       { updatedCount: result.updatedCount },
@@ -539,6 +551,9 @@ async function batchPreRejectSubmissions(req, res) {
     // 批量预审拒绝
     const result = await submittedTaskModel.batchPreReject(ids, reason, waiterId);
     
+    if(!result) {
+      return responseUtil.badRequest(res, i18n.t('admin.submittedTask.noTasks', req.lang));
+    }
     return responseUtil.success(
       res, 
       { updatedCount: result.updatedCount },

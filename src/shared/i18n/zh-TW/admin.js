@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-04-18 22:38:40
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-29 07:33:47
+ * @Description: 
+ */
 /**
  * 繁體中文 Admin 翻譯
  */
@@ -61,7 +68,8 @@ module.exports = {
     approveSuccess: '成功審核通過 {updatedCount} 個任務',
     rejectSuccess: '成功拒絕 {updatedCount} 個任務',
     preApproveSuccess: '成功預審通過 {updatedCount} 個任務',
-    preRejectSuccess: '成功預審拒絕 {updatedCount} 個任務'
+    preRejectSuccess: '成功預審拒絕 {updatedCount} 個任務',
+    noTasks: '沒有符合條件的任務'
   },
 
   task: {

@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-04-18 19:53:22
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-29 07:33:35
+ * @Description: 
+ */
 module.exports = {
   usernameOrPasswordError: '用户名或密码错误',
   loginSuccess: '登录成功',
@@ -58,7 +65,8 @@ module.exports = {
     approveSuccess: '成功审核通过 {updatedCount} 个任务',
     rejectSuccess: '成功拒绝 {updatedCount} 个任务',
     preApproveSuccess: '成功预审通过 {updatedCount} 个任务',
-    preRejectSuccess: '成功预审拒绝 {updatedCount} 个任务'
+    preRejectSuccess: '成功预审拒绝 {updatedCount} 个任务',
+    noTasks: '没有符合条件的任务'
   },
 
   task: {

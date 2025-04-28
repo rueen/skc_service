@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-04-18 22:40:02
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-04-29 07:33:53
+ * @Description: 
+ */
 /**
  * Pagsasalin sa Tagalog para sa Admin
  */
@@ -61,7 +68,8 @@ module.exports = {
     approveSuccess: 'Matagumpay na naaprubahan ang {updatedCount} na gawain',
     rejectSuccess: 'Matagumpay na tinanggihan ang {updatedCount} na gawain',
     preApproveSuccess: 'Matagumpay na nauna nang naaprubahan ang {updatedCount} na gawain',
-    preRejectSuccess: 'Matagumpay na nauna nang tinanggihan ang {updatedCount} na gawain'
+    preRejectSuccess: 'Matagumpay na nauna nang tinanggihan ang {updatedCount} na gawain',
+    noTasks: 'Walang mga gawain na nai-submit'
   },
 
   task: {
