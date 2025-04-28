@@ -266,62 +266,70 @@ async function batchApproveWithdrawals(ids, waiterId, remark = null) {
   try {
     await connection.beginTransaction();
     
+    // 先查询提现状态并加排他锁(X锁)，防止并发问题
+    const [pendingWithdrawals] = await connection.query(
+      `SELECT 
+        id, member_id, amount, bill_no, withdrawal_account_id 
+      FROM withdrawals 
+      WHERE id IN (?) AND withdrawal_status = ?
+      FOR UPDATE`,
+      [ids, WithdrawalStatus.PENDING]
+    );
+    
+    // 过滤出状态为pending的提现记录ID
+    const pendingIds = pendingWithdrawals.map(withdrawal => withdrawal.id);
+    
+    if (pendingIds.length === 0) {
+      await connection.commit();
+      return false;
+    }
+    
     const now = new Date();
     
-    // 更新提现记录状态
+    // 更新提现记录状态，只更新pending状态的记录
     const [result] = await connection.query(
       `UPDATE withdrawals 
        SET withdrawal_status = ?, waiter_id = ?, process_time = ?, remark = ? 
        WHERE id IN (?) AND withdrawal_status = ?`,
-      [WithdrawalStatus.PROCESSING, waiterId, now, remark, ids, WithdrawalStatus.PENDING]
+      [WithdrawalStatus.PROCESSING, waiterId, now, remark, pendingIds, WithdrawalStatus.PENDING]
     );
     
     // 批量更新关联的账单状态
-    for (const id of ids) {
-      // 获取提现记录
-      const [withdrawalRecords] = await connection.query(
-        'SELECT * FROM withdrawals WHERE id = ?',
-        [id]
+    for (const withdrawal of pendingWithdrawals) {
+      // 更新关联的账单提现状态
+      await connection.query(
+        `UPDATE bills 
+         SET withdrawal_status = ? 
+         WHERE member_id = ? AND bill_type = ? AND amount = ?`,
+        [WithdrawalStatus.PROCESSING, withdrawal.member_id, BillType.WITHDRAWAL, -withdrawal.amount]
       );
-      
-      if (withdrawalRecords.length > 0) {
-        const withdrawal = withdrawalRecords[0];
-        
-        // 更新关联的账单提现状态
-        await connection.query(
-          `UPDATE bills 
-           SET withdrawal_status = ? 
-           WHERE member_id = ? AND bill_type = ? AND amount = ?`,
-          [WithdrawalStatus.PROCESSING, withdrawal.member_id, BillType.WITHDRAWAL, -withdrawal.amount]
-        );
 
-        // 获取提现记录的详细信息，包括提现账户信息
-        const [withdrawalDetails] = await connection.query(
-          `SELECT w.*, 
-                  wa.account, 
-                  wa.name as account_name, 
-                  wa.payment_channel_id,
-                  pc.merchant_id,
-                  pc.secret_key,
-                  pc.bank
-           FROM withdrawals w
-           LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
-           LEFT JOIN payment_channels pc ON wa.payment_channel_id = pc.id
-           WHERE w.id = ?`,
-          [id]
-        );
+      // 获取提现记录的详细信息，包括提现账户信息
+      const [withdrawalDetails] = await connection.query(
+        `SELECT w.*, 
+                wa.account, 
+                wa.name as account_name, 
+                wa.payment_channel_id,
+                pc.merchant_id,
+                pc.secret_key,
+                pc.bank
+         FROM withdrawals w
+         LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
+         LEFT JOIN payment_channels pc ON wa.payment_channel_id = pc.id
+         WHERE w.id = ?`,
+        [withdrawal.id]
+      );
 
-        if (withdrawalDetails.length > 0) {
-          // 异步发起第三方代付，不等待结果，不影响审核流程
-          // 使用process.nextTick确保不阻塞主线程
-          process.nextTick(async () => {
-            try {
-              await processThirdPartyPayment(formatWithdrawal(withdrawalDetails[0]));
-            } catch (error) {
-              logger.error(`提现ID ${id} 的第三方代付处理失败: ${error.message}`);
-            }
-          });
-        }
+      if (withdrawalDetails.length > 0) {
+        // 异步发起第三方代付，不等待结果，不影响审核流程
+        // 使用process.nextTick确保不阻塞主线程
+        process.nextTick(async () => {
+          try {
+            await processThirdPartyPayment(formatWithdrawal(withdrawalDetails[0]));
+          } catch (error) {
+            logger.error(`提现ID ${withdrawal.id} 的第三方代付处理失败: ${error.message}`);
+          }
+        });
       }
     }
     
@@ -495,24 +503,36 @@ async function batchRejectWithdrawals(ids, rejectReason, waiterId, remark = null
   try {
     await connection.beginTransaction();
     
-    const now = new Date();
-    
-    // 获取提现记录
-    const [withdrawalRecords] = await connection.query(
-      'SELECT * FROM withdrawals WHERE id IN (?) AND withdrawal_status = ?',
+    // 先查询提现状态并加排他锁(X锁)，防止并发问题
+    const [pendingWithdrawals] = await connection.query(
+      `SELECT 
+        id, member_id, amount
+      FROM withdrawals 
+      WHERE id IN (?) AND withdrawal_status = ?
+      FOR UPDATE`,
       [ids, WithdrawalStatus.PENDING]
     );
     
-    // 更新提现记录状态
+    // 过滤出状态为pending的提现记录ID
+    const pendingIds = pendingWithdrawals.map(withdrawal => withdrawal.id);
+    
+    if (pendingIds.length === 0) {
+      await connection.commit();
+      return false;
+    }
+    
+    const now = new Date();
+    
+    // 更新提现记录状态，只更新pending状态的记录
     const [result] = await connection.query(
       `UPDATE withdrawals 
        SET withdrawal_status = ?, reject_reason = ?, waiter_id = ?, process_time = ?, remark = ? 
        WHERE id IN (?) AND withdrawal_status = ?`,
-      [WithdrawalStatus.FAILED, rejectReason, waiterId, now, remark, ids, WithdrawalStatus.PENDING]
+      [WithdrawalStatus.FAILED, rejectReason, waiterId, now, remark, pendingIds, WithdrawalStatus.PENDING]
     );
     
     // 退还余额并更新账单状态
-    for (const withdrawal of withdrawalRecords) {
+    for (const withdrawal of pendingWithdrawals) {
       // 退还余额
       await memberModel.updateMemberBalance(withdrawal.member_id, withdrawal.amount);
       
