@@ -97,6 +97,32 @@ function formatDateTimeForMySQL(dateTimeString) {
  */
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberId = null) {
   try {
+    // 提前获取会员完成任务次数和群组信息，用于后续构建SQL查询条件
+    let memberCompletedTaskCount = null;
+    let memberGroups = null;
+    
+    if (memberId) {
+      // 获取会员完成任务次数
+      const taskStatsModel = require('./task-stats.model');
+      try {
+        memberCompletedTaskCount = await taskStatsModel.getMemberCompletedTaskCount(memberId);
+        logger.debug(`会员已完成任务次数 - 会员ID: ${memberId}, 完成次数: ${memberCompletedTaskCount}`);
+      } catch (error) {
+        logger.error(`获取会员完成任务次数失败 - 会员ID: ${memberId}, 错误: ${error.message}`);
+        memberCompletedTaskCount = 0;
+      }
+
+      // 获取会员所在的群组
+      const groupModel = require('./group.model');
+      try {
+        memberGroups = await groupModel.getMemberGroups(memberId);
+        logger.debug(`获取会员群组 - 会员ID: ${memberId}, 群组数: ${memberGroups ? memberGroups.length : 0}`);
+      } catch (error) {
+        logger.error(`获取会员群组失败 - 会员ID: ${memberId}, 错误: ${error.message}`);
+        memberGroups = [];
+      }
+    }
+
     let query = `
       SELECT t.*, c.name as channel_name, c.icon as channel_icon,
         (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND st.task_audit_status != 'rejected') as submitted_count
@@ -108,7 +134,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const queryParams = [];
     const conditions = [];
 
-    // 添加筛选条件
+    // 添加基本筛选条件
     if (filters.taskName) {
       conditions.push('t.task_name LIKE ?');
       queryParams.push(`%${filters.taskName}%`);
@@ -139,6 +165,38 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       )`;
       conditions.push(enrolledTasksCondition);
       queryParams.push(memberId);
+      
+      // 基于会员完成任务次数的筛选（用户范围筛选）
+      if (memberCompletedTaskCount !== null) {
+        // 1. 如果是新人任务(userRange=1 & taskCount=0)，且会员已完成任务，则过滤掉
+        // 2. 如果是限制任务(userRange=1 & taskCount>0)，且会员完成次数>限制，则过滤掉
+        conditions.push(`(
+          t.user_range = 0 OR
+          (t.user_range = 1 AND t.task_count = 0 AND ? = 0) OR
+          (t.user_range = 1 AND t.task_count > 0 AND ? <= t.task_count)
+        )`);
+        queryParams.push(memberCompletedTaskCount, memberCompletedTaskCount);
+      }
+      
+      // 添加群组模式筛选
+      if (memberGroups !== null) {
+        // 转换会员群组ID为集合，方便检查
+        const memberGroupIds = memberGroups.map(g => g.id);
+        if (memberGroupIds.length > 0) {
+          // 1. 如果不是群组模式任务(group_mode=0)，则显示
+          // 2. 如果是群组模式任务(group_mode=1)，会员必须在至少一个指定群组中
+          conditions.push(`(
+            t.group_mode = 0 OR 
+            (t.group_mode = 1 AND (
+              t.group_ids = '[]' OR 
+              JSON_OVERLAPS(t.group_ids, JSON_ARRAY(${memberGroupIds.join(',')}))
+            ))
+          )`);
+        } else {
+          // 如果会员不在任何群组中，则只显示非群组模式的任务
+          conditions.push(`(t.group_mode = 0 OR (t.group_mode = 1 AND t.group_ids = '[]'))`);
+        }
+      }
     }
 
     // 组合查询条件
@@ -148,33 +206,29 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       countQuery += whereClause;
     }
 
+    // 获取总数
+    const [countResult] = await pool.query(countQuery, queryParams);
+    const total = countResult[0].total;
+
+    // 如果总数为0，直接返回空结果
+    if (total === 0) {
+      return {
+        list: [],
+        total: 0,
+        page: parseInt(page, 10),
+        pageSize: parseInt(pageSize, 10)
+      };
+    }
+
     // 添加排序和分页
     query += ' ORDER BY t.create_time DESC LIMIT ? OFFSET ?';
     queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
 
     // 执行查询
     const [rows] = await pool.query(query, queryParams);
-    const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
-    
-    // 导入相关模型
-    const taskStatsModel = memberId ? require('./task-stats.model') : null;
-    const groupModel = memberId ? require('./group.model') : null;
-    
-    // 如果有会员ID，获取会员完成任务次数
-    let memberCompletedTaskCount = null;
-    if (memberId && taskStatsModel) {
-      try {
-        memberCompletedTaskCount = await taskStatsModel.getMemberCompletedTaskCount(memberId);
-        logger.debug(`会员已完成任务次数 - 会员ID: ${memberId}, 完成次数: ${memberCompletedTaskCount}`);
-      } catch (error) {
-        logger.error(`获取会员完成任务次数失败 - 会员ID: ${memberId}, 错误: ${error.message}`);
-        memberCompletedTaskCount = 0;
-      }
-    }
     
     // 安全处理每个任务记录
     const formattedList = [];
-    let filteredOutCount = 0; // 记录被过滤掉的任务数量
     
     for (const task of rows) {
       try {
@@ -182,58 +236,11 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         const formattedTask = formatTask(task);
         const taskId = formattedTask.id;
         
-        // 根据userRange和taskCount判断是否显示给当前会员
-        // userRange=1表示需要根据会员完成任务次数做显示限制
-        if (memberId && formattedTask.userRange === 1 && memberCompletedTaskCount !== null) {
-          // taskCount=0表示只有从未完成过任务的会员可以看到
-          // taskCount>0表示完成次数<=taskCount的会员可以看到
-          if (formattedTask.taskCount === 0) {
-            // 新人任务：只有未完成任务的新会员可以查看
-            if (memberCompletedTaskCount > 0) {
-              // 会员已完成过任务，不符合条件，跳过该任务
-              filteredOutCount++;
-              continue;
-            }
-          } else {
-            // 普通任务：只有完成次数不超过taskCount的会员可以查看
-            if (memberCompletedTaskCount > formattedTask.taskCount) {
-              // 会员完成任务次数超出限制，跳过该任务
-              filteredOutCount++;
-              continue;
-            }
-          }
-        }
-        
-        // 检查指定群组的任务，如果不在相应群组则隐藏
-        if (memberId && formattedTask.groupMode === 1 && groupModel) {
-          try {
-            let groupIds = formattedTask.groupIds;
-
-            // 如果任务有指定群组
-            if (groupIds.length > 0) {
-              // 检查会员是否在这些群组中
-              const isMemberInGroups = await groupModel.isMemberInGroups(memberId, groupIds);
-              
-              if (!isMemberInGroups) {
-                // 会员不在指定群组中，跳过该任务
-                filteredOutCount++;
-                logger.debug(`会员不在指定群组中 - 会员ID: ${memberId}, 任务ID: ${taskId}`);
-                continue;
-              }
-            }
-          } catch (error) {
-            logger.error(`检查会员是否在指定群组中失败 - 会员ID: ${memberId}, 任务ID: ${taskId}, 错误: ${error.message}`);
-            // 发生错误时默认跳过该任务，以保证安全
-            filteredOutCount++;
-            continue;
-          }
-        }
-        
         // 初始化报名状态
         let isEnrolled = false;
         let enrollmentId = null;
         
-        // 如果提供了会员ID，设置报名状态为false（因为已报名的任务已在SQL中过滤掉）
+        // 如果提供了会员ID，设置报名状态为false（因为已报名的已被SQL过滤）
         if (memberId) {
           isEnrolled = false; // 已报名的已被SQL过滤
           enrollmentId = null;
@@ -251,12 +258,9 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       }
     }
     
-    // 计算调整后的总数
-    const adjustedTotal = countResult[0].total - filteredOutCount;
-    
     return {
       list: formattedList,
-      total: adjustedTotal,
+      total: total,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
     };
