@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 19:53:22
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-29 07:33:35
+ * @LastEditTime: 2025-04-29 10:03:09
  * @Description: 
  */
 module.exports = {
@@ -23,7 +23,8 @@ module.exports = {
     inviterAllGroupFull: '邀请人所在群组已满，且该群主名下所有群组均已满员',
     assignedToOtherGroup: '分配到群主名下的其他群组',
     auditSuccess: '成功审核通过 {success} 个账号，{failed} 个账号审核失败',
-    rejectSuccess: '成功拒绝 {count} 个账号'
+    rejectSuccess: '成功拒绝 {count} 个账号',
+    noPendingAccounts: '账号状态已变更，无法审核'
   },
 
   article: {

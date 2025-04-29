@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 21:25:01
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-29 07:34:03
+ * @LastEditTime: 2025-04-29 10:04:59
  * @Description: 
  */
 module.exports = {
@@ -23,7 +23,8 @@ module.exports = {
     inviterAllGroupFull: 'Inviter\'s group is full and all groups under the owner are full',
     assignedToOtherGroup: 'Assigned to other group under the owner',
     auditSuccess: 'Successfully approved {success} accounts, {failed} accounts audit failed',
-    rejectSuccess: 'Successfully rejected {count} accounts'
+    rejectSuccess: 'Successfully rejected {count} accounts',
+    noPendingAccounts: 'Account status has been changed, cannot audit'
   },
 
   article: {

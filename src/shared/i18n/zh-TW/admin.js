@@ -2,11 +2,8 @@
  * @Author: diaochan
  * @Date: 2025-04-18 22:38:40
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-29 07:33:47
+ * @LastEditTime: 2025-04-29 10:04:20
  * @Description: 
- */
-/**
- * 繁體中文 Admin 翻譯
  */
 module.exports = {
   usernameOrPasswordError: '用戶名或密碼錯誤',
@@ -26,7 +23,8 @@ module.exports = {
     inviterAllGroupFull: '邀請人所在群組已滿，且該群主名下所有群組均已滿員',
     assignedToOtherGroup: '分配到群主名下的其他群組',
     auditSuccess: '成功審核通過 {success} 個賬號，{failed} 個賬號審核失敗',
-    rejectSuccess: '成功拒絕 {count} 個賬號'
+    rejectSuccess: '成功拒絕 {count} 個賬號',
+    noPendingAccounts: '賬號狀態已變更，無法審核'
   },
 
   article: {

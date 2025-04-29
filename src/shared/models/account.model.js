@@ -418,12 +418,30 @@ async function batchApprove(ids, waiterId) {
   try {
     await connection.beginTransaction();
     
-    // 更新账号状态为已通过
+    // 先查询状态为pending的账号并加排他锁(X锁)，防止并发问题
+    const [pendingAccounts] = await connection.query(
+      `SELECT 
+        id
+      FROM accounts 
+      WHERE id IN (?) AND account_audit_status = 'pending'
+      FOR UPDATE`,
+      [ids]
+    );
+    
+    // 直接获取符合条件的账号ID
+    const pendingIds = pendingAccounts.map(account => account.id);
+    
+    if (pendingIds.length === 0) {
+      await connection.commit();
+      return false;
+    }
+    
+    // 更新账号状态为已通过，只更新pending状态的账号
     const [result] = await connection.query(
       `UPDATE accounts 
        SET account_audit_status = 'approved', waiter_id = ?, audit_time = NOW() 
        WHERE id IN (?) AND account_audit_status = 'pending'`,
-      [waiterId, ids]
+      [waiterId, pendingIds]
     );
     
     await connection.commit();
@@ -453,12 +471,30 @@ async function batchReject(ids, reason, waiterId) {
   try {
     await connection.beginTransaction();
     
-    // 更新账号状态为已拒绝
+    // 先查询状态为pending的账号并加排他锁(X锁)，防止并发问题
+    const [pendingAccounts] = await connection.query(
+      `SELECT 
+        id
+      FROM accounts 
+      WHERE id IN (?) AND account_audit_status = 'pending'
+      FOR UPDATE`,
+      [ids]
+    );
+    
+    // 直接获取符合条件的账号ID
+    const pendingIds = pendingAccounts.map(account => account.id);
+    
+    if (pendingIds.length === 0) {
+      await connection.commit();
+      return false;
+    }
+    
+    // 更新账号状态为已拒绝，只更新pending状态的账号
     const [result] = await connection.query(
       `UPDATE accounts 
        SET account_audit_status = 'rejected', reject_reason = ?, waiter_id = ?, audit_time = NOW() 
        WHERE id IN (?) AND account_audit_status = 'pending'`,
-      [reason, waiterId, ids]
+      [reason, waiterId, pendingIds]
     );
     
     await connection.commit();

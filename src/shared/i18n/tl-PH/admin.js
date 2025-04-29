@@ -2,11 +2,8 @@
  * @Author: diaochan
  * @Date: 2025-04-18 22:40:02
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-29 07:33:53
+ * @LastEditTime: 2025-04-29 10:05:19
  * @Description: 
- */
-/**
- * Pagsasalin sa Tagalog para sa Admin
  */
 module.exports = {
   usernameOrPasswordError: 'Maling username o password',
@@ -26,7 +23,8 @@ module.exports = {
     inviterAllGroupFull: 'Ang grupo ng taga-anyaya ay puno na, at ang lahat ng grupo sa ilalim ng may-ari ng grupong ito ay puno na rin',
     assignedToOtherGroup: 'Itinalaga sa iba pang grupo sa ilalim ng may-ari ng grupo',
     auditSuccess: 'Matagumpay na naaprubahan ang {success} na account, {failed} na account ang nabigo sa pagsusuri',
-    rejectSuccess: 'Matagumpay na tinanggihan ang {count} na account'
+    rejectSuccess: 'Matagumpay na tinanggihan ang {count} na account',
+    noPendingAccounts: 'Ang estado ng account ay nagbabago, hindi maaaring pagsusuri'
   },
 
   article: {

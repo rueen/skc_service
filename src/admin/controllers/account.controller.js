@@ -146,14 +146,21 @@ async function batchResolve(req, res) {
       
       if (memberGroupRows.length > 0) {
         // 会员已有群组，直接审核通过
-        await accountModel.batchApprove([id], waiterId);
-        results.success.push({
-          id,
-          memberId,
-          groupId: memberGroupRows[0].group_id,
-          groupName: memberGroupRows[0].group_name,
-          message: i18n.t('admin.account.alreadyInGroup', req.lang)
-        });
+        const result = await accountModel.batchApprove([id], waiterId);
+        if(!result) {
+          results.failed.push({
+            id,
+            reason: `${id} - ${i18n.t('admin.account.noPendingAccounts', req.lang)}`
+          });
+        } else {
+          results.success.push({
+            id,
+            memberId,
+            groupId: memberGroupRows[0].group_id,
+            groupName: memberGroupRows[0].group_name,
+            message: i18n.t('admin.account.alreadyInGroup', req.lang)
+          });
+        }
         // 会员已有群组，不触发通知
         continue;
       }
@@ -218,15 +225,22 @@ async function batchResolve(req, res) {
         );
         
         // 审核通过账号
-        await accountModel.batchApprove([id], waiterId);
-        
-        results.success.push({
-          id,
-          memberId,
-          groupId: inviterGroup.group_id,
-          groupName: inviterGroup.group_name,
-          message: i18n.t('admin.account.assignedToInviterGroup', req.lang)
-        });
+        const result = await accountModel.batchApprove([id], waiterId);
+
+        if(!result) {
+          results.failed.push({
+            id,
+            reason: `${id} - ${i18n.t('admin.account.noPendingAccounts', req.lang)}`
+          });
+        } else {
+          results.success.push({
+            id,
+            memberId,
+            groupId: inviterGroup.group_id,
+            groupName: inviterGroup.group_name,
+            message: i18n.t('admin.account.assignedToInviterGroup', req.lang)
+          });
+        }
         
         // 发送账号审核通过通知
         try {
@@ -280,15 +294,22 @@ async function batchResolve(req, res) {
         );
         
         // 审核通过账号
-        await accountModel.batchApprove([id], waiterId);
-        
-        results.success.push({
-          id,
-          memberId,
-          groupId: targetGroup.id,
-          groupName: targetGroup.group_name,
-          message: i18n.t('admin.account.assignedToOtherGroup', req.lang)
-        });
+        const result = await accountModel.batchApprove([id], waiterId);
+
+        if(!result) {
+          results.failed.push({
+            id,
+            reason: `${id} - ${i18n.t('admin.account.noPendingAccounts', req.lang)}`
+          });
+        } else {
+          results.success.push({
+            id,
+            memberId,
+            groupId: targetGroup.id,
+            groupName: targetGroup.group_name,
+            message: i18n.t('admin.account.assignedToOtherGroup', req.lang)
+          });
+        }
         
         // 发送账号审核通过通知
         try {
@@ -342,6 +363,10 @@ async function batchReject(req, res) {
     
     // 执行批量拒绝操作
     const result = await accountModel.batchReject(ids, rejectReason || '审核未通过', waiterId);
+
+    if(!result) {
+      return responseUtil.badRequest(res, '账号状态已变更，无法审核');
+    }
     
     // 发送账号审核拒绝通知
     const notificationPromises = accountsInfo.map(accountInfo => {
