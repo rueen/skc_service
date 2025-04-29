@@ -130,6 +130,16 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       conditions.push('t.channel_id = ?');
       queryParams.push(filters.channelId);
     }
+    
+    // 如果提供了会员ID，过滤掉已报名的任务
+    if (memberId) {
+      const enrolledTasksCondition = `NOT EXISTS (
+        SELECT 1 FROM enrolled_tasks et 
+        WHERE et.task_id = t.id AND et.member_id = ?
+      )`;
+      conditions.push(enrolledTasksCondition);
+      queryParams.push(memberId);
+    }
 
     // 组合查询条件
     if (conditions.length > 0) {
@@ -224,21 +234,11 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         let isEnrolled = false;
         let enrollmentId = null;
         
-        // 如果提供了会员ID，使用checkEnrollment检查报名状态
+        // 如果提供了会员ID，设置报名状态为false（因为已报名的任务已在SQL中过滤掉）
         if (memberId) {
-          try {
-            // 使用与getDetail相同的方法检查报名状态
-            const enrollmentResult = await enrolledTaskModel.checkEnrollment(taskId, memberId);
-            isEnrolled = enrollmentResult.isEnrolled;
-            enrollmentId = enrollmentResult.enrollmentId;
-            
-            // 记录日志，用于调试报名状态
-            logger.debug(`任务列表项(使用checkEnrollment) - 任务ID: ${taskId}, 会员ID: ${memberId}, 是否已报名: ${isEnrolled}, 报名ID: ${enrollmentId || '无'}`);
-          } catch (error) {
-            logger.error(`检查任务列表项报名状态失败 - 任务ID: ${taskId}, 会员ID: ${memberId}, 错误: ${error.message}`);
-            isEnrolled = false;
-            enrollmentId = null;
-          }
+          isEnrolled = false; // 已报名的已被SQL过滤
+          enrollmentId = null;
+          logger.debug(`任务列表项 - 任务ID: ${taskId}, 会员ID: ${memberId}, 是否已报名: ${isEnrolled}`);
         }
         
         formattedTask.isEnrolled = isEnrolled;
