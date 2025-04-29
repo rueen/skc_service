@@ -10,30 +10,6 @@ const paymentChannelModel = require('../models/payment-channel.model');
 const transactionHandler = require('./transaction-handler.service');
 
 /**
- * 处理超时交易
- * 将超过30分钟未收到响应的交易标记为失败
- */
-async function handleTimeoutTransactions() {
-  try {
-    logger.info('开始处理超时交易');
-    const timeoutOrderIds = await paymentTransactionModel.markTimeoutTransactions(30);
-    
-    if (timeoutOrderIds.length > 0) {
-      logger.info(`成功处理 ${timeoutOrderIds.length} 笔超时交易: ${timeoutOrderIds.join(', ')}`);
-      
-      // 处理这些超时交易的提现和余额
-      for (const orderId of timeoutOrderIds) {
-        await transactionHandler.handleFailedTransaction(orderId, '交易超时');
-      }
-    } else {
-      logger.info('没有需要处理的超时交易');
-    }
-  } catch (error) {
-    logger.error(`处理超时交易失败: ${error.message}`);
-  }
-}
-
-/**
  * 查询第三方支付交易状态
  * 查询处于pending状态的交易，更新其最新状态
  */
@@ -220,11 +196,6 @@ async function checkPendingTransactions() {
  * 初始化定时任务
  */
 function initTasks() {
-  // 每10分钟处理一次超时交易
-  // cron.schedule('*/10 * * * *', async () => {
-  //   await handleTimeoutTransactions();
-  // });
-  
   // 每5分钟查询一次待处理交易状态
   cron.schedule('*/5 * * * *', async () => {
     await checkPendingTransactions();
@@ -235,6 +206,5 @@ function initTasks() {
 
 module.exports = {
   initTasks,
-  handleTimeoutTransactions,
   checkPendingTransactions
 }; 

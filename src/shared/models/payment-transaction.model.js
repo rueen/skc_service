@@ -175,29 +175,6 @@ async function updateTransactionResult(orderId, updateData) {
 }
 
 /**
- * 根据订单号获取交易记录
- * @param {string} orderId - 订单号
- * @returns {Promise<Object|null>} 交易记录
- */
-async function getTransactionByOrderId(orderId) {
-  try {
-    const [transactions] = await pool.query(
-      'SELECT * FROM payment_transactions WHERE order_id = ?',
-      [orderId]
-    );
-
-    if (transactions.length === 0) {
-      return null;
-    }
-
-    return formatPaymentTransaction(transactions[0]);
-  } catch (error) {
-    logger.error(`根据订单号获取交易记录失败: ${error.message}`);
-    throw error;
-  }
-}
-
-/**
  * 获取所有交易记录
  * @param {Object} filters - 筛选条件
  * @param {number} page - 页码
@@ -291,62 +268,9 @@ async function getTransactions(filters = {}, page = 1, pageSize = 10) {
   }
 }
 
-/**
- * 批量更新失败交易的状态
- * 用于定时任务重试处理超时未完成的交易
- * @param {number} timeoutMinutes - 超时时间（分钟）
- * @returns {Promise<Array>} 更新的交易ID列表
- */
-async function markTimeoutTransactions(timeoutMinutes = 30) {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    // 找出所有状态为pending但请求时间超过指定时间的交易
-    const timeout = new Date();
-    timeout.setMinutes(timeout.getMinutes() - timeoutMinutes);
-
-    const [pendingTransactions] = await connection.query(
-      `SELECT id, order_id FROM payment_transactions 
-       WHERE transaction_status = 'pending' 
-       AND request_time < ? 
-       AND response_time IS NULL`,
-      [timeout]
-    );
-
-    if (pendingTransactions.length === 0) {
-      await connection.commit();
-      return [];
-    }
-
-    // 批量更新这些交易的状态为失败
-    const transactionIds = pendingTransactions.map(t => t.id);
-    await connection.query(
-      `UPDATE payment_transactions 
-       SET transaction_status = 'failed', 
-           error_message = '交易超时', 
-           response_time = NOW() 
-       WHERE id IN (?)`,
-      [transactionIds]
-    );
-
-    await connection.commit();
-
-    return pendingTransactions.map(t => t.order_id);
-  } catch (error) {
-    await connection.rollback();
-    logger.error(`标记超时交易失败: ${error.message}`);
-    throw error;
-  } finally {
-    connection.release();
-  }
-}
-
 module.exports = {
   formatPaymentTransaction,
   createTransaction,
   updateTransactionResult,
-  getTransactionByOrderId,
-  getTransactions,
-  markTimeoutTransactions
+  getTransactions
 }; 

@@ -12,7 +12,7 @@ const { formatDateTime } = require('../utils/date.util');
 const { convertToCamelCase } = require('../utils/data.util');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
 const { decrypt, isEncrypted } = require('../utils/encryption.util');
-
+const transactionHandler = require('../services/transaction-handler.service');
 /**
  * 格式化提现记录，转换字段为驼峰命名
  * @param {Object} withdrawal - 提现记录
@@ -457,8 +457,7 @@ async function processThirdPartyPayment(withdrawalDetail) {
     // 如果交易失败，更新提现记录状态为失败
     if (transactionStatus === 'failed') {
       try {
-        const transactionHandler = require('../services/transaction-handler.service');
-        await transactionHandler.updateWithdrawalStatus(withdrawalDetail.id, 'failed', errorMessage || '第三方代付失败');
+        await transactionHandler.handleFailedTransaction(orderId, errorMessage || '第三方代付失败');
         logger.info(`提现ID ${withdrawalDetail.id} 状态已更新为失败，余额已退还`);
       } catch (error) {
         logger.error(`更新提现记录状态失败: ${error.message}`);
@@ -475,8 +474,7 @@ async function processThirdPartyPayment(withdrawalDetail) {
       
       // 同时更新提现记录为失败状态
       try {
-        const transactionHandler = require('../services/transaction-handler.service');
-        await transactionHandler.updateWithdrawalStatus(withdrawalDetail.id, 'failed', `API调用异常: ${error.message}`);
+        await transactionHandler.handleFailedTransaction(orderId, `API调用异常: ${error.message}`);
         logger.info(`提现ID ${withdrawalDetail.id} 状态已更新为失败，余额已退还`);
       } catch (updateError) {
         logger.error(`更新提现记录状态失败: ${updateError.message}`);
