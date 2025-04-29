@@ -30,12 +30,12 @@ async function handleFailedTransaction(orderId, reason) {
     
     const transaction = transactions[0];
     
-    // 检查交易状态，如果已经是终态就跳过处理
-    if (transaction.transaction_status === 'success' || transaction.transaction_status === 'failed') {
-      logger.info(`交易 ${orderId} 已经处于终态 ${transaction.transaction_status}，跳过处理`);
-      await connection.commit();
-      return true;
-    }
+    // // 检查交易状态，如果已经是终态就跳过处理
+    // if (transaction.transaction_status === 'success' || transaction.transaction_status === 'failed') {
+    //   logger.info(`交易 ${orderId} 已经处于终态 ${transaction.transaction_status}，跳过处理`);
+    //   await connection.commit();
+    //   return true;
+    // }
     
     const withdrawalId = transaction.withdrawal_id;
     const memberId = transaction.member_id;
@@ -149,12 +149,12 @@ async function handleSuccessTransaction(orderId) {
     
     const transaction = transactions[0];
     
-    // 检查交易状态，如果已经是终态就跳过处理
-    if (transaction.transaction_status === 'success' || transaction.transaction_status === 'failed') {
-      logger.info(`交易 ${orderId} 已经处于终态 ${transaction.transaction_status}，跳过处理`);
-      await connection.commit();
-      return true;
-    }
+    // // 检查交易状态，如果已经是终态就跳过处理
+    // if (transaction.transaction_status === 'success' || transaction.transaction_status === 'failed') {
+    //   logger.info(`交易 ${orderId} 已经处于终态 ${transaction.transaction_status}，跳过处理`);
+    //   await connection.commit();
+    //   return true;
+    // }
     
     const withdrawalId = transaction.withdrawal_id;
     
