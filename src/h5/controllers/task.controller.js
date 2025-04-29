@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 22:12:27
+ * @LastEditTime: 2025-04-29 18:01:20
  * @Description: 
  */
 /**
@@ -40,16 +40,16 @@ async function getList(req, res) {
     const result = await taskModel.getList(filters, page, pageSize, memberId);
     
     // 如果用户已登录，过滤掉已报名的任务
-    if (memberId) {
-      const originalCount = result.list.length;
-      result.list = result.list.filter(task => !task.isEnrolled);
-      const filteredCount = originalCount - result.list.length;
+    // if (memberId) {
+    //   const originalCount = result.list.length;
+    //   result.list = result.list.filter(task => !task.isEnrolled);
+    //   const filteredCount = originalCount - result.list.length;
       
-      // 更新总数，减去过滤掉的任务数
-      result.total = Math.max(0, result.total - filteredCount);
+    //   // 更新总数，减去过滤掉的任务数
+    //   result.total = Math.max(0, result.total - filteredCount);
       
-      logger.info(`过滤已报名任务 - 会员ID: ${memberId}, 过滤前: ${originalCount}, 过滤后: ${result.list.length}, 过滤数量: ${filteredCount}`);
-    }
+    //   logger.info(`过滤已报名任务 - 会员ID: ${memberId}, 过滤前: ${originalCount}, 过滤后: ${result.list.length}, 过滤数量: ${filteredCount}`);
+    // }
     
     // 添加完整的调试日志，包括返回的任务数量
     logger.info(`任务列表返回 - 会员ID: ${memberId || '未登录'}, 任务数量: ${result.list.length}`);
