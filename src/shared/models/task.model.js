@@ -157,7 +157,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const [countResult] = await pool.query(countQuery, queryParams.slice(0, -2));
     
     // 导入相关模型
-    const enrolledTaskModel = memberId ? require('./enrolled-task.model') : null;
     const taskStatsModel = memberId ? require('./task-stats.model') : null;
     const groupModel = memberId ? require('./group.model') : null;
     
