@@ -27,7 +27,8 @@ async function getPreAuditTasks(req, res) {
       submitStartTime,
       submitEndTime,
       completedTaskCount,
-      preWaiterId
+      preWaiterId,
+      keyword
     } = req.query;
     
     // 构建筛选条件
@@ -42,6 +43,7 @@ async function getPreAuditTasks(req, res) {
     if (submitEndTime) filters.submitEndTime = submitEndTime;
     if (completedTaskCount) filters.completedTaskCount = completedTaskCount;
     if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
+    if (keyword) filters.keyword = keyword;
     
     // 获取已提交任务列表
     const result = await submittedTaskModel.getList(
@@ -75,7 +77,8 @@ async function getConfirmAuditTasks(req, res) {
       submitEndTime,
       completedTaskCount,
       waiterId,
-      preWaiterId
+      preWaiterId,
+      keyword
     } = req.query;
     
     // 构建筛选条件
@@ -90,6 +93,7 @@ async function getConfirmAuditTasks(req, res) {
     if (completedTaskCount) filters.completedTaskCount = completedTaskCount;
     if (waiterId) filters.waiterId = parseInt(waiterId, 10);
     if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
+    if (keyword) filters.keyword = keyword;
     
     // 获取预审已通过的任务列表
     const result = await submittedTaskModel.getPreAuditedList(
@@ -227,7 +231,8 @@ async function exportPreAuditTasks(req, res) {
       submitStartTime,
       submitEndTime,
       completedTaskCount,
-      preWaiterId
+      preWaiterId,
+      keyword
     } = req.query;
     
     // 构建筛选条件
@@ -244,6 +249,7 @@ async function exportPreAuditTasks(req, res) {
     if (submitEndTime) filters.submitEndTime = submitEndTime;
     if (completedTaskCount) filters.completedTaskCount = completedTaskCount;
     if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
+    if (keyword) filters.keyword = keyword;
     
     // 获取所有符合条件的任务提交记录
     const result = await submittedTaskModel.getList(filters);
@@ -262,6 +268,7 @@ async function exportPreAuditTasks(req, res) {
       { header: '任务名称', key: 'taskName', width: 20 },
       { header: '平台渠道', key: 'channelName', width: 15 },
       { header: '会员ID', key: 'nickname', width: 15 },
+      { header: '会员账号', key: 'account', width: 15 },
       { header: '是否新用户', key: 'isNew', width: 15 },
       { header: '所属群组', key: 'groupName', width: 15 },
       { header: '初审状态', key: 'preAuditStatus', width: 10 },
@@ -321,6 +328,7 @@ async function exportPreAuditTasks(req, res) {
         taskName: item.taskName || '',
         channelName: item.channelName || '',
         nickname: item.nickname || '',
+        account: item.account || '',
         isNew: item.isNew ? '是' : '否',
         groupName: item.groupName || '',
         preAuditStatus: getPreAuditStatusText(item.taskPreAuditStatus) || '',
@@ -367,7 +375,8 @@ async function exportConfirmAuditTasks(req, res) {
       submitEndTime,
       completedTaskCount,
       waiterId,
-      preWaiterId
+      preWaiterId,
+      keyword
     } = req.query;
     
     // 构建筛选条件
@@ -385,6 +394,7 @@ async function exportConfirmAuditTasks(req, res) {
     if (completedTaskCount) filters.completedTaskCount = completedTaskCount;
     if (waiterId) filters.waiterId = parseInt(waiterId, 10);
     if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
+    if (keyword) filters.keyword = keyword;
     
     // 获取所有符合条件的预审已通过任务提交记录
     const result = await submittedTaskModel.getList(filters);
@@ -403,6 +413,7 @@ async function exportConfirmAuditTasks(req, res) {
       { header: '任务名称', key: 'taskName', width: 20 },
       { header: '平台渠道', key: 'channelName', width: 15 },
       { header: '会员ID', key: 'nickname', width: 15 },
+      { header: '会员账号', key: 'account', width: 15 },
       { header: '是否新用户', key: 'isNew', width: 15 },
       { header: '所属群组', key: 'groupName', width: 15 },
       { header: '初审状态', key: 'preAuditStatus', width: 10 },
@@ -464,6 +475,7 @@ async function exportConfirmAuditTasks(req, res) {
         taskName: item.taskName || '',
         channelName: item.channelName || '',
         nickname: item.nickname || '',
+        account: item.account || '',
         isNew: item.isNew ? '是' : '否',
         groupName: item.groupName || '',
         preAuditStatus: getPreAuditStatusText(item.taskPreAuditStatus) || '',

@@ -185,6 +185,7 @@ async function create(submitData) {
  * @param {number} filters.completedTaskCount - 已完成任务次数筛选条件
  * @param {number} filters.preWaiterId - 初审员ID
  * @param {number} filters.waiterId - 审核员ID
+ * @param {string} filters.keyword - 关键词搜索（昵称或账号）
  * @param {boolean} filters.exportMode - 是否为导出模式，为true时不使用分页
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
@@ -253,6 +254,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         whereClause += ' AND st.waiter_id = ?';
         queryParams.push(filters.waiterId);
       }
+    }
+    
+    // 添加关键词搜索条件（昵称或账号）
+    if (filters.keyword) {
+      whereClause += ' AND (m.nickname LIKE ? OR m.account LIKE ?)';
+      queryParams.push(`%${filters.keyword}%`, `%${filters.keyword}%`);
     }
     
     // 添加已完成任务次数筛选条件

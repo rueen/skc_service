@@ -47,7 +47,11 @@ router.get(
       .isIn(['pending', 'approved', 'rejected'])
       .withMessage('common.validation.invalid'),
     query('preWaiterId')
+      .optional(),
+    query('keyword')
       .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:preAudit'),
@@ -77,7 +81,11 @@ router.get(
     query('waiterId')
       .optional(),
     query('preWaiterId')
+      .optional(),
+    query('keyword')
       .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:confirmAudit'),
@@ -109,7 +117,11 @@ router.get(
       .isIn(['pending', 'approved', 'rejected'])
       .withMessage('common.validation.invalid'),
     query('preWaiterId')
+      .optional(),
+    query('keyword')
       .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:preAudit'),
@@ -139,7 +151,11 @@ router.get(
     query('waiterId')
       .optional(),
     query('preWaiterId')
+      .optional(),
+    query('keyword')
       .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:confirmAudit'),
