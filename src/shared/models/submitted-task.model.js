@@ -282,6 +282,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         c.name AS channel_name,
         c.icon AS channel_icon,
         m.nickname,
+        m.account,
         m.is_new,
         g.id AS group_id,
         g.group_name,
