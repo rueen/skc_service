@@ -69,7 +69,7 @@ async function create(req, res) {
     // 验证必要参数
     const { taskName, startTime, endTime, reward, channelId } = req.body;
     
-    if (!taskName || !startTime || !endTime || !reward || !channelId) {
+    if (!taskName || !startTime || !endTime || reward == null || !channelId) {
       return responseUtil.badRequest(res, '缺少必要参数');
     }
     
@@ -111,7 +111,7 @@ async function update(req, res) {
     // 验证必要参数
     const { taskName, startTime, endTime, reward } = req.body;
     
-    if (!taskName || !startTime || !endTime || !reward) {
+    if (!taskName || !startTime || !endTime || reward == null) {
       return responseUtil.badRequest(res, '缺少必要参数');
     }
     
