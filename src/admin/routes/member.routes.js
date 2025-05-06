@@ -44,7 +44,15 @@ router.get(
     query('keyword')
       .optional()
       .isString()
-      .withMessage('common.validation.mustBeString')
+      .withMessage('common.validation.mustBeString'),
+    query('createStartTime')
+      .optional()
+      .isISO8601()
+      .withMessage('common.validation.timeFormatInvalid'),
+    query('createEndTime')
+      .optional()
+      .isISO8601()
+      .withMessage('common.validation.timeFormatInvalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.list
@@ -70,7 +78,15 @@ router.get(
     query('keyword')
       .optional()
       .isString()
-      .withMessage('common.validation.mustBeString')
+      .withMessage('common.validation.mustBeString'),
+    query('createStartTime')
+      .optional()
+      .isISO8601()
+      .withMessage('common.validation.timeFormatInvalid'),
+    query('createEndTime')
+      .optional()
+      .isISO8601()
+      .withMessage('common.validation.timeFormatInvalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.exportMembers

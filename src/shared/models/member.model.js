@@ -96,6 +96,18 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       conditions.push('m.id IN (SELECT member_id FROM member_groups WHERE group_id = ?)');
       queryParams.push(filters.groupId);
     }
+    
+    // 创建开始时间筛选
+    if (filters.createStartTime) {
+      conditions.push('m.create_time >= ?');
+      queryParams.push(filters.createStartTime);
+    }
+    
+    // 创建结束时间筛选
+    if (filters.createEndTime) {
+      conditions.push('m.create_time <= ?');
+      queryParams.push(filters.createEndTime);
+    }
 
     // 组合查询条件
     if (conditions.length > 0) {

@@ -23,12 +23,23 @@ const { formatDateTime } = require('../../shared/utils/date.util');
  */
 async function list(req, res) {
   try {
-    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberNickname, groupId, keyword } = req.query;
+    const { 
+      page = DEFAULT_PAGE, 
+      pageSize = DEFAULT_PAGE_SIZE, 
+      memberNickname, 
+      groupId, 
+      keyword,
+      createStartTime,
+      createEndTime
+    } = req.query;
+    
     const filters = {};
     
     if (memberNickname) filters.memberNickname = memberNickname;
     if (groupId) filters.groupId = parseInt(groupId, 10);
     if (keyword) filters.keyword = keyword;
+    if (createStartTime) filters.createStartTime = createStartTime;
+    if (createEndTime) filters.createEndTime = createEndTime;
 
     // 获取带有账号信息的会员列表
     const result = await memberModel.getList(filters, page, pageSize);
@@ -486,7 +497,13 @@ async function getWithdrawalAccounts(req, res) {
  */
 async function exportMembers(req, res) {
   try {
-    const { memberNickname, groupId, keyword } = req.query;
+    const { 
+      memberNickname, 
+      groupId, 
+      keyword,
+      createStartTime,
+      createEndTime
+    } = req.query;
     
     // 构建筛选条件
     const filters = {
@@ -496,6 +513,8 @@ async function exportMembers(req, res) {
     if (memberNickname) filters.memberNickname = memberNickname;
     if (groupId) filters.groupId = parseInt(groupId, 10);
     if (keyword) filters.keyword = keyword; // 添加关键字筛选
+    if (createStartTime) filters.createStartTime = createStartTime;
+    if (createEndTime) filters.createEndTime = createEndTime;
     
     // 获取所有符合条件的会员
     const result = await memberModel.getList(filters);
@@ -515,6 +534,7 @@ async function exportMembers(req, res) {
       { header: '会员账号', key: 'account', width: 20 },
       { header: '是否新用户', key: 'isNew', width: 20 },
       { header: '注册时间', key: 'createTime', width: 20 },
+      { header: '更新时间', key: 'updateTime', width: 20 },
       { header: '邀请人', key: 'inviterNickname', width: 20 },
       { header: '完成任务次数', key: 'completedTaskCount', width: 20 },
       { header: '所属群组', key: 'groups', width: 30 },
@@ -540,6 +560,7 @@ async function exportMembers(req, res) {
         account: item.account || '',
         isNew: item.isNew ? '是' : '否',
         createTime: item.createTime || '',
+        updateTime: item.updateTime || '',
         inviterNickname: item.inviterNickname || '',
         completedTaskCount: item.completedTaskCount || 0,
         groups: groupsText || '',
@@ -547,10 +568,10 @@ async function exportMembers(req, res) {
       });
       
       // 设置单元格自动换行
-      const groupsCell = worksheet.getCell(`G${rowIndex}`);
+      const groupsCell = worksheet.getCell(`H${rowIndex}`);
       groupsCell.alignment = { wrapText: true, vertical: 'top' };
       
-      const accountsCell = worksheet.getCell(`H${rowIndex}`);
+      const accountsCell = worksheet.getCell(`I${rowIndex}`);
       accountsCell.alignment = { wrapText: true, vertical: 'top' };
       
       // 计算行高 - 根据内容多少自适应
