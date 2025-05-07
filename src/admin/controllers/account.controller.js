@@ -273,7 +273,7 @@ async function batchResolve(req, res) {
            WHERE g.owner_id = ? 
            GROUP BY g.id 
            HAVING member_count < ?
-           ORDER BY member_count ASC`,
+           ORDER BY member_count DESC`,
           [ownerId, maxGroupMembers]
         );
         
@@ -285,7 +285,7 @@ async function batchResolve(req, res) {
           continue;
         }
         
-        // 分配到群主名下成员最少的未满群组
+        // 分配到群主名下成员最多的未满群组
         const targetGroup = ownerGroupsRows[0];
         
         await pool.query(
