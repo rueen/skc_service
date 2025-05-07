@@ -594,47 +594,34 @@ async function getById(id, auditType = 'confirm', filtersParam = {}) {
     formattedTask.nextTaskId = null;
     
     if (filteredTasks.length > 0) {
-      // 将所有任务ID转为数组
-      const taskIds = filteredTasks.map(task => task.id);
+      // 查找提交时间比当前任务更新的最接近的任务（前一个任务）
+      const currentSubmitTime = new Date(row.submit_time).getTime();
+      const newerTasks = filteredTasks.filter(task => 
+        new Date(task.submit_time).getTime() > currentSubmitTime
+      );
+      const newerTask = newerTasks.length > 0 
+        ? newerTasks.reduce((closest, task) => 
+            new Date(task.submit_time).getTime() < new Date(closest.submit_time).getTime() 
+              ? task : closest, newerTasks[0])
+        : null;
       
-      // 查找当前任务在列表中的位置
-      const currentIndex = taskIds.findIndex(taskId => taskId === Number(id));
+      // 查找提交时间比当前任务更旧的最接近的任务（后一个任务）
+      const olderTasks = filteredTasks.filter(task => 
+        new Date(task.submit_time).getTime() < currentSubmitTime
+      );
+      const olderTask = olderTasks.length > 0 
+        ? olderTasks.reduce((closest, task) => 
+            new Date(task.submit_time).getTime() > new Date(closest.submit_time).getTime() 
+              ? task : closest, olderTasks[0])
+        : null;
       
-      if (currentIndex !== -1) {
-        // 前一个任务是列表中的前一个索引（较新的任务）
-        if (currentIndex > 0) {
-          formattedTask.prevTaskId = taskIds[currentIndex - 1];
-        }
-        
-        // 后一个任务是列表中的后一个索引（较旧的任务）
-        if (currentIndex + 1 < taskIds.length) {
-          formattedTask.nextTaskId = taskIds[currentIndex + 1];
-        }
-      } else {
-        // 如果当前任务不在列表中，查找Submit Time最接近当前任务的任务
-        const currentSubmitTime = new Date(row.submit_time).getTime();
-        
-        // 查找提交时间比当前任务更新的第一个任务（前一个任务）
-        const newerTask = filteredTasks.find(task => 
-          new Date(task.submit_time).getTime() > currentSubmitTime
-        );
-        
-        // 查找提交时间比当前任务更旧的第一个任务（后一个任务）
-        const olderTask = filteredTasks.find(task => 
-          new Date(task.submit_time).getTime() < currentSubmitTime
-        );
-        
-        // 设置前一个和后一个任务ID
-        if (newerTask) {
-          formattedTask.prevTaskId = newerTask.id;
-        } else if (filteredTasks.length > 0) {
-          // 如果没有更新的任务，返回最新的任务
-          formattedTask.prevTaskId = taskIds[0];
-        }
-        
-        if (olderTask) {
-          formattedTask.nextTaskId = olderTask.id;
-        }
+      // 设置前一个和后一个任务ID
+      if (newerTask) {
+        formattedTask.prevTaskId = newerTask.id;
+      }
+      
+      if (olderTask) {
+        formattedTask.nextTaskId = olderTask.id;
       }
     }
     
