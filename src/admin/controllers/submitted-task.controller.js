@@ -322,6 +322,17 @@ async function exportPreAuditTasks(req, res) {
         formattedContent = String(formattedContent);
       }
       
+      // 格式化群组信息：群主的群组显示为"群组名(群主)"
+      let groupsText = '';
+      if (item.groups && Array.isArray(item.groups)) {
+        groupsText = item.groups.map(group => {
+          return group.isOwner ? `${group.groupName} (群主)` : group.groupName;
+        }).join('\n');
+      } else if (item.groupName) {
+        // 兼容旧数据结构
+        groupsText = item.isOwner ? `${item.groupName} (群主)` : item.groupName;
+      }
+      
       // 添加一行数据
       worksheet.addRow({
         submitTime: item.submitTime || '',
@@ -330,7 +341,7 @@ async function exportPreAuditTasks(req, res) {
         nickname: item.nickname || '',
         account: item.account || '',
         isNew: item.isNew ? '是' : '否',
-        groupName: item.groupName || '',
+        groupName: groupsText || '',
         preAuditStatus: getPreAuditStatusText(item.taskPreAuditStatus) || '',
         preWaiterName: item.preWaiterName || '',
         brand: item.brand || '',
@@ -340,6 +351,14 @@ async function exportPreAuditTasks(req, res) {
     
     // 设置提交内容列的换行属性
     worksheet.getColumn('submitContent').eachCell({ includeEmpty: false }, cell => {
+      cell.alignment = {
+        wrapText: true,
+        vertical: 'top'
+      };
+    });
+    
+    // 设置群组列的换行属性
+    worksheet.getColumn('groupName').eachCell({ includeEmpty: false }, cell => {
       cell.alignment = {
         wrapText: true,
         vertical: 'top'
@@ -469,6 +488,17 @@ async function exportConfirmAuditTasks(req, res) {
         formattedContent = String(formattedContent);
       }
       
+      // 格式化群组信息：群主的群组显示为"群组名(群主)"
+      let groupsText = '';
+      if (item.groups && Array.isArray(item.groups)) {
+        groupsText = item.groups.map(group => {
+          return group.isOwner ? `${group.groupName} (群主)` : group.groupName;
+        }).join('\n');
+      } else if (item.groupName) {
+        // 兼容旧数据结构
+        groupsText = item.isOwner ? `${item.groupName} (群主)` : item.groupName;
+      }
+      
       // 添加一行数据
       worksheet.addRow({
         submitTime: item.submitTime || '',
@@ -477,7 +507,7 @@ async function exportConfirmAuditTasks(req, res) {
         nickname: item.nickname || '',
         account: item.account || '',
         isNew: item.isNew ? '是' : '否',
-        groupName: item.groupName || '',
+        groupName: groupsText || '',
         preAuditStatus: getPreAuditStatusText(item.taskPreAuditStatus) || '',
         preWaiterName: item.preWaiterName || '',
         auditStatus: getAuditStatusText(item.taskAuditStatus) || '',
@@ -489,6 +519,14 @@ async function exportConfirmAuditTasks(req, res) {
 
     // 设置提交内容列的换行属性
     worksheet.getColumn('submitContent').eachCell({ includeEmpty: false }, cell => {
+      cell.alignment = {
+        wrapText: true,
+        vertical: 'top'
+      };
+    });
+    
+    // 设置群组列的换行属性
+    worksheet.getColumn('groupName').eachCell({ includeEmpty: false }, cell => {
       cell.alignment = {
         wrapText: true,
         vertical: 'top'
