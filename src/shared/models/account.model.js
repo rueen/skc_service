@@ -149,34 +149,41 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       const memberIds = [...new Set(formattedRows.map(account => account.memberId))].filter(Boolean);
       
       // 查询会员群组信息（仅当有会员ID时）
-      const memberGroupMap = {};
+      const memberGroupsMap = {};
       if (memberIds.length > 0) {
         // 使用 member_groups 关联表查询
         const placeholders = memberIds.map(() => '?').join(',');
         const [memberGroups] = await pool.query(`
-          SELECT mg.member_id, mg.group_id, g.group_name, mg.is_owner
+          SELECT mg.member_id, mg.group_id, mg.is_owner, mg.join_time,
+                 g.*
           FROM member_groups mg
           JOIN \`groups\` g ON mg.group_id = g.id
           WHERE mg.member_id IN (${placeholders})
         `, memberIds);
         
-        // 整理群组信息
+        // 整理群组信息到每个会员下的groups数组中
         memberGroups.forEach(mg => {
-          if (!memberGroupMap[mg.member_id]) {
-            memberGroupMap[mg.member_id] = {
-              groupId: mg.group_id,
-              groupName: mg.group_name,
-              isGroupOwner: Boolean(mg.is_owner)
-            };
+          if (!memberGroupsMap[mg.member_id]) {
+            memberGroupsMap[mg.member_id] = [];
           }
+          
+          memberGroupsMap[mg.member_id].push({
+            id: mg.id,
+            groupId: mg.group_id,
+            groupName: mg.group_name,
+            groupLink: mg.group_link,
+            ownerId: mg.owner_id,
+            isOwner: Boolean(mg.is_owner),
+            joinTime: formatDateTime(mg.join_time),
+            createTime: formatDateTime(mg.create_time),
+            updateTime: formatDateTime(mg.update_time)
+          });
         });
       }
       
-      // 扩展账号信息
+      // 扩展账号信息，添加groups数组字段
       formattedRows.forEach(account => {
-        const groupInfo = memberGroupMap[account.memberId] || { groupName: '', isGroupOwner: false };
-        account.groupName = groupInfo.groupName;
-        account.isGroupOwner = groupInfo.isGroupOwner;
+        account.groups = memberGroupsMap[account.memberId] || [];
       });
     }
     
