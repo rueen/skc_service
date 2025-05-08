@@ -125,7 +125,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 
     let query = `
       SELECT t.*, c.name as channel_name, c.icon as channel_icon,
-        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND st.task_audit_status != 'rejected') as submitted_count
+        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id) as submitted_count
       FROM tasks t
       LEFT JOIN channels c ON t.channel_id = c.id
     `;
@@ -280,7 +280,7 @@ async function getDetail(id, memberId = null) {
   try {
     const [rows] = await pool.query(
       `SELECT t.*, c.name as channel_name, c.icon as channel_icon,
-        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND st.task_audit_status != 'rejected') as submitted_count
+        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id) as submitted_count
        FROM tasks t
        LEFT JOIN channels c ON t.channel_id = c.id
        WHERE t.id = ?`,
