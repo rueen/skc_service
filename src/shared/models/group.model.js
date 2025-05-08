@@ -467,9 +467,10 @@ async function getMemberFirstGroup(memberId) {
   try {
     const [rows] = await pool.query(
       `SELECT mg.group_id 
-       FROM member_groups mg 
+       FROM member_groups mg
+       JOIN \`groups\` g ON mg.group_id = g.id
        WHERE mg.member_id = ? 
-       ORDER BY mg.join_time ASC, mg.id ASC 
+       ORDER BY mg.join_time ASC, g.id ASC 
        LIMIT 1`,
       [memberId]
     );

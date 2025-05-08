@@ -79,6 +79,7 @@ async function getMemberGroupInfo(memberId, connection) {
        FROM member_groups mg
        JOIN \`groups\` g ON mg.group_id = g.id
        WHERE mg.member_id = ?
+       ORDER BY mg.join_time ASC, g.id ASC
        LIMIT 1`,  // 添加LIMIT 1确保只返回一条记录
       [memberId]
     );

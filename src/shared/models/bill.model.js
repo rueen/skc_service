@@ -78,10 +78,11 @@ async function createBill(billData, connection) {
     // 如果没有有效的群组ID，尝试从会员的第一个群组获取
     if (!relatedGroupId) {
       const [groups] = await connection.query(
-        `SELECT group_id 
-         FROM member_groups 
-         WHERE member_id = ? 
-         ORDER BY join_time ASC, id ASC 
+        `SELECT mg.group_id 
+         FROM member_groups mg
+         JOIN \`groups\` g ON mg.group_id = g.id
+         WHERE mg.member_id = ? 
+         ORDER BY mg.join_time ASC, g.id ASC 
          LIMIT 1`,
         [billData.memberId]
       );
