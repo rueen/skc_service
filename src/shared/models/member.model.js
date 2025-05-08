@@ -152,7 +152,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     // 单独查询所有会员的群组关系
     const [memberGroups] = await pool.query(
-      `SELECT mg.member_id, mg.group_id, mg.is_owner, 
+      `SELECT mg.member_id, mg.group_id, mg.is_owner, mg.join_time,
               g.group_name, g.group_link
        FROM member_groups mg
        JOIN \`groups\` g ON mg.group_id = g.id

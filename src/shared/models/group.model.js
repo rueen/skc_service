@@ -20,7 +20,8 @@ function formatGroup(group) {
   const formattedGroup = convertToCamelCase({
     ...group,
     createTime: formatDateTime(group.create_time),
-    updateTime: formatDateTime(group.update_time)
+    updateTime: formatDateTime(group.update_time),
+    joinTime: formatDateTime(group.join_time)
   });
   
   return formattedGroup;

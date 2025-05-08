@@ -194,7 +194,7 @@ async function batchResolve(req, res) {
       
       // 获取邀请人的群组信息
       const [inviterGroupRows] = await pool.query(
-        'SELECT mg.*, g.group_name, g.group_link, g.owner_id FROM member_groups mg JOIN `groups` g ON mg.group_id = g.id WHERE mg.member_id = ?',
+        'SELECT mg.*, g.group_name, g.group_link, g.owner_id FROM member_groups mg JOIN `groups` g ON mg.group_id = g.id WHERE mg.member_id = ? ORDER BY mg.join_time ASC, g.id ASC LIMIT 1',
         [inviterId]
       );
       
