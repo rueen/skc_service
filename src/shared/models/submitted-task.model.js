@@ -291,9 +291,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         m.nickname,
         m.account,
         m.is_new,
-        g.id AS group_id,
-        g.group_name,
-        mg.is_owner,
         pre_w.username AS pre_waiter_name,
         w.username AS waiter_name,
         (
@@ -308,16 +305,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         JOIN tasks t ON st.task_id = t.id
         JOIN members m ON st.member_id = m.id
         LEFT JOIN channels c ON t.channel_id = c.id
-        LEFT JOIN (
-          SELECT member_id, group_id, is_owner
-          FROM member_groups
-          WHERE (member_id, id) IN (
-            SELECT member_id, MIN(id)
-            FROM member_groups
-            GROUP BY member_id
-          )
-        ) mg ON st.member_id = mg.member_id
-        LEFT JOIN \`groups\` g ON mg.group_id = g.id
         LEFT JOIN waiters pre_w ON st.pre_waiter_id = pre_w.id
         LEFT JOIN waiters w ON st.waiter_id = w.id
       WHERE ${whereClause} ${completedTaskWhere}
@@ -334,16 +321,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
           JOIN tasks t ON st.task_id = t.id
           JOIN members m ON st.member_id = m.id
           LEFT JOIN channels c ON t.channel_id = c.id
-          LEFT JOIN (
-            SELECT member_id, group_id, is_owner
-            FROM member_groups
-            WHERE (member_id, id) IN (
-              SELECT member_id, MIN(id)
-              FROM member_groups
-              GROUP BY member_id
-            )
-          ) mg ON st.member_id = mg.member_id
-          LEFT JOIN \`groups\` g ON mg.group_id = g.id
         WHERE ${whereClause} ${completedTaskWhere}
       ) AS subquery
     `;
@@ -383,6 +360,50 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       
       return formattedItem;
     });
+    
+    // 获取相关会员的群组信息
+    if (formattedList.length > 0) {
+      // 获取相关会员的群组信息
+      const memberIds = [...new Set(formattedList.map(item => item.memberId))].filter(Boolean);
+      
+      // 查询会员群组信息（仅当有会员ID时）
+      const memberGroupsMap = {};
+      if (memberIds.length > 0) {
+        // 使用 member_groups 关联表查询
+        const placeholders = memberIds.map(() => '?').join(',');
+        const [memberGroups] = await pool.query(`
+          SELECT mg.member_id, mg.group_id, mg.is_owner, mg.join_time,
+                 g.*
+          FROM member_groups mg
+          JOIN \`groups\` g ON mg.group_id = g.id
+          WHERE mg.member_id IN (${placeholders})
+        `, memberIds);
+        
+        // 整理群组信息到每个会员下的groups数组中
+        memberGroups.forEach(mg => {
+          if (!memberGroupsMap[mg.member_id]) {
+            memberGroupsMap[mg.member_id] = [];
+          }
+          
+          memberGroupsMap[mg.member_id].push({
+            id: mg.id,
+            groupId: mg.group_id,
+            groupName: mg.group_name,
+            groupLink: mg.group_link,
+            ownerId: mg.owner_id,
+            isOwner: Boolean(mg.is_owner),
+            joinTime: formatDateTime(mg.join_time),
+            createTime: formatDateTime(mg.create_time),
+            updateTime: formatDateTime(mg.update_time)
+          });
+        });
+      }
+      
+      // 扩展任务提交信息，添加groups数组字段
+      formattedList.forEach(item => {
+        item.groups = memberGroupsMap[item.memberId] || [];
+      });
+    }
     
     return {
       total,
