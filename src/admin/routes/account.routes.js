@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-24 17:11:17
+ * @LastEditTime: 2025-05-13 15:35:13
  * @Description: 
  */
 /**
@@ -21,7 +21,6 @@ const router = express.Router();
 // 应用中间件
 router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
-router.use(authMiddleware.hasPermission('account:list'));
 
 /**
  * @route GET /api/admin/accounts
@@ -87,6 +86,7 @@ router.get(
  */
 router.post(
   '/batch-approve',
+  authMiddleware.hasPermission('account:list'),
   [
     body('ids')
       .isArray()
@@ -105,6 +105,7 @@ router.post(
  */
 router.post(
   '/batch-reject',
+  authMiddleware.hasPermission('account:list'),
   [
     body('ids')
       .isArray()
@@ -127,6 +128,7 @@ router.post(
  */
 router.put(
   '/:id',
+  authMiddleware.hasPermission('account:list'),
   [
     body('homeUrl')
       .optional()
@@ -164,6 +166,7 @@ router.put(
  */
 router.get(
   '/export',
+  authMiddleware.hasPermission('account:list'),
   [
     query('keyword')
       .optional()
@@ -199,13 +202,21 @@ router.get(
  * @desc 获取账号详情
  * @access Private - Admin
  */
-router.get('/:id', authMiddleware.verifyToken, accountController.getAccountDetail);
+router.get(
+  '/:id',
+  authMiddleware.hasPermission('account:list'),
+  accountController.getAccountDetail
+);
 
 /**
  * @route DELETE /api/admin/accounts/:id
  * @desc 删除账号
  * @access Private - Admin
  */
-router.delete('/:id', authMiddleware.verifyToken, accountController.deleteAccount);
+router.delete(
+  '/:id',
+  authMiddleware.hasPermission('account:list'),
+  accountController.deleteAccount
+);
 
 module.exports = router; 
