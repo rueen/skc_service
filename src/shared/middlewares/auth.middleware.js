@@ -78,6 +78,11 @@ const verifyToken = (req, res, next) => {
               [decoded.id]
             );
             
+            // 如果小二不存在（可能已被删除），返回未授权
+            if (rows.length === 0) {
+              return responseUtil.unauthorized(res, i18n.t('common.invalidToken', req.lang));
+            }
+            
             if (rows.length > 0 && rows[0].password_changed_time) {
               const isValid = authUtil.isTokenIssuedAfterPasswordChange(
                 decoded,
