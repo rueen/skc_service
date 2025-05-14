@@ -27,10 +27,12 @@ const verifyToken = (req, res, next) => {
       return responseUtil.unauthorized(res, i18n.t('common.invalidToken', req.lang));
     }
     
+    const { pool } = require('../models/db');
+    
     // 检查令牌是否在密码修改后签发
-    // 只对H5端会员令牌进行检查
-    if (decoded.id && !decoded.username) { // H5端令牌包含id但不包含username
-      const { pool } = require('../models/db');
+    // 对H5端会员令牌和管理端小二令牌进行检查
+    if (decoded.id && !decoded.username) { 
+      // H5端会员令牌包含id但不包含username
       pool.getConnection()
         .then(async (connection) => {
           try {
@@ -65,8 +67,44 @@ const verifyToken = (req, res, next) => {
           logger.error(`获取数据库连接失败: ${error.message}`);
           return responseUtil.unauthorized(res, i18n.t('common.authFailed', req.lang));
         });
+    } else if (decoded.username) {
+      // 管理端小二令牌包含username
+      pool.getConnection()
+        .then(async (connection) => {
+          try {
+            // 查询小二的密码修改时间
+            const [rows] = await connection.query(
+              'SELECT password_changed_time FROM waiters WHERE id = ?',
+              [decoded.id]
+            );
+            
+            if (rows.length > 0 && rows[0].password_changed_time) {
+              const isValid = authUtil.isTokenIssuedAfterPasswordChange(
+                decoded,
+                new Date(rows[0].password_changed_time)
+              );
+              
+              if (!isValid) {
+                return responseUtil.unauthorized(res, i18n.t('common.passwordChanged', req.lang));
+              }
+            }
+            
+            // 将用户信息添加到请求对象
+            req.user = decoded;
+            next();
+          } catch (error) {
+            logger.error(`验证小二密码更改时间失败: ${error.message}`);
+            return responseUtil.unauthorized(res, i18n.t('common.authFailed', req.lang));
+          } finally {
+            connection.release();
+          }
+        })
+        .catch(error => {
+          logger.error(`获取数据库连接失败: ${error.message}`);
+          return responseUtil.unauthorized(res, i18n.t('common.authFailed', req.lang));
+        });
     } else {
-      // 管理端令牌或其他类型令牌，不需要检查密码修改时间
+      // 其他类型令牌，不需要检查密码修改时间
       req.user = decoded;
       next();
     }

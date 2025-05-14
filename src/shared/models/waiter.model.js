@@ -165,6 +165,9 @@ async function update(id, waiterData) {
     if (waiterData.password) {
       updateFields.push('password = ?');
       queryParams.push(waiterData.password);
+      
+      // 密码变更时，更新密码修改时间字段
+      updateFields.push('password_changed_time = NOW()');
     }
 
     if (waiterData.isAdmin !== undefined) {
