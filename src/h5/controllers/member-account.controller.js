@@ -163,7 +163,10 @@ async function updateAccount(req, res) {
     if (accountInfo.member_id !== memberId) {
       return responseUtil.forbidden(res, i18n.t('h5.account.noPermissionUpdate', req.lang));
     }
-    
+    let accountAuditStatus = 'pending';  // 修改后重置为待审核状态
+    if(accountInfo.account_audit_status === 'approved'){
+      accountAuditStatus = 'approved';
+    }
     // 准备更新数据
     const updateData = {
       id: accountId,
@@ -173,7 +176,7 @@ async function updateAccount(req, res) {
       fansCount: fansCount,
       friendsCount: friendsCount,
       postsCount: postsCount,
-      accountAuditStatus: 'pending' // 修改后重置为待审核状态
+      accountAuditStatus: accountAuditStatus
     };
     
     // 调用模型的更新方法
