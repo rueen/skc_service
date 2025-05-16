@@ -432,7 +432,7 @@ async function editAccount(req, res) {
     logger.error(`编辑账号失败: ${error.message}`);
     
     // 处理唯一性验证错误
-    if (error.message.includes('UID 已被使用')) {
+    if (error.message.includes('UID 已被使用') || error.message.includes('该账号已被使用，禁止重复绑定')) {
       return responseUtil.badRequest(res, error.message);
     }
     
