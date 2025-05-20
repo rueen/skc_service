@@ -59,9 +59,9 @@ async function create(submitData) {
     
     // 检查任务名额
     if (task.unlimited_quota !== 1) {  // 如果不是无限名额
-      // 获取当前有效提交数量
+      // 获取当前有效提交数量，添加FOR UPDATE锁防止并发问题
       const [submitCount] = await connection.query(
-        'SELECT COUNT(*) as count FROM submitted_tasks WHERE task_id = ? AND task_audit_status != "rejected"',
+        'SELECT COUNT(*) as count FROM submitted_tasks WHERE task_id = ? AND task_audit_status != "rejected" AND task_pre_audit_status != "rejected" FOR UPDATE',
         [submitData.taskId]
       );
       
