@@ -75,7 +75,7 @@ async function refundWithdrawalBalance(billNo, reason, connection = null) {
       bill.member_id,
       refundAmount,
       {
-        transactionType: `withdrawal_refund: ${reason}`,
+        transactionType: `withdrawal_refund: ${billNo}`,
         connection: conn
       }
     );
