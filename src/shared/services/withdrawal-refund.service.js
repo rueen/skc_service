@@ -133,43 +133,6 @@ async function refundWithdrawalBalance(billNo, reason, connection = null) {
   }
 }
 
-/**
- * 批量退回提现余额
- * @param {Array<string>} billNos - 账单编号数组
- * @param {string} reason - 退回原因
- * @returns {Promise<Object>} 批量退回结果
- */
-async function batchRefundWithdrawalBalance(billNos, reason) {
-  const results = {
-    success: [],
-    failed: [],
-    alreadyRefunded: []
-  };
-  
-  for (const billNo of billNos) {
-    try {
-      const result = await refundWithdrawalBalance(billNo, reason);
-      
-      if (result.success) {
-        if (result.alreadyRefunded) {
-          results.alreadyRefunded.push({ billNo, message: result.message });
-        } else {
-          results.success.push({ billNo, data: result.data });
-        }
-      } else {
-        results.failed.push({ billNo, message: result.message });
-      }
-    } catch (error) {
-      results.failed.push({ billNo, message: error.message });
-    }
-  }
-  
-  logger.info(`批量退回余额完成: 成功=${results.success.length}, 失败=${results.failed.length}, 已退回=${results.alreadyRefunded.length}`);
-  
-  return results;
-}
-
 module.exports = {
-  refundWithdrawalBalance,
-  batchRefundWithdrawalBalance
+  refundWithdrawalBalance
 }; 
