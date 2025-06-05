@@ -73,39 +73,31 @@ async function handleFailedTransaction(orderId, reason) {
       ['failed', reason, withdrawalId]
     );
     
-    // 2. 更新相关账单记录状态为失败
-    await connection.query(
-      'UPDATE bills SET settlement_status = ?, withdrawal_status = ?, failure_reason = ? WHERE bill_type = "withdrawal" AND withdrawal_id = ?',
-      ['failed', 'failed', reason, withdrawalId]
+    // 2. 获取账单编号用于余额退回
+    const [billRows] = await connection.query(
+      'SELECT bill_no FROM bills WHERE bill_type = "withdrawal" AND withdrawal_id = ?',
+      [withdrawalId]
     );
     
-    // 3. 退还会员余额
-    // 先查询会员当前余额
-    const [memberRows] = await connection.query(
-      'SELECT balance FROM members WHERE id = ?',
-      [memberId]
-    );
-    
-    if (memberRows.length === 0) {
-      logger.error(`找不到会员ID ${memberId}，无法退还余额`);
+    if (billRows.length === 0) {
+      logger.error(`找不到提现ID ${withdrawalId} 对应的账单记录`);
       await connection.rollback();
       return false;
     }
     
-    const currentBalance = parseFloat(memberRows[0].balance);
-    const newBalance = currentBalance + parseFloat(amount);
+    // 3. 使用统一的余额退回服务
+    const withdrawalRefundService = require('./withdrawal-refund.service');
     
-    // 更新会员余额
-    await connection.query(
-      'UPDATE members SET balance = ? WHERE id = ?',
-      [newBalance, memberId]
-    );
-    
-    // 记录余额变动日志
-    await connection.query(
-      'INSERT INTO balance_logs (member_id, amount, before_balance, after_balance, transaction_type, create_time) VALUES (?, ?, ?, ?, ?, NOW())',
-      [memberId, amount, currentBalance, newBalance, 'withdrawal_refund']
-    );
+    try {
+      await withdrawalRefundService.refundWithdrawalBalance(
+        billRows[0].bill_no,
+        `第三方支付失败: ${reason}`,
+        connection
+      );
+    } catch (refundError) {
+      logger.error(`第三方支付失败时退回余额出错: ${refundError.message}`);
+      // 即使余额退回失败，也要继续更新交易状态，避免数据不一致
+    }
     
     // 更新交易状态为失败
     await connection.query(

@@ -392,7 +392,7 @@ CREATE TABLE IF NOT EXISTS balance_logs (
   amount decimal(10,2) NOT NULL COMMENT '变动金额',
   before_balance decimal(10,2) NOT NULL COMMENT '变动前余额',
   after_balance decimal(10,2) NOT NULL COMMENT '变动后余额',
-  transaction_type varchar(50) NOT NULL COMMENT '交易类型',
+  transaction_type varchar(100) NOT NULL COMMENT '交易类型',
   create_time datetime NOT NULL COMMENT '创建时间',
   PRIMARY KEY (id),
   KEY idx_member_id (member_id),

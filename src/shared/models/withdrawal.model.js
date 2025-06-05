@@ -504,7 +504,7 @@ async function batchRejectWithdrawals(ids, rejectReason, waiterId, remark = null
     // 先查询提现状态并加排他锁(X锁)，防止并发问题
     const [pendingWithdrawals] = await connection.query(
       `SELECT 
-        id, member_id, amount
+        id, member_id, amount, bill_no
       FROM withdrawals 
       WHERE id IN (?) AND withdrawal_status = ?
       FOR UPDATE`,
@@ -529,18 +529,21 @@ async function batchRejectWithdrawals(ids, rejectReason, waiterId, remark = null
       [WithdrawalStatus.FAILED, rejectReason, waiterId, now, remark, pendingIds, WithdrawalStatus.PENDING]
     );
     
-    // 退还余额并更新账单状态
+    // 使用统一的余额退回服务
+    const withdrawalRefundService = require('../services/withdrawal-refund.service');
+    
+    // 逐个处理每个提现记录的余额退回
     for (const withdrawal of pendingWithdrawals) {
-      // 退还余额
-      await memberModel.updateMemberBalance(withdrawal.member_id, withdrawal.amount);
-      
-      // 更新关联的账单提现状态
-      await connection.query(
-        `UPDATE bills 
-         SET withdrawal_status = ?, failure_reason = ? 
-         WHERE member_id = ? AND bill_type = ? AND amount = ?`,
-        [WithdrawalStatus.FAILED, rejectReason, withdrawal.member_id, BillType.WITHDRAWAL, -withdrawal.amount]
-      );
+      try {
+        await withdrawalRefundService.refundWithdrawalBalance(
+          withdrawal.bill_no, 
+          `管理员拒绝: ${rejectReason}`,
+          connection
+        );
+      } catch (error) {
+        logger.error(`退回提现余额失败: 提现ID=${withdrawal.id}, 账单=${withdrawal.bill_no}, 错误=${error.message}`);
+        // 继续处理其他记录，不中断整个流程
+      }
     }
     
     await connection.commit();
