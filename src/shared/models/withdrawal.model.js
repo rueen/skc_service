@@ -294,16 +294,19 @@ async function batchApproveWithdrawals(ids, waiterId, remark = null) {
       [WithdrawalStatus.PROCESSING, waiterId, now, remark, pendingIds, WithdrawalStatus.PENDING]
     );
     
-    // 批量更新关联的账单状态
-    for (const withdrawal of pendingWithdrawals) {
-      // 更新关联的账单提现状态
+    // 批量更新关联的账单状态，使用withdrawal_id精确匹配
+    if (pendingIds.length > 0) {
+      const placeholders = pendingIds.map(() => '?').join(',');
       await connection.query(
         `UPDATE bills 
          SET withdrawal_status = ? 
-         WHERE member_id = ? AND bill_type = ? AND amount = ?`,
-        [WithdrawalStatus.PROCESSING, withdrawal.member_id, BillType.WITHDRAWAL, -withdrawal.amount]
+         WHERE withdrawal_id IN (${placeholders}) AND bill_type = ?`,
+        [WithdrawalStatus.PROCESSING, ...pendingIds, BillType.WITHDRAWAL]
       );
+    }
 
+    // 处理每个提现记录的第三方代付
+    for (const withdrawal of pendingWithdrawals) {
       // 获取提现记录的详细信息，包括提现账户信息
       const [withdrawalDetails] = await connection.query(
         `SELECT w.*, 
