@@ -90,18 +90,6 @@ async function refundWithdrawalBalance(billNo, reason, connection = null) {
       [reason, bill.id]
     );
     
-    // 7. 如果有关联的提现记录，也更新其状态
-    if (bill.withdrawal_id) {
-      await conn.query(
-        `UPDATE withdrawals 
-         SET withdrawal_status = 'failed', 
-             reject_reason = ?,
-             process_time = NOW()
-         WHERE id = ? AND withdrawal_status != 'failed'`,
-        [reason, bill.withdrawal_id]
-      );
-    }
-    
     if (shouldManageTransaction) {
       await conn.commit();
     }
