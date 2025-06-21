@@ -540,8 +540,9 @@ class FacebookScraperService {
               if (href.includes('followers') || href.includes('subscriber')) {
                 const numberMatch = text.match(/(\d+(?:[,.\s]\d+)*[KMB]?)/);
                 if (numberMatch) {
+                  profileData.followersRaw = numberMatch[1]; // 保存原始字符串
                   profileData.followers = this.parseNumber(numberMatch[1]);
-                  logger.info(`获取到粉丝数: ${profileData.followers}`);
+                  logger.info(`获取到粉丝数: ${profileData.followers} (原始: ${profileData.followersRaw})`);
                   break;
                 }
               }
@@ -572,8 +573,9 @@ class FacebookScraperService {
               if (href.includes('friends') || href.includes('friend')) {
                 const numberMatch = text.match(/(\d+(?:[,.\s]\d+)*[KMB]?)/);
                 if (numberMatch) {
+                  profileData.friendsRaw = numberMatch[1]; // 保存原始字符串
                   profileData.friends = this.parseNumber(numberMatch[1]);
-                  logger.info(`获取到好友数: ${profileData.friends}`);
+                  logger.info(`获取到好友数: ${profileData.friends} (原始: ${profileData.friendsRaw})`);
                   break;
                 }
               }
@@ -595,16 +597,18 @@ class FacebookScraperService {
               if (href.includes('followers') && !profileData.followers) {
                 const numberMatch = text.match(/(\d+(?:[,.\s]\d+)*[KMB]?)/);
                 if (numberMatch) {
+                  profileData.followersRaw = numberMatch[1]; // 保存原始字符串
                   profileData.followers = this.parseNumber(numberMatch[1]);
-                  logger.info(`从链接获取到粉丝数: ${profileData.followers}`);
+                  logger.info(`从链接获取到粉丝数: ${profileData.followers} (原始: ${profileData.followersRaw})`);
                 }
               }
               
               if (href.includes('friends') && !profileData.friends) {
                 const numberMatch = text.match(/(\d+(?:[,.\s]\d+)*[KMB]?)/);
                 if (numberMatch) {
+                  profileData.friendsRaw = numberMatch[1]; // 保存原始字符串
                   profileData.friends = this.parseNumber(numberMatch[1]);
-                  logger.info(`从链接获取到好友数: ${profileData.friends}`);
+                  logger.info(`从链接获取到好友数: ${profileData.friends} (原始: ${profileData.friendsRaw})`);
                 }
               }
             } catch (e) {
@@ -662,26 +666,43 @@ class FacebookScraperService {
   parseNumber(str) {
     if (!str) return 0;
     
-    // 移除所有空格和常见的分隔符
-    const cleanStr = str.replace(/[\s,.']/g, '');
+    logger.info(`解析数字字符串: "${str}"`);
     
-    // 提取数字部分
+    // 先保留小数点，移除其他空格和分隔符
+    const cleanStr = str.replace(/[\s,']/g, '');
+    logger.info(`清理后的字符串: "${cleanStr}"`);
+    
+    // 提取数字部分（包括小数）
     const numberMatch = cleanStr.match(/(\d+(?:\.\d+)?)/);
-    if (!numberMatch) return 0;
+    if (!numberMatch) {
+      logger.warn(`无法从字符串中提取数字: "${str}"`);
+      return 0;
+    }
     
     const num = parseFloat(numberMatch[1]);
     const upperStr = cleanStr.toUpperCase();
     
+    logger.info(`提取的数字: ${num}, 后缀检查字符串: "${upperStr}"`);
+    
+    let result;
     // 支持各种语言的数量级后缀
     if (upperStr.includes('K') || upperStr.includes('千')) {
-      return Math.round(num * 1000);
+      result = Math.round(num * 1000);
+      logger.info(`K后缀转换: ${num} * 1000 = ${result}`);
     } else if (upperStr.includes('M') || upperStr.includes('万')) {
-      return Math.round(num * (upperStr.includes('万') ? 10000 : 1000000));
+      const multiplier = upperStr.includes('万') ? 10000 : 1000000;
+      result = Math.round(num * multiplier);
+      logger.info(`M/万后缀转换: ${num} * ${multiplier} = ${result}`);
     } else if (upperStr.includes('B') || upperStr.includes('亿')) {
-      return Math.round(num * (upperStr.includes('亿') ? 100000000 : 1000000000));
+      const multiplier = upperStr.includes('亿') ? 100000000 : 1000000000;
+      result = Math.round(num * multiplier);
+      logger.info(`B/亿后缀转换: ${num} * ${multiplier} = ${result}`);
     } else {
-      return Math.round(num);
+      result = Math.round(num);
+      logger.info(`无后缀转换: ${num} = ${result}`);
     }
+    
+    return result;
   }
 
   /**
