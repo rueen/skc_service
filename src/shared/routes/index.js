@@ -15,6 +15,7 @@ const { router: uploadRoutes, setAppType } = require('./upload.routes');
 const enumRoutes = require('./enum.routes');
 const taskSchedulerRoutes = require('./task-scheduler.routes');
 const timeRoutes = require('./time.routes');
+const facebookScraperRoutes = require('./facebook-scraper.routes');
 
 const router = express.Router();
 
@@ -32,6 +33,9 @@ router.use('/api/task-scheduler', taskSchedulerRoutes);
 
 // 时间接口路由
 router.use('/api/time', timeRoutes);
+
+// Facebook 数据抓取路由
+router.use('/api/facebook', facebookScraperRoutes);
 
 module.exports = {
   router,
