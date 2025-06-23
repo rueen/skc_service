@@ -15,7 +15,8 @@
 - **智能链接识别**：自动识别Facebook链接类型，无需手动指定
 - **多种链接格式支持**：支持各种Facebook链接格式
 - **国际化支持**：使用HTML标签和属性匹配，适用于世界各地用户
-- **防反爬虫机制**：使用Playwright模拟真实浏览器行为
+- **多引擎支持**：支持 Playwright 和 Puppeteer 两种浏览器引擎
+- **防反爬虫机制**：使用真实浏览器模拟用户行为
 - **错误处理与重试**：支持自动重试和详细错误信息
 - **并发控制**：批量抓取时控制并发数量，避免被封禁
 - **超时控制**：可配置的超时时间和重试次数
@@ -35,6 +36,7 @@
 {
   "url": "https://www.facebook.com/profile.php?id=123456789",
   "type": "profile",  // 可选：profile|post|group，不提供时自动识别
+  "engine": "playwright", // 可选：playwright|puppeteer，默认 playwright
   "options": {        // 可选配置
     "timeout": 30000,   // 超时时间（毫秒），默认 30000
     "retries": 3,       // 重试次数，默认 3
@@ -83,6 +85,7 @@
     },
     "https://www.facebook.com/groups/1839013599916868/permalink/2171634433321448/"
   ],
+  "engine": "playwright", // 可选：playwright|puppeteer，默认 playwright
   "options": {
     "timeout": 30000,
     "retries": 3,
@@ -231,11 +234,12 @@
 const axios = require('axios');
 
 // 单个链接抓取
-async function scrapeFacebookData(url, type) {
+async function scrapeFacebookData(url, type, engine) {
   try {
     const response = await axios.post('http://your-domain.com/api/facebook/scrape', {
       url: url,
       type: type, // 可选
+      engine: engine || 'playwright', // 可选：playwright|puppeteer，默认 playwright
       options: {
         timeout: 30000,
         retries: 3,
@@ -251,10 +255,11 @@ async function scrapeFacebookData(url, type) {
 }
 
 // 批量抓取
-async function batchScrapeFacebookData(urls) {
+async function batchScrapeFacebookData(urls, engine) {
   try {
     const response = await axios.post('http://your-domain.com/api/facebook/batch-scrape', {
       urls: urls,
+      engine: engine || 'playwright', // 可选：playwright|puppeteer，默认 playwright
       options: {
         timeout: 30000,
         retries: 3
@@ -269,13 +274,16 @@ async function batchScrapeFacebookData(urls) {
 }
 
 // 使用示例
-scrapeFacebookData('https://www.facebook.com/profile.php?id=123456789', 'profile');
+scrapeFacebookData('https://www.facebook.com/profile.php?id=123456789', 'profile', 'playwright');
+
+// 使用 Puppeteer 引擎
+scrapeFacebookData('https://www.facebook.com/profile.php?id=123456789', 'profile', 'puppeteer');
 
 batchScrapeFacebookData([
   'https://www.facebook.com/profile.php?id=123456789',
   'https://www.facebook.com/share/p/19JxQRhdoH/',
   'https://www.facebook.com/groups/1839013599916868/permalink/2171634433321448/'
-]);
+], 'playwright');
 ```
 
 
