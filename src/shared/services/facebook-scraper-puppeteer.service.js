@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-06-23 14:36:28
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-24 10:41:55
+ * @LastEditTime: 2025-06-24 10:45:59
  * @Description: 
  */
 /**
@@ -97,6 +97,48 @@ class FacebookScraperPuppeteerService {
   }
 
   /**
+   * 从帖子URL中提取UID（性能优化方法）
+   * @param {string} url - Facebook 帖子链接
+   * @returns {Object} 提取结果
+   */
+  extractUidFromPostUrl(url) {
+    try {
+      logger.info(`尝试从帖子URL直接提取UID: ${url}`);
+      
+      // 方法1: 直接从URL中提取UID（适用于格式如 /100029686899461/posts/）
+      const directUidMatch = url.match(/facebook\.com\/(\d{10,})\/posts/);
+      if (directUidMatch) {
+        const uid = directUidMatch[1];
+        logger.info(`成功从URL直接提取到UID: ${uid}`);
+        
+        return {
+          success: true,
+          uid: uid,
+          data: {
+            uid: uid,
+            sourceUrl: url,
+            extractionMethod: 'direct_url_match'
+          }
+        };
+      }
+      
+      logger.info('URL格式不匹配直接提取模式，需要浏览器抓取');
+      return {
+        success: false,
+        reason: 'url_format_not_supported'
+      };
+      
+    } catch (error) {
+      logger.warn('从URL提取UID失败:', error.message);
+      return {
+        success: false,
+        reason: 'extraction_error',
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * 识别链接类型
    * @param {string} url - Facebook 链接
    * @returns {string} 链接类型：profile, post, group
@@ -154,6 +196,20 @@ class FacebookScraperPuppeteerService {
    */
   async scrapeData(url, type, options = {}) {
     const { timeout = 60000, retries = 3 } = options;
+    
+    // 性能优化：如果是帖子类型且可以直接从URL提取UID，则跳过浏览器抓取
+    if (type === 'post') {
+      const urlUidResult = this.extractUidFromPostUrl(url);
+      if (urlUidResult.success) {
+        logger.info(`性能优化：直接从URL提取到UID，跳过浏览器抓取: ${urlUidResult.uid}`);
+        return {
+          success: true,
+          type,
+          data: urlUidResult.data,
+          timestamp: new Date().toISOString()
+        };
+      }
+    }
     
     let attempt = 0;
     while (attempt < retries) {
