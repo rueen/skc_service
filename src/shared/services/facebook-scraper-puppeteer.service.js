@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-06-23 14:36:28
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-24 16:28:14
+ * @LastEditTime: 2025-06-24 17:21:24
  * @Description: 
  */
 /**
@@ -25,6 +25,7 @@ class FacebookScraperPuppeteerService {
   async initBrowser(options = {}) {
     const defaultOptions = {
       headless: true,
+      executablePath: '/usr/bin/chromium-browser', // 使用系统安装的Chromium
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
