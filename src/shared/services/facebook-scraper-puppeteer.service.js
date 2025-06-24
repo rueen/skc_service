@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-06-23 14:36:28
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-24 14:39:56
+ * @LastEditTime: 2025-06-24 14:57:15
  * @Description: 
  */
 /**
@@ -148,6 +148,50 @@ class FacebookScraperPuppeteerService {
   }
 
   /**
+   * 尝试快速从URL提取信息（无需启动浏览器）
+   * @param {string} url - Facebook 链接
+   * @param {string} type - 数据类型
+   * @returns {Object|null} 提取到的数据或null
+   */
+  tryFastExtract(url, type) {
+    try {
+      logger.info(`尝试快速提取: ${url}, 类型: ${type}`);
+      
+      if (type === 'post') {
+        // 帖子类型：从URL中提取UID
+        const directUidMatch = url.match(/facebook\.com\/(\d{10,})\/posts/);
+        if (directUidMatch) {
+          const uid = directUidMatch[1];
+          logger.info(`快速提取到帖子UID: ${uid}`);
+          return {
+            uid: uid,
+            sourceUrl: url,
+            extractionMethod: 'fast_url_extract'
+          };
+        }
+      } else if (type === 'group') {
+        // 群组类型：从URL中提取群组ID（要求至少10位数字，与scrapeGroup方法保持一致）
+        const groupIdMatch = url.match(/\/groups\/(\d{10,})\//);
+        if (groupIdMatch) {
+          const groupId = groupIdMatch[1];
+          logger.info(`快速提取到群组ID: ${groupId}`);
+          return {
+            groupId: groupId,
+            shareUrl: url,
+            extractionMethod: 'fast_url_extract'
+          };
+        }
+      }
+      
+      logger.info(`无法快速提取，URL不匹配快速提取模式: ${url}`);
+      return null;
+    } catch (error) {
+      logger.warn('快速提取失败:', error.message);
+      return null;
+    }
+  }
+
+  /**
    * 抓取 Facebook 数据
    * @param {string} url - Facebook 链接
    * @param {string} type - 数据类型
@@ -157,6 +201,22 @@ class FacebookScraperPuppeteerService {
   async scrapeData(url, type, options = {}) {
     const { timeout = 60000, retries = 3 } = options;
     
+    logger.info(`开始抓取 Facebook 数据 (Puppeteer): ${url}, 类型: ${type}`);
+    
+    // 性能优化：优先尝试从URL直接提取信息，避免启动浏览器
+    const fastExtractResult = this.tryFastExtract(url, type);
+    if (fastExtractResult) {
+      logger.info(`快速提取成功，无需启动浏览器: ${url}`);
+      return {
+        success: true,
+        type,
+        data: fastExtractResult,
+        timestamp: new Date().toISOString()
+      };
+    }
+    
+    // 如果无法快速提取，则使用浏览器抓取
+    logger.info(`无法快速提取，使用浏览器抓取: ${url}`);
 
     let attempt = 0;
     while (attempt < retries) {
@@ -562,7 +622,7 @@ class FacebookScraperPuppeteerService {
       const uidMatch = currentUrl.match(/[?&]id=(\d{10,})/);
       if (uidMatch) {
         postData.uid = uidMatch[1];
-        postData.extractionMethod = 'redirect_url_id_param';
+        postData.extractionMethod = 'redirect_url_match';
         logger.info(`从重定向URL的id参数中提取到UID: ${postData.uid}`);
         return postData;
       }
@@ -612,7 +672,7 @@ class FacebookScraperPuppeteerService {
       const redirectGroupIdMatch = currentUrl.match(/\/groups\/(\d{10,})\//);
       if (redirectGroupIdMatch) {
         groupData.groupId = redirectGroupIdMatch[1];
-        groupData.extractionMethod = 'redirect_url_groups_path';
+        groupData.extractionMethod = 'redirect_url_match';
         logger.info(`从重定向URL的groups路径中提取到群ID: ${groupData.groupId}`);
         return groupData;
       }
