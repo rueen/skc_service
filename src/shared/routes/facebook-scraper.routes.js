@@ -1,58 +1,20 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-06-21 17:13:19
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-06-24 10:55:47
+ * @Description: 
+ */
 /**
  * Facebook 数据抓取路由
  * 定义 Facebook 数据抓取相关的 API 端点
  */
 const express = require('express');
-const rateLimit = require('express-rate-limit');
 const FacebookScraperController = require('../controllers/facebook-scraper.controller');
 const rateLimiterMiddleware = require('../middlewares/rateLimiter.middleware');
-const responseUtil = require('../utils/response.util');
-const logger = require('../config/logger.config');
 
 const router = express.Router();
 const facebookScraperController = new FacebookScraperController();
-
-// Facebook 数据抓取限流配置（更严格的限制）
-const facebookScraperLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 分钟
-  max: 10, // 每分钟最多 10 次请求
-  message: {
-    code: 'RATE_LIMIT_EXCEEDED',
-    message: 'Facebook 数据抓取请求过于频繁，请稍后再试'
-  },
-  handler: (req, res, next, options) => {
-    logger.warn(`IP ${req.ip} Facebook 抓取请求超过限制`);
-    res.status(429).json({
-      success: false,
-      error: {
-        code: 'RATE_LIMIT_EXCEEDED',
-        message: 'Facebook 数据抓取请求过于频繁，请稍后再试'
-      },
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// 批量抓取限流（更严格）
-const batchScraperLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 分钟
-  max: 3, // 每5分钟最多 3 次批量请求
-  message: {
-    code: 'RATE_LIMIT_EXCEEDED',
-    message: '批量抓取请求过于频繁，请稍后再试'
-  },
-  handler: (req, res, next, options) => {
-    logger.warn(`IP ${req.ip} Facebook 批量抓取请求超过限制`);
-    res.status(429).json({
-      success: false,
-      error: {
-        code: 'RATE_LIMIT_EXCEEDED',
-        message: '批量抓取请求过于频繁，请稍后再试'
-      },
-      timestamp: new Date().toISOString()
-    });
-  }
-});
 
 /**
  * @route POST /api/facebook/scrape
@@ -66,7 +28,7 @@ const batchScraperLimiter = rateLimit({
  * @body {boolean} [options.headless=true] - 是否无头模式
  */
 router.post('/scrape', 
-  facebookScraperLimiter,
+  rateLimiterMiddleware.apiLimiter, // 使用统一的API限流
   FacebookScraperController.getValidationRules(),
   (req, res) => facebookScraperController.scrapeData(req, res)
 );
@@ -79,7 +41,7 @@ router.post('/scrape',
  * @body {Object} [options] - 抓取选项
  */
 router.post('/batch-scrape',
-  batchScraperLimiter,
+  rateLimiterMiddleware.apiLimiter, // 使用统一的API限流
   (req, res) => facebookScraperController.batchScrapeData(req, res)
 );
 
