@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-06-23 14:36:28
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-24 10:45:59
+ * @LastEditTime: 2025-06-24 11:25:20
  * @Description: 
  */
 /**
@@ -233,12 +233,6 @@ class FacebookScraperPuppeteerService {
         logger.info('等待页面加载...');
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // 检查是否遇到登录页面或验证页面
-        const isLoginPage = await this.checkLoginPage();
-        if (isLoginPage) {
-          throw new Error('页面需要登录才能访问');
-        }
-        
         let result;
         switch (type) {
           case 'profile':
@@ -287,118 +281,6 @@ class FacebookScraperPuppeteerService {
         logger.info(`等待 ${delay}ms 后重试...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
-    }
-  }
-
-  /**
-   * 检查是否为登录页面
-   * @returns {boolean} 是否为登录页面
-   */
-  async checkLoginPage() {
-    try {
-      const currentUrl = this.page.url();
-      logger.info(`开始检查登录页面，当前URL: ${currentUrl}`);
-      
-      // 首先检查URL是否包含登录相关路径
-      const loginUrlPatterns = [
-        '/login',
-        '/signin',
-        '/auth',
-        'login.php'
-      ];
-      
-      const hasLoginUrl = loginUrlPatterns.some(pattern => 
-        currentUrl.toLowerCase().includes(pattern)
-      );
-      
-      if (hasLoginUrl) {
-        logger.info('检测到登录页面：URL包含登录路径');
-        return true;
-      }
-      
-      // 检查页面标题
-      const pageTitle = await this.page.title();
-      logger.info(`页面标题: ${pageTitle}`);
-      
-      const strictLoginTitleKeywords = ['log into facebook', 'facebook - log in', 'sign in to facebook'];
-      const hasStrictLoginTitle = strictLoginTitleKeywords.some(keyword => 
-        pageTitle.toLowerCase().includes(keyword)
-      );
-      
-      if (hasStrictLoginTitle) {
-        logger.info('检测到登录页面：页面标题包含登录关键词');
-        return true;
-      }
-      
-      // 检查是否存在特定的登录表单组合
-      const hasEmailInput = await this.page.$('input[name="email"]');
-      const hasPasswordInput = await this.page.$('input[name="pass"]');
-      const hasLoginButton = await this.page.$('button[name="login"]');
-      const hasLoginForm = await this.page.$('form[data-testid="royal_login_form"]');
-      
-      logger.info(`登录表单元素检测: email=${!!hasEmailInput}, password=${!!hasPasswordInput}, loginButton=${!!hasLoginButton}, loginForm=${!!hasLoginForm}`);
-      
-      // 更严格的登录页面检测：只有明确的登录表单才算
-      if (hasLoginForm) {
-        logger.info('检测到登录页面：存在明确的登录表单');
-        return true;
-      }
-      
-      // 如果同时存在email和password输入框，需要进一步检查上下文
-      if (hasEmailInput && hasPasswordInput) {
-        try {
-          const emailParent = await this.page.evaluate((input) => 
-            input.parentElement.textContent, hasEmailInput);
-          const passwordParent = await this.page.evaluate((input) => 
-            input.parentElement.textContent, hasPasswordInput);
-          
-          logger.info(`Email输入框父容器文本: ${emailParent?.substring(0, 100)}`);
-          logger.info(`Password输入框父容器文本: ${passwordParent?.substring(0, 100)}`);
-          
-          // 检查父容器是否包含明确的登录相关文本
-          const loginContextKeywords = ['log in', 'sign in', 'login', 'password', 'email or phone'];
-          const hasLoginContext = loginContextKeywords.some(keyword => 
-            emailParent?.toLowerCase().includes(keyword) || 
-            passwordParent?.toLowerCase().includes(keyword)
-          );
-          
-          if (hasLoginContext) {
-            logger.info('检测到登录页面：输入框具有登录上下文');
-            return true;
-          }
-        } catch (e) {
-          logger.warn('检查输入框上下文失败:', e.message);
-        }
-      }
-      
-      // 检查页面内容是否包含明确的登录提示
-      try {
-        const pageText = await this.page.evaluate(() => document.body.textContent);
-        const loginPrompts = [
-          'log in to facebook',
-          'sign in to continue',
-          'enter your email',
-          'enter your password'
-        ];
-        
-        const foundPrompts = loginPrompts.filter(prompt => 
-          pageText.toLowerCase().includes(prompt)
-        );
-        
-        if (foundPrompts.length > 0) {
-          logger.info(`检测到登录页面：页面内容包含登录提示: ${foundPrompts.join(', ')}`);
-          return true;
-        }
-      } catch (e) {
-        logger.warn('检查页面内容失败:', e.message);
-      }
-      
-      logger.info('未检测到登录页面特征，继续正常抓取');
-      return false;
-      
-    } catch (error) {
-      logger.warn('检查登录页面失败:', error.message);
-      return false;
     }
   }
 
