@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:10:51
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-24 16:21:58
+ * @LastEditTime: 2025-06-24 17:55:11
  * @Description: 
  */
 /**
@@ -107,7 +107,7 @@ if (process.env.NODE_ENV === 'production' &&
     new OssTransport({
       level: 'info',
       bucket: 'skc-logs',
-      ossPrefix: 'logs/scrape/'
+      ossPrefix: 'logs/scrape-failures/'
     })
   );
   
@@ -116,7 +116,7 @@ if (process.env.NODE_ENV === 'production' &&
     new OssTransport({
       level: 'info',
       bucket: 'skc-logs',
-      ossPrefix: 'logs/scrape/'
+      ossPrefix: 'logs/scrape-success/'
     })
   );
   
