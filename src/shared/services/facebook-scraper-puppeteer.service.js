@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-06-23 14:36:28
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-24 17:21:24
+ * @LastEditTime: 2025-06-24 17:48:16
  * @Description: 
  */
 /**
@@ -25,7 +25,6 @@ class FacebookScraperPuppeteerService {
   async initBrowser(options = {}) {
     const defaultOptions = {
       headless: true,
-      executablePath: '/usr/bin/chromium-browser', // 使用系统安装的Chromium
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -41,6 +40,14 @@ class FacebookScraperPuppeteerService {
         '--disable-renderer-backgrounding'
       ]
     };
+
+    // 服务器环境使用系统Chromium
+    if (process.platform === 'linux') {
+      const fs = require('fs');
+      if (fs.existsSync('/usr/bin/chromium-browser')) {
+        defaultOptions.executablePath = '/usr/bin/chromium-browser';
+      }
+    }
 
     try {
       this.browser = await puppeteer.launch({ ...defaultOptions, ...options });
