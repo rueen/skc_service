@@ -3,14 +3,12 @@
  * 处理 Facebook 数据抓取的 API 请求
  */
 const { body, validationResult } = require('express-validator');
-const FacebookScraperService = require('../services/facebook-scraper.service');
 const FacebookScraperPuppeteerService = require('../services/facebook-scraper-puppeteer.service');
 const logger = require('../config/logger.config');
 const responseUtil = require('../utils/response.util');
 
 class FacebookScraperController {
   constructor() {
-    this.playwrightService = new FacebookScraperService();
     this.puppeteerService = new FacebookScraperPuppeteerService();
   }
 
@@ -54,10 +52,7 @@ class FacebookScraperController {
         .isIn(['profile', 'post', 'group'])
         .withMessage('类型必须是 profile、post 或 group 之一'),
       
-      body('engine')
-        .optional()
-        .isIn(['playwright', 'puppeteer'])
-        .withMessage('引擎必须是 playwright 或 puppeteer 之一'),
+
       
       body('options')
         .optional()
@@ -102,12 +97,12 @@ class FacebookScraperController {
         });
       }
 
-      const { url, type, engine = 'playwright', options = {} } = req.body;
+      const { url, type, options = {} } = req.body;
       
-      logger.info(`开始抓取 Facebook 数据: ${url}，使用引擎: ${engine}`);
+      logger.info(`开始抓取 Facebook 数据: ${url}，使用引擎: puppeteer`);
       
-      // 选择服务实例
-      const scraperService = engine === 'puppeteer' ? this.puppeteerService : this.playwrightService;
+      // 使用 Puppeteer 服务实例
+      const scraperService = this.puppeteerService;
       
       // 如果没有指定类型，自动识别
       let dataType = type;
@@ -160,7 +155,7 @@ class FacebookScraperController {
    */
   async batchScrapeData(req, res) {
     try {
-      const { urls, engine = 'playwright', options = {} } = req.body;
+      const { urls, options = {} } = req.body;
       
       if (!Array.isArray(urls) || urls.length === 0) {
         return res.status(400).json({
@@ -186,7 +181,7 @@ class FacebookScraperController {
         });
       }
       
-      logger.info(`开始批量抓取 Facebook 数据: ${urls.length} 个链接，使用引擎: ${engine}`);
+      logger.info(`开始批量抓取 Facebook 数据: ${urls.length} 个链接，使用引擎: puppeteer`);
       
       const results = [];
       
@@ -198,10 +193,8 @@ class FacebookScraperController {
           try {
             const { url, type } = typeof urlData === 'string' ? { url: urlData, type: null } : urlData;
             
-            // 选择并创建新的服务实例以支持并发
-            const scraperService = engine === 'puppeteer' 
-              ? new (require('../services/facebook-scraper-puppeteer.service'))() 
-              : new (require('../services/facebook-scraper.service'))();
+            // 创建新的 Puppeteer 服务实例以支持并发
+            const scraperService = new (require('../services/facebook-scraper-puppeteer.service'))();
             
             // 自动识别类型
             const dataType = type || scraperService.identifyLinkType(url);

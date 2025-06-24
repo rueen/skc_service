@@ -60,7 +60,6 @@ const batchScraperLimiter = rateLimit({
  * @access Public
  * @body {string} url - Facebook 链接
  * @body {string} [type] - 数据类型 (profile|post|group)，可选，不提供时自动识别
- * @body {string} [engine=playwright] - 浏览器引擎 (playwright|puppeteer)，默认 playwright
  * @body {Object} [options] - 抓取选项
  * @body {number} [options.timeout=30000] - 超时时间（毫秒）
  * @body {number} [options.retries=3] - 重试次数
@@ -77,7 +76,6 @@ router.post('/scrape',
  * @desc 批量抓取 Facebook 数据
  * @access Public
  * @body {Array} urls - Facebook 链接数组，每个元素可以是字符串或对象 {url, type}
- * @body {string} [engine=playwright] - 浏览器引擎 (playwright|puppeteer)，默认 playwright
  * @body {Object} [options] - 抓取选项
  */
 router.post('/batch-scrape',
