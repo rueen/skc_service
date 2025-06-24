@@ -52,8 +52,6 @@ class FacebookScraperController {
         .isIn(['profile', 'post', 'group'])
         .withMessage('类型必须是 profile、post 或 group 之一'),
       
-
-      
       body('options')
         .optional()
         .isObject()
