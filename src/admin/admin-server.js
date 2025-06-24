@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-21 11:47:27
+ * @LastEditTime: 2025-06-24 16:18:06
  * @Description: 
  */
 // 加载环境变量（放在最顶部，确保在所有模块导入前加载）
@@ -14,7 +14,7 @@ const { initTables } = require('../shared/models/init.db');
 const adminRoutes = require('./routes');
 const healthRoutes = require('../shared/routes/health.routes');
 const { router: sharedRoutes, setAppType } = require('../shared/routes');
-const logger = require('../shared/config/logger.config');
+const { logger } = require('../shared/config/logger.config');
 const errorHandler = require('../shared/middlewares/errorHandler.middleware');
 const { startScheduler } = require('../shared/services/task-scheduler.service');
 const { startLogCleanupScheduler } = require('../shared/services/log-cleaner.service');

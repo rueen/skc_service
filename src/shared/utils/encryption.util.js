@@ -3,7 +3,7 @@
  * 用于敏感数据的加密和解密
  */
 const crypto = require('crypto');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 
 /**
  * 加密数据

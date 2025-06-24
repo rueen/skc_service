@@ -4,7 +4,7 @@
  */
 const enums = require('../config/enums');
 const responseUtil = require('../utils/response.util');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 
 /**
  * 获取枚举常量

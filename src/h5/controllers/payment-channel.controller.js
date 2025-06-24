@@ -10,7 +10,7 @@
  * 处理H5端支付渠道相关的业务逻辑
  */
 const paymentChannelModel = require('../../shared/models/payment-channel.model');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 
 /**

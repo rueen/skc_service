@@ -3,7 +3,7 @@
  * 创建所有必要的数据库表
  */
 const { pool } = require('./db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 
 // 创建账号表
 const createAccountsTable = `

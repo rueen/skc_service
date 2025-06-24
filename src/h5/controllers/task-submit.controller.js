@@ -3,7 +3,7 @@
  * 处理H5端任务提交相关业务逻辑
  */
 const submittedTaskModel = require('../../shared/models/submitted-task.model');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 const i18n = require('../../shared/utils/i18n.util');

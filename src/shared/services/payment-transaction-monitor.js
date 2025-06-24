@@ -3,7 +3,7 @@
  * 处理超时的支付交易及状态更新
  */
 const cron = require('node-cron');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const paymentTransactionModel = require('../models/payment-transaction.model');
 const paymentUtil = require('../utils/payment.util');
 const paymentChannelModel = require('../models/payment-channel.model');

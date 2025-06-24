@@ -6,7 +6,7 @@ const waiterModel = require('../../shared/models/waiter.model');
 const authUtil = require('../../shared/utils/auth.util');
 const validatorUtil = require('../../shared/utils/validator.util');
 const responseUtil = require('../../shared/utils/response.util');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 const i18n = require('../../shared/utils/i18n.util');
 

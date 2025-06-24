@@ -10,7 +10,7 @@
  */
 const { verifySign } = require('../utils/api-sign.util');
 const getApiSignConfig = require('../config/api-sign.config');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const responseUtil = require('../utils/response.util');
 
 /**

@@ -3,7 +3,7 @@
  * 提供幂等性保障的余额退回功能，防止重复退回
  */
 const { pool } = require('../models/db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const memberBalanceModel = require('../models/member-balance.model');
 
 /**

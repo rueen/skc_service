@@ -3,7 +3,7 @@
  * 处理会员邀请相关的数据库操作
  */
 const { pool } = require('./db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
 const { BillType } = require('../config/enums');

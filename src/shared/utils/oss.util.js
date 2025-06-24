@@ -4,7 +4,7 @@
  */
 const OSS = require('ali-oss');
 const fs = require('fs');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 
 // 创建OSS客户端实例（延迟初始化）
 let client = null;

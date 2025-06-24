@@ -3,7 +3,7 @@
  * 处理文件上传相关的请求
  */
 const responseUtil = require('../utils/response.util');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const ossUtil = require('../utils/oss.util');
 
 /**

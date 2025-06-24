@@ -4,7 +4,7 @@
  */
 const authUtil = require('../utils/auth.util');
 const responseUtil = require('../utils/response.util');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const i18n = require('../utils/i18n.util');
 
 /**

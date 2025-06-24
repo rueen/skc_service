@@ -3,7 +3,7 @@
  * 处理H5端渠道相关的业务逻辑
  */
 const channelModel = require('../../shared/models/channel.model');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 
 /**

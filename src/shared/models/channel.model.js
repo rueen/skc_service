@@ -3,7 +3,7 @@
  * 处理渠道相关的数据库操作
  */
 const { pool } = require('./db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 const { convertToCamelCase } = require('../utils/data.util');

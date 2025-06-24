@@ -3,7 +3,7 @@
  * 处理H5端用户认证相关的业务逻辑
  */
 const memberModel = require('../../shared/models/member.model');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const authUtil = require('../../shared/utils/auth.util');
 const i18n = require('../../shared/utils/i18n.util');

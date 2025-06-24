@@ -3,7 +3,7 @@
  * 处理H5端通知相关业务逻辑
  */
 const notificationModel = require('../../shared/models/notification.model');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const i18n = require('../../shared/utils/i18n.util');
 

@@ -3,7 +3,7 @@
  * 处理交易状态变更、提现记录更新和余额管理
  */
 const { pool } = require('../models/db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 
 /**
  * 处理失败的交易

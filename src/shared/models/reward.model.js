@@ -3,7 +3,7 @@
  * 处理各种奖励计算和分配逻辑
  */
 const { pool } = require('./db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const systemConfigModel = require('./system.config.model');
 const memberBalanceModel = require('./member-balance.model');
 const { BillType, SettlementStatus } = require('../config/enums');

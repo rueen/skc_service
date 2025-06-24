@@ -3,7 +3,7 @@
  * 用于处理通知相关的数据库操作
  */
 const { pool } = require('./db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 
 /**
  * 格式化通知对象

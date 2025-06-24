@@ -3,7 +3,7 @@
  * 处理系统配置相关的数据库操作
  */
 const { pool } = require('./db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 
 // 系统配置不需要格式化
 

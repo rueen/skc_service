@@ -5,7 +5,7 @@
 const withdrawalAccountModel = require('../../shared/models/withdrawal-account.model');
 const withdrawalModel = require('../../shared/models/withdrawal.model');
 const responseUtil = require('../../shared/utils/response.util');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const i18n = require('../../shared/utils/i18n.util');
 
 /**

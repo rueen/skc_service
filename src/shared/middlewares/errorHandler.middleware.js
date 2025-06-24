@@ -2,7 +2,7 @@
  * 错误处理中间件
  * 统一处理应用程序中的错误
  */
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const responseUtil = require('../utils/response.util');
 
 /**

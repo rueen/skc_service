@@ -3,7 +3,7 @@
  * 负责定期检查和更新任务状态（未开始/进行中/已结束）
  */
 const { pool } = require('../models/db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const { TaskStatus } = require('../config/enums');
 const cron = require('node-cron');
 

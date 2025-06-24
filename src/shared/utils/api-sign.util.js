@@ -10,7 +10,7 @@
  * 用于生成和验证API请求签名
  */
 const crypto = require('crypto');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const getApiSignConfig = require('../config/api-sign.config');
 
 /**

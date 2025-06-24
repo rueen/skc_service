@@ -4,7 +4,7 @@
  */
 const articleModel = require('../../shared/models/article.model');
 const responseUtil = require('../../shared/utils/response.util');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 const i18n = require('../../shared/utils/i18n.util');
 

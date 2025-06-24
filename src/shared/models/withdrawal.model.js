@@ -3,7 +3,7 @@
  * 处理提现记录相关数据操作
  */
 const { pool } = require('./db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const { WithdrawalStatus } = require('../config/enums');
 const memberModel = require('./member.model');
 const billModel = require('./bill.model');

@@ -10,7 +10,7 @@
  * 创建MySQL连接池并导出
  */
 const mysql = require('mysql2/promise');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 
 // 获取数据库配置
 function getDbConfig() {

@@ -3,7 +3,7 @@
  * 处理会员任务相关的统计数据
  */
 const { pool } = require('./db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const { BillType, TaskAuditStatus } = require('../config/enums');
 
 /**

@@ -4,7 +4,7 @@
  */
 const billModel = require('../../shared/models/bill.model');
 const responseUtil = require('../../shared/utils/response.util');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../../shared/config/api.config');
 
 /**

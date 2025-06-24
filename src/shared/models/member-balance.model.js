@@ -3,7 +3,7 @@
  * 处理会员账户余额相关的数据库操作
  */
 const { pool } = require('./db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 
 /**
  * 获取会员已提现金额

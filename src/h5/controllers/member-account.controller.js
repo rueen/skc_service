@@ -4,7 +4,7 @@
  */
 const accountModel = require('../../shared/models/account.model');
 const oldAccountsFbModel = require('../../shared/models/old-accounts-fb.model');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const i18n = require('../../shared/utils/i18n.util');
 

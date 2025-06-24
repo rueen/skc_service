@@ -4,7 +4,7 @@
  */
 const withdrawalModel = require('../../shared/models/withdrawal.model');
 const responseUtil = require('../../shared/utils/response.util');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 const { WithdrawalStatus } = require('../../shared/config/enums');
 const paymentTransactionModel = require('../../shared/models/payment-transaction.model');

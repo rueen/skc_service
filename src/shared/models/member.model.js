@@ -5,7 +5,7 @@
 const { pool } = require('./db');
 const crypto = require('crypto');
 const billModel = require('./bill.model');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../config/api.config');
 const { BillType } = require('../config/enums');
 const { formatDateTime } = require('../utils/date.util');

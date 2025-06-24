@@ -3,7 +3,7 @@
  */
 const { updateTaskStatus, startScheduler, stopScheduler } = require('../services/task-scheduler.service');
 const { taskStatusUpdateConfig, schedulerServiceConfig } = require('../config/scheduler.config');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const fs = require('fs');
 const path = require('path');
 const responseUtil = require('../utils/response.util');

@@ -10,7 +10,7 @@
  * 防止API被过度请求，保护服务器资源
  */
 const rateLimit = require('express-rate-limit');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const responseUtil = require('../utils/response.util');
 const { apiLimiterConfig, loginLimiterConfig } = require('../config/rateLimiter.config');
 const i18n = require('../utils/i18n.util');

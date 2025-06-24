@@ -4,7 +4,7 @@
  */
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 
 /**
  * 生成JWT令牌

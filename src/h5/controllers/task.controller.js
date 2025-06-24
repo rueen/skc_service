@@ -10,7 +10,7 @@
  * 处理H5端任务相关的业务逻辑
  */
 const taskModel = require('../../shared/models/task.model');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../../shared/config/api.config');
 const i18n = require('../../shared/utils/i18n.util');

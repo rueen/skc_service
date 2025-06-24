@@ -10,7 +10,7 @@
  * 处理H5端文章相关的业务逻辑
  */
 const articleModel = require('../../shared/models/article.model');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const i18n = require('../../shared/utils/i18n.util');
 

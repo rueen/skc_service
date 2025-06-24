@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-06-23 14:36:28
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-24 14:57:15
+ * @LastEditTime: 2025-06-24 16:28:14
  * @Description: 
  */
 /**
@@ -10,7 +10,7 @@
  * 基于 Puppeteer 实现的 Facebook 数据抓取功能
  */
 const puppeteer = require('puppeteer');
-const logger = require('../config/logger.config');
+const { logger, scrapeFailureLogger, scrapeSuccessLogger } = require('../config/logger.config');
 
 class FacebookScraperPuppeteerService {
   constructor() {
@@ -207,6 +207,13 @@ class FacebookScraperPuppeteerService {
     const fastExtractResult = this.tryFastExtract(url, type);
     if (fastExtractResult) {
       logger.info(`快速提取成功，无需启动浏览器: ${url}`);
+      
+      scrapeSuccessLogger.info(JSON.stringify({
+        url: url,
+        type: type,
+        data: fastExtractResult
+      }));
+      
       return {
         success: true,
         type,
@@ -258,6 +265,20 @@ class FacebookScraperPuppeteerService {
         await this.closeBrowser();
         logger.info(`抓取成功 (Puppeteer): ${url}`);
         
+        if (result.extractionMethod === 'failed'){
+          scrapeFailureLogger.info(JSON.stringify({
+            url: url,
+            type: type,
+            data: result
+          }));
+        } else {
+          scrapeSuccessLogger.info(JSON.stringify({
+            url: url,
+            type: type,
+            data: result
+          }));
+        }
+        
         return {
           success: true,
           type,
@@ -272,6 +293,13 @@ class FacebookScraperPuppeteerService {
         await this.closeBrowser();
         
         if (attempt >= retries) {
+          scrapeFailureLogger.info(JSON.stringify({
+            url: url,
+            type: type,
+            message: this.getErrorMessage(error),
+            details: error.message
+          }));
+          
           return {
             success: false,
             error: {

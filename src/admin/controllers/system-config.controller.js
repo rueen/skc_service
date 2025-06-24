@@ -10,7 +10,7 @@
  * 处理系统配置相关的业务逻辑
  */
 const systemConfigModel = require('../../shared/models/system.config.model');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 
 /**

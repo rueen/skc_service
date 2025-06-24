@@ -10,7 +10,7 @@
  * 处理H5端邀请相关的业务逻辑
  */
 const inviteModel = require('../../shared/models/invite.model');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } = require('../../shared/config/api.config');
 

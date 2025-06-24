@@ -2,7 +2,7 @@
  * 日志清理服务
  * 负责定期清理和压缩旧日志文件
  */
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const cron = require('node-cron');
 const path = require('path');
 const { spawn } = require('child_process');

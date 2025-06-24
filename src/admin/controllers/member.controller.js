@@ -4,7 +4,7 @@
  */
 const memberModel = require('../../shared/models/member.model');
 const responseUtil = require('../../shared/utils/response.util');
-const logger = require('../../shared/config/logger.config');
+const { logger } = require('../../shared/config/logger.config');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../../shared/config/api.config');
 const { OccupationType } = require('../../shared/config/enums');
 const groupModel = require('../../shared/models/group.model');

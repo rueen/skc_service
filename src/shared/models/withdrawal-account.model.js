@@ -3,7 +3,7 @@
  * 处理提现账户相关数据操作
  */
 const { pool } = require('./db');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const { convertToCamelCase } = require('../utils/data.util');
 const { formatDateTime } = require('../utils/date.util');
 

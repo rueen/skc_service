@@ -4,7 +4,7 @@
  */
 const { body, validationResult } = require('express-validator');
 const FacebookScraperPuppeteerService = require('../services/facebook-scraper-puppeteer.service');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 const responseUtil = require('../utils/response.util');
 
 class FacebookScraperController {

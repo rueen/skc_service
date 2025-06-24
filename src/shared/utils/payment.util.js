@@ -5,7 +5,7 @@
 const axios = require('axios');
 const crypto = require('crypto-js');
 const { v4: uuidv4 } = require('uuid');
-const logger = require('../config/logger.config');
+const { logger } = require('../config/logger.config');
 
 /**
  * 生成第三方支付API签名
