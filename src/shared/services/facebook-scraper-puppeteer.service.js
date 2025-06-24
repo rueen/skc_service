@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-06-23 14:36:28
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-24 11:29:39
+ * @LastEditTime: 2025-06-24 14:39:56
  * @Description: 
  */
 /**
@@ -189,7 +189,7 @@ class FacebookScraperPuppeteerService {
             result = await this.scrapePost(url);
             break;
           case 'group':
-            result = await this.scrapeGroup();
+            result = await this.scrapeGroup(url);
             break;
           default:
             throw new Error(`不支持的数据类型: ${type}`);
@@ -579,66 +579,47 @@ class FacebookScraperPuppeteerService {
   }
 
   /**
-   * 抓取群组信息
+   * 抓取群组信息（主要目的：获取群ID）
+   * @param {string} originalUrl - 原始请求的URL
    * @returns {Object} 群组数据
    */
-  async scrapeGroup() {
+  async scrapeGroup(originalUrl) {
     try {
-      await this.page.waitForSelector('body', { timeout: 10000 });
+      logger.info('开始抓取群组信息（主要获取群ID）...');
       
       const groupData = {};
+      groupData.sourceUrl = originalUrl;
       
-      // 获取当前 URL
+      // 方法1: 优先从原始URL中直接提取群ID（适用于格式如 /groups/3251602094950259/permalink/）
+      const directGroupIdMatch = originalUrl.match(/\/groups\/(\d{10,})\//);
+      if (directGroupIdMatch) {
+        groupData.groupId = directGroupIdMatch[1];
+        groupData.extractionMethod = 'direct_url_match';
+        logger.info(`通过直接匹配从原始URL提取到群ID: ${groupData.groupId}`);
+        return groupData;
+      }
+      
+      // 如果无法从原始URL提取群ID，则尝试访问页面
+      logger.info('无法从原始URL直接提取群ID，尝试访问页面...');
+      
+      await this.page.waitForSelector('body', { timeout: 10000 });
+      
+      // 获取当前页面URL
       const currentUrl = this.page.url();
-      groupData.shareUrl = currentUrl;
+      groupData.currentUrl = currentUrl;
       
-      // 从 URL 中提取群组 ID
-      const groupIdMatch = currentUrl.match(/groups\/(\d+)/);
-      if (groupIdMatch) {
-        groupData.groupId = groupIdMatch[1];
+      // 方法2: 从重定向URL中提取群ID（从groups路径中获取）
+      const redirectGroupIdMatch = currentUrl.match(/\/groups\/(\d{10,})\//);
+      if (redirectGroupIdMatch) {
+        groupData.groupId = redirectGroupIdMatch[1];
+        groupData.extractionMethod = 'redirect_url_groups_path';
+        logger.info(`从重定向URL的groups路径中提取到群ID: ${groupData.groupId}`);
+        return groupData;
       }
       
-      // 尝试获取群组名称
-      try {
-        const groupNameSelectors = [
-          'h1[data-testid="group-name"]',
-          'h1',
-          'title'
-        ];
-        
-        for (const selector of groupNameSelectors) {
-          try {
-            const element = await this.page.$(selector);
-            if (element) {
-              const text = await this.page.evaluate(el => el.textContent, element);
-              if (text && text.trim()) {
-                groupData.groupName = text.trim();
-                break;
-              }
-            }
-          } catch (e) {
-            continue;
-          }
-        }
-      } catch (error) {
-        logger.warn('获取群组名称失败:', error);
-      }
-      
-      // 从页面内容中查找群组信息
-      try {
-        const pageContent = await this.page.content();
-        
-        // 查找群组 ID
-        if (!groupData.groupId) {
-          const groupIdRegex = /"groupID":"(\d+)"/;
-          const match = pageContent.match(groupIdRegex);
-          if (match) {
-            groupData.groupId = match[1];
-          }
-        }
-      } catch (error) {
-        logger.warn('从页面内容获取群组信息失败:', error);
-      }
+      // 如果所有方法都失败，返回空结果
+      logger.warn('无法从任何方式提取到群ID');
+      groupData.extractionMethod = 'failed';
       
       return groupData;
     } catch (error) {
