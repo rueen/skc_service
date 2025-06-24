@@ -182,7 +182,7 @@ class FacebookScraperPuppeteerService {
             result = await this.scrapeProfile();
             break;
           case 'post':
-            result = await this.scrapePost();
+            result = await this.scrapePost(url);
             break;
           case 'group':
             result = await this.scrapeGroup();
@@ -637,73 +637,47 @@ class FacebookScraperPuppeteerService {
   }
 
   /**
-   * 抓取帖子信息
+   * 抓取帖子信息（主要目的：获取UID）
+   * @param {string} originalUrl - 原始请求的URL
    * @returns {Object} 帖子数据
    */
-  async scrapePost() {
+  async scrapePost(originalUrl) {
     try {
-      await this.page.waitForSelector('body', { timeout: 10000 });
+      logger.info('开始抓取帖子信息（主要获取UID）...');
       
       const postData = {};
+      postData.sourceUrl = originalUrl;
       
-      // 获取当前 URL
+      // 方法1: 优先从原始URL中直接提取UID（适用于格式如 /100029686899461/posts/）
+      const directUidMatch = originalUrl.match(/facebook\.com\/(\d{10,})\/posts/);
+      if (directUidMatch) {
+        postData.uid = directUidMatch[1];
+        postData.extractionMethod = 'direct_url_match';
+        logger.info(`通过直接匹配从原始URL提取到UID: ${postData.uid}`);
+        return postData;
+      }
+      
+      // 如果无法从原始URL提取UID，则尝试访问页面
+      logger.info('无法从原始URL直接提取UID，尝试访问页面...');
+      
+      await this.page.waitForSelector('body', { timeout: 10000 });
+      
+      // 获取当前页面URL
       const currentUrl = this.page.url();
-      postData.postUrl = currentUrl;
+      postData.currentUrl = currentUrl;
       
-      // 从 URL 中提取作者 UID
-      const uidMatch = currentUrl.match(/facebook\.com\/(\d+)\/posts/);
+      // 方法2: 从重定向URL中提取UID（从id参数中获取）
+      const uidMatch = currentUrl.match(/[?&]id=(\d{10,})/);
       if (uidMatch) {
-        postData.authorUid = uidMatch[1];
+        postData.uid = uidMatch[1];
+        postData.extractionMethod = 'redirect_url_id_param';
+        logger.info(`从重定向URL的id参数中提取到UID: ${postData.uid}`);
+        return postData;
       }
       
-      // 尝试从页面内容获取作者信息
-      try {
-        const pageContent = await this.page.content();
-        
-        // 查找作者 UID
-        if (!postData.authorUid) {
-          const uidRegex = /"userID":"(\d+)"/;
-          const match = pageContent.match(uidRegex);
-          if (match) {
-            postData.authorUid = match[1];
-          }
-        }
-        
-        // 获取帖子 ID
-        const postIdMatch = pageContent.match(/"post_id":"(\d+)"/);
-        if (postIdMatch) {
-          postData.postId = postIdMatch[1];
-        }
-      } catch (error) {
-        logger.warn('从页面内容获取信息失败:', error);
-      }
-      
-      // 尝试获取作者名称
-      try {
-        const authorSelectors = [
-          '[data-testid="post-author-name"]',
-          '[role="link"] strong',
-          'h3 a',
-          'h4 a'
-        ];
-        
-        for (const selector of authorSelectors) {
-          try {
-            const element = await this.page.$(selector);
-            if (element) {
-              const text = await this.page.evaluate(el => el.textContent, element);
-              if (text && text.trim()) {
-                postData.authorName = text.trim();
-                break;
-              }
-            }
-          } catch (e) {
-            continue;
-          }
-        }
-      } catch (error) {
-        logger.warn('获取作者名称失败:', error);
-      }
+      // 如果所有方法都失败，返回空结果
+      logger.warn('无法从任何方式提取到UID');
+      postData.extractionMethod = 'failed';
       
       return postData;
     } catch (error) {
