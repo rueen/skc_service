@@ -102,7 +102,7 @@ class FacebookScraperController {
         });
       }
 
-      const { url, type, engine = 'playwright', options = {} } = req.body;
+      const { url, type, engine = 'puppeteer', options = {} } = req.body;
       
       logger.info(`开始抓取 Facebook 数据: ${url}，使用引擎: ${engine}`);
       
