@@ -329,18 +329,43 @@ class FacebookScraperPlaywrightService {
   }
 
   /**
+   * 验证页面状态
+   */
+  isPageValid() {
+    return !this.isClosing && 
+           this.browser && 
+           this.context && 
+           this.page && 
+           !this.page.isClosed();
+  }
+
+  /**
    * 安全的页面操作包装器
    */
   async safePageOperation(operation, operationName) {
-    if (this.isClosing || !this.page || this.page.isClosed()) {
+    if (!this.isPageValid()) {
       logger.warn(`跳过操作 ${operationName}：浏览器正在关闭或已关闭`);
       return null;
     }
 
     this.incrementOperation();
     try {
+      // 在操作前再次检查状态
+      if (!this.isPageValid()) {
+        logger.warn(`操作 ${operationName} 被中断：页面状态无效`);
+        return null;
+      }
+      
       return await operation();
     } catch (error) {
+      // 检查是否是因为页面关闭导致的错误
+      if (error.message.includes('Target page, context or browser has been closed') ||
+          error.message.includes('Protocol error') ||
+          error.message.includes('Session closed')) {
+        logger.warn(`操作 ${operationName} 失败：页面已关闭`);
+        return null;
+      }
+      
       logger.error(`${operationName}失败:`, error.message);
       throw error;
     } finally {
@@ -468,7 +493,7 @@ class FacebookScraperPlaywrightService {
    * @returns {Object} 抓取结果
    */
   async scrapeData(url, type, options = {}) {
-    const { timeout = 60000, retries = 3 } = options;
+    const { timeout = 60000, retries = 1 } = options;
     
     logger.info(`开始抓取 Facebook 数据 (Playwright): ${url}, 类型: ${type}`);
     
@@ -499,7 +524,16 @@ class FacebookScraperPlaywrightService {
       try {
         logger.info(`开始第 ${attempt + 1} 次抓取尝试 (Playwright): ${url}`);
         
-        await this.initBrowser({ headless: options.headless !== false });
+        // 确保浏览器初始化成功
+        try {
+          await this.initBrowser({ headless: options.headless !== false });
+          if (!this.browser || !this.page) {
+            throw new Error('浏览器初始化失败');
+          }
+        } catch (initError) {
+          logger.error('浏览器初始化失败:', initError.message);
+          throw new Error(`浏览器初始化失败: ${initError.message}`);
+        }
         
         // 设置页面超时
         this.page.setDefaultTimeout(timeout);
@@ -507,37 +541,48 @@ class FacebookScraperPlaywrightService {
         
         // 先访问 Facebook 主页建立 session
         logger.info('正在建立 Facebook session...');
-        try {
+        const sessionResult = await this.safePageOperation(async () => {
           await this.page.goto('https://www.facebook.com', { 
             waitUntil: 'domcontentloaded',
             timeout: timeout 
           });
           await this.page.waitForTimeout(2000 + Math.random() * 3000); // 随机等待2-5秒
-        } catch (e) {
+          return true;
+        }, '建立 Facebook session');
+
+        if (!sessionResult) {
           logger.warn('访问主页失败，直接访问目标页面');
         }
 
         // 访问目标页面，使用更真实的访问模式
         logger.info('正在访问目标页面...');
-        try {
+        const navigationSuccess = await this.safePageOperation(async () => {
           // 添加随机延迟，模拟人类行为
           await this.page.waitForTimeout(1000 + Math.random() * 2000);
           
-          await this.page.goto(url, { 
-            waitUntil: 'domcontentloaded',
-            timeout: timeout 
-          });
-        } catch (gotoError) {
-          logger.warn('页面加载失败，尝试使用networkidle策略:', gotoError.message);
           try {
             await this.page.goto(url, { 
-              waitUntil: 'networkidle',
+              waitUntil: 'domcontentloaded',
               timeout: timeout 
             });
-          } catch (secondGotoError) {
-            logger.error('页面加载完全失败:', secondGotoError.message);
-            throw new Error(`页面加载失败: ${secondGotoError.message}`);
+            return true;
+          } catch (gotoError) {
+            logger.warn('页面加载失败，尝试使用networkidle策略:', gotoError.message);
+            try {
+              await this.page.goto(url, { 
+                waitUntil: 'networkidle',
+                timeout: Math.min(timeout, 30000) // 限制最大超时时间
+              });
+              return true;
+            } catch (secondGotoError) {
+              logger.error('页面加载完全失败:', secondGotoError.message);
+              throw new Error(`页面加载失败: ${secondGotoError.message}`);
+            }
           }
+        }, '访问目标页面');
+
+        if (!navigationSuccess) {
+          throw new Error('页面导航失败：浏览器已关闭或超时');
         }
         
         // 等待页面基本加载完成
@@ -559,7 +604,7 @@ class FacebookScraperPlaywrightService {
           
           // 尝试其他访问策略
           logger.info('尝试通过不同方式访问...');
-          try {
+          const alternativeSuccess = await this.safePageOperation(async () => {
             // 尝试添加不同的参数
             const alternativeUrl = url.includes('?') ? 
               `${url}&v=info&ref=page_internal` : 
@@ -568,16 +613,19 @@ class FacebookScraperPlaywrightService {
             logger.info(`尝试访问: ${alternativeUrl}`);
             await this.page.goto(alternativeUrl, { 
               waitUntil: 'domcontentloaded',
-              timeout: timeout / 2
+              timeout: Math.min(timeout / 2, 20000) // 最多20秒
             });
             
             const newUrl = this.page.url();
             if (!newUrl.includes('/login/')) {
               logger.info('替代访问方式成功');
+              return true;
             } else {
-              throw new Error('页面需要登录，无法抓取数据');
+              return false;
             }
-          } catch (e) {
+          }, '尝试替代访问方式');
+
+          if (!alternativeSuccess) {
             throw new Error('页面需要登录，无法抓取数据');
           }
         }
