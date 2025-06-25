@@ -82,33 +82,14 @@ class FacebookScraperPlaywrightService {
   async initBrowser(options = {}) {
     const defaultOptions = {
       headless: true,
-      // 使用最基础和兼容性最好的参数配置
+      // 针对老版本Chromium的超保守配置
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-blink-features=AutomationControlled',
-        '--disable-web-security',
-        '--disable-extensions',
-        '--disable-plugins',
-        '--disable-default-apps',
-        '--no-first-run',
-        '--no-default-browser-check',
-        // 基础GPU和渲染配置
-        '--disable-gpu',
-        '--disable-software-rasterizer'
+        '--disable-dev-shm-usage'
       ],
-      // 忽略默认参数，移除有问题的参数
-      ignoreDefaultArgs: [
-        '--disable-field-trial-config',       // 移除这个有问题的参数
-        '--enable-automation',                // 移除自动化标识
-        '--disable-background-networking',    // 移除不兼容的网络参数
-        '--disable-background-timer-throttling', // 移除不兼容的计时器参数
-        '--disable-backgrounding-occluded-windows', // 移除不兼容的窗口参数
-        '--disable-renderer-backgrounding',   // 移除不兼容的渲染参数
-        '--disable-component-extensions-with-background-pages', // 移除扩展相关参数
-        '--disable-ipc-flooding-protection'  // 移除IPC相关参数
-      ]
+      // 完全忽略所有默认参数，避免任何兼容性问题
+      ignoreDefaultArgs: true
     };
 
     // Linux 环境特殊配置
