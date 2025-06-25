@@ -82,34 +82,32 @@ class FacebookScraperPlaywrightService {
   async initBrowser(options = {}) {
     const defaultOptions = {
       headless: true,
-      // 移除可能导致兼容性问题的参数，使用更基础但兼容性更好的配置
+      // 使用最基础和兼容性最好的参数配置
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-blink-features=AutomationControlled',
         '--disable-web-security',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
         '--disable-extensions',
         '--disable-plugins',
         '--disable-default-apps',
-        '--disable-sync',
-        '--disable-translate',
-        '--disable-background-networking',
         '--no-first-run',
         '--no-default-browser-check',
-        '--force-color-profile=srgb',
-        // 添加更多兼容性参数
+        // 基础GPU和渲染配置
         '--disable-gpu',
-        '--disable-software-rasterizer',
-        '--disable-accelerated-2d-canvas'
+        '--disable-software-rasterizer'
       ],
       // 忽略默认参数，移除有问题的参数
       ignoreDefaultArgs: [
-        '--disable-field-trial-config',  // 移除这个有问题的参数
-        '--enable-automation'            // 移除自动化标识
+        '--disable-field-trial-config',       // 移除这个有问题的参数
+        '--enable-automation',                // 移除自动化标识
+        '--disable-background-networking',    // 移除不兼容的网络参数
+        '--disable-background-timer-throttling', // 移除不兼容的计时器参数
+        '--disable-backgrounding-occluded-windows', // 移除不兼容的窗口参数
+        '--disable-renderer-backgrounding',   // 移除不兼容的渲染参数
+        '--disable-component-extensions-with-background-pages', // 移除扩展相关参数
+        '--disable-ipc-flooding-protection'  // 移除IPC相关参数
       ]
     };
 
