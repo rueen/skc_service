@@ -100,7 +100,13 @@ async function create(enrollData) {
       // 解析group_ids
       let groupIds = [];
       try {
-        groupIds = JSON.parse(tasks[0].group_ids || '[]');
+        // 预处理group_ids，确保格式正确
+        let groupIdsStr = String(tasks[0].group_ids || '[]');
+        if (groupIdsStr && !groupIdsStr.startsWith('[') && !groupIdsStr.startsWith('{')) {
+          // 如果不是JSON格式，转换为JSON数组格式
+          groupIdsStr = `[${groupIdsStr}]`;
+        }
+        groupIds = JSON.parse(groupIdsStr);
       } catch (err) {
         logger.error(`解析任务群组IDs失败 - 任务ID: ${enrollData.taskId}, 错误: ${err.message}`);
         groupIds = [];
