@@ -94,49 +94,79 @@ class FacebookScraperPlaywrightService {
       // 启动浏览器
       this.browser = await chromium.launch({ ...defaultOptions, ...options });
       
+      // 随机化用户代理和指纹信息，增强隐蔽性
+      const userAgents = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0'
+      ];
+      
+      const viewports = [
+        { width: 1366, height: 768 },
+        { width: 1920, height: 1080 },
+        { width: 1536, height: 864 },
+        { width: 1440, height: 900 }
+      ];
+      
+      const randomUA = userAgents[Math.floor(Math.random() * userAgents.length)];
+      const randomViewport = viewports[Math.floor(Math.random() * viewports.length)];
+      
       // 创建隐身上下文以增强隐私性和反检测能力
       this.context = await this.browser.newContext({
-        viewport: { width: 1366, height: 768 }, // 使用更常见的分辨率
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        viewport: randomViewport,
+        userAgent: randomUA,
         locale: 'en-US',
         timezoneId: 'America/New_York',
-        permissions: ['geolocation'], // 允许地理位置权限
+        permissions: ['geolocation', 'notifications'], // 更多权限模拟
         geolocation: { latitude: 40.7128, longitude: -74.0060 }, // 纽约坐标
         colorScheme: 'light',
         reducedMotion: 'no-preference',
         extraHTTPHeaders: {
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Accept-Encoding': 'gzip, deflate, br',
+          'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7', // 更真实的语言偏好
+          'Accept-Encoding': 'gzip, deflate, br, zstd',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-          'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+          'Sec-Ch-Ua': randomUA.includes('Chrome') ? '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"' : '"Not_A Brand";v="8", "Chromium";v="120"',
           'Sec-Ch-Ua-Mobile': '?0',
           'Sec-Ch-Ua-Platform': '"Windows"',
+          'Sec-Ch-Ua-Platform-Version': '"15.0.0"',
+          'Sec-Ch-Ua-Arch': '"x86"',
+          'Sec-Ch-Ua-Bitness': '"64"',
+          'Sec-Ch-Ua-Model': '""',
           'Sec-Fetch-Dest': 'document',
           'Sec-Fetch-Mode': 'navigate',
           'Sec-Fetch-Site': 'none',
           'Sec-Fetch-User': '?1',
           'Upgrade-Insecure-Requests': '1',
           'Connection': 'keep-alive',
-          'DNT': '1' // Do Not Track
+          'Cache-Control': 'max-age=0'
         },
         // 启用 JavaScript
         javaScriptEnabled: true,
         // 设置屏幕信息
         screen: {
-          width: 1366,
-          height: 768
+          width: randomViewport.width,
+          height: randomViewport.height
         },
         // 启用设备像素比
-        deviceScaleFactor: 1
+        deviceScaleFactor: 1,
+        // 启用更多媒体功能
+        hasTouch: false,
+        isMobile: false
       });
 
       // 添加强化的反检测脚本
       await this.context.addInitScript(() => {
-        // 删除 webdriver 属性
+        // 完全删除和覆盖 webdriver 相关属性
         Object.defineProperty(navigator, 'webdriver', {
           get: () => undefined,
           configurable: true
         });
+        
+        // 删除所有可能的自动化痕迹
+        delete navigator.__proto__.webdriver;
+        delete window.navigator.webdriver;
+        delete Object.getPrototypeOf(navigator).webdriver;
 
         // 模拟真实的插件列表
         Object.defineProperty(navigator, 'plugins', {
@@ -153,7 +183,7 @@ class FacebookScraperPlaywrightService {
 
         // 设置语言属性
         Object.defineProperty(navigator, 'languages', {
-          get: () => ['en-US', 'en'],
+          get: () => ['en-US', 'en', 'zh-CN', 'zh'],
           configurable: true
         });
 
@@ -175,8 +205,58 @@ class FacebookScraperPlaywrightService {
           configurable: true
         });
 
-        // 删除自动化相关属性
-        delete navigator.__proto__.webdriver;
+        // 模拟更多真实的navigator属性
+        Object.defineProperty(navigator, 'maxTouchPoints', {
+          get: () => 0,
+          configurable: true
+        });
+
+        Object.defineProperty(navigator, 'cookieEnabled', {
+          get: () => true,
+          configurable: true
+        });
+
+        Object.defineProperty(navigator, 'doNotTrack', {
+          get: () => null,
+          configurable: true
+        });
+
+        // 模拟网络连接信息
+        Object.defineProperty(navigator, 'connection', {
+          get: () => ({
+            effectiveType: '4g',
+            rtt: 100,
+            downlink: 10,
+            saveData: false
+          }),
+          configurable: true
+        });
+
+        // 覆盖 chrome 检测
+        if (!window.chrome) {
+          window.chrome = {
+            runtime: {},
+            loadTimes: function() {
+              return {
+                commitLoadTime: Date.now() - Math.random() * 1000,
+                finishDocumentLoadTime: Date.now() - Math.random() * 500,
+                finishLoadTime: Date.now() - Math.random() * 200,
+                firstPaintAfterLoadTime: Date.now() - Math.random() * 100,
+                firstPaintTime: Date.now() - Math.random() * 50,
+                navigationType: 'Other',
+                wasFetchedViaSpdy: true,
+                wasNpnNegotiated: true
+              };
+            },
+            csi: function() {
+              return {
+                onloadT: Date.now(),
+                pageT: Date.now() - Math.random() * 1000,
+                tran: 15
+              };
+            }
+          };
+        }
         
         // 覆盖 permissions API
         const originalQuery = window.navigator.permissions?.query;
@@ -234,12 +314,64 @@ class FacebookScraperPlaywrightService {
         // 模拟电池 API
         if (navigator.getBattery) {
           navigator.getBattery = () => Promise.resolve({
-            charging: true,
-            chargingTime: 0,
-            dischargingTime: Infinity,
-            level: 1
+            charging: Math.random() > 0.5,
+            chargingTime: Math.random() > 0.5 ? 0 : Math.random() * 3600,
+            dischargingTime: Math.random() * 10800 + 3600, // 1-4小时
+            level: 0.5 + Math.random() * 0.5 // 50-100%
           });
         }
+
+        // 模拟真实的Canvas指纹
+        const originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
+        HTMLCanvasElement.prototype.toDataURL = function(...args) {
+          const result = originalToDataURL.apply(this, args);
+          // 添加微小的随机噪声
+          if (result.length > 100) {
+            const chars = result.split('');
+            const randomIndex = Math.floor(Math.random() * (chars.length - 10)) + 10;
+            chars[randomIndex] = String.fromCharCode((chars[randomIndex].charCodeAt(0) + Math.floor(Math.random() * 3)) % 256);
+            return chars.join('');
+          }
+          return result;
+        };
+
+        // 模拟WebGL指纹随机化
+        const originalGetParameter = WebGLRenderingContext.prototype.getParameter;
+        WebGLRenderingContext.prototype.getParameter = function(parameter) {
+          if (parameter === 37445) { // UNMASKED_VENDOR_WEBGL
+            return 'Intel Inc.';
+          }
+          if (parameter === 37446) { // UNMASKED_RENDERER_WEBGL
+            return 'Intel(R) HD Graphics 620';
+          }
+          return originalGetParameter.call(this, parameter);
+        };
+
+        // 防止iframe检测
+        Object.defineProperty(window, 'top', {
+          get: function() { return window; }
+        });
+        Object.defineProperty(window, 'parent', {
+          get: function() { return window; }
+        });
+
+        // 模拟真实的鼠标和键盘事件
+        let mouseX = Math.random() * window.innerWidth;
+        let mouseY = Math.random() * window.innerHeight;
+        
+        setInterval(() => {
+          mouseX += (Math.random() - 0.5) * 10;
+          mouseY += (Math.random() - 0.5) * 10;
+          mouseX = Math.max(0, Math.min(window.innerWidth, mouseX));
+          mouseY = Math.max(0, Math.min(window.innerHeight, mouseY));
+        }, 1000 + Math.random() * 2000);
+
+        // 随机页面交互
+        setTimeout(() => {
+          if (Math.random() > 0.7) {
+            window.scrollBy(0, Math.random() * 200 - 100);
+          }
+        }, 2000 + Math.random() * 3000);
       });
 
       // 创建页面
@@ -249,15 +381,53 @@ class FacebookScraperPlaywrightService {
       this.page.setDefaultNavigationTimeout(60000);
       this.page.setDefaultTimeout(30000);
 
-      // 阻止不必要的资源加载以提高速度
+      // 智能资源管理和Cookie设置
       await this.page.route('**/*', (route) => {
         const resourceType = route.request().resourceType();
-        if (['image', 'font', 'media', 'stylesheet'].includes(resourceType)) {
+        const url = route.request().url();
+        
+        // 保留关键资源，阻止非必要资源
+        if (['image', 'font', 'media'].includes(resourceType)) {
           route.abort();
+        } else if (resourceType === 'stylesheet') {
+          // 保留 Facebook 的关键CSS，但阻止其他CSS
+          if (url.includes('facebook.com') || url.includes('fbcdn')) {
+            route.continue();
+          } else {
+            route.abort();
+          }
         } else {
-          route.continue();
+          // 为所有请求添加真实的Referrer
+          const headers = route.request().headers();
+          if (!headers['referer'] && url.includes('facebook.com')) {
+            headers['referer'] = 'https://www.facebook.com/';
+          }
+          route.continue({ headers });
         }
       });
+      
+      // 预设一些基础的Facebook cookies
+      await this.context.addCookies([
+        {
+          name: 'locale',
+          value: 'en_US',
+          domain: '.facebook.com',
+          path: '/'
+        },
+        {
+          name: 'datr',
+          value: this.generateFacebookToken('datr'),
+          domain: '.facebook.com',
+          path: '/',
+          httpOnly: true
+        },
+        {
+          name: '_js_datr',
+          value: this.generateFacebookToken('js_datr'),
+          domain: '.facebook.com',
+          path: '/'
+        }
+      ]);
 
       logger.info('浏览器初始化成功 (Playwright)');
     } catch (error) {
@@ -337,6 +507,210 @@ class FacebookScraperPlaywrightService {
            this.context && 
            this.page && 
            !this.page.isClosed();
+  }
+
+  /**
+   * 生成类似 Facebook token 的随机字符串
+   * @param {string} type - token类型
+   * @returns {string} 生成的token
+   */
+  generateFacebookToken(type) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    const lengths = {
+      'datr': 24,
+      'js_datr': 24,
+      'default': 22
+    };
+    
+    const length = lengths[type] || lengths.default;
+    let result = '';
+    
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    return result;
+  }
+
+  /**
+   * 获取人类化的延迟时间
+   * 模拟真实用户的思考和操作模式
+   * @returns {number} 延迟毫秒数
+   */
+  getHumanLikeDelay() {
+    // 基础延迟：1-3秒
+    const baseDelay = 1000 + Math.random() * 2000;
+    
+    // 随机增加额外的"思考时间"
+    const thinkingTime = Math.random() > 0.7 ? Math.random() * 2000 : 0;
+    
+    // 偶尔添加更长的延迟，模拟用户被其他事情分心
+    const distractionTime = Math.random() > 0.9 ? Math.random() * 3000 : 0;
+    
+    return Math.floor(baseDelay + thinkingTime + distractionTime);
+  }
+
+  /**
+   * 智能建立 Facebook Session
+   * @param {number} timeout - 超时时间
+   * @returns {boolean} 是否成功建立session
+   */
+  async establishFacebookSession(timeout) {
+    const sessionUrls = [
+      'https://www.facebook.com',
+      'https://m.facebook.com',
+      'https://www.facebook.com/public',
+      'https://www.facebook.com/help',
+      'https://www.facebook.com/pages/create'
+    ];
+    
+    for (let i = 0; i < sessionUrls.length; i++) {
+      const sessionUrl = sessionUrls[i];
+      logger.info(`尝试session URL ${i + 1}: ${sessionUrl}`);
+      
+      try {
+        const sessionResult = await this.safePageOperation(async () => {
+          await this.page.goto(sessionUrl, { 
+            waitUntil: 'domcontentloaded',
+            timeout: Math.min(timeout / 4, 15000) // 限制单次尝试时间
+          });
+          
+          // 检查是否成功访问
+          const currentUrl = this.page.url();
+          const title = await this.page.title();
+          
+          if (!currentUrl.includes('/login/') && 
+              !title.toLowerCase().includes('log in')) {
+            
+            // 模拟真实用户行为
+            await this.page.waitForTimeout(1000 + Math.random() * 2000);
+            
+            // 尝试滚动
+            try {
+              await this.page.evaluate(() => {
+                window.scrollTo(0, Math.random() * 300);
+              });
+            } catch (e) {
+              // 忽略滚动错误
+            }
+            
+            await this.page.waitForTimeout(1000 + Math.random() * 2000);
+            
+            logger.info(`Session 建立成功，URL: ${sessionUrl}`);
+            return true;
+          } else {
+            logger.warn(`${sessionUrl} 被重定向到登录页面`);
+            return false;
+          }
+        }, `建立 Facebook session: ${sessionUrl}`, { throwOnError: false });
+        
+        if (sessionResult) {
+          return true;
+        }
+        
+        // 失败时短暂等待再尝试下一个
+        if (i < sessionUrls.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+        }
+        
+      } catch (error) {
+        logger.warn(`Session URL ${sessionUrl} 访问失败: ${error.message}`);
+        continue;
+      }
+    }
+    
+    logger.warn('所有 session 建立尝试都失败了');
+    return false;
+  }
+
+  /**
+   * 获取绕过登录的策略列表
+   * @param {string} originalUrl - 原始URL
+   * @returns {Array} 策略列表
+   */
+  getLoginBypassStrategies(originalUrl) {
+    const strategies = [];
+    
+    try {
+      const url = new URL(originalUrl);
+      const pathname = url.pathname;
+      const searchParams = url.searchParams;
+      
+      // 策略1: 添加移动版参数
+      const mobileUrl = originalUrl.includes('?') ? 
+        `${originalUrl}&__pc=m` : `${originalUrl}?__pc=m`;
+      strategies.push({
+        name: '移动版访问',
+        url: mobileUrl
+      });
+      
+      // 策略2: 使用 mbasic.facebook.com
+      const mbasicUrl = originalUrl.replace('www.facebook.com', 'm.facebook.com');
+      strategies.push({
+        name: '移动基础版',
+        url: mbasicUrl
+      });
+      
+      // 策略3: 添加 ref 参数
+      const refUrl = originalUrl.includes('?') ? 
+        `${originalUrl}&ref=page_internal&__tn__=*s` : 
+        `${originalUrl}?ref=page_internal&__tn__=*s`;
+      strategies.push({
+        name: '内部引用',
+        url: refUrl
+      });
+      
+      // 策略4: 添加 v=info 参数
+      const infoUrl = originalUrl.includes('?') ? 
+        `${originalUrl}&v=info` : `${originalUrl}?v=info`;
+      strategies.push({
+        name: '信息模式',
+        url: infoUrl
+      });
+      
+      // 策略5: 移除所有参数，只保留基础路径
+      const cleanUrl = `${url.protocol}//${url.host}${pathname}`;
+      if (cleanUrl !== originalUrl) {
+        strategies.push({
+          name: '清理参数',
+          url: cleanUrl
+        });
+      }
+      
+      // 策略6: 添加老版本参数
+      const legacyUrl = originalUrl.includes('?') ? 
+        `${originalUrl}&v=timeline` : `${originalUrl}?v=timeline`;
+      strategies.push({
+        name: '时间线模式',
+        url: legacyUrl
+      });
+      
+      // 策略7: 使用 touch.facebook.com
+      const touchUrl = originalUrl.replace('www.facebook.com', 'touch.facebook.com');
+      strategies.push({
+        name: '触屏版',
+        url: touchUrl
+      });
+      
+      // 策略8: 添加社交插件参数
+      const pluginUrl = originalUrl.includes('?') ? 
+        `${originalUrl}&sk=about&section=contact-info` : 
+        `${originalUrl}?sk=about&section=contact-info`;
+      strategies.push({
+        name: '关于页面',
+        url: pluginUrl
+      });
+      
+    } catch (error) {
+      logger.warn('生成绕过策略时出错:', error.message);
+      // 至少提供一个基本策略
+      strategies.push({
+        name: '基本重试',
+        url: originalUrl
+      });
+    }
+    
+    return strategies;
   }
 
   /**
@@ -553,27 +927,16 @@ class FacebookScraperPlaywrightService {
         this.page.setDefaultTimeout(timeout);
         this.page.setDefaultNavigationTimeout(timeout);
         
-        // 先访问 Facebook 主页建立 session（可选，失败不影响后续操作）
+        // 智能 Facebook session 建立策略
         logger.info('正在建立 Facebook session...');
-        try {
-          const sessionResult = await this.safePageOperation(async () => {
-            await this.page.goto('https://www.facebook.com', { 
-              waitUntil: 'domcontentloaded',
-              timeout: Math.min(timeout / 3, 20000) // 限制主页访问时间，最多20秒
-            });
-            await this.page.waitForTimeout(2000 + Math.random() * 3000); // 随机等待2-5秒
-            return true;
-          }, '建立 Facebook session', { throwOnError: false }); // 不因错误中断
-
-          if (sessionResult) {
-            logger.info('Facebook session 建立成功');
-          } else {
-            logger.warn('访问主页失败，直接访问目标页面');
-          }
-        } catch (sessionError) {
-          logger.warn('访问主页出错，直接访问目标页面:', sessionError.message);
+        const sessionSuccess = await this.establishFacebookSession(timeout);
+        
+        if (sessionSuccess) {
+          logger.info('Facebook session 建立成功');
+        } else {
+          logger.warn('Session 建立失败，将直接访问目标页面');
           
-          // 如果主页访问导致浏览器异常，重新初始化
+          // 确保浏览器状态正常
           if (!this.isPageValid()) {
             logger.info('检测到浏览器状态异常，重新初始化...');
             await this.closeBrowser();
@@ -581,6 +944,9 @@ class FacebookScraperPlaywrightService {
             if (!this.isPageValid()) {
               throw new Error('浏览器重新初始化失败');
             }
+            // 重新设置超时
+            this.page.setDefaultTimeout(timeout);
+            this.page.setDefaultNavigationTimeout(timeout);
           }
         }
 
@@ -599,9 +965,13 @@ class FacebookScraperPlaywrightService {
 
         // 访问目标页面，使用更真实的访问模式
         logger.info('正在访问目标页面...');
+        
+        // 模拟真实用户的访问延迟模式
+        const humanDelay = this.getHumanLikeDelay();
+        logger.info(`模拟用户思考时间: ${humanDelay}ms`);
+        await new Promise(resolve => setTimeout(resolve, humanDelay));
+        
         const navigationSuccess = await this.safePageOperation(async () => {
-          // 添加随机延迟，模拟人类行为
-          await this.page.waitForTimeout(1000 + Math.random() * 2000);
           
           try {
             await this.page.goto(url, { 
@@ -645,31 +1015,64 @@ class FacebookScraperPlaywrightService {
           logger.warn(`Facebook 要求登录访问: ${url}`);
           logger.warn(`重定向到: ${currentUrl}`);
           
-          // 尝试其他访问策略
-          logger.info('尝试通过不同方式访问...');
-          const alternativeSuccess = await this.safePageOperation(async () => {
-            // 尝试添加不同的参数
-            const alternativeUrl = url.includes('?') ? 
-              `${url}&v=info&ref=page_internal` : 
-              `${url}?v=info&ref=page_internal`;
+          // 多重策略尝试绕过登录
+          let alternativeSuccess = false;
+          const strategies = this.getLoginBypassStrategies(url);
+          
+          for (let i = 0; i < strategies.length; i++) {
+            const strategy = strategies[i];
+            logger.info(`尝试策略 ${i + 1}: ${strategy.name}`);
             
-            logger.info(`尝试访问: ${alternativeUrl}`);
-            await this.page.goto(alternativeUrl, { 
-              waitUntil: 'domcontentloaded',
-              timeout: Math.min(timeout / 2, 20000) // 最多20秒
-            });
-            
-            const newUrl = this.page.url();
-            if (!newUrl.includes('/login/')) {
-              logger.info('替代访问方式成功');
-              return true;
-            } else {
-              return false;
+            try {
+              alternativeSuccess = await this.safePageOperation(async () => {
+                // 清除可能的cookies和缓存
+                await this.context.clearCookies();
+                
+                // 随机等待
+                await this.page.waitForTimeout(1000 + Math.random() * 2000);
+                
+                logger.info(`访问URL: ${strategy.url}`);
+                await this.page.goto(strategy.url, { 
+                  waitUntil: 'domcontentloaded',
+                  timeout: Math.min(timeout / 2, 15000)
+                });
+                
+                // 等待页面稳定
+                await this.page.waitForTimeout(2000);
+                
+                const newUrl = this.page.url();
+                const newTitle = await this.page.title();
+                
+                logger.info(`新URL: ${newUrl}, 新标题: ${newTitle}`);
+                
+                // 检查是否成功绕过登录
+                if (!newUrl.includes('/login/') && 
+                    !newTitle.toLowerCase().includes('log in') &&
+                    !newTitle.toLowerCase().includes('sign in')) {
+                  logger.info(`策略 ${i + 1} 成功: ${strategy.name}`);
+                  return true;
+                }
+                
+                return false;
+              }, `尝试策略: ${strategy.name}`);
+              
+              if (alternativeSuccess) {
+                break; // 成功则退出循环
+              }
+              
+            } catch (strategyError) {
+              logger.warn(`策略 ${i + 1} 失败: ${strategyError.message}`);
+              continue; // 尝试下一个策略
             }
-          }, '尝试替代访问方式');
+            
+            // 策略间等待
+            if (i < strategies.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+            }
+          }
 
           if (!alternativeSuccess) {
-            throw new Error('页面需要登录，无法抓取数据');
+            throw new Error('所有登录绕过策略都失败，无法抓取数据');
           }
         }
         
