@@ -342,7 +342,9 @@ class FacebookScraperPlaywrightService {
   /**
    * 安全的页面操作包装器
    */
-  async safePageOperation(operation, operationName) {
+  async safePageOperation(operation, operationName, options = {}) {
+    const { throwOnError = true } = options;
+    
     if (!this.isPageValid()) {
       logger.warn(`跳过操作 ${operationName}：浏览器正在关闭或已关闭`);
       return null;
@@ -366,8 +368,24 @@ class FacebookScraperPlaywrightService {
         return null;
       }
       
+      // 网络或超时错误，根据配置决定是否抛出
+      if (error.message.includes('timeout') || 
+          error.message.includes('net::') ||
+          error.message.includes('Navigation failed')) {
+        if (throwOnError) {
+          logger.error(`${operationName}失败:`, error.message);
+          throw error;
+        } else {
+          logger.warn(`${operationName}失败但不中断流程:`, error.message);
+          return null;
+        }
+      }
+      
       logger.error(`${operationName}失败:`, error.message);
-      throw error;
+      if (throwOnError) {
+        throw error;
+      }
+      return null;
     } finally {
       this.decrementOperation();
     }
@@ -425,11 +443,7 @@ class FacebookScraperPlaywrightService {
       }
 
       // 帖子链接识别
-      if (pathname.includes('/posts/') || 
-          pathname.includes('/share/') || 
-          searchParams.has('story_fbid') ||
-          pathname.includes('/photo') ||
-          pathname.includes('/video')) {
+      if (pathname.includes('/posts/')) {
         return 'post';
       }
 
@@ -539,19 +553,48 @@ class FacebookScraperPlaywrightService {
         this.page.setDefaultTimeout(timeout);
         this.page.setDefaultNavigationTimeout(timeout);
         
-        // 先访问 Facebook 主页建立 session
+        // 先访问 Facebook 主页建立 session（可选，失败不影响后续操作）
         logger.info('正在建立 Facebook session...');
-        const sessionResult = await this.safePageOperation(async () => {
-          await this.page.goto('https://www.facebook.com', { 
-            waitUntil: 'domcontentloaded',
-            timeout: timeout 
-          });
-          await this.page.waitForTimeout(2000 + Math.random() * 3000); // 随机等待2-5秒
-          return true;
-        }, '建立 Facebook session');
+        try {
+          const sessionResult = await this.safePageOperation(async () => {
+            await this.page.goto('https://www.facebook.com', { 
+              waitUntil: 'domcontentloaded',
+              timeout: Math.min(timeout / 3, 20000) // 限制主页访问时间，最多20秒
+            });
+            await this.page.waitForTimeout(2000 + Math.random() * 3000); // 随机等待2-5秒
+            return true;
+          }, '建立 Facebook session', { throwOnError: false }); // 不因错误中断
 
-        if (!sessionResult) {
-          logger.warn('访问主页失败，直接访问目标页面');
+          if (sessionResult) {
+            logger.info('Facebook session 建立成功');
+          } else {
+            logger.warn('访问主页失败，直接访问目标页面');
+          }
+        } catch (sessionError) {
+          logger.warn('访问主页出错，直接访问目标页面:', sessionError.message);
+          
+          // 如果主页访问导致浏览器异常，重新初始化
+          if (!this.isPageValid()) {
+            logger.info('检测到浏览器状态异常，重新初始化...');
+            await this.closeBrowser();
+            await this.initBrowser({ headless: options.headless !== false });
+            if (!this.isPageValid()) {
+              throw new Error('浏览器重新初始化失败');
+            }
+          }
+        }
+
+        // 确保浏览器状态正常，再访问目标页面
+        if (!this.isPageValid()) {
+          logger.warn('浏览器状态异常，重新初始化...');
+          await this.closeBrowser();
+          await this.initBrowser({ headless: options.headless !== false });
+          if (!this.isPageValid()) {
+            throw new Error('浏览器重新初始化失败');
+          }
+          // 重新设置超时
+          this.page.setDefaultTimeout(timeout);
+          this.page.setDefaultNavigationTimeout(timeout);
         }
 
         // 访问目标页面，使用更真实的访问模式
