@@ -82,12 +82,12 @@ class FacebookScraperPlaywrightService {
   async initBrowser(options = {}) {
     const defaultOptions = {
       headless: true,
+      // 移除可能导致兼容性问题的参数，使用更基础但兼容性更好的配置
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-blink-features=AutomationControlled',
-        '--disable-features=VizDisplayCompositor',
         '--disable-web-security',
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
@@ -100,7 +100,16 @@ class FacebookScraperPlaywrightService {
         '--disable-background-networking',
         '--no-first-run',
         '--no-default-browser-check',
-        '--force-color-profile=srgb'
+        '--force-color-profile=srgb',
+        // 添加更多兼容性参数
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-accelerated-2d-canvas'
+      ],
+      // 忽略默认参数，移除有问题的参数
+      ignoreDefaultArgs: [
+        '--disable-field-trial-config',  // 移除这个有问题的参数
+        '--enable-automation'            // 移除自动化标识
       ]
     };
 
@@ -133,12 +142,10 @@ class FacebookScraperPlaywrightService {
           // 根据浏览器类型调整配置
           if (path.includes('google-chrome')) {
             logger.info(`✅ 使用Google Chrome: ${path} (反检测能力: 最强)`);
-            // Chrome特有的反检测参数
+            // Chrome特有的反检测参数 - 移除重复的参数
             defaultOptions.args.push(
-              '--disable-blink-features=AutomationControlled',
               '--exclude-switches=enable-automation',
-              '--disable-dev-shm-usage',
-              '--no-sandbox'
+              '--disable-features=VizDisplayCompositor'
             );
           } else if (path.includes('microsoft-edge')) {
             logger.info(`✅ 使用Microsoft Edge: ${path} (反检测能力: 强)`);
@@ -159,16 +166,19 @@ class FacebookScraperPlaywrightService {
         logger.info('💡 建议安装Google Chrome: sudo apt install google-chrome-stable');
       }
       
-      // Linux 服务器额外参数
+      // Linux 服务器额外参数 - 移除重复的参数
       defaultOptions.args.push(
-        '--single-process',
-        '--disable-gpu',
-        '--disable-software-rasterizer'
+        '--single-process'
       );
     }
 
     try {
       // 启动浏览器
+      logger.info('正在启动浏览器...');
+      logger.info(`浏览器可执行路径: ${defaultOptions.executablePath || 'Playwright内置'}`);
+      logger.info(`浏览器参数: ${defaultOptions.args.join(' ')}`);
+      logger.info(`忽略的默认参数: ${defaultOptions.ignoreDefaultArgs ? defaultOptions.ignoreDefaultArgs.join(' ') : '无'}`);
+      
       this.browser = await chromium.launch({ ...defaultOptions, ...options });
       
       // 随机化用户代理和指纹信息，增强隐蔽性
