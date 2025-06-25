@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-06-23 14:36:28
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-24 17:48:16
+ * @LastEditTime: 2025-06-25 10:41:08
  * @Description: 
  */
 /**
@@ -16,6 +16,27 @@ class FacebookScraperPuppeteerService {
   constructor() {
     this.browser = null;
     this.page = null;
+    
+    // 记录环境信息
+    logger.info(`运行环境: ${process.platform} ${process.arch}`);
+    logger.info(`Node.js版本: ${process.version}`);
+    logger.info(`工作目录: ${process.cwd()}`);
+    
+    // 检查Chrome/Chromium可执行文件
+    if (process.platform === 'linux') {
+      const fs = require('fs');
+      if (fs.existsSync('/usr/bin/chromium-browser')) {
+        try {
+          const { execSync } = require('child_process');
+          const chromiumVersion = execSync('/usr/bin/chromium-browser --version', { encoding: 'utf8' }).trim();
+          logger.info(`系统Chromium版本: ${chromiumVersion}`);
+        } catch (e) {
+          logger.warn('无法获取Chromium版本信息:', e.message);
+        }
+      } else {
+        logger.warn('未找到系统Chromium: /usr/bin/chromium-browser');
+      }
+    }
   }
 
   /**
@@ -41,11 +62,65 @@ class FacebookScraperPuppeteerService {
       ]
     };
 
-    // 服务器环境使用系统Chromium
+    // 服务器环境使用系统Chromium并添加额外兼容性参数
     if (process.platform === 'linux') {
       const fs = require('fs');
-      if (fs.existsSync('/usr/bin/chromium-browser')) {
-        defaultOptions.executablePath = '/usr/bin/chromium-browser';
+      const chromiumPath = '/usr/bin/chromium-browser';
+      
+      // 检查系统Chromium是否可用
+      let useSystemChromium = false;
+      if (fs.existsSync(chromiumPath)) {
+        try {
+          const { execSync } = require('child_process');
+          // 测试Chromium是否能正常启动
+          execSync(`${chromiumPath} --version`, { 
+            timeout: 5000,
+            stdio: 'pipe' 
+          });
+          useSystemChromium = true;
+          logger.info('检测到可用的系统Chromium，将使用系统版本');
+        } catch (e) {
+          logger.warn('系统Chromium不可用，将使用Puppeteer内置Chrome:', e.message);
+        }
+      } else {
+        logger.warn('未找到系统Chromium，将使用Puppeteer内置Chrome');
+      }
+      
+      if (useSystemChromium) {
+        defaultOptions.executablePath = chromiumPath;
+        
+        // 添加Linux服务器专用参数
+        defaultOptions.args.push(
+          '--disable-extensions',
+          '--disable-plugins',
+          '--disable-default-apps',
+          '--disable-sync',
+          '--disable-translate',
+          '--disable-background-networking',
+          '--disable-background-mode',
+          '--disable-client-side-phishing-detection',
+          '--disable-component-extensions-with-background-pages',
+          '--disable-ipc-flooding-protection',
+          '--single-process',
+          '--no-default-browser-check',
+          '--no-first-run',
+          '--force-color-profile=srgb',
+          '--lang=en-US',
+          '--disable-features=VizDisplayCompositor,AudioServiceOutOfProcess',
+          '--disable-software-rasterizer',
+          '--disable-background-timer-throttling'
+        );
+        
+        logger.info('配置Linux服务器环境的系统Chromium启动参数');
+      } else {
+        // 使用Puppeteer内置Chrome的Linux优化参数
+        defaultOptions.args.push(
+          '--disable-features=VizDisplayCompositor,AudioServiceOutOfProcess',
+          '--disable-software-rasterizer',
+          '--single-process'
+        );
+        
+        logger.info('使用Puppeteer内置Chrome并配置Linux优化参数');
       }
     }
 
@@ -246,14 +321,37 @@ class FacebookScraperPuppeteerService {
         
         // 访问页面，使用更宽松的等待条件
         logger.info('正在访问页面...');
-        await this.page.goto(url, { 
-          waitUntil: 'domcontentloaded',
-          timeout: timeout 
-        });
+        try {
+          await this.page.goto(url, { 
+            waitUntil: 'domcontentloaded',
+            timeout: timeout 
+          });
+        } catch (gotoError) {
+          logger.warn('页面加载失败，尝试使用networkidle0策略:', gotoError.message);
+          try {
+            await this.page.goto(url, { 
+              waitUntil: 'networkidle0',
+              timeout: timeout 
+            });
+          } catch (secondGotoError) {
+            logger.error('页面加载完全失败:', secondGotoError.message);
+            throw new Error(`页面加载失败: ${secondGotoError.message}`);
+          }
+        }
         
         // 等待页面基本加载完成
         logger.info('等待页面加载...');
         await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // 检查页面是否正常加载
+        const currentUrl = this.page.url();
+        const pageTitle = await this.page.title();
+        logger.info(`页面加载完成 - URL: ${currentUrl}, 标题: ${pageTitle}`);
+        
+        // 检查是否被重定向到登录页面
+        if (currentUrl.includes('/login/') || pageTitle.toLowerCase().includes('log in')) {
+          throw new Error('页面需要登录，无法抓取数据');
+        }
         
         let result;
         switch (type) {
@@ -376,8 +474,27 @@ class FacebookScraperPuppeteerService {
         logger.warn('等待body元素超时，继续尝试抓取');
       }
       
-      const profileData = {};
+      // 记录页面基本信息用于调试
       const currentUrl = this.page.url();
+      const pageTitle = await this.page.title();
+      logger.info(`当前页面URL: ${currentUrl}`);
+      logger.info(`页面标题: ${pageTitle}`);
+      
+      // 检查页面是否正常加载
+      const bodyContent = await this.page.$eval('body', el => el.innerText.substring(0, 100));
+      logger.info(`页面内容预览: ${bodyContent}...`);
+      
+      // 检查是否需要登录
+      const isLoginRequired = bodyContent.toLowerCase().includes('log in') || 
+                             bodyContent.toLowerCase().includes('login') ||
+                             bodyContent.toLowerCase().includes('sign in') ||
+                             currentUrl.includes('/login/');
+      
+      if (isLoginRequired) {
+        logger.warn('页面需要登录，可能无法获取完整信息');
+      }
+      
+      const profileData = {};
       profileData.profileUrl = currentUrl;
       
       // 尝试获取 UID
@@ -390,20 +507,32 @@ class FacebookScraperPuppeteerService {
         // 从页面源码中查找 UID
         try {
           const pageContent = await this.page.content();
+          logger.info(`页面源码长度: ${pageContent.length} 字符`);
+          
           const uidPatterns = [
             /"userID":"(\d+)"/,
             /"USER_ID":"(\d+)"/,
             /user_id['"]:['"](\d+)['"]/,
-            /profile_id['"]:['"](\d+)['"]/
+            /profile_id['"]:['"](\d+)['"]/,
+            /"profile_owner":"(\d+)"/,
+            /"actorID":"(\d+)"/,
+            /"pageID":"(\d+)"/
           ];
           
           for (const pattern of uidPatterns) {
             const match = pageContent.match(pattern);
             if (match) {
               profileData.uid = match[1];
-              logger.info(`从页面内容获取到UID: ${profileData.uid}`);
+              logger.info(`从页面内容获取到UID: ${profileData.uid} (模式: ${pattern})`);
               break;
             }
+          }
+          
+          if (!profileData.uid) {
+            logger.warn('所有UID提取模式都未匹配成功');
+            // 输出部分页面内容用于调试
+            const contentSample = pageContent.substring(0, 500);
+            logger.info(`页面内容示例: ${contentSample}...`);
           }
         } catch (e) {
           logger.warn('从页面内容获取UID失败:', e.message);
@@ -431,6 +560,8 @@ class FacebookScraperPuppeteerService {
             const element = await this.page.$(selector);
             if (element) {
               const text = await this.page.evaluate(el => el.textContent, element);
+              logger.info(`选择器 ${selector} 获取到文本: "${text}"`);
+              
               if (text && text.trim() && 
                   !text.toLowerCase().includes('facebook') &&
                   !text.toLowerCase().includes('log in') &&
@@ -442,14 +573,15 @@ class FacebookScraperPuppeteerService {
               }
             }
           } catch (e) {
+            logger.warn(`选择器 ${selector} 失败: ${e.message}`);
             continue;
           }
         }
         
         // 如果没有获取到昵称，尝试从页面标题获取
-        if (!profileData.nickname) {
-          const pageTitle = await this.page.title();
-          if (pageTitle && !pageTitle.toLowerCase().includes('facebook') && 
+        if (!profileData.nickname && pageTitle) {
+          logger.info(`尝试从页面标题获取昵称: "${pageTitle}"`);
+          if (!pageTitle.toLowerCase().includes('facebook') && 
               !pageTitle.toLowerCase().includes('log in') &&
               !pageTitle.toLowerCase().includes('login') &&
               !pageTitle.toLowerCase().includes('sign in')) {
