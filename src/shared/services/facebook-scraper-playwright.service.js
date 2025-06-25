@@ -86,10 +86,19 @@ class FacebookScraperPlaywrightService {
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage'
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
       ],
-      // 完全忽略所有默认参数，避免任何兼容性问题
-      ignoreDefaultArgs: true
+      // 只忽略已知有问题的参数，保留必要的默认参数
+      ignoreDefaultArgs: [
+        '--disable-field-trial-config',
+        '--disable-back-forward-cache',
+        '--disable-background-networking',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--enable-automation'
+      ]
     };
 
     // Linux 环境特殊配置
@@ -156,7 +165,7 @@ class FacebookScraperPlaywrightService {
       logger.info('正在启动浏览器...');
       logger.info(`浏览器可执行路径: ${defaultOptions.executablePath || 'Playwright内置'}`);
       logger.info(`浏览器参数: ${defaultOptions.args.join(' ')}`);
-      logger.info(`忽略的默认参数: ${defaultOptions.ignoreDefaultArgs ? defaultOptions.ignoreDefaultArgs.join(' ') : '无'}`);
+      logger.info(`忽略的默认参数: ${defaultOptions.ignoreDefaultArgs === true ? '所有默认参数' : (defaultOptions.ignoreDefaultArgs ? defaultOptions.ignoreDefaultArgs.join(' ') : '无')}`);
       
       this.browser = await chromium.launch({ ...defaultOptions, ...options });
       
