@@ -4,12 +4,14 @@
  */
 const { body, validationResult } = require('express-validator');
 const FacebookScraperPuppeteerService = require('../services/facebook-scraper-puppeteer.service');
+const FacebookScraperPlaywrightService = require('../services/facebook-scraper-playwright.service');
 const { logger } = require('../config/logger.config');
 const responseUtil = require('../utils/response.util');
 
 class FacebookScraperController {
   constructor() {
     this.puppeteerService = new FacebookScraperPuppeteerService();
+    this.playwrightService = new FacebookScraperPlaywrightService();
   }
 
   /**
@@ -51,6 +53,11 @@ class FacebookScraperController {
         .optional()
         .isIn(['profile', 'post', 'group'])
         .withMessage('类型必须是 profile、post 或 group 之一'),
+      
+      body('engine')
+        .optional()
+        .isIn(['puppeteer', 'playwright'])
+        .withMessage('引擎必须是 puppeteer 或 playwright 之一'),
       
       body('options')
         .optional()
@@ -95,12 +102,12 @@ class FacebookScraperController {
         });
       }
 
-      const { url, type, options = {} } = req.body;
+      const { url, type, engine = 'playwright', options = {} } = req.body;
       
-      logger.info(`开始抓取 Facebook 数据: ${url}，使用引擎: puppeteer`);
+      logger.info(`开始抓取 Facebook 数据: ${url}，使用引擎: ${engine}`);
       
-      // 使用 Puppeteer 服务实例
-      const scraperService = this.puppeteerService;
+      // 根据指定的引擎选择服务
+      const scraperService = engine === 'playwright' ? this.playwrightService : this.puppeteerService;
       
       // 如果没有指定类型，自动识别
       let dataType = type;
@@ -112,25 +119,17 @@ class FacebookScraperController {
       // 执行数据抓取
       const result = await scraperService.scrapeData(url, dataType, options);
       
-      if (result.success) {
-        logger.info(`数据抓取成功: ${url}`);
-        // 构建成功响应，包含额外的元数据
-        const responseData = {
-          ...result.data,
-          _meta: {
-            type: result.type,
-            timestamp: result.timestamp
-          }
-        };
-        return responseUtil.success(res, responseData, '数据抓取成功');
-      } else {
-        logger.error(`数据抓取失败: ${url}`, result.error);
-        return res.status(500).json({
-          success: false,
-          error: result.error,
-          timestamp: result.timestamp
-        });
-      }
+      logger.info(`数据抓取成功: ${url}`);
+      // 构建成功响应，包含额外的元数据
+      const responseData = {
+        ...result,
+        _meta: {
+          engine: engine,
+          type: dataType,
+          timestamp: new Date().toISOString()
+        }
+      };
+      return responseUtil.success(res, responseData, '数据抓取成功');
       
     } catch (error) {
       logger.error('Facebook 数据抓取异常:', error);
@@ -153,7 +152,7 @@ class FacebookScraperController {
    */
   async batchScrapeData(req, res) {
     try {
-      const { urls, options = {} } = req.body;
+      const { urls, engine = 'playwright', options = {} } = req.body;
       
       if (!Array.isArray(urls) || urls.length === 0) {
         return res.status(400).json({
@@ -179,7 +178,7 @@ class FacebookScraperController {
         });
       }
       
-      logger.info(`开始批量抓取 Facebook 数据: ${urls.length} 个链接，使用引擎: puppeteer`);
+      logger.info(`开始批量抓取 Facebook 数据: ${urls.length} 个链接，使用引擎: ${engine}`);
       
       const results = [];
       
@@ -191,8 +190,11 @@ class FacebookScraperController {
           try {
             const { url, type } = typeof urlData === 'string' ? { url: urlData, type: null } : urlData;
             
-            // 创建新的 Puppeteer 服务实例以支持并发
-            const scraperService = new (require('../services/facebook-scraper-puppeteer.service'))();
+            // 根据指定的引擎创建新的服务实例以支持并发
+            const ScraperServiceClass = engine === 'playwright' 
+              ? require('../services/facebook-scraper-playwright.service')
+              : require('../services/facebook-scraper-puppeteer.service');
+            const scraperService = new ScraperServiceClass();
             
             // 自动识别类型
             const dataType = type || scraperService.identifyLinkType(url);

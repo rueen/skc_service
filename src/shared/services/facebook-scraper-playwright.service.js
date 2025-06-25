@@ -1,20 +1,15 @@
-/*
- * @Author: diaochan
- * @Date: 2025-06-23 14:36:28
- * @LastEditors: diaochan
- * @LastEditTime: 2025-06-25 16:15:40
- * @Description: 
- */
 /**
- * Facebook 数据抓取服务 (Puppeteer)
- * 基于 Puppeteer 实现的 Facebook 数据抓取功能
+ * Facebook 数据抓取服务 (Playwright)
+ * 基于 Playwright 实现的 Facebook 数据抓取功能
+ * 相比 Puppeteer 具有更强的反检测能力和稳定性
  */
-const puppeteer = require('puppeteer');
+const { chromium } = require('playwright');
 const { logger, scrapeFailureLogger, scrapeSuccessLogger } = require('../config/logger.config');
 
-class FacebookScraperPuppeteerService {
+class FacebookScraperPlaywrightService {
   constructor() {
     this.browser = null;
+    this.context = null;
     this.page = null;
     
     // 记录环境信息
@@ -22,19 +17,23 @@ class FacebookScraperPuppeteerService {
     logger.info(`Node.js版本: ${process.version}`);
     logger.info(`工作目录: ${process.cwd()}`);
     
-    // 检查Chrome/Chromium可执行文件
+    // 检查浏览器可执行文件
+    this.checkBrowsers();
+  }
+
+  /**
+   * 检查可用的浏览器
+   */
+  async checkBrowsers() {
     if (process.platform === 'linux') {
       const fs = require('fs');
-      if (fs.existsSync('/usr/bin/chromium-browser')) {
-        try {
-          const { execSync } = require('child_process');
-          const chromiumVersion = execSync('/usr/bin/chromium-browser --version', { encoding: 'utf8' }).trim();
-          logger.info(`系统Chromium版本: ${chromiumVersion}`);
-        } catch (e) {
-          logger.warn('无法获取Chromium版本信息:', e.message);
+      const chromiumPaths = ['/snap/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/chromium'];
+      
+      for (const path of chromiumPaths) {
+        if (fs.existsSync(path)) {
+          logger.info(`检测到系统Chromium: ${path}`);
+          break;
         }
-      } else {
-        logger.warn('未找到系统Chromium: /usr/bin/chromium-browser');
       }
     }
   }
@@ -50,130 +49,124 @@ class FacebookScraperPuppeteerService {
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu',
-        '--disable-web-security',
+        '--disable-blink-features=AutomationControlled',
         '--disable-features=VizDisplayCompositor',
+        '--disable-web-security',
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding'
+        '--disable-renderer-backgrounding',
+        '--disable-extensions',
+        '--disable-plugins',
+        '--disable-default-apps',
+        '--disable-sync',
+        '--disable-translate',
+        '--disable-background-networking',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--force-color-profile=srgb'
       ]
     };
 
-    // 服务器环境使用系统Chromium并添加额外兼容性参数
+    // Linux 环境特殊配置
     if (process.platform === 'linux') {
       const fs = require('fs');
-      // 优先使用snap安装的chromium，其次是传统路径
       const chromiumPaths = ['/snap/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/chromium'];
-      let chromiumPath = null;
       
-      // 查找可用的chromium路径
       for (const path of chromiumPaths) {
         if (fs.existsSync(path)) {
-          chromiumPath = path;
+          defaultOptions.executablePath = path;
+          logger.info(`使用系统Chromium: ${path}`);
           break;
         }
       }
       
-      if (!chromiumPath) {
-        logger.warn('未找到任何Chromium可执行文件，将使用Puppeteer内置Chrome');
-      }
-      
-      // 检查系统Chromium是否可用
-      let useSystemChromium = false;
-      if (chromiumPath) {
-        try {
-          const { execSync } = require('child_process');
-          // 测试Chromium是否能正常启动
-          execSync(`${chromiumPath} --version`, { 
-            timeout: 5000,
-            stdio: 'pipe' 
-          });
-          useSystemChromium = true;
-          logger.info(`检测到可用的系统Chromium: ${chromiumPath}，将使用系统版本`);
-        } catch (e) {
-          logger.warn('系统Chromium不可用，将使用Puppeteer内置Chrome:', e.message);
-        }
-      }
-      
-      if (useSystemChromium) {
-        defaultOptions.executablePath = chromiumPath;
-        
-        // 添加Linux服务器专用参数
-        defaultOptions.args.push(
-          '--disable-extensions',
-          '--disable-plugins',
-          '--disable-default-apps',
-          '--disable-sync',
-          '--disable-translate',
-          '--disable-background-networking',
-          '--disable-background-mode',
-          '--disable-client-side-phishing-detection',
-          '--disable-component-extensions-with-background-pages',
-          '--disable-ipc-flooding-protection',
-          '--single-process',
-          '--no-default-browser-check',
-          '--no-first-run',
-          '--force-color-profile=srgb',
-          '--lang=en-US',
-          '--disable-features=VizDisplayCompositor,AudioServiceOutOfProcess',
-          '--disable-software-rasterizer',
-          '--disable-background-timer-throttling'
-        );
-        
-        logger.info('配置Linux服务器环境的系统Chromium启动参数');
-      } else {
-        // 使用Puppeteer内置Chrome的Linux优化参数
-        defaultOptions.args.push(
-          '--disable-features=VizDisplayCompositor,AudioServiceOutOfProcess',
-          '--disable-software-rasterizer',
-          '--single-process'
-        );
-        
-        logger.info('使用Puppeteer内置Chrome并配置Linux优化参数');
-      }
+      // Linux 服务器额外参数
+      defaultOptions.args.push(
+        '--single-process',
+        '--disable-gpu',
+        '--disable-software-rasterizer'
+      );
     }
 
     try {
-      this.browser = await puppeteer.launch({ ...defaultOptions, ...options });
-      this.page = await this.browser.newPage();
+      // 启动浏览器
+      this.browser = await chromium.launch({ ...defaultOptions, ...options });
       
-      // 设置用户代理
-      await this.page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-      
-      // 设置视口
-      await this.page.setViewport({ width: 1920, height: 1080 });
-      
-      // 设置页面超时
-      this.page.setDefaultNavigationTimeout(60000);
-      this.page.setDefaultTimeout(30000);
-      
-      // 设置额外的请求头
-      await this.page.setExtraHTTPHeaders({
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      });
-
-      // 拦截不必要的资源以提高加载速度
-      await this.page.setRequestInterception(true);
-      this.page.on('request', (request) => {
-        const resourceType = request.resourceType();
-        // 阻止图片、字体、媒体文件的加载以提高速度
-        if (['image', 'font', 'media'].includes(resourceType)) {
-          request.abort();
-        } else {
-          request.continue();
+      // 创建隐身上下文以增强隐私性
+      this.context = await this.browser.newContext({
+        viewport: { width: 1920, height: 1080 },
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        locale: 'en-US',
+        timezoneId: 'America/New_York',
+        permissions: [],
+        extraHTTPHeaders: {
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-User': '?1',
+          'Upgrade-Insecure-Requests': '1'
         }
       });
 
-      logger.info('浏览器初始化成功 (Puppeteer)');
+      // 添加反检测脚本
+      await this.context.addInitScript(() => {
+        // 删除 webdriver 属性
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => undefined,
+        });
+
+        // 修改 plugins 长度
+        Object.defineProperty(navigator, 'plugins', {
+          get: () => [1, 2, 3, 4, 5],
+        });
+
+        // 修改语言属性
+        Object.defineProperty(navigator, 'languages', {
+          get: () => ['en-US', 'en'],
+        });
+
+        // 删除自动化相关属性
+        delete navigator.__proto__.webdriver;
+        
+        // 覆盖 permissions API
+        const originalQuery = window.navigator.permissions.query;
+        window.navigator.permissions.query = (parameters) => (
+          parameters.name === 'notifications' ?
+            Promise.resolve({ state: Notification.permission }) :
+            originalQuery(parameters)
+        );
+
+        // 修改 chrome 对象
+        window.chrome = {
+          runtime: {},
+        };
+      });
+
+      // 创建页面
+      this.page = await this.context.newPage();
+      
+      // 设置超时
+      this.page.setDefaultNavigationTimeout(60000);
+      this.page.setDefaultTimeout(30000);
+
+      // 阻止不必要的资源加载以提高速度
+      await this.page.route('**/*', (route) => {
+        const resourceType = route.request().resourceType();
+        if (['image', 'font', 'media', 'stylesheet'].includes(resourceType)) {
+          route.abort();
+        } else {
+          route.continue();
+        }
+      });
+
+      logger.info('浏览器初始化成功 (Playwright)');
     } catch (error) {
-      logger.error('浏览器初始化失败 (Puppeteer):', error);
+      logger.error('浏览器初始化失败 (Playwright):', error);
       throw error;
     }
   }
@@ -183,15 +176,67 @@ class FacebookScraperPuppeteerService {
    */
   async closeBrowser() {
     try {
-      if (this.page) await this.page.close();
-      if (this.browser) await this.browser.close();
-      logger.info('浏览器已关闭 (Puppeteer)');
+      if (this.page && !this.page.isClosed()) {
+        await this.page.close();
+      }
+      if (this.context) {
+        await this.context.close();
+      }
+      if (this.browser) {
+        await this.browser.close();
+      }
+      logger.info('浏览器已关闭 (Playwright)');
     } catch (error) {
-      logger.error('关闭浏览器时出错 (Puppeteer):', error);
+      logger.error('关闭浏览器时出错 (Playwright):', error);
     }
   }
 
+  /**
+   * 安全的页面操作
+   * @param {Function} operation - 要执行的操作
+   * @param {string} operationName - 操作名称
+   */
+  async safePageOperation(operation, operationName) {
+    try {
+      if (!this.page || this.page.isClosed()) {
+        throw new Error('页面已关闭或不存在');
+      }
+      return await operation();
+    } catch (error) {
+      logger.error(`${operationName}失败:`, error.message);
+      throw error;
+    }
+  }
 
+  /**
+   * 模拟人类行为
+   */
+  async simulateHumanBehavior() {
+    if (!this.page || this.page.isClosed()) return;
+    
+    try {
+      // 随机滚动
+      await this.page.evaluate(() => {
+        window.scrollTo(0, Math.random() * 500);
+      });
+      
+      // 随机等待
+      await this.page.waitForTimeout(1000 + Math.random() * 2000);
+      
+      // 随机鼠标移动
+      const viewport = this.page.viewportSize();
+      if (viewport) {
+        await this.page.mouse.move(
+          Math.random() * viewport.width,
+          Math.random() * viewport.height
+        );
+      }
+      
+      await this.page.waitForTimeout(500 + Math.random() * 1000);
+    } catch (error) {
+      // 忽略模拟行为的错误
+    }
+  }
 
   /**
    * 识别链接类型
@@ -215,29 +260,18 @@ class FacebookScraperPuppeteerService {
       }
 
       // 帖子链接识别
-      if (pathname.includes('/posts/')) {
+      if (pathname.includes('/posts/') || 
+          pathname.includes('/share/') || 
+          searchParams.has('story_fbid') ||
+          pathname.includes('/photo') ||
+          pathname.includes('/video')) {
         return 'post';
       }
 
-      // /share/p/ 格式的链接，默认为帖子（除非有群组参数）
-      if (pathname.includes('/share/p/')) {
-        return 'post';
-      }
-
-      // 个人资料链接识别
-      if (pathname.includes('/profile.php')) {
-        return 'profile';
-      }
-
-      // 其他格式的个人资料链接
-      if (pathname.match(/^\/[a-zA-Z0-9._-]+\/?$/)) {
-        return 'profile';
-      }
-
-      // 默认返回 profile
+      // 默认作为个人资料链接处理
       return 'profile';
     } catch (error) {
-      logger.error('链接类型识别失败:', error);
+      logger.warn('URL解析失败，默认作为个人资料处理:', error.message);
       return 'profile';
     }
   }
@@ -296,7 +330,7 @@ class FacebookScraperPuppeteerService {
   async scrapeData(url, type, options = {}) {
     const { timeout = 60000, retries = 3 } = options;
     
-    logger.info(`开始抓取 Facebook 数据 (Puppeteer): ${url}, 类型: ${type}`);
+    logger.info(`开始抓取 Facebook 数据 (Playwright): ${url}, 类型: ${type}`);
     
     // 性能优化：优先尝试从URL直接提取信息，避免启动浏览器
     const fastExtractResult = this.tryFastExtract(url, type);
@@ -323,7 +357,7 @@ class FacebookScraperPuppeteerService {
     let attempt = 0;
     while (attempt < retries) {
       try {
-        logger.info(`开始第 ${attempt + 1} 次抓取尝试 (Puppeteer): ${url}`);
+        logger.info(`开始第 ${attempt + 1} 次抓取尝试 (Playwright): ${url}`);
         
         await this.initBrowser({ headless: options.headless !== false });
         
@@ -339,10 +373,10 @@ class FacebookScraperPuppeteerService {
             timeout: timeout 
           });
         } catch (gotoError) {
-          logger.warn('页面加载失败，尝试使用networkidle0策略:', gotoError.message);
+          logger.warn('页面加载失败，尝试使用networkidle策略:', gotoError.message);
           try {
             await this.page.goto(url, { 
-              waitUntil: 'networkidle0',
+              waitUntil: 'networkidle',
               timeout: timeout 
             });
           } catch (secondGotoError) {
@@ -381,7 +415,7 @@ class FacebookScraperPuppeteerService {
         }
         
         await this.closeBrowser();
-        logger.info(`抓取成功 (Puppeteer): ${url}`);
+        logger.info(`抓取成功 (Playwright): ${url}`);
         
         if (result.extractionMethod === 'failed'){
           scrapeFailureLogger.info(JSON.stringify({
@@ -406,7 +440,7 @@ class FacebookScraperPuppeteerService {
         
       } catch (error) {
         attempt++;
-        logger.error(`抓取失败 (尝试 ${attempt}/${retries}) (Puppeteer): ${error.message}`);
+        logger.error(`抓取失败 (尝试 ${attempt}/${retries}) (Playwright): ${error.message}`);
         
         await this.closeBrowser();
         
@@ -438,37 +472,26 @@ class FacebookScraperPuppeteerService {
   }
 
   /**
-   * 根据错误类型获取错误代码
-   * @param {Error} error - 错误对象
-   * @returns {string} 错误代码
+   * 获取错误代码
    */
   getErrorCode(error) {
-    if (error.message.includes('timeout')) {
-      return 'TIMEOUT_ERROR';
-    } else if (error.message.includes('登录') || error.message.toLowerCase().includes('login')) {
-      return 'LOGIN_REQUIRED';
-    } else if (error.message.includes('网络') || error.message.toLowerCase().includes('network')) {
-      return 'NETWORK_ERROR';
-    } else {
-      return 'SCRAPE_FAILED';
-    }
+    if (!error) return 'UNKNOWN_ERROR';
+    
+    const message = error.message.toLowerCase();
+    if (message.includes('timeout')) return 'TIMEOUT_ERROR';
+    if (message.includes('detached')) return 'FRAME_DETACHED';
+    if (message.includes('connection closed')) return 'CONNECTION_CLOSED';
+    if (message.includes('navigation')) return 'NAVIGATION_ERROR';
+    
+    return 'SCRAPE_ERROR';
   }
 
   /**
-   * 根据错误类型获取用户友好的错误消息
-   * @param {Error} error - 错误对象
-   * @returns {string} 错误消息
+   * 获取错误信息
    */
   getErrorMessage(error) {
-    if (error.message.includes('timeout')) {
-      return '请求超时，请稍后重试';
-    } else if (error.message.includes('登录') || error.message.toLowerCase().includes('login')) {
-      return '该内容需要登录才能访问';
-    } else if (error.message.includes('网络') || error.message.toLowerCase().includes('network')) {
-      return '网络连接错误';
-    } else {
-      return '数据抓取失败';
-    }
+    if (!error) return '未知错误';
+    return error.message || '数据抓取失败';
   }
 
   /**
@@ -542,9 +565,6 @@ class FacebookScraperPuppeteerService {
           
           if (!profileData.uid) {
             logger.warn('所有UID提取模式都未匹配成功');
-            // 输出部分页面内容用于调试
-            const contentSample = pageContent.substring(0, 500);
-            logger.info(`页面内容示例: ${contentSample}...`);
           }
         } catch (e) {
           logger.warn('从页面内容获取UID失败:', e.message);
@@ -553,167 +573,43 @@ class FacebookScraperPuppeteerService {
       
       // 尝试获取昵称
       logger.info('正在获取用户昵称...');
-      try {
-        const nicknameSelectors = [
-          'h1[data-testid="profile-name"]',
-          '[data-testid="profile-name"]',
-          'h1[data-testid="profile_name"]',
-          'h1[role="heading"]',
-          'h1:first-of-type',
-          '.profileName',
-          '#fb-timeline-cover-name',
-          '.fb-timeline-cover-name',
-          'h1',
-          'h2[role="heading"]'
-        ];
-        
-        for (const selector of nicknameSelectors) {
-          try {
-            const element = await this.page.$(selector);
-            if (element) {
-              const text = await this.page.evaluate(el => el.textContent, element);
-              logger.info(`选择器 ${selector} 获取到文本: "${text}"`);
-              
-              if (text && text.trim() && 
-                  !text.toLowerCase().includes('facebook') &&
-                  !text.toLowerCase().includes('log in') &&
-                  !text.toLowerCase().includes('login') &&
-                  text.length < 100) {
-                profileData.nickname = text.trim();
-                logger.info(`获取到昵称: ${profileData.nickname}`);
-                break;
-              }
-            }
-          } catch (e) {
-            logger.warn(`选择器 ${selector} 失败: ${e.message}`);
-            continue;
-          }
-        }
-        
-        // 如果没有获取到昵称，尝试从页面标题获取
-        if (!profileData.nickname && pageTitle) {
-          logger.info(`尝试从页面标题获取昵称: "${pageTitle}"`);
-          if (!pageTitle.toLowerCase().includes('facebook') && 
-              !pageTitle.toLowerCase().includes('log in') &&
-              !pageTitle.toLowerCase().includes('login') &&
-              !pageTitle.toLowerCase().includes('sign in')) {
-            const cleanTitle = pageTitle
-              .replace(/\s*\|\s*Facebook$/i, '')
-              .replace(/\s*-\s*Facebook$/i, '')
-              .replace(/\s*on Facebook$/i, '')
-              .trim();
-            
-            if (cleanTitle) {
-              profileData.nickname = cleanTitle;
-              logger.info(`从页面标题获取到昵称: ${profileData.nickname}`);
+      const nicknameSelectors = [
+        'h1[data-testid="profile-name"]',
+        '[data-testid="profile-name"]',
+        'h1[data-testid="profile_name"]',
+        'h1[role="heading"]',
+        'h1:first-of-type',
+        '.profileName',
+        '#fb-timeline-cover-name',
+        '.fb-timeline-cover-name',
+        'h1'
+      ];
+      
+      for (const selector of nicknameSelectors) {
+        try {
+          const element = await this.page.$(selector);
+          if (element) {
+            const text = await element.textContent();
+            if (text && text.trim() && !text.toLowerCase().includes('facebook')) {
+              profileData.nickname = text.trim();
+              logger.info(`通过选择器 ${selector} 获取到昵称: ${profileData.nickname}`);
+              break;
             }
           }
+        } catch (e) {
+          continue;
         }
-      } catch (error) {
-        logger.warn('获取昵称失败:', error.message);
       }
       
-      // 尝试获取粉丝数和好友数
-      logger.info('正在获取统计数据...');
-      try {
-        const statsSelectors = [
-          '[data-testid="profile-followers-count"]',
-          '[data-testid="followers-count"]',
-          'a[href*="followers"] span',
-          'a[href*="followers"]',
-          '[data-testid*="count"]',
-          '.profileStats a',
-          '.stats a',
-          'div[role="tablist"] a'
-        ];
-        
-        // 尝试获取粉丝数
-        for (const selector of statsSelectors) {
-          try {
-            const elements = await this.page.$$(selector);
-            for (const element of elements) {
-              const text = await this.page.evaluate(el => el.textContent, element);
-              const href = await this.page.evaluate(el => el.href || '', element);
-              
-              if (href.includes('followers') || href.includes('subscriber')) {
-                const numberMatch = text.match(/(\d+(?:[,.\s]\d+)*[KMB]?)/);
-                if (numberMatch) {
-                  profileData.followersRaw = numberMatch[1];
-                  profileData.followers = this.parseNumber(numberMatch[1]);
-                  logger.info(`获取到粉丝数: ${profileData.followers} (原始: ${profileData.followersRaw})`);
-                  break;
-                }
-              }
-            }
-            if (profileData.followers) break;
-          } catch (e) {
-            continue;
+      if (!profileData.nickname) {
+        // 从页面标题中提取昵称
+        if (pageTitle && pageTitle !== 'Facebook' && !pageTitle.toLowerCase().includes('log in')) {
+          const titleMatch = pageTitle.match(/^([^|]+)/);
+          if (titleMatch) {
+            profileData.nickname = titleMatch[1].trim();
+            logger.info(`从页面标题获取到昵称: ${profileData.nickname}`);
           }
         }
-        
-        // 尝试获取好友数
-        const friendsSelectors = [
-          '[data-testid="profile-friends-count"]',
-          '[data-testid="friends-count"]',
-          'a[href*="friends"] span',
-          'a[href*="friends"]',
-          'div[data-testid*="friend"]'
-        ];
-        
-        for (const selector of friendsSelectors) {
-          try {
-            const elements = await this.page.$$(selector);
-            for (const element of elements) {
-              const text = await this.page.evaluate(el => el.textContent, element);
-              const href = await this.page.evaluate(el => el.href || '', element);
-              
-              if (href.includes('friends') || href.includes('friend')) {
-                const numberMatch = text.match(/(\d+(?:[,.\s]\d+)*[KMB]?)/);
-                if (numberMatch) {
-                  profileData.friendsRaw = numberMatch[1];
-                  profileData.friends = this.parseNumber(numberMatch[1]);
-                  logger.info(`获取到好友数: ${profileData.friends} (原始: ${profileData.friendsRaw})`);
-                  break;
-                }
-              }
-            }
-            if (profileData.friends) break;
-          } catch (e) {
-            continue;
-          }
-        }
-        
-      } catch (error) {
-        logger.warn('获取统计数据失败:', error.message);
-      }
-      
-      // 获取头像
-      logger.info('正在获取头像...');
-      try {
-        const avatarSelectors = [
-          'img[data-testid="profile-photo"]',
-          'img[data-testid="profile-picture"]',
-          '.profilePicThumb img',
-          '.profilePic img'
-        ];
-        
-        for (const selector of avatarSelectors) {
-          try {
-            const avatarElement = await this.page.$(selector);
-            if (avatarElement) {
-              const src = await this.page.evaluate(el => el.src, avatarElement);
-              if (src && src.startsWith('http')) {
-                profileData.avatarUrl = src;
-                logger.info('获取到头像URL');
-                break;
-              }
-            }
-          } catch (e) {
-            continue;
-          }
-        }
-      } catch (error) {
-        logger.warn('获取头像失败:', error.message);
       }
       
       logger.info('个人资料信息抓取完成');
@@ -723,6 +619,8 @@ class FacebookScraperPuppeteerService {
       throw error;
     }
   }
+
+
 
   /**
    * 解析数字字符串，支持K、M、B后缀和国际化格式
@@ -869,4 +767,4 @@ class FacebookScraperPuppeteerService {
   }
 }
 
-module.exports = FacebookScraperPuppeteerService; 
+module.exports = FacebookScraperPlaywrightService; 
