@@ -94,59 +94,152 @@ class FacebookScraperPlaywrightService {
       // 启动浏览器
       this.browser = await chromium.launch({ ...defaultOptions, ...options });
       
-      // 创建隐身上下文以增强隐私性
+      // 创建隐身上下文以增强隐私性和反检测能力
       this.context = await this.browser.newContext({
-        viewport: { width: 1920, height: 1080 },
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        viewport: { width: 1366, height: 768 }, // 使用更常见的分辨率
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         locale: 'en-US',
         timezoneId: 'America/New_York',
-        permissions: [],
+        permissions: ['geolocation'], // 允许地理位置权限
+        geolocation: { latitude: 40.7128, longitude: -74.0060 }, // 纽约坐标
+        colorScheme: 'light',
+        reducedMotion: 'no-preference',
         extraHTTPHeaders: {
           'Accept-Language': 'en-US,en;q=0.9',
           'Accept-Encoding': 'gzip, deflate, br',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+          'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+          'Sec-Ch-Ua-Mobile': '?0',
+          'Sec-Ch-Ua-Platform': '"Windows"',
           'Sec-Fetch-Dest': 'document',
           'Sec-Fetch-Mode': 'navigate',
           'Sec-Fetch-Site': 'none',
           'Sec-Fetch-User': '?1',
-          'Upgrade-Insecure-Requests': '1'
-        }
+          'Upgrade-Insecure-Requests': '1',
+          'Connection': 'keep-alive',
+          'DNT': '1' // Do Not Track
+        },
+        // 启用 JavaScript
+        javaScriptEnabled: true,
+        // 设置屏幕信息
+        screen: {
+          width: 1366,
+          height: 768
+        },
+        // 启用设备像素比
+        deviceScaleFactor: 1
       });
 
-      // 添加反检测脚本
+      // 添加强化的反检测脚本
       await this.context.addInitScript(() => {
         // 删除 webdriver 属性
         Object.defineProperty(navigator, 'webdriver', {
           get: () => undefined,
+          configurable: true
         });
 
-        // 修改 plugins 长度
+        // 模拟真实的插件列表
         Object.defineProperty(navigator, 'plugins', {
-          get: () => [1, 2, 3, 4, 5],
+          get: () => ({
+            length: 5,
+            0: { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer' },
+            1: { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai' },
+            2: { name: 'Native Client', filename: 'internal-nacl-plugin' },
+            3: { name: 'WebKit built-in PDF', filename: 'WebKit built-in PDF' },
+            4: { name: 'Microsoft Edge PDF Viewer', filename: 'edge-pdf-viewer' }
+          }),
+          configurable: true
         });
 
-        // 修改语言属性
+        // 设置语言属性
         Object.defineProperty(navigator, 'languages', {
           get: () => ['en-US', 'en'],
+          configurable: true
+        });
+
+        // 设置平台信息
+        Object.defineProperty(navigator, 'platform', {
+          get: () => 'Win32',
+          configurable: true
+        });
+
+        // 模拟硬件并发
+        Object.defineProperty(navigator, 'hardwareConcurrency', {
+          get: () => 8,
+          configurable: true
+        });
+
+        // 模拟设备内存
+        Object.defineProperty(navigator, 'deviceMemory', {
+          get: () => 8,
+          configurable: true
         });
 
         // 删除自动化相关属性
         delete navigator.__proto__.webdriver;
         
         // 覆盖 permissions API
-        const originalQuery = window.navigator.permissions.query;
-        window.navigator.permissions.query = (parameters) => (
-          parameters.name === 'notifications' ?
-            Promise.resolve({ state: Notification.permission }) :
-            originalQuery(parameters)
-        );
+        const originalQuery = window.navigator.permissions?.query;
+        if (originalQuery) {
+          window.navigator.permissions.query = (parameters) => (
+            parameters.name === 'notifications' ?
+              Promise.resolve({ state: Notification.permission || 'default' }) :
+              originalQuery(parameters)
+          );
+        }
 
-        // 修改 chrome 对象
-        window.chrome = {
-          runtime: {},
+        // 完善 chrome 对象
+        if (!window.chrome) {
+          window.chrome = {};
+        }
+        window.chrome.runtime = {
+          onConnect: undefined,
+          onMessage: undefined,
+          PlatformOs: {
+            MAC: 'mac',
+            WIN: 'win',
+            ANDROID: 'android',
+            CROS: 'cros',
+            LINUX: 'linux',
+            OPENBSD: 'openbsd'
+          },
+          PlatformArch: {
+            ARM: 'arm',
+            X86_32: 'x86-32',
+            X86_64: 'x86-64'
+          },
+          PlatformNaclArch: {
+            ARM: 'arm',
+            X86_32: 'x86-32',
+            X86_64: 'x86-64'
+          }
         };
+
+        // 模拟真实的屏幕信息
+        Object.defineProperty(screen, 'availWidth', {
+          get: () => 1366,
+          configurable: true
+        });
+        Object.defineProperty(screen, 'availHeight', {
+          get: () => 728,
+          configurable: true
+        });
+
+        // 覆盖 Date.getTimezoneOffset 方法，模拟纽约时区
+        const originalGetTimezoneOffset = Date.prototype.getTimezoneOffset;
+        Date.prototype.getTimezoneOffset = function() {
+          return 300; // EST (UTC-5)
+        };
+
+        // 模拟电池 API
+        if (navigator.getBattery) {
+          navigator.getBattery = () => Promise.resolve({
+            charging: true,
+            chargingTime: 0,
+            dischargingTime: Infinity,
+            level: 1
+          });
+        }
       });
 
       // 创建页面
@@ -412,9 +505,24 @@ class FacebookScraperPlaywrightService {
         this.page.setDefaultTimeout(timeout);
         this.page.setDefaultNavigationTimeout(timeout);
         
-        // 访问页面，使用更宽松的等待条件
-        logger.info('正在访问页面...');
+        // 先访问 Facebook 主页建立 session
+        logger.info('正在建立 Facebook session...');
         try {
+          await this.page.goto('https://www.facebook.com', { 
+            waitUntil: 'domcontentloaded',
+            timeout: timeout 
+          });
+          await this.page.waitForTimeout(2000 + Math.random() * 3000); // 随机等待2-5秒
+        } catch (e) {
+          logger.warn('访问主页失败，直接访问目标页面');
+        }
+
+        // 访问目标页面，使用更真实的访问模式
+        logger.info('正在访问目标页面...');
+        try {
+          // 添加随机延迟，模拟人类行为
+          await this.page.waitForTimeout(1000 + Math.random() * 2000);
+          
           await this.page.goto(url, { 
             waitUntil: 'domcontentloaded',
             timeout: timeout 
@@ -446,7 +554,32 @@ class FacebookScraperPlaywrightService {
         
         // 检查是否被重定向到登录页面
         if (currentUrl.includes('/login/') || pageTitle.toLowerCase().includes('log in')) {
-          throw new Error('页面需要登录，无法抓取数据');
+          logger.warn(`Facebook 要求登录访问: ${url}`);
+          logger.warn(`重定向到: ${currentUrl}`);
+          
+          // 尝试其他访问策略
+          logger.info('尝试通过不同方式访问...');
+          try {
+            // 尝试添加不同的参数
+            const alternativeUrl = url.includes('?') ? 
+              `${url}&v=info&ref=page_internal` : 
+              `${url}?v=info&ref=page_internal`;
+            
+            logger.info(`尝试访问: ${alternativeUrl}`);
+            await this.page.goto(alternativeUrl, { 
+              waitUntil: 'domcontentloaded',
+              timeout: timeout / 2
+            });
+            
+            const newUrl = this.page.url();
+            if (!newUrl.includes('/login/')) {
+              logger.info('替代访问方式成功');
+            } else {
+              throw new Error('页面需要登录，无法抓取数据');
+            }
+          } catch (e) {
+            throw new Error('页面需要登录，无法抓取数据');
+          }
         }
         
         let result;
