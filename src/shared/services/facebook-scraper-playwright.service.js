@@ -27,17 +27,52 @@ class FacebookScraperPlaywrightService {
    * 检查可用的浏览器
    */
   async checkBrowsers() {
+    const fs = require('fs');
+    
+    logger.info('=== 浏览器兼容性检查 ===');
+    
     if (process.platform === 'linux') {
-      const fs = require('fs');
-      const chromiumPaths = ['/snap/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/chromium'];
+      // 优先检查Google Chrome，反检测能力最强
+      const browserPaths = [
+        // Google Chrome (优先级最高 - 更难被检测)
+        { path: '/usr/bin/google-chrome', name: 'Google Chrome', detection: '最强' },
+        { path: '/usr/bin/google-chrome-stable', name: 'Google Chrome Stable', detection: '最强' },
+        { path: '/opt/google/chrome/chrome', name: 'Google Chrome', detection: '最强' },
+        
+        // Microsoft Edge (第二优先级 - 企业级浏览器)
+        { path: '/usr/bin/microsoft-edge-stable', name: 'Microsoft Edge', detection: '强' },
+        { path: '/usr/bin/microsoft-edge', name: 'Microsoft Edge', detection: '强' },
+        
+        // Chromium (最后选择 - 容易被识别为自动化)
+        { path: '/usr/bin/chromium', name: 'Chromium', detection: '一般' },
+        { path: '/usr/bin/chromium-browser', name: 'Chromium Browser', detection: '一般' },
+        { path: '/snap/bin/chromium', name: 'Chromium Snap', detection: '一般' }
+      ];
       
-      for (const path of chromiumPaths) {
-        if (fs.existsSync(path)) {
-          logger.info(`检测到系统Chromium: ${path}`);
+      let foundBrowser = null;
+      
+      for (const browser of browserPaths) {
+        if (fs.existsSync(browser.path)) {
+          foundBrowser = browser;
+          logger.info(`✅ 发现 ${browser.name}: ${browser.path} (反检测能力: ${browser.detection})`);
           break;
         }
       }
+      
+      if (!foundBrowser) {
+        logger.warn('⚠️  未找到系统浏览器，将使用Playwright内置Chromium (反检测能力: 弱)');
+        logger.info('💡 建议安装: sudo apt install google-chrome-stable');
+        logger.info('🔧 安装Chrome可显著提升Facebook抓取成功率');
+      } else if (foundBrowser.name.includes('Chrome')) {
+        logger.info('🎯 使用Google Chrome，具备最强反检测能力');
+      } else if (foundBrowser.name.includes('Edge')) {
+        logger.info('🛡️ 使用Microsoft Edge，具备较强反检测能力');
+      } else {
+        logger.warn('⚠️  使用Chromium，反检测能力有限，建议升级到Chrome');
+      }
     }
+    
+    logger.info('=== 浏览器检查完成 ===');
   }
 
   /**
@@ -72,14 +107,56 @@ class FacebookScraperPlaywrightService {
     // Linux 环境特殊配置
     if (process.platform === 'linux') {
       const fs = require('fs');
-      const chromiumPaths = ['/snap/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/chromium'];
+      // 优先使用Google Chrome，其次是Chromium
+      // Chrome具有更完整的浏览器指纹，反检测能力更强
+      const browserPaths = [
+        // Google Chrome (优先级最高 - 更难被检测)
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+        '/opt/google/chrome/chrome',
+        '/opt/google/chrome/google-chrome',
+        
+        // Microsoft Edge (第二优先级 - 企业级浏览器)
+        '/usr/bin/microsoft-edge-stable',
+        '/usr/bin/microsoft-edge',
+        
+        // Chromium (最后选择 - 容易被识别为自动化)
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+        '/snap/bin/chromium'
+      ];
       
-      for (const path of chromiumPaths) {
+      for (const path of browserPaths) {
         if (fs.existsSync(path)) {
           defaultOptions.executablePath = path;
-          logger.info(`使用系统Chromium: ${path}`);
+          
+          // 根据浏览器类型调整配置
+          if (path.includes('google-chrome')) {
+            logger.info(`✅ 使用Google Chrome: ${path} (反检测能力: 最强)`);
+            // Chrome特有的反检测参数
+            defaultOptions.args.push(
+              '--disable-blink-features=AutomationControlled',
+              '--exclude-switches=enable-automation',
+              '--disable-dev-shm-usage',
+              '--no-sandbox'
+            );
+          } else if (path.includes('microsoft-edge')) {
+            logger.info(`✅ 使用Microsoft Edge: ${path} (反检测能力: 强)`);
+            // Edge特有参数
+            defaultOptions.args.push(
+              '--disable-features=msEdgeEnableAutoplayPolicyByNonVideoElements'
+            );
+          } else {
+            logger.info(`⚠️ 使用Chromium: ${path} (反检测能力: 一般)`);
+            logger.warn('建议安装Google Chrome以获得更好的反检测效果');
+          }
           break;
         }
+      }
+      
+      if (!defaultOptions.executablePath) {
+        logger.warn('🔍 未找到系统浏览器，将使用Playwright内置Chromium');
+        logger.info('💡 建议安装Google Chrome: sudo apt install google-chrome-stable');
       }
       
       // Linux 服务器额外参数
@@ -96,10 +173,13 @@ class FacebookScraperPlaywrightService {
       
       // 随机化用户代理和指纹信息，增强隐蔽性
       const userAgents = [
+        // 使用真实的Chrome用户代理，即使运行在Chromium上
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0'
+        // 添加一些Edge用户代理增加多样性
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0'
       ];
       
       const viewports = [
@@ -254,10 +334,73 @@ class FacebookScraperPlaywrightService {
                 pageT: Date.now() - Math.random() * 1000,
                 tran: 15
               };
+            },
+            app: {
+              isInstalled: false,
+              InstallState: {
+                DISABLED: 'disabled',
+                INSTALLED: 'installed',
+                NOT_INSTALLED: 'not_installed'
+              },
+              RunningState: {
+                CANNOT_RUN: 'cannot_run',
+                READY_TO_RUN: 'ready_to_run',
+                RUNNING: 'running'
+              }
             }
           };
         }
         
+        // 增强Chrome指纹特征
+        Object.defineProperty(window, 'chrome', {
+          writable: false,
+          enumerable: true,
+          configurable: false,
+          value: window.chrome
+        });
+
+        // 模拟Chrome特有的CSS属性
+        if (CSS && CSS.supports) {
+          const originalSupports = CSS.supports;
+          CSS.supports = function(property, value) {
+            // Chrome特有的CSS特性支持
+            if (property === '-webkit-appearance') return true;
+            if (property === '-webkit-user-select') return true;
+            if (property === '-webkit-transform') return true;
+            return originalSupports.call(this, property, value);
+          };
+        }
+
+        // 模拟Chrome的Performance API特征
+        if (window.performance && window.performance.getEntriesByType) {
+          const originalGetEntriesByType = window.performance.getEntriesByType;
+          window.performance.getEntriesByType = function(type) {
+            const entries = originalGetEntriesByType.call(this, type);
+            // 添加Chrome特有的性能指标
+            if (type === 'navigation') {
+              entries.forEach(entry => {
+                entry.initiatorType = entry.initiatorType || 'navigation';
+                entry.nextHopProtocol = entry.nextHopProtocol || 'h2';
+              });
+            }
+            return entries;
+          };
+        }
+
+        // 伪装Chromium为Chrome的关键标识
+        Object.defineProperty(navigator, 'userAgentData', {
+          get: () => ({
+            brands: [
+              { brand: 'Not_A Brand', version: '8' },
+              { brand: 'Chromium', version: '121' },
+              { brand: 'Google Chrome', version: '121' }  // 关键：声明为Chrome
+            ],
+            mobile: false,
+            platform: 'Windows'
+          }),
+          configurable: true
+        });
+
         // 覆盖 permissions API
         const originalQuery = window.navigator.permissions?.query;
         if (originalQuery) {
