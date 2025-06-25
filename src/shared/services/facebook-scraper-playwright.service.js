@@ -11,6 +11,8 @@ class FacebookScraperPlaywrightService {
     this.browser = null;
     this.context = null;
     this.page = null;
+    this.isClosing = false;  // 添加关闭状态标志
+    this.operationCount = 0; // 添加操作计数器
     
     // 记录环境信息
     logger.info(`运行环境: ${process.platform} ${process.arch}`);
@@ -175,6 +177,26 @@ class FacebookScraperPlaywrightService {
    * 关闭浏览器
    */
   async closeBrowser() {
+    if (this.isClosing) {
+      logger.warn('浏览器已在关闭过程中，跳过重复关闭');
+      return;
+    }
+
+    this.isClosing = true;
+    logger.info('开始关闭浏览器，等待操作完成...');
+
+    // 等待所有正在进行的操作完成
+    let waitCount = 0;
+    while (this.operationCount > 0 && waitCount < 30) { // 最多等待3秒
+      logger.debug(`等待 ${this.operationCount} 个操作完成... (${waitCount}/30)`);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      waitCount++;
+    }
+
+    if (this.operationCount > 0) {
+      logger.warn(`强制关闭浏览器，仍有 ${this.operationCount} 个操作未完成`);
+    }
+
     try {
       if (this.page && !this.page.isClosed()) {
         await this.page.close();
@@ -188,23 +210,48 @@ class FacebookScraperPlaywrightService {
       logger.info('浏览器已关闭 (Playwright)');
     } catch (error) {
       logger.error('关闭浏览器时出错 (Playwright):', error);
+    } finally {
+      this.isClosing = false;
+      this.operationCount = 0;
+      this.page = null;
+      this.context = null;
+      this.browser = null;
     }
   }
 
   /**
-   * 安全的页面操作
-   * @param {Function} operation - 要执行的操作
-   * @param {string} operationName - 操作名称
+   * 增加操作计数
+   */
+  incrementOperation() {
+    this.operationCount++;
+    logger.debug(`操作计数增加到: ${this.operationCount}`);
+  }
+
+  /**
+   * 减少操作计数
+   */
+  decrementOperation() {
+    this.operationCount = Math.max(0, this.operationCount - 1);
+    logger.debug(`操作计数减少到: ${this.operationCount}`);
+  }
+
+  /**
+   * 安全的页面操作包装器
    */
   async safePageOperation(operation, operationName) {
+    if (this.isClosing || !this.page || this.page.isClosed()) {
+      logger.warn(`跳过操作 ${operationName}：浏览器正在关闭或已关闭`);
+      return null;
+    }
+
+    this.incrementOperation();
     try {
-      if (!this.page || this.page.isClosed()) {
-        throw new Error('页面已关闭或不存在');
-      }
       return await operation();
     } catch (error) {
       logger.error(`${operationName}失败:`, error.message);
       throw error;
+    } finally {
+      this.decrementOperation();
     }
   }
 
@@ -391,7 +438,10 @@ class FacebookScraperPlaywrightService {
         
         // 检查页面是否正常加载
         const currentUrl = this.page.url();
-        const pageTitle = await this.page.title();
+        const pageTitle = await this.safePageOperation(
+          () => this.page.title(),
+          '获取页面标题'
+        ) || '';
         logger.info(`页面加载完成 - URL: ${currentUrl}, 标题: ${pageTitle}`);
         
         // 检查是否被重定向到登录页面
@@ -511,12 +561,18 @@ class FacebookScraperPlaywrightService {
       
       // 记录页面基本信息用于调试
       const currentUrl = this.page.url();
-      const pageTitle = await this.page.title();
+      const pageTitle = await this.safePageOperation(
+        () => this.page.title(),
+        '获取页面标题'
+      ) || '';
       logger.info(`当前页面URL: ${currentUrl}`);
       logger.info(`页面标题: ${pageTitle}`);
       
       // 检查页面是否正常加载
-      const bodyContent = await this.page.$eval('body', el => el.innerText.substring(0, 100));
+      const bodyContent = await this.safePageOperation(
+        () => this.page.$eval('body', el => el.innerText.substring(0, 100)),
+        '获取页面内容'
+      ) || '';
       logger.info(`页面内容预览: ${bodyContent}...`);
       
       // 检查是否需要登录
@@ -540,8 +596,12 @@ class FacebookScraperPlaywrightService {
         logger.info(`从URL获取到UID: ${profileData.uid}`);
       } else {
         // 从页面源码中查找 UID
-        try {
-          const pageContent = await this.page.content();
+        const pageContent = await this.safePageOperation(
+          () => this.page.content(),
+          '获取页面源码'
+        );
+        
+        if (pageContent) {
           logger.info(`页面源码长度: ${pageContent.length} 字符`);
           
           const uidPatterns = [
@@ -566,8 +626,6 @@ class FacebookScraperPlaywrightService {
           if (!profileData.uid) {
             logger.warn('所有UID提取模式都未匹配成功');
           }
-        } catch (e) {
-          logger.warn('从页面内容获取UID失败:', e.message);
         }
       }
       
@@ -586,18 +644,22 @@ class FacebookScraperPlaywrightService {
       ];
       
       for (const selector of nicknameSelectors) {
-        try {
-          const element = await this.page.$(selector);
-          if (element) {
-            const text = await element.textContent();
-            if (text && text.trim() && !text.toLowerCase().includes('facebook')) {
-              profileData.nickname = text.trim();
-              logger.info(`通过选择器 ${selector} 获取到昵称: ${profileData.nickname}`);
-              break;
-            }
+        const element = await this.safePageOperation(
+          () => this.page.$(selector),
+          `查找昵称元素 ${selector}`
+        );
+        
+        if (element) {
+          const text = await this.safePageOperation(
+            () => element.textContent(),
+            `获取昵称文本 ${selector}`
+          );
+          
+          if (text && text.trim() && !text.toLowerCase().includes('facebook')) {
+            profileData.nickname = text.trim();
+            logger.info(`通过选择器 ${selector} 获取到昵称: ${profileData.nickname}`);
+            break;
           }
-        } catch (e) {
-          continue;
         }
       }
       
@@ -619,8 +681,6 @@ class FacebookScraperPlaywrightService {
       throw error;
     }
   }
-
-
 
   /**
    * 解析数字字符串，支持K、M、B后缀和国际化格式
