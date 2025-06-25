@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:10:51
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-24 17:55:11
+ * @LastEditTime: 2025-06-25 10:20:02
  * @Description: 
  */
 /**
@@ -89,7 +89,8 @@ if (process.env.NODE_ENV === 'production' &&
     new OssTransport({
       level: 'info',
       bucket: 'skc-logs',
-      ossPrefix: 'logs/combined/'
+      ossPrefix: 'logs/combined/',
+      fileNamePattern: 'combined-%DATE%.log'
     })
   );
   
@@ -98,7 +99,8 @@ if (process.env.NODE_ENV === 'production' &&
     new OssTransport({
       level: 'error',
       bucket: 'skc-logs',
-      ossPrefix: 'logs/error/'
+      ossPrefix: 'logs/error/',
+      fileNamePattern: 'error-%DATE%.log'
     })
   );
   
@@ -107,7 +109,8 @@ if (process.env.NODE_ENV === 'production' &&
     new OssTransport({
       level: 'info',
       bucket: 'skc-logs',
-      ossPrefix: 'logs/scrape-failures/'
+      ossPrefix: 'logs/scrape-failures/',
+      fileNamePattern: 'scrape-failures-%DATE%.log'
     })
   );
   
@@ -116,7 +119,8 @@ if (process.env.NODE_ENV === 'production' &&
     new OssTransport({
       level: 'info',
       bucket: 'skc-logs',
-      ossPrefix: 'logs/scrape-success/'
+      ossPrefix: 'logs/scrape-success/',
+      fileNamePattern: 'scrape-success-%DATE%.log'
     })
   );
   

@@ -33,19 +33,23 @@ class OssTransport extends Transport {
     // 日志文件前缀路径
     this.ossPrefix = options.ossPrefix || 'logs/';
     
+    // 日志文件名模式（与本地日志文件名保持一致）
+    this.fileNamePattern = options.fileNamePattern || 'log-%DATE%.log';
+    
     // 日志刷新间隔（毫秒），默认5分钟
     this.flushInterval = options.flushInterval || 5 * 60 * 1000;
     
     // 本地缓存目录
-    this.tempDir = options.tempDir || path.join(os.tmpdir(), 'winston-oss-logs');
+    this.tempDir = options.tempDir || path.join(os.tmpdir(), 'winston-oss-logs', this.ossPrefix.replace(/[^a-zA-Z0-9]/g, '-'));
     if (!fs.existsSync(this.tempDir)) {
       fs.mkdirSync(this.tempDir, { recursive: true });
     }
     
-    // 当前日志文件
+    // 当前日志文件（添加进程ID避免多进程冲突）
     this.currentDate = new Date().toISOString().split('T')[0];
     this.currentFileName = this._getLogFileName();
-    this.currentFilePath = path.join(this.tempDir, this.currentFileName);
+    this.tempFileName = this._getTempFileName(); // 临时文件名（包含进程ID）
+    this.currentFilePath = path.join(this.tempDir, this.tempFileName);
     
     // OSS客户端
     this.ossClient = null;
@@ -73,14 +77,25 @@ class OssTransport extends Transport {
   }
   
   /**
-   * 获取日志文件名
+   * 获取日志文件名（与本地日志文件名保持一致）
    * @private
    * @returns {string} 日志文件名
    */
   _getLogFileName() {
     const date = new Date().toISOString().split('T')[0];
-    const hostname = os.hostname().replace(/[^a-zA-Z0-9]/g, '-');
-    return `${date}-${hostname}-${process.pid}.log`;
+    return this.fileNamePattern.replace('%DATE%', date);
+  }
+  
+  /**
+   * 获取临时文件名（包含进程ID）
+   * @private
+   * @returns {string} 临时文件名
+   */
+  _getTempFileName() {
+    const pid = process.pid.toString();
+    const date = new Date().toISOString().split('T')[0];
+    const baseFileName = this.fileNamePattern.replace('%DATE%', date);
+    return `${baseFileName}-${pid}`;
   }
   
   /**
@@ -113,7 +128,8 @@ class OssTransport extends Transport {
       // 更新日期和文件名
       this.currentDate = currentDate;
       this.currentFileName = this._getLogFileName();
-      this.currentFilePath = path.join(this.tempDir, this.currentFileName);
+      this.tempFileName = this._getTempFileName(); // 临时文件名（包含进程ID）
+      this.currentFilePath = path.join(this.tempDir, this.tempFileName);
     }
   }
   
@@ -138,18 +154,35 @@ class OssTransport extends Transport {
         return; // 空文件，不需要上传
       }
       
-      // 构建OSS路径
+      // 构建OSS路径（使用统一的文件名，不包含进程ID）
       const ossPath = `${this.ossPrefix}${this.currentFileName}`;
       
-      // 读取文件内容
-      const fileContent = fs.readFileSync(this.currentFilePath);
+      // 读取当前临时文件内容
+      const newContent = fs.readFileSync(this.currentFilePath);
       
-      // 上传到OSS
-      await this.ossClient.put(ossPath, fileContent);
+      try {
+        // 尝试获取OSS上现有文件内容
+        const existingResult = await this.ossClient.get(ossPath);
+        const existingContent = existingResult.content;
+        
+        // 合并内容（追加新内容到现有内容）
+        const combinedContent = Buffer.concat([existingContent, newContent]);
+        
+        // 上传合并后的内容
+        await this.ossClient.put(ossPath, combinedContent);
+        
+        console.log(`日志已追加上传到OSS: ${ossPath}`);
+      } catch (getError) {
+        // OSS文件不存在，直接上传新内容
+        if (getError.code === 'NoSuchKey') {
+          await this.ossClient.put(ossPath, newContent);
+          console.log(`日志已首次上传到OSS: ${ossPath}`);
+        } else {
+          throw getError;
+        }
+      }
       
-      console.log(`日志已上传到OSS: ${ossPath}`);
-      
-      // 上传成功后清空文件内容（但保留文件）
+      // 上传成功后清空临时文件内容（但保留文件）
       fs.truncateSync(this.currentFilePath, 0);
     } catch (error) {
       console.error('上传日志到OSS失败:', error);
@@ -169,8 +202,16 @@ class OssTransport extends Transport {
     // 检查并轮换日志文件
     this._checkAndRotateFile();
     
-    // 格式化日志
-    const logEntry = `${info.timestamp} [${info.level}]: ${info.message}\n`;
+    // 格式化日志 - 根据transport配置决定格式
+    let logEntry;
+    if (this.ossPrefix.includes('scrape-')) {
+      // 抓取日志只输出消息内容，与本地格式保持一致
+      logEntry = `${info.message}\n`;
+    } else {
+      // 普通日志使用完整格式
+      const timestamp = info.timestamp || new Date().toISOString().replace('T', ' ').substring(0, 19);
+      logEntry = `${timestamp} [${info.level}]: ${info.message}\n`;
+    }
     
     // 追加到本地文件
     fs.appendFileSync(this.currentFilePath, logEntry);
