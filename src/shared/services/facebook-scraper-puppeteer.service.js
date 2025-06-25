@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-06-23 14:36:28
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-25 16:15:40
+ * @LastEditTime: 2025-06-25 20:05:08
  * @Description: 
  */
 /**
@@ -304,6 +304,7 @@ class FacebookScraperPuppeteerService {
       logger.info(`快速提取成功，无需启动浏览器: ${url}`);
       
       scrapeSuccessLogger.info(JSON.stringify({
+        engine: 'puppeteer',
         url: url,
         type: type,
         data: fastExtractResult
@@ -385,12 +386,14 @@ class FacebookScraperPuppeteerService {
         
         if (result.extractionMethod === 'failed'){
           scrapeFailureLogger.info(JSON.stringify({
+            engine: 'puppeteer',
             url: url,
             type: type,
             data: result
           }));
         } else {
           scrapeSuccessLogger.info(JSON.stringify({
+            engine: 'puppeteer',
             url: url,
             type: type,
             data: result
@@ -412,6 +415,7 @@ class FacebookScraperPuppeteerService {
         
         if (attempt >= retries) {
           scrapeFailureLogger.info(JSON.stringify({
+            engine: 'puppeteer',
             url: url,
             type: type,
             message: this.getErrorMessage(error),
