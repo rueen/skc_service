@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-06-23 14:36:28
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-25 10:41:08
+ * @LastEditTime: 2025-06-25 12:46:00
  * @Description: 
  */
 /**
@@ -65,11 +65,25 @@ class FacebookScraperPuppeteerService {
     // 服务器环境使用系统Chromium并添加额外兼容性参数
     if (process.platform === 'linux') {
       const fs = require('fs');
-      const chromiumPath = '/usr/bin/chromium-browser';
+      // 优先使用snap安装的chromium，其次是传统路径
+      const chromiumPaths = ['/snap/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/chromium'];
+      let chromiumPath = null;
+      
+      // 查找可用的chromium路径
+      for (const path of chromiumPaths) {
+        if (fs.existsSync(path)) {
+          chromiumPath = path;
+          break;
+        }
+      }
+      
+      if (!chromiumPath) {
+        logger.warn('未找到任何Chromium可执行文件，将使用Puppeteer内置Chrome');
+      }
       
       // 检查系统Chromium是否可用
       let useSystemChromium = false;
-      if (fs.existsSync(chromiumPath)) {
+      if (chromiumPath) {
         try {
           const { execSync } = require('child_process');
           // 测试Chromium是否能正常启动
@@ -78,12 +92,10 @@ class FacebookScraperPuppeteerService {
             stdio: 'pipe' 
           });
           useSystemChromium = true;
-          logger.info('检测到可用的系统Chromium，将使用系统版本');
+          logger.info(`检测到可用的系统Chromium: ${chromiumPath}，将使用系统版本`);
         } catch (e) {
           logger.warn('系统Chromium不可用，将使用Puppeteer内置Chrome:', e.message);
         }
-      } else {
-        logger.warn('未找到系统Chromium，将使用Puppeteer内置Chrome');
       }
       
       if (useSystemChromium) {
