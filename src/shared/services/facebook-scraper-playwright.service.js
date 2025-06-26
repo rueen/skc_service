@@ -80,30 +80,30 @@ class FacebookScraperPlaywrightService {
    * @param {Object} options - 浏览器配置选项
    */
   async initBrowser(options = {}) {
-    // Playwright 1.53.1 + Chromium 137.0.7151.119 优化配置
+    // Playwright 1.53.1 + Chromium 137.0.7151.119 稳定性优化配置
     const defaultOptions = {
       headless: true,
-      // 针对 Chromium 137.x 的优化参数配置
+      // 针对服务器环境的稳定性优化参数
       args: [
-        // 核心安全参数（必需）
+        // 核心安全参数
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
         
-        // 性能优化参数（适用于 137.x）
+        // 内存管理优化（移除可能导致崩溃的参数）
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
         '--disable-renderer-backgrounding',
-        '--disable-features=TranslateUI,BlinkGenPropertyTrees',
+        '--memory-pressure-off',
         
-        // 反检测优化（137.x 支持良好）
+        // 反检测优化
         '--disable-blink-features=AutomationControlled',
         '--disable-automation',
         '--disable-infobars',
         '--exclude-switches=enable-automation',
         
-        // 网络和媒体优化
+        // 网络和资源优化
         '--disable-background-networking',
         '--disable-default-apps',
         '--disable-extensions',
@@ -112,10 +112,22 @@ class FacebookScraperPlaywrightService {
         '--hide-scrollbars',
         '--mute-audio',
         
-        // 内存优化（服务器环境）
-        '--memory-pressure-off',
-        '--max_old_space_size=4096',
-        '--single-process'
+        // 服务器环境稳定性参数
+        '--force-color-profile=srgb',
+        '--disable-software-rasterizer',
+        '--disable-background-mode',
+        '--disable-hang-monitor',
+        '--disable-prompt-on-repost',
+        '--disable-client-side-phishing-detection',
+        '--disable-component-update',
+        
+        // 移除 --single-process 以避免内存问题
+        // '--single-process',  // 注释掉这个参数
+        
+        // 使用多进程模式的优化参数
+        '--max_old_space_size=2048',  // 减少内存限制
+        '--process-per-site',
+        '--disable-features=VizDisplayCompositor'
       ],
       
       // Playwright 1.53.1 兼容性：只忽略确实有问题的参数
@@ -155,12 +167,12 @@ class FacebookScraperPlaywrightService {
         logger.info(`🎯 使用 ${foundBrowser.name}: ${foundBrowser.path}`);
         logger.info(`✅ 版本匹配：Playwright 1.53.1 + Chromium 137.x = 最佳兼容性`);
         
-        // 针对 Chromium 137.x 的特殊优化
+        // 针对 Chromium 137.x 的特殊优化（避免崩溃）
         if (foundBrowser.path.includes('chromium')) {
           defaultOptions.args.push(
-            '--force-color-profile=srgb',
             '--use-gl=swiftshader',
-            '--disable-software-rasterizer'
+            '--disable-accelerated-2d-canvas',
+            '--disable-accelerated-video-decode'
           );
         }
       } else {
@@ -181,7 +193,7 @@ class FacebookScraperPlaywrightService {
       logger.info(`📍 浏览器路径: ${defaultOptions.executablePath || 'Playwright内置Chromium'}`);
       logger.info(`🔧 启动参数 (${defaultOptions.args.length}个): ${defaultOptions.args.join(' ')}`);
       logger.info(`🚫 忽略参数: ${Array.isArray(defaultOptions.ignoreDefaultArgs) ? defaultOptions.ignoreDefaultArgs.join(' ') : '基本参数'}`);
-      logger.info(`💾 Playwright版本: 1.53.1 | 目标Chromium: 137.0.7151.119`);
+      logger.info(`💾 Playwright版本: 1.53.1 | 目标Chromium: 137.0.7151.119 | 🛡️ 防崩溃稳定模式`);
       
       this.browser = await chromium.launch({ ...defaultOptions, ...options });
       
@@ -218,172 +230,49 @@ class FacebookScraperPlaywrightService {
       const randomUA = userAgents[Math.floor(Math.random() * userAgents.length)];
       const randomViewport = viewports[Math.floor(Math.random() * viewports.length)];
       
-      // 创建隐身上下文以增强隐私性和反检测能力
+      // 创建简化上下文 - 服务器稳定性优先
       this.context = await this.browser.newContext({
         viewport: randomViewport,
         userAgent: randomUA,
         locale: 'en-US',
-        timezoneId: 'America/New_York',
-        permissions: ['geolocation', 'notifications'], // 更多权限模拟
-        geolocation: { latitude: 40.7128, longitude: -74.0060 }, // 纽约坐标
-        colorScheme: 'light',
-        reducedMotion: 'no-preference',
+        
+        // 基础 HTTP 头
         extraHTTPHeaders: {
-          'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7', // 更真实的语言偏好
-          'Accept-Encoding': 'gzip, deflate, br, zstd',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-          'Sec-Ch-Ua': randomUA.includes('Chrome') ? '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"' : '"Not_A Brand";v="8", "Chromium";v="120"',
-          'Sec-Ch-Ua-Mobile': '?0',
-          'Sec-Ch-Ua-Platform': '"Windows"',
-          'Sec-Ch-Ua-Platform-Version': '"15.0.0"',
-          'Sec-Ch-Ua-Arch': '"x86"',
-          'Sec-Ch-Ua-Bitness': '"64"',
-          'Sec-Ch-Ua-Model': '""',
-          'Sec-Fetch-Dest': 'document',
-          'Sec-Fetch-Mode': 'navigate',
-          'Sec-Fetch-Site': 'none',
-          'Sec-Fetch-User': '?1',
-          'Upgrade-Insecure-Requests': '1',
-          'Connection': 'keep-alive',
-          'Cache-Control': 'max-age=0'
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
         },
-        // 启用 JavaScript
+        
+        // 基础设置
         javaScriptEnabled: true,
-        // 设置屏幕信息
         screen: {
           width: randomViewport.width,
           height: randomViewport.height
         },
-        // 启用设备像素比
         deviceScaleFactor: 1,
-        // 启用更多媒体功能
         hasTouch: false,
-        isMobile: false
+        isMobile: false,
+        
+        // 关键：设置保守的超时，避免长时间等待导致崩溃
+        defaultTimeout: 20000,        // 20秒
+        defaultNavigationTimeout: 45000  // 45秒
       });
 
-      // 添加强化的反检测脚本
+      // 极简反检测脚本 - 避免复杂操作导致崩溃
       await this.context.addInitScript(() => {
-        // 完全删除和覆盖 webdriver 相关属性
+        // 基础 webdriver 隐藏
         Object.defineProperty(navigator, 'webdriver', {
           get: () => undefined,
           configurable: true
         });
         
-        // 删除所有可能的自动化痕迹
-        delete navigator.__proto__.webdriver;
-        delete window.navigator.webdriver;
-        delete Object.getPrototypeOf(navigator).webdriver;
-
-        // 模拟真实的插件列表
-        Object.defineProperty(navigator, 'plugins', {
-          get: () => ({
-            length: 5,
-            0: { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer' },
-            1: { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai' },
-            2: { name: 'Native Client', filename: 'internal-nacl-plugin' },
-            3: { name: 'WebKit built-in PDF', filename: 'WebKit built-in PDF' },
-            4: { name: 'Microsoft Edge PDF Viewer', filename: 'edge-pdf-viewer' }
-          }),
-          configurable: true
-        });
-
-        // 设置语言属性
-        Object.defineProperty(navigator, 'languages', {
-          get: () => ['en-US', 'en', 'zh-CN', 'zh'],
-          configurable: true
-        });
-
-        // 设置平台信息
-        Object.defineProperty(navigator, 'platform', {
-          get: () => 'Win32',
-          configurable: true
-        });
-
-        // 模拟硬件并发
-        Object.defineProperty(navigator, 'hardwareConcurrency', {
-          get: () => 8,
-          configurable: true
-        });
-
-        // 模拟设备内存
-        Object.defineProperty(navigator, 'deviceMemory', {
-          get: () => 8,
-          configurable: true
-        });
-
-        // 模拟更多真实的navigator属性
-        Object.defineProperty(navigator, 'maxTouchPoints', {
-          get: () => 0,
-          configurable: true
-        });
-
-        Object.defineProperty(navigator, 'cookieEnabled', {
-          get: () => true,
-          configurable: true
-        });
-
-        Object.defineProperty(navigator, 'doNotTrack', {
-          get: () => null,
-          configurable: true
-        });
-
-        // 模拟网络连接信息
-        Object.defineProperty(navigator, 'connection', {
-          get: () => ({
-            effectiveType: '4g',
-            rtt: 100,
-            downlink: 10,
-            saveData: false
-          }),
-          configurable: true
-        });
-
-        // 覆盖 chrome 检测
+        // 基础 chrome 对象
         if (!window.chrome) {
           window.chrome = {
             runtime: {},
-            loadTimes: function() {
-              return {
-                commitLoadTime: Date.now() - Math.random() * 1000,
-                finishDocumentLoadTime: Date.now() - Math.random() * 500,
-                finishLoadTime: Date.now() - Math.random() * 200,
-                firstPaintAfterLoadTime: Date.now() - Math.random() * 100,
-                firstPaintTime: Date.now() - Math.random() * 50,
-                navigationType: 'Other',
-                wasFetchedViaSpdy: true,
-                wasNpnNegotiated: true
-              };
-            },
-            csi: function() {
-              return {
-                onloadT: Date.now(),
-                pageT: Date.now() - Math.random() * 1000,
-                tran: 15
-              };
-            },
-            app: {
-              isInstalled: false,
-              InstallState: {
-                DISABLED: 'disabled',
-                INSTALLED: 'installed',
-                NOT_INSTALLED: 'not_installed'
-              },
-              RunningState: {
-                CANNOT_RUN: 'cannot_run',
-                READY_TO_RUN: 'ready_to_run',
-                RUNNING: 'running'
-              }
-            }
+            app: { isInstalled: false }
           };
         }
-        
-        // 增强Chrome指纹特征
-        Object.defineProperty(window, 'chrome', {
-          writable: false,
-          enumerable: true,
-          configurable: false,
-          value: window.chrome
-        });
 
         // 模拟Chrome特有的CSS属性
         if (CSS && CSS.supports) {
@@ -598,7 +487,7 @@ class FacebookScraperPlaywrightService {
         }
       ]);
 
-      logger.info('浏览器初始化成功 (Playwright)');
+      logger.info('✅ 浏览器初始化成功 (Playwright) - 🛡️ 服务器稳定模式：简化配置、保守超时、防崩溃优化');
     } catch (error) {
       logger.error('浏览器初始化失败 (Playwright):', error);
       throw error;
@@ -720,76 +609,40 @@ class FacebookScraperPlaywrightService {
   }
 
   /**
-   * 智能建立 Facebook Session
+   * 智能建立 Facebook Session（简化版，避免崩溃）
    * @param {number} timeout - 超时时间
    * @returns {boolean} 是否成功建立session
    */
   async establishFacebookSession(timeout) {
-    const sessionUrls = [
-      'https://www.facebook.com',
-      'https://m.facebook.com',
-      'https://www.facebook.com/public',
-      'https://www.facebook.com/help',
-      'https://www.facebook.com/pages/create'
-    ];
+    // 超级简化的 session 建立，只使用一个最稳定的URL
+    const sessionUrl = 'https://www.facebook.com';
+    logger.info(`尝试建立简化session: ${sessionUrl}`);
     
-    for (let i = 0; i < sessionUrls.length; i++) {
-      const sessionUrl = sessionUrls[i];
-      logger.info(`尝试session URL ${i + 1}: ${sessionUrl}`);
-      
-      try {
-        const sessionResult = await this.safePageOperation(async () => {
-          await this.page.goto(sessionUrl, { 
-            waitUntil: 'domcontentloaded',
-            timeout: Math.min(timeout / 4, 15000) // 限制单次尝试时间
-          });
-          
-          // 检查是否成功访问
-          const currentUrl = this.page.url();
-          const title = await this.page.title();
-          
-          if (!currentUrl.includes('/login/') && 
-              !title.toLowerCase().includes('log in')) {
-            
-            // 模拟真实用户行为
-            await this.page.waitForTimeout(1000 + Math.random() * 2000);
-            
-            // 尝试滚动
-            try {
-              await this.page.evaluate(() => {
-                window.scrollTo(0, Math.random() * 300);
-              });
-            } catch (e) {
-              // 忽略滚动错误
-            }
-            
-            await this.page.waitForTimeout(1000 + Math.random() * 2000);
-            
-            logger.info(`Session 建立成功，URL: ${sessionUrl}`);
-            return true;
-          } else {
-            logger.warn(`${sessionUrl} 被重定向到登录页面`);
-            return false;
-          }
-        }, `建立 Facebook session: ${sessionUrl}`, { throwOnError: false });
+    try {
+      const sessionResult = await this.safePageOperation(async () => {
+        await this.page.goto(sessionUrl, { 
+          waitUntil: 'domcontentloaded',
+          timeout: 8000 // 更短的超时时间，8秒
+        });
         
-        if (sessionResult) {
+        // 极简检查，只验证页面加载成功
+        const currentUrl = this.page.url();
+        
+        if (currentUrl && !currentUrl.includes('/login/')) {
+          logger.info(`✅ Session 建立成功: ${sessionUrl}`);
           return true;
+        } else {
+          logger.warn(`⚠️ ${sessionUrl} 重定向到登录页面，跳过session`);
+          return false;
         }
-        
-        // 失败时短暂等待再尝试下一个
-        if (i < sessionUrls.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-        }
-        
-      } catch (error) {
-        logger.warn(`Session URL ${sessionUrl} 访问失败: ${error.message}`);
-        continue;
-      }
+      }, `建立简化 Facebook session`, { throwOnError: false });
+      
+      return !!sessionResult;
+      
+    } catch (error) {
+      logger.warn(`Session 建立失败，直接跳过: ${error.message}`);
+      return false;
     }
-    
-    logger.warn('所有 session 建立尝试都失败了');
-    return false;
   }
 
   /**
@@ -935,32 +788,16 @@ class FacebookScraperPlaywrightService {
   }
 
   /**
-   * 模拟人类行为
+   * 极简模拟人类行为 - 避免过多操作导致崩溃
    */
   async simulateHumanBehavior() {
     if (!this.page || this.page.isClosed()) return;
     
     try {
-      // 随机滚动
-      await this.page.evaluate(() => {
-        window.scrollTo(0, Math.random() * 500);
-      });
-      
-      // 随机等待
-      await this.page.waitForTimeout(1000 + Math.random() * 2000);
-      
-      // 随机鼠标移动
-      const viewport = this.page.viewportSize();
-      if (viewport) {
-        await this.page.mouse.move(
-          Math.random() * viewport.width,
-          Math.random() * viewport.height
-        );
-      }
-      
-      await this.page.waitForTimeout(500 + Math.random() * 1000);
+      // 只做最基础的等待，避免复杂操作
+      await this.page.waitForTimeout(800 + Math.random() * 400);
     } catch (error) {
-      // 忽略模拟行为的错误
+      // 忽略所有错误
     }
   }
 
