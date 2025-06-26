@@ -80,104 +80,132 @@ class FacebookScraperPlaywrightService {
    * @param {Object} options - 浏览器配置选项
    */
   async initBrowser(options = {}) {
+    // Playwright 1.53.1 + Chromium 137.0.7151.119 优化配置
     const defaultOptions = {
       headless: true,
-      // 针对老版本Chromium的超保守配置
+      // 针对 Chromium 137.x 的优化参数配置
       args: [
+        // 核心安全参数（必需）
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ],
-      // 只忽略已知有问题的参数，保留必要的默认参数
-      ignoreDefaultArgs: [
-        '--disable-field-trial-config',
-        '--disable-back-forward-cache',
-        '--disable-background-networking',
+        '--disable-gpu',
+        
+        // 性能优化参数（适用于 137.x）
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
         '--disable-renderer-backgrounding',
-        '--enable-automation'
+        '--disable-features=TranslateUI,BlinkGenPropertyTrees',
+        
+        // 反检测优化（137.x 支持良好）
+        '--disable-blink-features=AutomationControlled',
+        '--disable-automation',
+        '--disable-infobars',
+        '--exclude-switches=enable-automation',
+        
+        // 网络和媒体优化
+        '--disable-background-networking',
+        '--disable-default-apps',
+        '--disable-extensions',
+        '--disable-sync',
+        '--disable-translate',
+        '--hide-scrollbars',
+        '--mute-audio',
+        
+        // 内存优化（服务器环境）
+        '--memory-pressure-off',
+        '--max_old_space_size=4096',
+        '--single-process'
+      ],
+      
+      // Playwright 1.53.1 兼容性：只忽略确实有问题的参数
+      ignoreDefaultArgs: [
+        '--enable-automation',
+        '--enable-blink-features=IdleDetection'
       ]
     };
 
     // Linux 环境特殊配置
     if (process.platform === 'linux') {
       const fs = require('fs');
-      // 优先使用Google Chrome，其次是Chromium
-      // Chrome具有更完整的浏览器指纹，反检测能力更强
+      
+      // 优先使用服务器上的 Chromium 137.0.7151.119
       const browserPaths = [
-        // Google Chrome (优先级最高 - 更难被检测)
+        // 强制指定系统 Chromium（推荐）
+        '/snap/bin/chromium',           // Snap 版本 - 优先
+        '/usr/bin/chromium',            // 系统安装版本
+        '/usr/bin/chromium-browser',    
+        
+        // 备选 Google Chrome（如果有）
         '/usr/bin/google-chrome',
         '/usr/bin/google-chrome-stable',
-        '/opt/google/chrome/chrome',
-        '/opt/google/chrome/google-chrome',
-        
-        // Microsoft Edge (第二优先级 - 企业级浏览器)
-        '/usr/bin/microsoft-edge-stable',
-        '/usr/bin/microsoft-edge',
-        
-        // Chromium (最后选择 - 容易被识别为自动化)
-        '/usr/bin/chromium',
-        '/usr/bin/chromium-browser',
-        '/snap/bin/chromium'
+        '/opt/google/chrome/chrome'
       ];
       
+      let foundBrowser = null;
       for (const path of browserPaths) {
         if (fs.existsSync(path)) {
-          defaultOptions.executablePath = path;
-          
-          // 根据浏览器类型调整配置
-          if (path.includes('google-chrome')) {
-            logger.info(`✅ 使用Google Chrome: ${path} (反检测能力: 最强)`);
-            // Chrome特有的反检测参数 - 移除重复的参数
-            defaultOptions.args.push(
-              '--exclude-switches=enable-automation',
-              '--disable-features=VizDisplayCompositor'
-            );
-          } else if (path.includes('microsoft-edge')) {
-            logger.info(`✅ 使用Microsoft Edge: ${path} (反检测能力: 强)`);
-            // Edge特有参数
-            defaultOptions.args.push(
-              '--disable-features=msEdgeEnableAutoplayPolicyByNonVideoElements'
-            );
-          } else {
-            logger.info(`⚠️ 使用Chromium: ${path} (反检测能力: 一般)`);
-            logger.warn('建议安装Google Chrome以获得更好的反检测效果');
-          }
+          foundBrowser = { path, name: path.includes('chrome') ? 'Google Chrome' : 'Chromium' };
           break;
         }
       }
       
-      if (!defaultOptions.executablePath) {
-        logger.warn('🔍 未找到系统浏览器，将使用Playwright内置Chromium');
-        logger.info('💡 建议安装Google Chrome: sudo apt install google-chrome-stable');
+      if (foundBrowser) {
+        defaultOptions.executablePath = foundBrowser.path;
+        logger.info(`🎯 使用 ${foundBrowser.name}: ${foundBrowser.path}`);
+        logger.info(`✅ 版本匹配：Playwright 1.53.1 + Chromium 137.x = 最佳兼容性`);
+        
+        // 针对 Chromium 137.x 的特殊优化
+        if (foundBrowser.path.includes('chromium')) {
+          defaultOptions.args.push(
+            '--force-color-profile=srgb',
+            '--use-gl=swiftshader',
+            '--disable-software-rasterizer'
+          );
+        }
+      } else {
+        logger.warn('⚠️  未找到系统浏览器，将使用 Playwright 内置 Chromium 138.x');
+        logger.info('💡 建议：强制指定路径 executablePath: "/snap/bin/chromium"');
+        
+        // 使用内置浏览器时的额外参数
+        defaultOptions.args.push(
+          '--disable-field-trial-config',
+          '--disable-back-forward-cache'
+        );
       }
-      
-      // Linux 服务器额外参数 - 移除重复的参数
-      defaultOptions.args.push(
-        '--single-process'
-      );
     }
 
     try {
-      // 启动浏览器
-      logger.info('正在启动浏览器...');
-      logger.info(`浏览器可执行路径: ${defaultOptions.executablePath || 'Playwright内置'}`);
-      logger.info(`浏览器参数: ${defaultOptions.args.join(' ')}`);
-      logger.info(`忽略的默认参数: ${defaultOptions.ignoreDefaultArgs === true ? '所有默认参数' : (defaultOptions.ignoreDefaultArgs ? defaultOptions.ignoreDefaultArgs.join(' ') : '无')}`);
+      // 启动浏览器 - 详细日志
+      logger.info('🚀 正在启动浏览器...');
+      logger.info(`📍 浏览器路径: ${defaultOptions.executablePath || 'Playwright内置Chromium'}`);
+      logger.info(`🔧 启动参数 (${defaultOptions.args.length}个): ${defaultOptions.args.join(' ')}`);
+      logger.info(`🚫 忽略参数: ${Array.isArray(defaultOptions.ignoreDefaultArgs) ? defaultOptions.ignoreDefaultArgs.join(' ') : '基本参数'}`);
+      logger.info(`💾 Playwright版本: 1.53.1 | 目标Chromium: 137.0.7151.119`);
       
       this.browser = await chromium.launch({ ...defaultOptions, ...options });
       
+      // 版本兼容性验证
+      const version = await this.browser.version();
+      logger.info(`✅ 浏览器启动成功！版本: ${version}`);
+      
+      // 检查版本兼容性
+      if (version.includes('137.')) {
+        logger.info('🎉 完美匹配：使用服务器 Chromium 137.x 版本');
+      } else if (version.includes('138.')) {
+        logger.info('✅ 良好兼容：使用 Playwright 内置 Chromium 138.x 版本');
+      } else {
+        logger.warn(`⚠️  版本异常：${version}，可能需要调整配置`);
+      }
+
       // 随机化用户代理和指纹信息，增强隐蔽性
       const userAgents = [
-        // 使用真实的Chrome用户代理，即使运行在Chromium上
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        // 添加一些Edge用户代理增加多样性
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0'
+        // 匹配 Chromium 137.x 的真实 User-Agent
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
       ];
       
       const viewports = [
