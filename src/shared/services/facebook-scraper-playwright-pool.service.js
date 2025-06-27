@@ -3,18 +3,282 @@
  * 支持高并发的抓取服务管理器
  * 解决单实例模式的资源竞争问题
  */
-const FacebookScraperPlaywrightService = require('./facebook-scraper-playwright.service');
-const { logger } = require('../config/logger.config');
+const { chromium } = require('playwright');
+const { logger, scrapeFailureLogger, scrapeSuccessLogger } = require('../config/logger.config');
+
+/**
+ * 轻量化的抓取服务 - 专为服务池优化
+ */
+class LightweightScraperService {
+  constructor() {
+    this.browser = null;
+    this.context = null;
+    this.page = null;
+  }
+
+  /**
+   * 初始化浏览器 - 简化配置，提升性能
+   */
+  async initBrowser() {
+    // 简化的启动参数 - 仅保留核心配置
+    const launchOptions = {
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-blink-features=AutomationControlled',
+        '--disable-automation',
+        '--exclude-switches=enable-automation',
+        '--disable-extensions',
+        '--mute-audio',
+        '--memory-pressure-off'
+      ],
+      ignoreDefaultArgs: ['--enable-automation']
+    };
+
+    // Linux 环境使用系统浏览器
+    if (process.platform === 'linux') {
+      const fs = require('fs');
+      const browserPaths = ['/snap/bin/chromium', '/usr/bin/chromium-browser'];
+      
+      for (const path of browserPaths) {
+        if (fs.existsSync(path)) {
+          launchOptions.executablePath = path;
+          break;
+        }
+      }
+    }
+
+    this.browser = await chromium.launch(launchOptions);
+    
+    // 简化的上下文配置
+    this.context = await this.browser.newContext({
+      viewport: { width: 1366, height: 768 },
+      userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+      locale: 'en-US',
+      defaultTimeout: 15000,
+      defaultNavigationTimeout: 30000
+    });
+
+    // 最小化反检测脚本
+    await this.context.addInitScript(() => {
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => undefined,
+        configurable: true
+      });
+    });
+
+    this.page = await this.context.newPage();
+  }
+
+  /**
+   * 关闭浏览器
+   */
+  async closeBrowser() {
+    try {
+      if (this.page) {
+        await this.page.close();
+        this.page = null;
+      }
+      if (this.context) {
+        await this.context.close();
+        this.context = null;
+      }
+      if (this.browser) {
+        await this.browser.close();
+        this.browser = null;
+      }
+    } catch (error) {
+      // 静默处理关闭错误
+    }
+  }
+
+  /**
+   * 抓取数据 - 核心逻辑
+   */
+  async scrapeData(url, type, options = {}) {
+    if (!this.browser) {
+      await this.initBrowser();
+    }
+
+    try {
+      // 快速提取尝试
+      if (type !== 'profile') {
+        const fastResult = this.tryFastExtract(url, type);
+        if (fastResult) {
+          return { success: true, data: fastResult };
+        }
+      }
+
+      // 访问页面
+      await this.page.goto('https://www.facebook.com', { waitUntil: 'domcontentloaded' });
+      await this.page.waitForTimeout(800); // 减少等待时间
+      
+      await this.page.goto(url, { waitUntil: 'domcontentloaded' });
+      await this.page.waitForTimeout(1500); // 减少等待时间
+
+      // 根据类型抓取数据
+      let result;
+      switch (type) {
+        case 'profile':
+          result = await this.scrapeProfile();
+          break;
+        case 'post':
+          result = await this.scrapePost(url);
+          break;
+        case 'group':
+          result = await this.scrapeGroup(url);
+          break;
+        default:
+          throw new Error(`不支持的类型: ${type}`);
+      }
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: {
+          code: 'SCRAPE_ERROR',
+          message: error.message
+        }
+      };
+    }
+  }
+
+  /**
+   * 快速提取UID（无需启动浏览器）
+   */
+  tryFastExtract(url, type) {
+    try {
+      if (type === 'post') {
+        // 从URL提取帖子ID
+        const postMatch = url.match(/(?:posts|story\.php\?story_fbid=|permalink\.php\?story_fbid=)[\w\/]*?(\d{15,})/);
+        if (postMatch) {
+          return { uid: postMatch[1], type: 'post', extractMethod: 'url_pattern' };
+        }
+      }
+      
+      if (type === 'group') {
+        // 从URL提取群组ID
+        const groupMatch = url.match(/groups\/(\d+)/);
+        if (groupMatch) {
+          return { uid: groupMatch[1], type: 'group', extractMethod: 'url_pattern' };
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * 抓取个人资料
+   */
+  async scrapeProfile() {
+    try {
+      // 获取UID
+      const content = await this.page.content();
+      const uidMatch = content.match(/"userID":"(\d+)"/);
+      const uid = uidMatch ? uidMatch[1] : null;
+
+      // 获取昵称
+      let nickname = null;
+      try {
+        const nameElement = await this.page.$('h1:first-of-type');
+        if (nameElement) {
+          nickname = await nameElement.textContent();
+        }
+      } catch (error) {
+        // 忽略获取昵称失败
+      }
+
+      return {
+        uid,
+        nickname: nickname?.trim() || null,
+        type: 'profile',
+        extractMethod: 'page_content'
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * 抓取帖子
+   */
+  async scrapePost(originalUrl) {
+    try {
+      // 先尝试从页面内容获取
+      const content = await this.page.content();
+      const postMatch = content.match(/"post_id":"(\d+)"/);
+      
+      if (postMatch) {
+        return { uid: postMatch[1], type: 'post', extractMethod: 'page_content' };
+      }
+
+      // 回退到URL匹配
+      const urlMatch = originalUrl.match(/(\d{15,})/);
+      if (urlMatch) {
+        return { uid: urlMatch[1], type: 'post', extractMethod: 'url_fallback' };
+      }
+
+      throw new Error('无法提取帖子ID');
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * 抓取群组
+   */
+  async scrapeGroup(originalUrl) {
+    try {
+      // 从页面内容获取
+      const content = await this.page.content();
+      const groupMatch = content.match(/"group_id":"(\d+)"/);
+      
+      if (groupMatch) {
+        return { uid: groupMatch[1], type: 'group', extractMethod: 'page_content' };
+      }
+
+      // 回退到URL匹配
+      const urlMatch = originalUrl.match(/groups\/(\d+)/);
+      if (urlMatch) {
+        return { uid: urlMatch[1], type: 'group', extractMethod: 'url_fallback' };
+      }
+
+      throw new Error('无法提取群组ID');
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * 识别链接类型
+   */
+  identifyLinkType(url) {
+    if (url.includes('/groups/')) {
+      return 'group';
+    }
+    if (url.includes('/posts/') || url.includes('story_fbid=') || url.includes('permalink.php')) {
+      return 'post';
+    }
+    return 'profile';
+  }
+}
 
 class FacebookScraperPlaywrightPoolService {
   constructor(options = {}) {
-    this.maxInstances = options.maxInstances || 5; // 最大并发实例数
-    this.instanceTimeout = options.instanceTimeout || 300000; // 5分钟超时
-    this.cleanupInterval = options.cleanupInterval || 60000; // 1分钟清理一次
-    this.maxQueueSize = options.maxQueueSize || 50; // 最大等待队列长度
+    this.maxInstances = options.maxInstances || 8; // 提高到8个实例
+    this.instanceTimeout = options.instanceTimeout || 180000; // 减少到3分钟
+    this.cleanupInterval = options.cleanupInterval || 30000; // 30秒清理一次
+    this.maxQueueSize = options.maxQueueSize || 50;
     
-    this.instances = new Map(); // 存储活跃实例
-    this.instanceQueue = []; // 等待队列
+    this.instances = new Map();
+    this.instanceQueue = [];
     this.stats = {
       created: 0,
       destroyed: 0,
@@ -26,11 +290,10 @@ class FacebookScraperPlaywrightPoolService {
       queueTimeouts: 0
     };
     
-    // 启动清理定时器
     this.startCleanupTimer();
     
-    logger.info(`[FB-PW-POOL] 🚀 初始化抓取服务池`);
-    logger.info(`[FB-PW-POOL] 📊 配置 - 最大实例: ${this.maxInstances}, 超时: ${this.instanceTimeout}ms, 最大队列: ${this.maxQueueSize}`);
+    logger.info(`[FB-PW-POOL] 🚀 初始化轻量化抓取服务池`);
+    logger.info(`[FB-PW-POOL] 📊 配置 - 最大实例: ${this.maxInstances}, 超时: ${this.instanceTimeout}ms`);
   }
 
   /**
@@ -105,7 +368,7 @@ class FacebookScraperPlaywrightPoolService {
     try {
       logger.info(`[FB-PW-POOL] 🏗️ 创建新实例: ${instanceId}`);
       
-      const service = new FacebookScraperPlaywrightService();
+      const service = new LightweightScraperService();
       const instance = {
         id: instanceId,
         service: service,
@@ -320,40 +583,6 @@ class FacebookScraperPlaywrightPoolService {
   }
 
   /**
-   * 识别链接类型
-   * @param {string} url - Facebook 链接
-   * @returns {string} 链接类型：profile, post, group
-   */
-  identifyLinkType(url) {
-    try {
-      const urlObj = new URL(url);
-      const pathname = urlObj.pathname;
-      const searchParams = urlObj.searchParams;
-
-      // 群组链接识别
-      if (pathname.includes('/groups/')) {
-        return 'group';
-      }
-
-      // 带有 mibextid 参数的分享链接通常是群组
-      if (searchParams.has('mibextid')) {
-        return 'group';
-      }
-
-      // 帖子链接识别
-      if (pathname.includes('/posts/')) {
-        return 'post';
-      }
-
-      // 默认作为个人资料链接处理
-      return 'profile';
-    } catch (error) {
-      logger.warn('[FB-PW-POOL] URL解析失败，默认作为个人资料处理:', error.message);
-      return 'profile';
-    }
-  }
-
-  /**
    * 高级抓取方法 - 自动管理实例生命周期
    * @param {string} url - Facebook 链接
    * @param {string} type - 数据类型
@@ -378,42 +607,55 @@ class FacebookScraperPlaywrightPoolService {
       instance.updateLastUsed();
       
       // 执行抓取
-      const result = await instance.service.scrapeData(url, type, options);
+      const serviceResult = await instance.service.scrapeData(url, type, options);
       
       const totalTime = Date.now() - startTime;
-      logger.info(`[FB-PW-POOL] ✅ 抓取完成: ${url}, 总耗时: ${totalTime}ms, 实例: ${instance.instanceId}`);
       
-      this.stats.successfulRequests++;
-      
-      // 添加池统计信息到结果中
-      result.poolStats = {
-        instanceId: instance.instanceId,
-        instanceInfo: instance.getInfo(),
-        acquireTime: acquireTime,
-        totalTime: totalTime
-      };
-      
-      return result;
+      if (serviceResult.success) {
+        this.stats.successfulRequests++;
+        logger.info(`[FB-PW-POOL] ✅ 抓取完成: ${url}, 总耗时: ${totalTime}ms, 实例: ${instance.instanceId}`);
+        
+        return {
+          success: true,
+          data: serviceResult.data,
+          poolStats: {
+            instanceId: instance.instanceId,
+            acquireTime: acquireTime,
+            totalTime: totalTime
+          }
+        };
+      } else {
+        this.stats.failedRequests++;
+        logger.error(`[FB-PW-POOL] ❌ 抓取失败: ${url}, 耗时: ${totalTime}ms, 错误: ${serviceResult.error.message}`);
+        
+        return {
+          success: false,
+          error: serviceResult.error,
+          poolStats: {
+            instanceId: instance.instanceId,
+            acquireTime: acquireTime,
+            totalTime: totalTime
+          }
+        };
+      }
       
     } catch (error) {
       const totalTime = Date.now() - startTime;
-      logger.error(`[FB-PW-POOL] ❌ 抓取失败: ${url}, 耗时: ${totalTime}ms`, error);
+      logger.error(`[FB-PW-POOL] ❌ 池级别错误: ${url}, 耗时: ${totalTime}ms`, error);
       
       this.stats.failedRequests++;
       
       return {
         success: false,
         error: {
-          code: 'POOL_SCRAPE_ERROR',
-          message: error.message,
-          details: error.stack
+          code: 'POOL_ERROR',
+          message: error.message
         },
         poolStats: {
           instanceId: instance ? instance.instanceId : 'N/A',
           acquireTime: instance ? Date.now() - startTime : 0,
           totalTime: totalTime
-        },
-        timestamp: new Date().toISOString()
+        }
       };
     } finally {
       // 确保释放实例
@@ -451,8 +693,10 @@ class FacebookScraperPlaywrightPoolService {
             index: i + index, 
             result: { 
               success: false, 
-              error: error.message,
-              request: request
+              error: {
+                code: 'BATCH_ERROR',
+                message: error.message
+              }
             } 
           };
         }
@@ -475,10 +719,8 @@ class FacebookScraperPlaywrightPoolService {
         total: requests.length,
         successful: successCount,
         failed: failCount,
-        totalTime: totalTime,
-        avgTime: (totalTime / requests.length).toFixed(1) + 'ms'
-      },
-      poolStats: this.getStats()
+        totalTime: totalTime
+      }
     };
   }
 }

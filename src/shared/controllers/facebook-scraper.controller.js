@@ -115,15 +115,7 @@ class FacebookScraperController {
       // 验证请求参数
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: '请求参数验证失败',
-            details: errors.array()
-          },
-          timestamp: new Date().toISOString()
-        });
+        return responseUtil.error(res, '请求参数验证失败', 'VALIDATION_ERROR', 400);
       }
 
       const { url, type, engine = 'playwright', options = {} } = req.body;
@@ -132,15 +124,7 @@ class FacebookScraperController {
       
       // 验证引擎类型
       if (engine !== 'playwright') {
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: 'UNSUPPORTED_ENGINE',
-            message: '当前仅支持 playwright 引擎',
-            details: '推荐使用 playwright 以获得最佳性能和稳定性'
-          },
-          timestamp: new Date().toISOString()
-        });
+        return responseUtil.error(res, '当前仅支持 playwright 引擎', 'UNSUPPORTED_ENGINE', 400);
       }
       
       // 使用 Playwright 服务池
@@ -159,50 +143,21 @@ class FacebookScraperController {
       if (result.success) {
         logger.info(`[FB-CONTROLLER] 数据抓取成功: ${url}`);
         
-        // 构建成功响应，包含额外的元数据
-        const responseData = {
-          ...result,
-          _meta: {
-            engine: engine,
-            type: dataType,
-            timestamp: new Date().toISOString(),
-            poolStats: {
-              utilization: this.playwrightPoolService.getStats().health.poolUtilization,
-              activeInstances: this.playwrightPoolService.getStats().active
-            }
-          }
-        };
-        
-        return responseUtil.success(res, responseData, '数据抓取成功');
+        // 返回简化的成功响应
+        return responseUtil.success(res, result.data, '数据抓取成功');
       } else {
         // 抓取失败但服务正常
         logger.warn(`[FB-CONTROLLER] 数据抓取失败: ${url}`, result.error);
-        return res.status(422).json({
-          success: false,
-          error: {
-            code: result.error?.code || 'SCRAPE_FAILED',
-            message: result.error?.message || '数据抓取失败',
-            details: result.error?.details || '未知错误'
-          },
-          _meta: {
-            engine: engine,
-            type: dataType,
-            timestamp: new Date().toISOString()
-          }
-        });
+        return responseUtil.error(res, 
+          result.error?.message || '数据抓取失败', 
+          result.error?.code || 'SCRAPE_FAILED',
+          422
+        );
       }
       
     } catch (error) {
       logger.error('[FB-CONTROLLER] Facebook 数据抓取异常:', error);
-      return res.status(500).json({
-        success: false,
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: '服务器内部错误',
-          details: error.message
-        },
-        timestamp: new Date().toISOString()
-      });
+      return responseUtil.error(res, '服务器内部错误', 'INTERNAL_ERROR', 500);
     }
   }
 
@@ -218,42 +173,18 @@ class FacebookScraperController {
       const { urls, engine = 'playwright', options = {} } = req.body;
       
       if (!Array.isArray(urls) || urls.length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'urls 必须是非空数组',
-            details: []
-          },
-          timestamp: new Date().toISOString()
-        });
+        return responseUtil.error(res, 'urls 必须是非空数组', 'VALIDATION_ERROR', 400);
       }
       
       // 验证引擎类型
       if (engine !== 'playwright') {
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: 'UNSUPPORTED_ENGINE',
-            message: '当前仅支持 playwright 引擎',
-            details: '推荐使用 playwright 以获得最佳性能和稳定性'
-          },
-          timestamp: new Date().toISOString()
-        });
+        return responseUtil.error(res, '当前仅支持 playwright 引擎', 'UNSUPPORTED_ENGINE', 400);
       }
       
       // Playwright 服务池支持最多50个链接的批量抓取
       const maxBatchSize = 50;
       if (urls.length > maxBatchSize) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: `批量抓取最多支持 ${maxBatchSize} 个链接`,
-            details: []
-          },
-          timestamp: new Date().toISOString()
-        });
+        return responseUtil.error(res, `批量抓取最多支持 ${maxBatchSize} 个链接`, 'VALIDATION_ERROR', 400);
       }
       
       logger.info(`[FB-CONTROLLER] 开始批量抓取 Facebook 数据: ${urls.length} 个链接，使用 Playwright 引擎`);
@@ -277,37 +208,19 @@ class FacebookScraperController {
       
       logger.info(`[FB-CONTROLLER] 服务池批量抓取完成: ${result.summary.successful} 成功, ${result.summary.failed} 失败`);
       
-      return res.status(200).json({
-        success: true,
-        message: '批量抓取完成',
-        data: result.results,
-        meta: {
+      return responseUtil.success(res, {
+        results: result.results,
+        summary: {
           total: result.summary.total,
           successful: result.summary.successful,
           failed: result.summary.failed,
-          totalTime: result.summary.totalTime,
-          avgTime: result.summary.avgTime,
-          engine: 'playwright',
-          poolStats: {
-            utilization: result.poolStats.health.poolUtilization,
-            activeInstances: result.poolStats.active,
-            queueUtilization: result.poolStats.health.queueUtilization
-          },
-          timestamp: new Date().toISOString()
+          totalTime: result.summary.totalTime
         }
-      });
+      }, '批量抓取完成');
       
     } catch (error) {
       logger.error('[FB-CONTROLLER] 批量抓取 Facebook 数据异常:', error);
-      return res.status(500).json({
-        success: false,
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: '服务器内部错误',
-          details: error.message
-        },
-        timestamp: new Date().toISOString()
-      });
+      return responseUtil.error(res, '服务器内部错误', 'INTERNAL_ERROR', 500);
     }
   }
 
