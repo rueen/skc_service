@@ -723,6 +723,21 @@ class FacebookScraperPlaywrightPoolService {
       }
     };
   }
+
+  /**
+   * 识别链接类型
+   * @param {string} url - Facebook 链接
+   * @returns {string} 链接类型 ('profile', 'post', 'group')
+   */
+  identifyLinkType(url) {
+    if (url.includes('/groups/')) {
+      return 'group';
+    }
+    if (url.includes('/posts/') || url.includes('story_fbid=') || url.includes('permalink.php')) {
+      return 'post';
+    }
+    return 'profile';
+  }
 }
 
 module.exports = FacebookScraperPlaywrightPoolService; 
