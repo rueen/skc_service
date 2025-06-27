@@ -17,10 +17,19 @@ class LightweightScraperService {
   }
 
   /**
-   * 初始化浏览器 - 简化配置，提升性能
+   * 初始化浏览器
    */
   async initBrowser() {
-    // 简化的启动参数 - 仅保留核心配置
+    // 随机User-Agent列表
+    const userAgents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15'
+    ];
+    
+    // 增强的启动参数
     const launchOptions = {
       headless: true,
       args: [
@@ -33,9 +42,20 @@ class LightweightScraperService {
         '--exclude-switches=enable-automation',
         '--disable-extensions',
         '--mute-audio',
-        '--memory-pressure-off'
+        '--memory-pressure-off',
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-default-apps',
+        '--disable-popup-blocking',
+        '--disable-translate',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-ipc-flooding-protection'
       ],
-      ignoreDefaultArgs: ['--enable-automation']
+      ignoreDefaultArgs: ['--enable-automation', '--enable-blink-features=IdleDetection']
     };
 
     // Linux 环境使用系统浏览器
@@ -53,24 +73,91 @@ class LightweightScraperService {
 
     this.browser = await chromium.launch(launchOptions);
     
-    // 简化的上下文配置
+    // 随机选择User-Agent
+    const randomUserAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+    
+    // 增强的上下文配置
     this.context = await this.browser.newContext({
-      viewport: { width: 1366, height: 768 },
-      userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+      viewport: { 
+        width: 1920 + Math.floor(Math.random() * 100), 
+        height: 1080 + Math.floor(Math.random() * 100) 
+      },
+      userAgent: randomUserAgent,
       locale: 'en-US',
+      timezoneId: 'America/New_York',
       defaultTimeout: 15000,
-      defaultNavigationTimeout: 30000
+      defaultNavigationTimeout: 30000,
+      ignoreHTTPSErrors: true,
+      javaScriptEnabled: true,
+      acceptDownloads: false,
+      hasTouch: false,
+      isMobile: false,
+      permissions: [],
+      geolocation: { latitude: 40.7128, longitude: -74.0060 }, // New York
+      extraHTTPHeaders: {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Cache-Control': 'max-age=0'
+      }
     });
 
-    // 最小化反检测脚本
+    // 增强的反检测脚本
     await this.context.addInitScript(() => {
+      // 移除webdriver属性
       Object.defineProperty(navigator, 'webdriver', {
         get: () => undefined,
         configurable: true
       });
+      
+      // 模拟真实的插件
+      Object.defineProperty(navigator, 'plugins', {
+        get: () => [
+          {
+            0: {type: "application/x-google-chrome-pdf", suffixes: "pdf", description: "Portable Document Format", enabledPlugin: Plugin},
+            description: "Portable Document Format",
+            filename: "internal-pdf-viewer",
+            length: 1,
+            name: "Chrome PDF Plugin"
+          }
+        ],
+      });
+      
+      // 模拟真实的语言
+      Object.defineProperty(navigator, 'languages', {
+        get: () => ['en-US', 'en'],
+      });
+      
+      // 隐藏自动化相关属性
+      const originalQuery = window.navigator.permissions.query;
+      window.navigator.permissions.query = (parameters) => (
+        parameters.name === 'notifications' ?
+          Promise.resolve({ state: Notification.permission }) :
+          originalQuery(parameters)
+      );
+      
+      // 修改Chrome对象
+      if (window.chrome) {
+        window.chrome.runtime = {
+          onConnect: undefined,
+          onMessage: undefined
+        };
+      }
     });
 
     this.page = await this.context.newPage();
+    
+    // 设置随机延迟
+    this.randomDelay = () => {
+      const delay = 1000 + Math.random() * 2000; // 1-3秒随机延迟
+      return new Promise(resolve => setTimeout(resolve, delay));
+    };
   }
 
   /**
@@ -96,54 +183,80 @@ class LightweightScraperService {
   }
 
   /**
-   * 抓取数据 - 核心逻辑
+   * 抓取数据的核心方法
+   * @param {string} url - Facebook 链接
+   * @param {string} type - 链接类型 ('profile', 'post', 'group')
+   * @param {Object} options - 选项配置
+   * @returns {Object} 抓取结果
    */
   async scrapeData(url, type, options = {}) {
-    if (!this.browser) {
-      await this.initBrowser();
-    }
-
+    const startTime = Date.now();
+    
     try {
-      // 快速提取尝试
-      if (type !== 'profile') {
-        const fastResult = this.tryFastExtract(url, type);
-        if (fastResult) {
-          return { success: true, data: fastResult };
-        }
+      // 首先尝试快速提取
+      const fastResult = this.tryFastExtract(url, type);
+      if (fastResult) {
+        logger.info(`[LW-SCRAPER] ⚡ 快速提取成功: ${url}, 方法: ${fastResult.extractMethod}`);
+        return {
+          success: true,
+          data: fastResult
+        };
       }
-
-      // 访问页面
-      await this.page.goto('https://www.facebook.com', { waitUntil: 'domcontentloaded' });
-      await this.page.waitForTimeout(800); // 减少等待时间
       
-      await this.page.goto(url, { waitUntil: 'domcontentloaded' });
-      await this.page.waitForTimeout(1500); // 减少等待时间
-
-      // 根据类型抓取数据
+      // 需要浏览器抓取
+      await this.initBrowser();
+      
+      // 真实的浏览行为：先访问Facebook首页
+      logger.info(`[LW-SCRAPER] 🏠 先访问Facebook首页`);
+      await this.page.goto('https://www.facebook.com', { 
+        waitUntil: 'domcontentloaded', 
+        timeout: 15000 
+      });
+      
+      // 随机延迟，模拟真实用户行为
+      await this.randomDelay();
+      
+      logger.info(`[LW-SCRAPER] 🌐 导航到目标页面: ${url}`);
+      await this.page.goto(url, { 
+        waitUntil: 'domcontentloaded', 
+        timeout: 15000 
+      });
+      
+      // 等待页面稳定
+      await this.page.waitForTimeout(2000);
+      
       let result;
-      switch (type) {
-        case 'profile':
-          result = await this.scrapeProfile();
-          break;
-        case 'post':
-          result = await this.scrapePost(url);
-          break;
-        case 'group':
-          result = await this.scrapeGroup(url);
-          break;
-        default:
-          throw new Error(`不支持的类型: ${type}`);
+      if (type === 'profile') {
+        result = await this.scrapeProfile();
+      } else if (type === 'post') {
+        result = await this.scrapePost(url);
+      } else if (type === 'group') {
+        result = await this.scrapeGroup(url);
+      } else {
+        throw new Error(`不支持的链接类型: ${type}`);
       }
-
-      return { success: true, data: result };
+      
+      const totalTime = Date.now() - startTime;
+      logger.info(`[LW-SCRAPER] ✅ 抓取完成: ${url}, 耗时: ${totalTime}ms`);
+      
+      return {
+        success: true,
+        data: result
+      };
+      
     } catch (error) {
-      return { 
-        success: false, 
+      const totalTime = Date.now() - startTime;
+      logger.error(`[LW-SCRAPER] ❌ 抓取失败: ${url}, 耗时: ${totalTime}ms`, error);
+      
+      return {
+        success: false,
         error: {
           code: 'SCRAPE_ERROR',
           message: error.message
         }
       };
+    } finally {
+      // 保持浏览器开启以供复用
     }
   }
 
@@ -344,13 +457,25 @@ class LightweightScraperService {
   }
 
   /**
-   * 抓取帖子 - 提取发帖账号UID
+   * 抓取帖子
+   * @param {string} originalUrl - 原始URL
+   * @returns {Object} 抓取结果
    */
   async scrapePost(originalUrl) {
     try {
       // 获取当前页面URL
       const currentUrl = this.page.url();
-      const uidMatch = currentUrl.match(/[?&]id=(\d{15,})/);
+      
+      // 检测是否需要登录
+      const pageText = await this.page.textContent('body').catch(() => '');
+      if (pageText.includes('You must log in to continue') || 
+          pageText.includes('Log Into Facebook') ||
+          currentUrl.includes('/login/')) {
+        throw new Error('帖子需要登录才能访问');
+      }
+      
+      // 方法1: 从重定向URL中提取UID (格式: ?id=数字)
+      let uidMatch = currentUrl.match(/[?&]id=(\d{15,})/);
       if (uidMatch) {
         const uid = uidMatch[1];
         return {
@@ -358,8 +483,73 @@ class LightweightScraperService {
           type: 'post',
           sourceUrl: originalUrl,
           redirectUrl: currentUrl,
-          extractMethod: 'redirect_url_match'
+          extractMethod: 'redirect_url_id_param'
         };
+      }
+      
+      // 方法2: 从URL路径中提取UID (格式: /profile.php?id=数字)
+      uidMatch = currentUrl.match(/profile\.php\?id=(\d{15,})/);
+      if (uidMatch) {
+        const uid = uidMatch[1];
+        return {
+          uid,
+          type: 'post',
+          sourceUrl: originalUrl,
+          redirectUrl: currentUrl,
+          extractMethod: 'redirect_url_profile_id'
+        };
+      }
+      
+      // 方法3: 从story_fbid参数中提取UID
+      uidMatch = currentUrl.match(/story_fbid=(\d{15,})/);
+      if (uidMatch) {
+        const uid = uidMatch[1];
+        return {
+          uid,
+          type: 'post',
+          sourceUrl: originalUrl,
+          redirectUrl: currentUrl,
+          extractMethod: 'redirect_url_story_fbid'
+        };
+      }
+      
+      // 方法4: 尝试从页面内容中提取用户信息
+      try {
+        const metaElements = await this.page.$$eval('meta[property^="og:"]', metas => 
+          metas.map(meta => ({ property: meta.getAttribute('property'), content: meta.getAttribute('content') }))
+        );
+        
+        for (const meta of metaElements) {
+          if (meta.property === 'og:url' && meta.content) {
+            const metaUidMatch = meta.content.match(/[?&]id=(\d{15,})/);
+            if (metaUidMatch) {
+              return {
+                uid: metaUidMatch[1],
+                type: 'post',
+                sourceUrl: originalUrl,
+                redirectUrl: currentUrl,
+                extractMethod: 'meta_og_url'
+              };
+            }
+          }
+        }
+      } catch (error) {
+        // Meta标签提取失败，继续尝试其他方法
+      }
+      
+      // 方法5: 从原始URL提取（回退方案）
+      if (originalUrl !== currentUrl) {
+        uidMatch = originalUrl.match(/[?&]id=(\d{15,})/);
+        if (uidMatch) {
+          const uid = uidMatch[1];
+          return {
+            uid,
+            type: 'post',
+            sourceUrl: originalUrl,
+            redirectUrl: currentUrl,
+            extractMethod: 'original_url_fallback'
+          };
+        }
       }
 
       throw new Error('无法提取账号UID');
@@ -934,8 +1124,6 @@ class FacebookScraperPlaywrightPoolService {
 
   /**
    * 识别链接类型
-   * @param {string} url - Facebook 链接
-   * @returns {string} 链接类型 ('profile', 'post', 'group')
    */
   identifyLinkType(url) {
     if (url.includes('/groups/')) {
