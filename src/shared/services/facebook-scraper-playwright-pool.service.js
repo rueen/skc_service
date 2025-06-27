@@ -375,7 +375,7 @@ class LightweightScraperService {
     try {
       // 获取当前页面URL
       const currentUrl = this.page.url();
-      const groupIdMatch = originalUrl.match(/\/groups\/(\d{10,})\//);
+      const groupIdMatch = currentUrl.match(/\/groups\/(\d{10,})\//);
       if (groupIdMatch) {
         const groupId = groupIdMatch[1];
         return {
@@ -387,7 +387,7 @@ class LightweightScraperService {
         };
       }
 
-      throw new Error('无法提取账号UID');
+      throw new Error('无法提取Group ID');
     } catch (error) {
       throw error;
     }
