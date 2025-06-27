@@ -364,7 +364,6 @@ class FacebookScraperPlaywrightService {
         });
 
         // 覆盖 Date.getTimezoneOffset 方法，模拟纽约时区
-        const originalGetTimezoneOffset = Date.prototype.getTimezoneOffset;
         Date.prototype.getTimezoneOffset = function() {
           return 300; // EST (UTC-5)
         };
