@@ -15,9 +15,9 @@ class FacebookScraperPlaywrightService {
     this.operationCount = 0; // 添加操作计数器
     
     // 记录环境信息
-    logger.info(`运行环境: ${process.platform} ${process.arch}`);
-    logger.info(`Node.js版本: ${process.version}`);
-    logger.info(`工作目录: ${process.cwd()}`);
+    logger.info(`[FB-PW] 运行环境: ${process.platform} ${process.arch}`);
+    logger.info(`[FB-PW] Node.js版本: ${process.version}`);
+    logger.info(`[FB-PW] 工作目录: ${process.cwd()}`);
     
     // 检查浏览器可执行文件
     this.checkBrowsers();
@@ -29,7 +29,7 @@ class FacebookScraperPlaywrightService {
   async checkBrowsers() {
     const fs = require('fs');
     
-    logger.info('=== 浏览器兼容性检查 ===');
+    logger.info('[FB-PW] === 浏览器兼容性检查 ===');
     
     if (process.platform === 'linux') {
       // 优先检查Google Chrome，反检测能力最强
@@ -54,25 +54,25 @@ class FacebookScraperPlaywrightService {
       for (const browser of browserPaths) {
         if (fs.existsSync(browser.path)) {
           foundBrowser = browser;
-          logger.info(`✅ 发现 ${browser.name}: ${browser.path} (反检测能力: ${browser.detection})`);
+          logger.info(`[FB-PW] ✅ 发现 ${browser.name}: ${browser.path} (反检测能力: ${browser.detection})`);
           break;
         }
       }
       
       if (!foundBrowser) {
-        logger.warn('⚠️  未找到系统浏览器，将使用Playwright内置Chromium (反检测能力: 弱)');
-        logger.info('💡 建议安装: sudo apt install google-chrome-stable');
-        logger.info('🔧 安装Chrome可显著提升Facebook抓取成功率');
+        logger.warn('[FB-PW] ⚠️  未找到系统浏览器，将使用Playwright内置Chromium (反检测能力: 弱)');
+        logger.info('[FB-PW] 💡 建议安装: sudo apt install google-chrome-stable');
+        logger.info('[FB-PW] 🔧 安装Chrome可显著提升Facebook抓取成功率');
       } else if (foundBrowser.name.includes('Chrome')) {
-        logger.info('🎯 使用Google Chrome，具备最强反检测能力');
+        logger.info('[FB-PW] 🎯 使用Google Chrome，具备最强反检测能力');
       } else if (foundBrowser.name.includes('Edge')) {
-        logger.info('🛡️ 使用Microsoft Edge，具备较强反检测能力');
+        logger.info('[FB-PW] 🛡️ 使用Microsoft Edge，具备较强反检测能力');
       } else {
-        logger.warn('⚠️  使用Chromium，反检测能力有限，建议升级到Chrome');
+        logger.warn('[FB-PW] ⚠️  使用Chromium，反检测能力有限，建议升级到Chrome');
       }
     }
     
-    logger.info('=== 浏览器检查完成 ===');
+    logger.info('[FB-PW] === 浏览器检查完成 ===');
   }
 
   /**
@@ -164,8 +164,8 @@ class FacebookScraperPlaywrightService {
       
       if (foundBrowser) {
         defaultOptions.executablePath = foundBrowser.path;
-        logger.info(`🎯 使用 ${foundBrowser.name}: ${foundBrowser.path}`);
-        logger.info(`✅ 版本匹配：Playwright 1.53.1 + Chromium 137.x = 最佳兼容性`);
+        logger.info(`[FB-PW] 🎯 使用 ${foundBrowser.name}: ${foundBrowser.path}`);
+        logger.info(`[FB-PW] ✅ 版本匹配：Playwright 1.53.1 + Chromium 137.x = 最佳兼容性`);
         
         // 针对 Chromium 137.x 的特殊优化（避免崩溃）
         if (foundBrowser.path.includes('chromium')) {
@@ -176,8 +176,8 @@ class FacebookScraperPlaywrightService {
           );
         }
       } else {
-        logger.warn('⚠️  未找到系统浏览器，将使用 Playwright 内置 Chromium 138.x');
-        logger.info('💡 建议：强制指定路径 executablePath: "/snap/bin/chromium"');
+        logger.warn('[FB-PW] ⚠️  未找到系统浏览器，将使用 Playwright 内置 Chromium 138.x');
+        logger.info('[FB-PW] 💡 建议：强制指定路径 executablePath: "/snap/bin/chromium"');
         
         // 使用内置浏览器时的额外参数
         defaultOptions.args.push(
@@ -189,25 +189,25 @@ class FacebookScraperPlaywrightService {
 
     try {
       // 启动浏览器 - 详细日志
-      logger.info('🚀 正在启动浏览器...');
-      logger.info(`📍 浏览器路径: ${defaultOptions.executablePath || 'Playwright内置Chromium'}`);
-      logger.info(`🔧 启动参数 (${defaultOptions.args.length}个): ${defaultOptions.args.join(' ')}`);
-      logger.info(`🚫 忽略参数: ${Array.isArray(defaultOptions.ignoreDefaultArgs) ? defaultOptions.ignoreDefaultArgs.join(' ') : '基本参数'}`);
-      logger.info(`💾 Playwright版本: 1.53.1 | 目标Chromium: 137.0.7151.119 | 🛡️ 防崩溃稳定模式`);
+      logger.info('[FB-PW] 🚀 正在启动浏览器...');
+      logger.info(`[FB-PW] 📍 浏览器路径: ${defaultOptions.executablePath || 'Playwright内置Chromium'}`);
+      logger.info(`[FB-PW] 🔧 启动参数 (${defaultOptions.args.length}个): ${defaultOptions.args.join(' ')}`);
+      logger.info(`[FB-PW] 🚫 忽略参数: ${Array.isArray(defaultOptions.ignoreDefaultArgs) ? defaultOptions.ignoreDefaultArgs.join(' ') : '基本参数'}`);
+      logger.info(`[FB-PW] 💾 Playwright版本: 1.53.1 | 目标Chromium: 137.0.7151.119 | 🛡️ 防崩溃稳定模式`);
       
       this.browser = await chromium.launch({ ...defaultOptions, ...options });
       
       // 版本兼容性验证
       const version = await this.browser.version();
-      logger.info(`✅ 浏览器启动成功！版本: ${version}`);
+      logger.info(`[FB-PW] ✅ 浏览器启动成功！版本: ${version}`);
       
       // 检查版本兼容性
       if (version.includes('137.')) {
-        logger.info('🎉 完美匹配：使用服务器 Chromium 137.x 版本');
+        logger.info('[FB-PW] 🎉 完美匹配：使用服务器 Chromium 137.x 版本');
       } else if (version.includes('138.')) {
-        logger.info('✅ 良好兼容：使用 Playwright 内置 Chromium 138.x 版本');
+        logger.info('[FB-PW] ✅ 良好兼容：使用 Playwright 内置 Chromium 138.x 版本');
       } else {
-        logger.warn(`⚠️  版本异常：${version}，可能需要调整配置`);
+        logger.warn(`[FB-PW] ⚠️  版本异常：${version}，可能需要调整配置`);
       }
 
       // 随机化用户代理和指纹信息，增强隐蔽性
@@ -487,9 +487,9 @@ class FacebookScraperPlaywrightService {
         }
       ]);
 
-      logger.info('✅ 浏览器初始化成功 (Playwright) - 🛡️ 服务器稳定模式：简化配置、保守超时、防崩溃优化');
+      logger.info('[FB-PW] ✅ 浏览器初始化成功 (Playwright) - 🛡️ 服务器稳定模式：简化配置、保守超时、防崩溃优化');
     } catch (error) {
-      logger.error('浏览器初始化失败 (Playwright):', error);
+      logger.error('[FB-PW] 浏览器初始化失败 (Playwright):', error);
       throw error;
     }
   }
@@ -499,23 +499,23 @@ class FacebookScraperPlaywrightService {
    */
   async closeBrowser() {
     if (this.isClosing) {
-      logger.warn('浏览器已在关闭过程中，跳过重复关闭');
+      logger.warn('[FB-PW] 浏览器已在关闭过程中，跳过重复关闭');
       return;
     }
 
     this.isClosing = true;
-    logger.info('开始关闭浏览器，等待操作完成...');
+    logger.info('[FB-PW] 开始关闭浏览器，等待操作完成...');
 
     // 等待所有正在进行的操作完成
     let waitCount = 0;
     while (this.operationCount > 0 && waitCount < 30) { // 最多等待3秒
-      logger.debug(`等待 ${this.operationCount} 个操作完成... (${waitCount}/30)`);
+      logger.debug(`[FB-PW] 等待 ${this.operationCount} 个操作完成... (${waitCount}/30)`);
       await new Promise(resolve => setTimeout(resolve, 100));
       waitCount++;
     }
 
     if (this.operationCount > 0) {
-      logger.warn(`强制关闭浏览器，仍有 ${this.operationCount} 个操作未完成`);
+      logger.warn(`[FB-PW] 强制关闭浏览器，仍有 ${this.operationCount} 个操作未完成`);
     }
 
     try {
@@ -528,9 +528,9 @@ class FacebookScraperPlaywrightService {
       if (this.browser) {
         await this.browser.close();
       }
-      logger.info('浏览器已关闭 (Playwright)');
+      logger.info('[FB-PW] 浏览器已关闭 (Playwright)');
     } catch (error) {
-      logger.error('关闭浏览器时出错 (Playwright):', error);
+      logger.error('[FB-PW] 关闭浏览器时出错 (Playwright):', error);
     } finally {
       this.isClosing = false;
       this.operationCount = 0;
@@ -545,7 +545,7 @@ class FacebookScraperPlaywrightService {
    */
   incrementOperation() {
     this.operationCount++;
-    logger.debug(`操作计数增加到: ${this.operationCount}`);
+    logger.debug(`[FB-PW] 操作计数增加到: ${this.operationCount}`);
   }
 
   /**
@@ -553,7 +553,7 @@ class FacebookScraperPlaywrightService {
    */
   decrementOperation() {
     this.operationCount = Math.max(0, this.operationCount - 1);
-    logger.debug(`操作计数减少到: ${this.operationCount}`);
+    logger.debug(`[FB-PW] 操作计数减少到: ${this.operationCount}`);
   }
 
   /**
@@ -616,7 +616,7 @@ class FacebookScraperPlaywrightService {
   async establishFacebookSession(timeout) {
     // 超级简化的 session 建立，只使用一个最稳定的URL
     const sessionUrl = 'https://www.facebook.com';
-    logger.info(`尝试建立简化session: ${sessionUrl}`);
+    logger.info(`[FB-PW] 尝试建立简化session: ${sessionUrl}`);
     
     try {
       const sessionResult = await this.safePageOperation(async () => {
@@ -629,10 +629,10 @@ class FacebookScraperPlaywrightService {
         const currentUrl = this.page.url();
         
         if (currentUrl && !currentUrl.includes('/login/')) {
-          logger.info(`✅ Session 建立成功: ${sessionUrl}`);
+          logger.info(`[FB-PW] ✅ Session 建立成功: ${sessionUrl}`);
           return true;
         } else {
-          logger.warn(`⚠️ ${sessionUrl} 重定向到登录页面，跳过session`);
+          logger.warn(`[FB-PW] ⚠️ ${sessionUrl} 重定向到登录页面，跳过session`);
           return false;
         }
       }, `建立简化 Facebook session`, { throwOnError: false });
@@ -640,7 +640,7 @@ class FacebookScraperPlaywrightService {
       return !!sessionResult;
       
     } catch (error) {
-      logger.warn(`Session 建立失败，直接跳过: ${error.message}`);
+      logger.warn(`[FB-PW] Session 建立失败，直接跳过: ${error.message}`);
       return false;
     }
   }
@@ -724,7 +724,7 @@ class FacebookScraperPlaywrightService {
       });
       
     } catch (error) {
-      logger.warn('生成绕过策略时出错:', error.message);
+      logger.warn('[FB-PW] 生成绕过策略时出错:', error.message);
       // 至少提供一个基本策略
       strategies.push({
         name: '基本重试',
@@ -742,7 +742,7 @@ class FacebookScraperPlaywrightService {
     const { throwOnError = true } = options;
     
     if (!this.isPageValid()) {
-      logger.warn(`跳过操作 ${operationName}：浏览器正在关闭或已关闭`);
+      logger.warn(`[FB-PW] 跳过操作 ${operationName}：浏览器正在关闭或已关闭`);
       return null;
     }
 
@@ -750,7 +750,7 @@ class FacebookScraperPlaywrightService {
     try {
       // 在操作前再次检查状态
       if (!this.isPageValid()) {
-        logger.warn(`操作 ${operationName} 被中断：页面状态无效`);
+        logger.warn(`[FB-PW] 操作 ${operationName} 被中断：页面状态无效`);
         return null;
       }
       
@@ -760,7 +760,7 @@ class FacebookScraperPlaywrightService {
       if (error.message.includes('Target page, context or browser has been closed') ||
           error.message.includes('Protocol error') ||
           error.message.includes('Session closed')) {
-        logger.warn(`操作 ${operationName} 失败：页面已关闭`);
+        logger.warn(`[FB-PW] 操作 ${operationName} 失败：页面已关闭`);
         return null;
       }
       
@@ -769,15 +769,15 @@ class FacebookScraperPlaywrightService {
           error.message.includes('net::') ||
           error.message.includes('Navigation failed')) {
         if (throwOnError) {
-          logger.error(`${operationName}失败:`, error.message);
+          logger.error(`[FB-PW] ${operationName}失败:`, error.message);
           throw error;
         } else {
-          logger.warn(`${operationName}失败但不中断流程:`, error.message);
+          logger.warn(`[FB-PW] ${operationName}失败但不中断流程:`, error.message);
           return null;
         }
       }
       
-      logger.error(`${operationName}失败:`, error.message);
+      logger.error(`[FB-PW] ${operationName}失败:`, error.message);
       if (throwOnError) {
         throw error;
       }
@@ -830,7 +830,7 @@ class FacebookScraperPlaywrightService {
       // 默认作为个人资料链接处理
       return 'profile';
     } catch (error) {
-      logger.warn('URL解析失败，默认作为个人资料处理:', error.message);
+      logger.warn('[FB-PW] URL解析失败，默认作为个人资料处理:', error.message);
       return 'profile';
     }
   }
@@ -843,14 +843,14 @@ class FacebookScraperPlaywrightService {
    */
   tryFastExtract(url, type) {
     try {
-      logger.info(`尝试快速提取: ${url}, 类型: ${type}`);
+      logger.info(`[FB-PW] 尝试快速提取: ${url}, 类型: ${type}`);
       
       if (type === 'post') {
         // 帖子类型：从URL中提取UID
         const directUidMatch = url.match(/facebook\.com\/(\d{10,})\/posts/);
         if (directUidMatch) {
           const uid = directUidMatch[1];
-          logger.info(`快速提取到帖子UID: ${uid}`);
+          logger.info(`[FB-PW] 快速提取到帖子UID: ${uid}`);
           return {
             uid: uid,
             sourceUrl: url,
@@ -862,7 +862,7 @@ class FacebookScraperPlaywrightService {
         const groupIdMatch = url.match(/\/groups\/(\d{10,})\//);
         if (groupIdMatch) {
           const groupId = groupIdMatch[1];
-          logger.info(`快速提取到群组ID: ${groupId}`);
+          logger.info(`[FB-PW] 快速提取到群组ID: ${groupId}`);
           return {
             groupId: groupId,
             shareUrl: url,
@@ -871,10 +871,10 @@ class FacebookScraperPlaywrightService {
         }
       }
       
-      logger.info(`无法快速提取，URL不匹配快速提取模式: ${url}`);
+      logger.info(`[FB-PW] 无法快速提取，URL不匹配快速提取模式: ${url}`);
       return null;
     } catch (error) {
-      logger.warn('快速提取失败:', error.message);
+      logger.warn('[FB-PW] 快速提取失败:', error.message);
       return null;
     }
   }
@@ -889,18 +889,18 @@ class FacebookScraperPlaywrightService {
   async scrapeData(url, type, options = {}) {
     const { timeout = 60000, retries = 1 } = options;
     
-    logger.info(`开始抓取 Facebook 数据 (Playwright): ${url}, 类型: ${type}`);
+    logger.info(`[FB-PW] 开始抓取 Facebook 数据 (Playwright): ${url}, 类型: ${type}`);
     
     // 性能优化：优先尝试从URL直接提取信息，避免启动浏览器
     const fastExtractResult = this.tryFastExtract(url, type);
     if (fastExtractResult) {
-      logger.info(`快速提取成功，无需启动浏览器: ${url}`);
+      logger.info(`[FB-PW] 快速提取成功，无需启动浏览器: ${url}`);
       
-      scrapeSuccessLogger.info(JSON.stringify({
+      scrapeSuccessLogger.info(`[FB-PW] ${JSON.stringify({
         url: url,
         type: type,
         data: fastExtractResult
-      }));
+      })}`);
       
       return {
         success: true,
@@ -911,12 +911,12 @@ class FacebookScraperPlaywrightService {
     }
     
     // 如果无法快速提取，则使用浏览器抓取
-    logger.info(`无法快速提取，使用浏览器抓取: ${url}`);
+    logger.info(`[FB-PW] 无法快速提取，使用浏览器抓取: ${url}`);
 
     let attempt = 0;
     while (attempt < retries) {
       try {
-        logger.info(`开始第 ${attempt + 1} 次抓取尝试 (Playwright): ${url}`);
+        logger.info(`[FB-PW] 开始第 ${attempt + 1} 次抓取尝试 (Playwright): ${url}`);
         
         // 确保浏览器初始化成功
         try {
@@ -925,7 +925,7 @@ class FacebookScraperPlaywrightService {
             throw new Error('浏览器初始化失败');
           }
         } catch (initError) {
-          logger.error('浏览器初始化失败:', initError.message);
+          logger.error('[FB-PW] 浏览器初始化失败:', initError.message);
           throw new Error(`浏览器初始化失败: ${initError.message}`);
         }
         
@@ -934,17 +934,17 @@ class FacebookScraperPlaywrightService {
         this.page.setDefaultNavigationTimeout(timeout);
         
         // 智能 Facebook session 建立策略
-        logger.info('正在建立 Facebook session...');
+        logger.info('[FB-PW] 正在建立 Facebook session...');
         const sessionSuccess = await this.establishFacebookSession(timeout);
         
         if (sessionSuccess) {
-          logger.info('Facebook session 建立成功');
+          logger.info('[FB-PW] Facebook session 建立成功');
         } else {
-          logger.warn('Session 建立失败，将直接访问目标页面');
+          logger.warn('[FB-PW] Session 建立失败，将直接访问目标页面');
           
           // 确保浏览器状态正常
           if (!this.isPageValid()) {
-            logger.info('检测到浏览器状态异常，重新初始化...');
+            logger.info('[FB-PW] 检测到浏览器状态异常，重新初始化...');
             await this.closeBrowser();
             await this.initBrowser({ headless: options.headless !== false });
             if (!this.isPageValid()) {
@@ -958,7 +958,7 @@ class FacebookScraperPlaywrightService {
 
         // 确保浏览器状态正常，再访问目标页面
         if (!this.isPageValid()) {
-          logger.warn('浏览器状态异常，重新初始化...');
+          logger.warn('[FB-PW] 浏览器状态异常，重新初始化...');
           await this.closeBrowser();
           await this.initBrowser({ headless: options.headless !== false });
           if (!this.isPageValid()) {
@@ -970,11 +970,11 @@ class FacebookScraperPlaywrightService {
         }
 
         // 访问目标页面，使用更真实的访问模式
-        logger.info('正在访问目标页面...');
+        logger.info('[FB-PW] 正在访问目标页面...');
         
         // 模拟真实用户的访问延迟模式
         const humanDelay = this.getHumanLikeDelay();
-        logger.info(`模拟用户思考时间: ${humanDelay}ms`);
+        logger.info(`[FB-PW] 模拟用户思考时间: ${humanDelay}ms`);
         await new Promise(resolve => setTimeout(resolve, humanDelay));
         
         const navigationSuccess = await this.safePageOperation(async () => {
@@ -986,7 +986,7 @@ class FacebookScraperPlaywrightService {
             });
             return true;
           } catch (gotoError) {
-            logger.warn('页面加载失败，尝试使用networkidle策略:', gotoError.message);
+            logger.warn('[FB-PW] 页面加载失败，尝试使用networkidle策略:', gotoError.message);
             try {
               await this.page.goto(url, { 
                 waitUntil: 'networkidle',
@@ -994,7 +994,7 @@ class FacebookScraperPlaywrightService {
               });
               return true;
             } catch (secondGotoError) {
-              logger.error('页面加载完全失败:', secondGotoError.message);
+              logger.error('[FB-PW] 页面加载完全失败:', secondGotoError.message);
               throw new Error(`页面加载失败: ${secondGotoError.message}`);
             }
           }
@@ -1005,7 +1005,7 @@ class FacebookScraperPlaywrightService {
         }
         
         // 等待页面基本加载完成
-        logger.info('等待页面加载...');
+        logger.info('[FB-PW] 等待页面加载...');
         await new Promise(resolve => setTimeout(resolve, 3000));
         
         // 检查页面是否正常加载
@@ -1014,12 +1014,12 @@ class FacebookScraperPlaywrightService {
           () => this.page.title(),
           '获取页面标题'
         ) || '';
-        logger.info(`页面加载完成 - URL: ${currentUrl}, 标题: ${pageTitle}`);
+        logger.info(`[FB-PW] 页面加载完成 - URL: ${currentUrl}, 标题: ${pageTitle}`);
         
         // 检查是否被重定向到登录页面
         if (currentUrl.includes('/login/') || pageTitle.toLowerCase().includes('log in')) {
-          logger.warn(`Facebook 要求登录访问: ${url}`);
-          logger.warn(`重定向到: ${currentUrl}`);
+          logger.warn(`[FB-PW] Facebook 要求登录访问: ${url}`);
+          logger.warn(`[FB-PW] 重定向到: ${currentUrl}`);
           
           // 多重策略尝试绕过登录
           let alternativeSuccess = false;
@@ -1027,7 +1027,7 @@ class FacebookScraperPlaywrightService {
           
           for (let i = 0; i < strategies.length; i++) {
             const strategy = strategies[i];
-            logger.info(`尝试策略 ${i + 1}: ${strategy.name}`);
+            logger.info(`[FB-PW] 尝试策略 ${i + 1}: ${strategy.name}`);
             
             try {
               alternativeSuccess = await this.safePageOperation(async () => {
@@ -1037,7 +1037,7 @@ class FacebookScraperPlaywrightService {
                 // 随机等待
                 await this.page.waitForTimeout(1000 + Math.random() * 2000);
                 
-                logger.info(`访问URL: ${strategy.url}`);
+                logger.info(`[FB-PW] 访问URL: ${strategy.url}`);
                 await this.page.goto(strategy.url, { 
                   waitUntil: 'domcontentloaded',
                   timeout: Math.min(timeout / 2, 15000)
@@ -1049,13 +1049,13 @@ class FacebookScraperPlaywrightService {
                 const newUrl = this.page.url();
                 const newTitle = await this.page.title();
                 
-                logger.info(`新URL: ${newUrl}, 新标题: ${newTitle}`);
+                logger.info(`[FB-PW] 新URL: ${newUrl}, 新标题: ${newTitle}`);
                 
                 // 检查是否成功绕过登录
                 if (!newUrl.includes('/login/') && 
                     !newTitle.toLowerCase().includes('log in') &&
                     !newTitle.toLowerCase().includes('sign in')) {
-                  logger.info(`策略 ${i + 1} 成功: ${strategy.name}`);
+                  logger.info(`[FB-PW] 策略 ${i + 1} 成功: ${strategy.name}`);
                   return true;
                 }
                 
@@ -1067,7 +1067,7 @@ class FacebookScraperPlaywrightService {
               }
               
             } catch (strategyError) {
-              logger.warn(`策略 ${i + 1} 失败: ${strategyError.message}`);
+              logger.warn(`[FB-PW] 策略 ${i + 1} 失败: ${strategyError.message}`);
               continue; // 尝试下一个策略
             }
             
@@ -1098,20 +1098,20 @@ class FacebookScraperPlaywrightService {
         }
         
         await this.closeBrowser();
-        logger.info(`抓取成功 (Playwright): ${url}`);
+        logger.info(`[FB-PW] 抓取成功 (Playwright): ${url}`);
         
         if (result.extractionMethod === 'failed'){
-          scrapeFailureLogger.info(JSON.stringify({
+          scrapeFailureLogger.info(`[FB-PW] ${JSON.stringify({
             url: url,
             type: type,
             data: result
-          }));
+          })}`);
         } else {
-          scrapeSuccessLogger.info(JSON.stringify({
+          scrapeSuccessLogger.info(`[FB-PW] ${JSON.stringify({
             url: url,
             type: type,
             data: result
-          }));
+          })}`);
         }
         
         return {
@@ -1123,17 +1123,17 @@ class FacebookScraperPlaywrightService {
         
       } catch (error) {
         attempt++;
-        logger.error(`抓取失败 (尝试 ${attempt}/${retries}) (Playwright): ${error.message}`);
+        logger.error(`[FB-PW] 抓取失败 (尝试 ${attempt}/${retries}) (Playwright): ${error.message}`);
         
         await this.closeBrowser();
         
         if (attempt >= retries) {
-          scrapeFailureLogger.info(JSON.stringify({
+          scrapeFailureLogger.info(`[FB-PW] ${JSON.stringify({
             url: url,
             type: type,
             message: this.getErrorMessage(error),
             details: error.message
-          }));
+          })}`);
           
           return {
             success: false,
@@ -1148,7 +1148,7 @@ class FacebookScraperPlaywrightService {
         
         // 重试前等待，递增延迟
         const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
-        logger.info(`等待 ${delay}ms 后重试...`);
+        logger.info(`[FB-PW] 等待 ${delay}ms 后重试...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -1183,13 +1183,13 @@ class FacebookScraperPlaywrightService {
    */
   async scrapeProfile() {
     try {
-      logger.info('开始抓取个人资料信息...');
+      logger.info('[FB-PW] 开始抓取个人资料信息...');
       
       // 等待页面关键元素加载
       try {
         await this.page.waitForSelector('body', { timeout: 15000 });
       } catch (e) {
-        logger.warn('等待body元素超时，继续尝试抓取');
+        logger.warn('[FB-PW] 等待body元素超时，继续尝试抓取');
       }
       
       // 记录页面基本信息用于调试
@@ -1198,15 +1198,15 @@ class FacebookScraperPlaywrightService {
         () => this.page.title(),
         '获取页面标题'
       ) || '';
-      logger.info(`当前页面URL: ${currentUrl}`);
-      logger.info(`页面标题: ${pageTitle}`);
+      logger.info(`[FB-PW] 当前页面URL: ${currentUrl}`);
+      logger.info(`[FB-PW] 页面标题: ${pageTitle}`);
       
       // 检查页面是否正常加载
       const bodyContent = await this.safePageOperation(
         () => this.page.$eval('body', el => el.innerText.substring(0, 100)),
         '获取页面内容'
       ) || '';
-      logger.info(`页面内容预览: ${bodyContent}...`);
+      logger.info(`[FB-PW] 页面内容预览: ${bodyContent}...`);
       
       // 检查是否需要登录
       const isLoginRequired = bodyContent.toLowerCase().includes('log in') || 
@@ -1215,18 +1215,18 @@ class FacebookScraperPlaywrightService {
                              currentUrl.includes('/login/');
       
       if (isLoginRequired) {
-        logger.warn('页面需要登录，可能无法获取完整信息');
+        logger.warn('[FB-PW] 页面需要登录，可能无法获取完整信息');
       }
       
       const profileData = {};
       profileData.profileUrl = currentUrl;
       
       // 尝试获取 UID
-      logger.info('正在获取用户ID...');
+      logger.info('[FB-PW] 正在获取用户ID...');
       const uidMatch = currentUrl.match(/(?:id=|profile\.php\?id=)(\d+)/);
       if (uidMatch) {
         profileData.uid = uidMatch[1];
-        logger.info(`从URL获取到UID: ${profileData.uid}`);
+        logger.info(`[FB-PW] 从URL获取到UID: ${profileData.uid}`);
       } else {
         // 从页面源码中查找 UID
         const pageContent = await this.safePageOperation(
@@ -1235,7 +1235,7 @@ class FacebookScraperPlaywrightService {
         );
         
         if (pageContent) {
-          logger.info(`页面源码长度: ${pageContent.length} 字符`);
+          logger.info(`[FB-PW] 页面源码长度: ${pageContent.length} 字符`);
           
           const uidPatterns = [
             /"userID":"(\d+)"/,
@@ -1251,19 +1251,19 @@ class FacebookScraperPlaywrightService {
             const match = pageContent.match(pattern);
             if (match) {
               profileData.uid = match[1];
-              logger.info(`从页面内容获取到UID: ${profileData.uid} (模式: ${pattern})`);
+              logger.info(`[FB-PW] 从页面内容获取到UID: ${profileData.uid} (模式: ${pattern})`);
               break;
             }
           }
           
           if (!profileData.uid) {
-            logger.warn('所有UID提取模式都未匹配成功');
+            logger.warn('[FB-PW] 所有UID提取模式都未匹配成功');
           }
         }
       }
       
       // 尝试获取昵称
-      logger.info('正在获取用户昵称...');
+      logger.info('[FB-PW] 正在获取用户昵称...');
       const nicknameSelectors = [
         'h1[data-testid="profile-name"]',
         '[data-testid="profile-name"]',
@@ -1290,7 +1290,7 @@ class FacebookScraperPlaywrightService {
           
           if (text && text.trim() && !text.toLowerCase().includes('facebook')) {
             profileData.nickname = text.trim();
-            logger.info(`通过选择器 ${selector} 获取到昵称: ${profileData.nickname}`);
+            logger.info(`[FB-PW] 通过选择器 ${selector} 获取到昵称: ${profileData.nickname}`);
             break;
           }
         }
@@ -1302,15 +1302,15 @@ class FacebookScraperPlaywrightService {
           const titleMatch = pageTitle.match(/^([^|]+)/);
           if (titleMatch) {
             profileData.nickname = titleMatch[1].trim();
-            logger.info(`从页面标题获取到昵称: ${profileData.nickname}`);
+            logger.info(`[FB-PW] 从页面标题获取到昵称: ${profileData.nickname}`);
           }
         }
       }
       
-      logger.info('个人资料信息抓取完成');
+      logger.info('[FB-PW] 个人资料信息抓取完成');
       return profileData;
     } catch (error) {
-      logger.error('抓取个人资料失败:', error);
+      logger.error('[FB-PW] 抓取个人资料失败:', error);
       throw error;
     }
   }
@@ -1323,37 +1323,37 @@ class FacebookScraperPlaywrightService {
   parseNumber(str) {
     if (!str) return 0;
     
-    logger.info(`解析数字字符串: "${str}"`);
+    logger.info(`[FB-PW] 解析数字字符串: "${str}"`);
     
     const cleanStr = str.replace(/[\s,']/g, '');
-    logger.info(`清理后的字符串: "${cleanStr}"`);
+    logger.info(`[FB-PW] 清理后的字符串: "${cleanStr}"`);
     
     const numberMatch = cleanStr.match(/(\d+(?:\.\d+)?)/);
     if (!numberMatch) {
-      logger.warn(`无法从字符串中提取数字: "${str}"`);
+      logger.warn(`[FB-PW] 无法从字符串中提取数字: "${str}"`);
       return 0;
     }
     
     const num = parseFloat(numberMatch[1]);
     const upperStr = cleanStr.toUpperCase();
     
-    logger.info(`提取的数字: ${num}, 后缀检查字符串: "${upperStr}"`);
+    logger.info(`[FB-PW] 提取的数字: ${num}, 后缀检查字符串: "${upperStr}"`);
     
     let result;
     if (upperStr.includes('K') || upperStr.includes('千')) {
       result = Math.round(num * 1000);
-      logger.info(`K后缀转换: ${num} * 1000 = ${result}`);
+      logger.info(`[FB-PW] K后缀转换: ${num} * 1000 = ${result}`);
     } else if (upperStr.includes('M') || upperStr.includes('万')) {
       const multiplier = upperStr.includes('万') ? 10000 : 1000000;
       result = Math.round(num * multiplier);
-      logger.info(`M/万后缀转换: ${num} * ${multiplier} = ${result}`);
+      logger.info(`[FB-PW] M/万后缀转换: ${num} * ${multiplier} = ${result}`);
     } else if (upperStr.includes('B') || upperStr.includes('亿')) {
       const multiplier = upperStr.includes('亿') ? 100000000 : 1000000000;
       result = Math.round(num * multiplier);
-      logger.info(`B/亿后缀转换: ${num} * ${multiplier} = ${result}`);
+      logger.info(`[FB-PW] B/亿后缀转换: ${num} * ${multiplier} = ${result}`);
     } else {
       result = Math.round(num);
-      logger.info(`无后缀转换: ${num} = ${result}`);
+      logger.info(`[FB-PW] 无后缀转换: ${num} = ${result}`);
     }
     
     return result;
@@ -1366,7 +1366,7 @@ class FacebookScraperPlaywrightService {
    */
   async scrapePost(originalUrl) {
     try {
-      logger.info('开始抓取帖子信息（主要获取UID）...');
+      logger.info('[FB-PW] 开始抓取帖子信息（主要获取UID）...');
       
       const postData = {};
       postData.sourceUrl = originalUrl;
@@ -1376,12 +1376,12 @@ class FacebookScraperPlaywrightService {
       if (directUidMatch) {
         postData.uid = directUidMatch[1];
         postData.extractionMethod = 'direct_url_match';
-        logger.info(`通过直接匹配从原始URL提取到UID: ${postData.uid}`);
+        logger.info(`[FB-PW] 通过直接匹配从原始URL提取到UID: ${postData.uid}`);
         return postData;
       }
       
       // 如果无法从原始URL提取UID，则尝试访问页面
-      logger.info('无法从原始URL直接提取UID，尝试访问页面...');
+      logger.info('[FB-PW] 无法从原始URL直接提取UID，尝试访问页面...');
       
       await this.page.waitForSelector('body', { timeout: 10000 });
       
@@ -1394,17 +1394,17 @@ class FacebookScraperPlaywrightService {
       if (uidMatch) {
         postData.uid = uidMatch[1];
         postData.extractionMethod = 'redirect_url_match';
-        logger.info(`从重定向URL的id参数中提取到UID: ${postData.uid}`);
+        logger.info(`[FB-PW] 从重定向URL的id参数中提取到UID: ${postData.uid}`);
         return postData;
       }
       
       // 如果所有方法都失败，返回空结果
-      logger.warn('无法从任何方式提取到UID');
+      logger.warn('[FB-PW] 无法从任何方式提取到UID');
       postData.extractionMethod = 'failed';
       
       return postData;
     } catch (error) {
-      logger.error('抓取帖子信息失败:', error);
+      logger.error('[FB-PW] 抓取帖子信息失败:', error);
       throw error;
     }
   }
@@ -1416,7 +1416,7 @@ class FacebookScraperPlaywrightService {
    */
   async scrapeGroup(originalUrl) {
     try {
-      logger.info('开始抓取群组信息（主要获取群ID）...');
+      logger.info('[FB-PW] 开始抓取群组信息（主要获取群ID）...');
       
       const groupData = {};
       groupData.sourceUrl = originalUrl;
@@ -1426,12 +1426,12 @@ class FacebookScraperPlaywrightService {
       if (directGroupIdMatch) {
         groupData.groupId = directGroupIdMatch[1];
         groupData.extractionMethod = 'direct_url_match';
-        logger.info(`通过直接匹配从原始URL提取到群ID: ${groupData.groupId}`);
+        logger.info(`[FB-PW] 通过直接匹配从原始URL提取到群ID: ${groupData.groupId}`);
         return groupData;
       }
       
       // 如果无法从原始URL提取群ID，则尝试访问页面
-      logger.info('无法从原始URL直接提取群ID，尝试访问页面...');
+      logger.info('[FB-PW] 无法从原始URL直接提取群ID，尝试访问页面...');
       
       await this.page.waitForSelector('body', { timeout: 10000 });
       
@@ -1444,17 +1444,17 @@ class FacebookScraperPlaywrightService {
       if (redirectGroupIdMatch) {
         groupData.groupId = redirectGroupIdMatch[1];
         groupData.extractionMethod = 'redirect_url_match';
-        logger.info(`从重定向URL的groups路径中提取到群ID: ${groupData.groupId}`);
+        logger.info(`[FB-PW] 从重定向URL的groups路径中提取到群ID: ${groupData.groupId}`);
         return groupData;
       }
       
       // 如果所有方法都失败，返回空结果
-      logger.warn('无法从任何方式提取到群ID');
+      logger.warn('[FB-PW] 无法从任何方式提取到群ID');
       groupData.extractionMethod = 'failed';
       
       return groupData;
     } catch (error) {
-      logger.error('抓取群组信息失败:', error);
+      logger.error('[FB-PW] 抓取群组信息失败:', error);
       throw error;
     }
   }
