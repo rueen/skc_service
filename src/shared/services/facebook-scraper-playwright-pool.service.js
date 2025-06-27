@@ -207,14 +207,121 @@ class LightweightScraperService {
         // 忽略获取昵称失败
       }
 
+      // 抓取粉丝数量和好友数量
+      let followersCount = null;
+      let friendsCount = null;
+
+      try {
+        // 方法1: 通过页面中的链接文本查找数量
+        const links = await this.page.$$('a[href*="followers"], a[href*="friends"]');
+        
+        for (const link of links) {
+          try {
+            const linkText = await link.textContent();
+            const href = await link.getAttribute('href');
+            
+            // 提取数字（支持千万缩写如5.4K, 1.2M）
+            const numberMatch = linkText.match(/([\d,]+(?:\.\d+)?[KkMm]?)/);
+            if (numberMatch) {
+              let number = this.parseNumber(numberMatch[1]);
+              
+              // 根据href判断是粉丝还是好友
+              if (href && href.includes('followers') && followersCount === null) {
+                followersCount = number;
+              } else if (href && href.includes('friends') && friendsCount === null) {
+                friendsCount = number;
+              }
+            }
+          } catch (error) {
+            // 忽略单个链接的错误
+          }
+        }
+
+        // 方法2: 通过通用的数字文本模式查找
+        if (followersCount === null || friendsCount === null) {
+          // 查找所有包含数字的元素
+          const elements = await this.page.$$('span, div, a');
+          
+          for (const element of elements) {
+            try {
+              const text = await element.textContent();
+              const trimmedText = text?.trim();
+              
+              // 匹配纯数字（如 5466, 1,234, 5.4K, 1.2M）
+              if (trimmedText && /^[\d,]+(?:\.\d+)?[KkMm]?$/.test(trimmedText)) {
+                const number = this.parseNumber(trimmedText);
+                
+                // 根据上下文判断类型
+                const parent = await element.evaluate(el => el.parentElement?.textContent || '');
+                const context = (parent + ' ' + trimmedText).toLowerCase();
+                
+                // 如果数字在合理范围内（100-100M）且还没有获取到对应数据
+                if (number >= 100 && number <= 100000000) {
+                  if (followersCount === null && number > 1000) {
+                    followersCount = number;
+                  } else if (friendsCount === null && number <= 5000) {
+                    friendsCount = number;
+                  }
+                }
+              }
+            } catch (error) {
+              // 忽略单个元素的错误
+            }
+          }
+        }
+
+        // 方法3: 从页面源码中查找JSON数据
+        if (followersCount === null || friendsCount === null) {
+          const jsonMatches = content.match(/"subscriber_count":(\d+)|"friend_count":(\d+)/g);
+          if (jsonMatches) {
+            for (const match of jsonMatches) {
+              if (match.includes('subscriber_count') && followersCount === null) {
+                const countMatch = match.match(/(\d+)/);
+                if (countMatch) followersCount = parseInt(countMatch[1]);
+              }
+              if (match.includes('friend_count') && friendsCount === null) {
+                const countMatch = match.match(/(\d+)/);
+                if (countMatch) friendsCount = parseInt(countMatch[1]);
+              }
+            }
+          }
+        }
+
+      } catch (error) {
+        // 忽略数量抓取失败，不影响主要功能
+      }
+
       return {
         uid,
         nickname: nickname?.trim() || null,
+        followersCount: followersCount,
+        friendsCount: friendsCount,
         type: 'profile',
         extractMethod: 'page_content'
       };
     } catch (error) {
       throw error;
+    }
+  }
+
+  /**
+   * 解析数字字符串，支持K/M缩写
+   * @param {string} numberStr - 数字字符串 (如 "5.4K", "1.2M", "1,234")
+   * @returns {number} 解析后的数字
+   */
+  parseNumber(numberStr) {
+    if (!numberStr) return 0;
+    
+    // 移除逗号
+    let cleanStr = numberStr.replace(/,/g, '');
+    
+    // 处理K/M缩写
+    if (cleanStr.toLowerCase().includes('k')) {
+      return Math.round(parseFloat(cleanStr) * 1000);
+    } else if (cleanStr.toLowerCase().includes('m')) {
+      return Math.round(parseFloat(cleanStr) * 1000000);
+    } else {
+      return parseInt(cleanStr) || 0;
     }
   }
 
@@ -638,6 +745,8 @@ class FacebookScraperPlaywrightPoolService {
             uid: serviceResult.data.uid || null,
             groupId: serviceResult.data.groupId || null,
             nickname: serviceResult.data.nickname || null,
+            followersCount: serviceResult.data.followersCount || null,
+            friendsCount: serviceResult.data.friendsCount || null,
             totalTime: totalTime,
             instanceId: instance.instanceId
           }
