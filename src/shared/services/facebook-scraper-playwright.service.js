@@ -1,26 +1,54 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-06-25 16:11:30
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-06-27 15:49:01
+ * @Description: 
+ */
 /**
  * Facebook 数据抓取服务 (Playwright)
  * 基于 Playwright 实现的 Facebook 数据抓取功能
  * 相比 Puppeteer 具有更强的反检测能力和稳定性
+ * 
+ * ⚠️ 注意：此服务不支持高并发，每次只能处理一个请求
+ * 如需高并发支持，请使用：
+ * - FacebookScraperPlaywrightPoolService (推荐) - 实例池管理
  */
 const { chromium } = require('playwright');
 const { logger, scrapeFailureLogger, scrapeSuccessLogger } = require('../config/logger.config');
 
 class FacebookScraperPlaywrightService {
   constructor() {
+    // ⚠️ 实例变量：在高并发下会导致资源竞争
     this.browser = null;
     this.context = null;
     this.page = null;
-    this.isClosing = false;  // 添加关闭状态标志
-    this.operationCount = 0; // 添加操作计数器
+    this.isClosing = false;  // 并发状态标志（不安全）
+    this.operationCount = 0; // 并发操作计数器（不安全）
+    this.requestId = null;   // 当前请求ID（用于并发检测）
     
     // 记录环境信息
     logger.info(`[FB-PW] 运行环境: ${process.platform} ${process.arch}`);
     logger.info(`[FB-PW] Node.js版本: ${process.version}`);
     logger.info(`[FB-PW] 工作目录: ${process.cwd()}`);
+    logger.warn(`[FB-PW] ⚠️ 此服务不支持高并发，建议使用 FacebookScraperPlaywrightPoolService`);
     
     // 检查浏览器可执行文件
     this.checkBrowsers();
+  }
+
+  /**
+   * 检测并发访问
+   * @param {string} newRequestId - 新请求ID
+   * @returns {boolean} 是否存在并发冲突
+   */
+  detectConcurrency(newRequestId) {
+    if (this.requestId && this.requestId !== newRequestId) {
+      logger.warn(`[FB-PW] 🚨 检测到并发访问冲突！当前请求: ${this.requestId}, 新请求: ${newRequestId}`);
+      logger.warn(`[FB-PW] 💡 建议使用 FacebookScraperPlaywrightPoolService`);
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -800,39 +828,7 @@ class FacebookScraperPlaywrightService {
     }
   }
 
-  /**
-   * 识别链接类型
-   * @param {string} url - Facebook 链接
-   * @returns {string} 链接类型：profile, post, group
-   */
-  identifyLinkType(url) {
-    try {
-      const urlObj = new URL(url);
-      const pathname = urlObj.pathname;
-      const searchParams = urlObj.searchParams;
 
-      // 群组链接识别
-      if (pathname.includes('/groups/')) {
-        return 'group';
-      }
-
-      // 带有 mibextid 参数的分享链接通常是群组
-      if (searchParams.has('mibextid')) {
-        return 'group';
-      }
-
-      // 帖子链接识别
-      if (pathname.includes('/posts/')) {
-        return 'post';
-      }
-
-      // 默认作为个人资料链接处理
-      return 'profile';
-    } catch (error) {
-      logger.warn('[FB-PW] URL解析失败，默认作为个人资料处理:', error.message);
-      return 'profile';
-    }
-  }
 
   /**
    * 尝试快速从URL提取信息（无需启动浏览器）
@@ -887,33 +883,53 @@ class FacebookScraperPlaywrightService {
    */
   async scrapeData(url, type, options = {}) {
     const { timeout = 60000, retries = 1 } = options;
+    const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
     
-    logger.info(`[FB-PW] 开始抓取 Facebook 数据 (Playwright): ${url}, 类型: ${type}`);
-    
-    // 性能优化：对于非个人资料类型，优先尝试从URL直接提取信息
-    if (type !== 'profile') {
-      const fastExtractResult = this.tryFastExtract(url, type);
-      if (fastExtractResult) {
-        logger.info(`[FB-PW] 快速提取成功，无需启动浏览器: ${url}`);
-        
-        scrapeSuccessLogger.info(`[FB-PW] ${JSON.stringify({
-          url: url,
-          type: type,
-          data: fastExtractResult
-        })}`);
-        
-        return {
-          success: true,
-          type,
-          data: fastExtractResult,
-          timestamp: new Date().toISOString()
-        };
-      }
-      
-      logger.info(`[FB-PW] 无法快速提取，使用浏览器抓取: ${url}`);
-    } else {
-      logger.info(`[FB-PW] 个人资料类型需要访问页面查看源代码，直接使用浏览器抓取: ${url}`);
+    // 并发检测
+    if (this.detectConcurrency(requestId)) {
+      return {
+        success: false,
+        error: {
+          code: 'CONCURRENCY_CONFLICT',
+          message: '检测到并发访问冲突，此服务不支持高并发操作',
+          suggestion: '请使用 FacebookScraperPlaywrightPoolService'
+        },
+        timestamp: new Date().toISOString(),
+        requestId: requestId
+      };
     }
+    
+    this.requestId = requestId;
+    logger.info(`[FB-PW:${requestId}] 开始抓取 Facebook 数据 (Playwright): ${url}, 类型: ${type}`);
+    
+          // 性能优化：对于非个人资料类型，优先尝试从URL直接提取信息
+      if (type !== 'profile') {
+        const fastExtractResult = this.tryFastExtract(url, type);
+        if (fastExtractResult) {
+          logger.info(`[FB-PW:${requestId}] 快速提取成功，无需启动浏览器: ${url}`);
+          
+          scrapeSuccessLogger.info(`[FB-PW] ${JSON.stringify({
+            requestId: requestId,
+            url: url,
+            type: type,
+            data: fastExtractResult
+          })}`);
+          
+          this.requestId = null; // 清理请求ID
+          
+          return {
+            success: true,
+            type,
+            data: fastExtractResult,
+            timestamp: new Date().toISOString(),
+            requestId: requestId
+          };
+        }
+        
+        logger.info(`[FB-PW:${requestId}] 无法快速提取，使用浏览器抓取: ${url}`);
+      } else {
+        logger.info(`[FB-PW:${requestId}] 个人资料类型需要访问页面查看源代码，直接使用浏览器抓取: ${url}`);
+      }
 
     let attempt = 0;
     while (attempt < retries) {
@@ -1100,16 +1116,19 @@ class FacebookScraperPlaywrightService {
         }
         
         await this.closeBrowser();
-        logger.info(`[FB-PW] 抓取成功 (Playwright): ${url}`);
+        this.requestId = null; // 清理请求ID
+        logger.info(`[FB-PW:${requestId}] 抓取成功 (Playwright): ${url}`);
         
         if (result.extractionMethod === 'failed'){
           scrapeFailureLogger.info(`[FB-PW] ${JSON.stringify({
+            requestId: requestId,
             url: url,
             type: type,
             data: result
           })}`);
         } else {
           scrapeSuccessLogger.info(`[FB-PW] ${JSON.stringify({
+            requestId: requestId,
             url: url,
             type: type,
             data: result
@@ -1120,17 +1139,21 @@ class FacebookScraperPlaywrightService {
           success: true,
           type,
           data: result,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          requestId: requestId
         };
         
       } catch (error) {
         attempt++;
-        logger.error(`[FB-PW] 抓取失败 (尝试 ${attempt}/${retries}) (Playwright): ${error.message}`);
+        logger.error(`[FB-PW:${requestId}] 抓取失败 (尝试 ${attempt}/${retries}) (Playwright): ${error.message}`);
         
         await this.closeBrowser();
         
         if (attempt >= retries) {
+          this.requestId = null; // 清理请求ID
+          
           scrapeFailureLogger.info(`[FB-PW] ${JSON.stringify({
+            requestId: requestId,
             url: url,
             type: type,
             message: this.getErrorMessage(error),
@@ -1144,13 +1167,14 @@ class FacebookScraperPlaywrightService {
               message: this.getErrorMessage(error),
               details: error.message
             },
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            requestId: requestId
           };
         }
         
         // 重试前等待，递增延迟
         const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
-        logger.info(`[FB-PW] 等待 ${delay}ms 后重试...`);
+        logger.info(`[FB-PW:${requestId}] 等待 ${delay}ms 后重试...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

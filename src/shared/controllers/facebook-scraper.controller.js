@@ -1,17 +1,41 @@
 /**
  * Facebook 数据抓取控制器
  * 处理 Facebook 数据抓取的 API 请求
+ * 使用 Playwright 服务池优化高并发性能
  */
 const { body, validationResult } = require('express-validator');
-const FacebookScraperPuppeteerService = require('../services/facebook-scraper-puppeteer.service');
-const FacebookScraperPlaywrightService = require('../services/facebook-scraper-playwright.service');
+const FacebookScraperPlaywrightPoolService = require('../services/facebook-scraper-playwright-pool.service');
 const { logger } = require('../config/logger.config');
 const responseUtil = require('../utils/response.util');
 
 class FacebookScraperController {
   constructor() {
-    this.puppeteerService = new FacebookScraperPuppeteerService();
-    this.playwrightService = new FacebookScraperPlaywrightService();
+    // 使用 Playwright 服务池优化高并发性能
+    this.playwrightPoolService = new FacebookScraperPlaywrightPoolService({
+      maxInstances: 8,          // 最大8个并发实例
+      instanceTimeout: 300000,  // 5分钟超时
+      maxQueueSize: 50,         // 最大50个等待队列
+      cleanupInterval: 120000   // 2分钟清理一次
+    });
+    
+    logger.info('[FB-CONTROLLER] Facebook 抓取控制器已初始化 - 使用 Playwright 高并发服务池');
+  }
+
+  /**
+   * 获取池状态
+   * @returns {Object} 池统计信息
+   */
+  getPoolStats() {
+    return this.playwrightPoolService.getStats();
+  }
+
+  /**
+   * 关闭服务池（用于应用程序关闭时清理资源）
+   */
+  async shutdown() {
+    logger.info('[FB-CONTROLLER] 正在关闭 Facebook 抓取服务池...');
+    await this.playwrightPoolService.shutdown();
+    logger.info('[FB-CONTROLLER] Facebook 抓取服务池已关闭');
   }
 
   /**
@@ -56,8 +80,8 @@ class FacebookScraperController {
       
       body('engine')
         .optional()
-        .isIn(['puppeteer', 'playwright'])
-        .withMessage('引擎必须是 puppeteer 或 playwright 之一'),
+        .isIn(['playwright'])
+        .withMessage('引擎必须是 playwright'),
       
       body('options')
         .optional()
@@ -82,7 +106,7 @@ class FacebookScraperController {
   }
 
   /**
-   * 抓取 Facebook 数据
+   * 抓取 Facebook 数据（单个请求）
    * @param {Object} req - 请求对象
    * @param {Object} res - 响应对象
    */
@@ -104,35 +128,72 @@ class FacebookScraperController {
 
       const { url, type, engine = 'playwright', options = {} } = req.body;
       
-      logger.info(`开始抓取 Facebook 数据: ${url}，使用引擎: ${engine}`);
+      logger.info(`[FB-CONTROLLER] 开始抓取 Facebook 数据: ${url}，使用引擎: ${engine}`);
       
-      // 根据指定的引擎选择服务
-      const scraperService = engine === 'playwright' ? this.playwrightService : this.puppeteerService;
+      // 验证引擎类型
+      if (engine !== 'playwright') {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'UNSUPPORTED_ENGINE',
+            message: '当前仅支持 playwright 引擎',
+            details: '推荐使用 playwright 以获得最佳性能和稳定性'
+          },
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // 使用 Playwright 服务池
+      const scraperService = this.playwrightPoolService;
       
       // 如果没有指定类型，自动识别
       let dataType = type;
       if (!dataType) {
-        dataType = scraperService.identifyLinkType(url);
-        logger.info(`自动识别链接类型: ${dataType}`);
+        dataType = this.playwrightPoolService.identifyLinkType(url);
+        logger.info(`[FB-CONTROLLER] 自动识别链接类型: ${dataType}`);
       }
       
       // 执行数据抓取
       const result = await scraperService.scrapeData(url, dataType, options);
       
-      logger.info(`数据抓取成功: ${url}`);
-      // 构建成功响应，包含额外的元数据
-      const responseData = {
-        ...result,
-        _meta: {
-          engine: engine,
-          type: dataType,
-          timestamp: new Date().toISOString()
-        }
-      };
-      return responseUtil.success(res, responseData, '数据抓取成功');
+      if (result.success) {
+        logger.info(`[FB-CONTROLLER] 数据抓取成功: ${url}`);
+        
+        // 构建成功响应，包含额外的元数据
+        const responseData = {
+          ...result,
+          _meta: {
+            engine: engine,
+            type: dataType,
+            timestamp: new Date().toISOString(),
+            poolStats: {
+              utilization: this.playwrightPoolService.getStats().health.poolUtilization,
+              activeInstances: this.playwrightPoolService.getStats().active
+            }
+          }
+        };
+        
+        return responseUtil.success(res, responseData, '数据抓取成功');
+      } else {
+        // 抓取失败但服务正常
+        logger.warn(`[FB-CONTROLLER] 数据抓取失败: ${url}`, result.error);
+        return res.status(422).json({
+          success: false,
+          error: {
+            code: result.error?.code || 'SCRAPE_FAILED',
+            message: result.error?.message || '数据抓取失败',
+            details: result.error?.details || '未知错误'
+          },
+          _meta: {
+            engine: engine,
+            type: dataType,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
       
     } catch (error) {
-      logger.error('Facebook 数据抓取异常:', error);
+      logger.error('[FB-CONTROLLER] Facebook 数据抓取异常:', error);
       return res.status(500).json({
         success: false,
         error: {
@@ -145,8 +206,10 @@ class FacebookScraperController {
     }
   }
 
+
+
   /**
-   * 批量抓取 Facebook 数据
+   * 批量抓取 Facebook 数据（高并发优化）
    * @param {Object} req - 请求对象
    * @param {Object} res - 响应对象
    */
@@ -166,82 +229,76 @@ class FacebookScraperController {
         });
       }
       
-      if (urls.length > 10) {
+      // 验证引擎类型
+      if (engine !== 'playwright') {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'UNSUPPORTED_ENGINE',
+            message: '当前仅支持 playwright 引擎',
+            details: '推荐使用 playwright 以获得最佳性能和稳定性'
+          },
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // Playwright 服务池支持最多50个链接的批量抓取
+      const maxBatchSize = 50;
+      if (urls.length > maxBatchSize) {
         return res.status(400).json({
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: '批量抓取最多支持 10 个链接',
+            message: `批量抓取最多支持 ${maxBatchSize} 个链接`,
             details: []
           },
           timestamp: new Date().toISOString()
         });
       }
       
-      logger.info(`开始批量抓取 Facebook 数据: ${urls.length} 个链接，使用引擎: ${engine}`);
+      logger.info(`[FB-CONTROLLER] 开始批量抓取 Facebook 数据: ${urls.length} 个链接，使用 Playwright 引擎`);
       
-      const results = [];
-      
-      // 并发抓取（限制并发数为 3）
-      const concurrencyLimit = 3;
-      for (let i = 0; i < urls.length; i += concurrencyLimit) {
-        const batch = urls.slice(i, i + concurrencyLimit);
-        const batchPromises = batch.map(async (urlData) => {
-          try {
-            const { url, type } = typeof urlData === 'string' ? { url: urlData, type: null } : urlData;
-            
-            // 根据指定的引擎创建新的服务实例以支持并发
-            const ScraperServiceClass = engine === 'playwright' 
-              ? require('../services/facebook-scraper-playwright.service')
-              : require('../services/facebook-scraper-puppeteer.service');
-            const scraperService = new ScraperServiceClass();
-            
-            // 自动识别类型
-            const dataType = type || scraperService.identifyLinkType(url);
-            
-            const result = await scraperService.scrapeData(url, dataType, options);
-            
-            return {
-              url,
-              type: dataType,
-              ...result
-            };
-          } catch (error) {
-            return {
-              url: typeof urlData === 'string' ? urlData : urlData.url,
-              success: false,
-              error: {
-                code: 'SCRAPE_ERROR',
-                message: '抓取失败',
-                details: error.message
-              }
-            };
-          }
-        });
+      // 使用服务池的高性能批量抓取
+      const requests = urls.map(urlData => {
+        const { url, type } = typeof urlData === 'string' ? { url: urlData, type: null } : urlData;
+        const dataType = type || this.playwrightPoolService.identifyLinkType(url);
         
-        const batchResults = await Promise.all(batchPromises);
-        results.push(...batchResults);
-      }
+        return {
+          url,
+          type: dataType,
+          options
+        };
+      });
       
-      const successCount = results.filter(r => r.success).length;
-      const failCount = results.length - successCount;
+      // 使用服务池的批量抓取方法
+      const result = await this.playwrightPoolService.batchScrapeData(requests, {
+        concurrency: Math.min(8, requests.length) // 最大并发8个
+      });
       
-      logger.info(`批量抓取完成: 成功 ${successCount} 个，失败 ${failCount} 个`);
+      logger.info(`[FB-CONTROLLER] 服务池批量抓取完成: ${result.summary.successful} 成功, ${result.summary.failed} 失败`);
       
       return res.status(200).json({
         success: true,
         message: '批量抓取完成',
-        data: results,
+        data: result.results,
         meta: {
-          total: results.length,
-          success: successCount,
-          failed: failCount,
+          total: result.summary.total,
+          successful: result.summary.successful,
+          failed: result.summary.failed,
+          totalTime: result.summary.totalTime,
+          avgTime: result.summary.avgTime,
+          engine: 'playwright',
+          poolStats: {
+            utilization: result.poolStats.health.poolUtilization,
+            activeInstances: result.poolStats.active,
+            queueUtilization: result.poolStats.health.queueUtilization
+          },
           timestamp: new Date().toISOString()
         }
       });
       
     } catch (error) {
-      logger.error('批量抓取 Facebook 数据异常:', error);
+      logger.error('[FB-CONTROLLER] 批量抓取 Facebook 数据异常:', error);
       return res.status(500).json({
         success: false,
         error: {
@@ -254,7 +311,74 @@ class FacebookScraperController {
     }
   }
 
-
 }
+
+// 全局服务池实例管理器
+class FacebookScraperServiceManager {
+  constructor() {
+    this.controllerInstances = new Set();
+  }
+
+  /**
+   * 注册控制器实例
+   * @param {FacebookScraperController} instance 
+   */
+  registerController(instance) {
+    this.controllerInstances.add(instance);
+  }
+
+  /**
+   * 注销控制器实例
+   * @param {FacebookScraperController} instance 
+   */
+  unregisterController(instance) {
+    this.controllerInstances.delete(instance);
+  }
+
+  /**
+   * 关闭所有服务池（用于应用程序关闭时）
+   */
+  async shutdownAll() {
+    const { logger } = require('../config/logger.config');
+    logger.info('[FB-SERVICE-MANAGER] 开始关闭所有 Facebook 抓取服务池...');
+    
+    const shutdownPromises = Array.from(this.controllerInstances).map(async (instance) => {
+      try {
+        await instance.shutdown();
+      } catch (error) {
+        logger.error('[FB-SERVICE-MANAGER] 关闭服务池时出错:', error);
+      }
+    });
+    
+    await Promise.all(shutdownPromises);
+    logger.info('[FB-SERVICE-MANAGER] 所有 Facebook 抓取服务池已关闭');
+  }
+}
+
+// 全局单例实例
+const serviceManager = new FacebookScraperServiceManager();
+
+// 修改原构造函数以注册到管理器
+const OriginalConstructor = FacebookScraperController;
+FacebookScraperController = function(...args) {
+  const instance = new OriginalConstructor(...args);
+  serviceManager.registerController(instance);
+  
+  // 添加析构函数
+  const originalShutdown = instance.shutdown.bind(instance);
+  instance.shutdown = async function() {
+    await originalShutdown();
+    serviceManager.unregisterController(this);
+  };
+  
+  return instance;
+};
+
+// 保持原型链
+FacebookScraperController.prototype = OriginalConstructor.prototype;
+FacebookScraperController.getValidationRules = OriginalConstructor.getValidationRules;
+
+// 导出管理器用于应用程序关闭处理
+FacebookScraperController.serviceManager = serviceManager;
 
 module.exports = FacebookScraperController; 

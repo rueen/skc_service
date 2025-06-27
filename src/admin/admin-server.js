@@ -128,5 +128,44 @@ startServer();
 
 // 设置关闭处理程序
 function setupShutdownHandlers(app) {
-  // ... existing code ...
+  const FacebookScraperController = require('../shared/controllers/facebook-scraper.controller');
+  
+  /**
+   * 优雅关闭处理函数
+   * @param {string} signal - 接收到的信号
+   */
+  async function gracefulShutdown(signal) {
+    logger.info(`[ADMIN-SERVER] 接收到 ${signal} 信号，开始优雅关闭...`);
+    
+    try {
+      // 关闭 Facebook 抓取服务池
+      if (FacebookScraperController.serviceManager) {
+        await FacebookScraperController.serviceManager.shutdownAll();
+      }
+      
+      logger.info('[ADMIN-SERVER] 应用程序已优雅关闭');
+      process.exit(0);
+    } catch (error) {
+      logger.error('[ADMIN-SERVER] 优雅关闭过程中发生错误:', error);
+      process.exit(1);
+    }
+  }
+  
+  // 监听进程信号
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  
+  // 监听未捕获的异常
+  process.on('uncaughtException', (error) => {
+    logger.error('[ADMIN-SERVER] 未捕获的异常:', error);
+    gracefulShutdown('uncaughtException');
+  });
+  
+  // 监听未处理的 Promise 拒绝
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.error('[ADMIN-SERVER] 未处理的 Promise 拒绝:', reason);
+    gracefulShutdown('unhandledRejection');
+  });
+  
+  logger.info('[ADMIN-SERVER] 优雅关闭处理程序已设置');
 } 

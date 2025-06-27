@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-06-21 17:13:19
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-24 10:55:47
+ * @LastEditTime: 2025-06-27 12:14:41
  * @Description: 
  */
 /**
@@ -35,9 +35,10 @@ router.post('/scrape',
 
 /**
  * @route POST /api/facebook/batch-scrape
- * @desc 批量抓取 Facebook 数据
+ * @desc 批量抓取 Facebook 数据（高并发优化）
  * @access Public
  * @body {Array} urls - Facebook 链接数组，每个元素可以是字符串或对象 {url, type}
+ * @body {string} [engine=playwright] - 抓取引擎 (仅支持 playwright)
  * @body {Object} [options] - 抓取选项
  */
 router.post('/batch-scrape',
@@ -45,6 +46,34 @@ router.post('/batch-scrape',
   (req, res) => facebookScraperController.batchScrapeData(req, res)
 );
 
-
+/**
+ * @route GET /api/facebook/pool-stats
+ * @desc 获取服务池状态信息（监控端点）
+ * @access Public
+ */
+router.get('/pool-stats',
+  rateLimiterMiddleware.apiLimiter,
+  (req, res) => {
+    try {
+      const stats = facebookScraperController.getPoolStats();
+      res.json({
+        success: true,
+        message: '获取池状态成功',
+        data: stats,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: '获取池状态失败',
+          details: error.message
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+);
 
 module.exports = router; 
