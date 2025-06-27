@@ -890,27 +890,30 @@ class FacebookScraperPlaywrightService {
     
     logger.info(`[FB-PW] 开始抓取 Facebook 数据 (Playwright): ${url}, 类型: ${type}`);
     
-    // 性能优化：优先尝试从URL直接提取信息，避免启动浏览器
-    const fastExtractResult = this.tryFastExtract(url, type);
-    if (fastExtractResult) {
-      logger.info(`[FB-PW] 快速提取成功，无需启动浏览器: ${url}`);
+    // 性能优化：对于非个人资料类型，优先尝试从URL直接提取信息
+    if (type !== 'profile') {
+      const fastExtractResult = this.tryFastExtract(url, type);
+      if (fastExtractResult) {
+        logger.info(`[FB-PW] 快速提取成功，无需启动浏览器: ${url}`);
+        
+        scrapeSuccessLogger.info(`[FB-PW] ${JSON.stringify({
+          url: url,
+          type: type,
+          data: fastExtractResult
+        })}`);
+        
+        return {
+          success: true,
+          type,
+          data: fastExtractResult,
+          timestamp: new Date().toISOString()
+        };
+      }
       
-      scrapeSuccessLogger.info(`[FB-PW] ${JSON.stringify({
-        url: url,
-        type: type,
-        data: fastExtractResult
-      })}`);
-      
-      return {
-        success: true,
-        type,
-        data: fastExtractResult,
-        timestamp: new Date().toISOString()
-      };
+      logger.info(`[FB-PW] 无法快速提取，使用浏览器抓取: ${url}`);
+    } else {
+      logger.info(`[FB-PW] 个人资料类型需要访问页面查看源代码，直接使用浏览器抓取: ${url}`);
     }
-    
-    // 如果无法快速提取，则使用浏览器抓取
-    logger.info(`[FB-PW] 无法快速提取，使用浏览器抓取: ${url}`);
 
     let attempt = 0;
     while (attempt < retries) {
