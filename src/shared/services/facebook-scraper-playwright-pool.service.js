@@ -153,18 +153,30 @@ class LightweightScraperService {
   tryFastExtract(url, type) {
     try {
       if (type === 'post') {
-        // 从URL提取帖子ID
-        const postMatch = url.match(/(?:posts|story\.php\?story_fbid=|permalink\.php\?story_fbid=)[\w\/]*?(\d{15,})/);
+        // 从URL提取账号UID
+        const postMatch = url.match(/facebook\.com\/(\d{10,})\/posts/);
         if (postMatch) {
-          return { uid: postMatch[1], type: 'post', extractMethod: 'url_pattern' };
+          const uid = postMatch[1];
+          return {
+            uid,
+            sourceUrl: url,
+            type: 'post',
+            extractMethod: 'fast_url_extract'
+          };
         }
       }
       
       if (type === 'group') {
         // 从URL提取群组ID
-        const groupMatch = url.match(/groups\/(\d+)/);
+        const groupMatch = url.match(/\/groups\/(\d{10,})\//);
         if (groupMatch) {
-          return { uid: groupMatch[1], type: 'group', extractMethod: 'url_pattern' };
+          const groupId = groupMatch[1];
+          return {
+            groupId: groupId,
+            sourceUrl: url,
+            type: 'group',
+            extractMethod: 'fast_url_extract'
+          };
         }
       }
       
@@ -207,25 +219,25 @@ class LightweightScraperService {
   }
 
   /**
-   * 抓取帖子
+   * 抓取帖子 - 提取发帖账号UID
    */
   async scrapePost(originalUrl) {
     try {
-      // 先尝试从页面内容获取
-      const content = await this.page.content();
-      const postMatch = content.match(/"post_id":"(\d+)"/);
-      
-      if (postMatch) {
-        return { uid: postMatch[1], type: 'post', extractMethod: 'page_content' };
+      // 获取当前页面URL
+      const currentUrl = this.page.url();
+      const uidMatch = currentUrl.match(/[?&]id=(\d{15,})/);
+      if (uidMatch) {
+        const uid = uidMatch[1];
+        return {
+          uid,
+          type: 'post',
+          sourceUrl: originalUrl,
+          redirectUrl: currentUrl,
+          extractMethod: 'redirect_url_match'
+        };
       }
 
-      // 回退到URL匹配
-      const urlMatch = originalUrl.match(/(\d{15,})/);
-      if (urlMatch) {
-        return { uid: urlMatch[1], type: 'post', extractMethod: 'url_fallback' };
-      }
-
-      throw new Error('无法提取帖子ID');
+      throw new Error('无法提取账号UID');
     } catch (error) {
       throw error;
     }
@@ -236,21 +248,21 @@ class LightweightScraperService {
    */
   async scrapeGroup(originalUrl) {
     try {
-      // 从页面内容获取
-      const content = await this.page.content();
-      const groupMatch = content.match(/"group_id":"(\d+)"/);
-      
-      if (groupMatch) {
-        return { uid: groupMatch[1], type: 'group', extractMethod: 'page_content' };
+      // 获取当前页面URL
+      const currentUrl = this.page.url();
+      const groupIdMatch = originalUrl.match(/\/groups\/(\d{10,})\//);
+      if (groupIdMatch) {
+        const groupId = groupIdMatch[1];
+        return {
+          groupId,
+          type: 'group',
+          sourceUrl: originalUrl,
+          redirectUrl: currentUrl,
+          extractMethod: 'redirect_url_match'
+        };
       }
 
-      // 回退到URL匹配
-      const urlMatch = originalUrl.match(/groups\/(\d+)/);
-      if (urlMatch) {
-        return { uid: urlMatch[1], type: 'group', extractMethod: 'url_fallback' };
-      }
-
-      throw new Error('无法提取群组ID');
+      throw new Error('无法提取账号UID');
     } catch (error) {
       throw error;
     }
