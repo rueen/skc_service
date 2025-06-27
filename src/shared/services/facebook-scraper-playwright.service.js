@@ -1221,45 +1221,40 @@ class FacebookScraperPlaywrightService {
       const profileData = {};
       profileData.profileUrl = currentUrl;
       
-      // 尝试获取 UID
+      // 尝试获取 UID - 直接从页面源码中查找
       logger.info('[FB-PW] 正在获取用户ID...');
-      const uidMatch = currentUrl.match(/(?:id=|profile\.php\?id=)(\d+)/);
-      if (uidMatch) {
-        profileData.uid = uidMatch[1];
-        logger.info(`[FB-PW] 从URL获取到UID: ${profileData.uid}`);
-      } else {
-        // 从页面源码中查找 UID
-        const pageContent = await this.safePageOperation(
-          () => this.page.content(),
-          '获取页面源码'
-        );
+      const pageContent = await this.safePageOperation(
+        () => this.page.content(),
+        '获取页面源码'
+      );
+      
+      if (pageContent) {
+        logger.info(`[FB-PW] 页面源码长度: ${pageContent.length} 字符`);
         
-        if (pageContent) {
-          logger.info(`[FB-PW] 页面源码长度: ${pageContent.length} 字符`);
-          
-          const uidPatterns = [
-            /"userID":"(\d+)"/,
-            /"USER_ID":"(\d+)"/,
-            /user_id['"]:['"](\d+)['"]/,
-            /profile_id['"]:['"](\d+)['"]/,
-            /"profile_owner":"(\d+)"/,
-            /"actorID":"(\d+)"/,
-            /"pageID":"(\d+)"/
-          ];
-          
-          for (const pattern of uidPatterns) {
-            const match = pageContent.match(pattern);
-            if (match) {
-              profileData.uid = match[1];
-              logger.info(`[FB-PW] 从页面内容获取到UID: ${profileData.uid} (模式: ${pattern})`);
-              break;
-            }
-          }
-          
-          if (!profileData.uid) {
-            logger.warn('[FB-PW] 所有UID提取模式都未匹配成功');
+        const uidPatterns = [
+          /"userID":"(\d+)"/,
+          /"USER_ID":"(\d+)"/,
+          /user_id['"]:['"](\d+)['"]/,
+          /profile_id['"]:['"](\d+)['"]/,
+          /"profile_owner":"(\d+)"/,
+          /"actorID":"(\d+)"/,
+          /"pageID":"(\d+)"/
+        ];
+        
+        for (const pattern of uidPatterns) {
+          const match = pageContent.match(pattern);
+          if (match) {
+            profileData.uid = match[1];
+            logger.info(`[FB-PW] 从页面内容获取到UID: ${profileData.uid} (模式: ${pattern})`);
+            break;
           }
         }
+        
+        if (!profileData.uid) {
+          logger.warn('[FB-PW] 所有UID提取模式都未匹配成功');
+        }
+      } else {
+        logger.warn('[FB-PW] 无法获取页面源码，跳过UID提取');
       }
       
       // 尝试获取昵称
