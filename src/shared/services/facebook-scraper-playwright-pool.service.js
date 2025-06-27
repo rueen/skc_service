@@ -627,6 +627,23 @@ class FacebookScraperPlaywrightPoolService {
         this.stats.successfulRequests++;
         logger.info(`[FB-PW-POOL] ✅ 抓取完成: ${url}, 总耗时: ${totalTime}ms, 实例: ${instance.instanceId}`);
         
+        // 记录抓取成功日志
+        const logData = {
+          sourceUrl: url,
+          redirectUrl: serviceResult.data.redirectUrl || null,
+          type: type,
+          extractMethod: serviceResult.data.extractMethod || 'unknown',
+          result: {
+            success: true,
+            uid: serviceResult.data.uid || null,
+            groupId: serviceResult.data.groupId || null,
+            nickname: serviceResult.data.nickname || null,
+            totalTime: totalTime,
+            instanceId: instance.instanceId
+          }
+        };
+        scrapeSuccessLogger.info(`${JSON.stringify(logData)}`);
+        
         return {
           success: true,
           data: serviceResult.data,
@@ -639,6 +656,21 @@ class FacebookScraperPlaywrightPoolService {
       } else {
         this.stats.failedRequests++;
         logger.error(`[FB-PW-POOL] ❌ 抓取失败: ${url}, 耗时: ${totalTime}ms, 错误: ${serviceResult.error.message}`);
+        
+        // 记录抓取失败日志
+        const logData = {
+          sourceUrl: url,
+          redirectUrl: null,
+          type: type,
+          extractMethod: 'failed',
+          result: {
+            success: false,
+            error: serviceResult.error,
+            totalTime: totalTime,
+            instanceId: instance.instanceId
+          }
+        };
+        scrapeFailureLogger.info(`${JSON.stringify(logData)}`);
         
         return {
           success: false,
@@ -656,6 +688,24 @@ class FacebookScraperPlaywrightPoolService {
       logger.error(`[FB-PW-POOL] ❌ 池级别错误: ${url}, 耗时: ${totalTime}ms`, error);
       
       this.stats.failedRequests++;
+      
+      // 记录池级别错误日志
+      const logData = {
+        sourceUrl: url,
+        redirectUrl: null,
+        type: type,
+        extractMethod: 'pool_error',
+        result: {
+          success: false,
+          error: {
+            code: 'POOL_ERROR',
+            message: error.message
+          },
+          totalTime: totalTime,
+          instanceId: instance ? instance.instanceId : 'N/A'
+        }
+      };
+      scrapeFailureLogger.info(`${JSON.stringify(logData)}`);
       
       return {
         success: false,
@@ -701,6 +751,23 @@ class FacebookScraperPlaywrightPoolService {
           const result = await this.scrapeData(request.url, request.type, request.options);
           return { index: i + index, result };
         } catch (error) {
+          // 记录批量抓取中的异常错误日志
+          const logData = {
+            sourceUrl: request.url,
+            redirectUrl: null,
+            type: request.type,
+            extractMethod: 'batch_error',
+            result: {
+              success: false,
+              error: {
+                code: 'BATCH_ERROR',
+                message: error.message
+              },
+              batchIndex: i + index
+            }
+          };
+          scrapeFailureLogger.info(`${JSON.stringify(logData)}`);
+          
           return { 
             index: i + index, 
             result: { 
