@@ -210,6 +210,8 @@ class LightweightScraperService {
       // 抓取粉丝数量和好友数量
       let followersCount = null;
       let friendsCount = null;
+      let followersCountRaw = null;  // 原始显示文本
+      let friendsCountRaw = null;    // 原始显示文本
 
       try {
         // 方法1: 通过页面中的链接文本查找数量
@@ -220,18 +222,21 @@ class LightweightScraperService {
             const linkText = await link.textContent();
             const href = await link.getAttribute('href');
             
-            // 提取数字（支持千万缩写如5.4K, 1.2M）
-            const numberMatch = linkText.match(/([\d,]+(?:\.\d+)?[KkMm]?)/);
-            if (numberMatch) {
-              let number = this.parseNumber(numberMatch[1]);
-              
-              // 根据href判断是粉丝还是好友
-              if (href && href.includes('followers') && followersCount === null) {
-                followersCount = number;
-              } else if (href && href.includes('friends') && friendsCount === null) {
-                friendsCount = number;
-              }
-            }
+                         // 提取数字（支持千万缩写如5.4K, 1.2M）
+             const numberMatch = linkText.match(/([\d,]+(?:\.\d+)?[KkMm]?)/);
+             if (numberMatch) {
+               let rawNumber = numberMatch[1];
+               let parsedNumber = this.parseNumber(rawNumber);
+               
+               // 根据href判断是粉丝还是好友
+               if (href && href.includes('followers') && followersCount === null) {
+                 followersCount = parsedNumber;
+                 followersCountRaw = rawNumber;
+               } else if (href && href.includes('friends') && friendsCount === null) {
+                 friendsCount = parsedNumber;
+                 friendsCountRaw = rawNumber;
+               }
+             }
           } catch (error) {
             // 忽略单个链接的错误
           }
@@ -247,23 +252,26 @@ class LightweightScraperService {
               const text = await element.textContent();
               const trimmedText = text?.trim();
               
-              // 匹配纯数字（如 5466, 1,234, 5.4K, 1.2M）
-              if (trimmedText && /^[\d,]+(?:\.\d+)?[KkMm]?$/.test(trimmedText)) {
-                const number = this.parseNumber(trimmedText);
-                
-                // 根据上下文判断类型
-                const parent = await element.evaluate(el => el.parentElement?.textContent || '');
-                const context = (parent + ' ' + trimmedText).toLowerCase();
-                
-                // 如果数字在合理范围内（100-100M）且还没有获取到对应数据
-                if (number >= 100 && number <= 100000000) {
-                  if (followersCount === null && number > 1000) {
-                    followersCount = number;
-                  } else if (friendsCount === null && number <= 5000) {
-                    friendsCount = number;
-                  }
-                }
-              }
+                             // 匹配纯数字（如 5466, 1,234, 5.4K, 1.2M）
+               if (trimmedText && /^[\d,]+(?:\.\d+)?[KkMm]?$/.test(trimmedText)) {
+                 const rawNumber = trimmedText;
+                 const parsedNumber = this.parseNumber(rawNumber);
+                 
+                 // 根据上下文判断类型
+                 const parent = await element.evaluate(el => el.parentElement?.textContent || '');
+                 const context = (parent + ' ' + rawNumber).toLowerCase();
+                 
+                 // 如果数字在合理范围内（100-100M）且还没有获取到对应数据
+                 if (parsedNumber >= 100 && parsedNumber <= 100000000) {
+                   if (followersCount === null && parsedNumber > 1000) {
+                     followersCount = parsedNumber;
+                     followersCountRaw = rawNumber;
+                   } else if (friendsCount === null && parsedNumber <= 5000) {
+                     friendsCount = parsedNumber;
+                     friendsCountRaw = rawNumber;
+                   }
+                 }
+               }
             } catch (error) {
               // 忽略单个元素的错误
             }
@@ -274,16 +282,24 @@ class LightweightScraperService {
         if (followersCount === null || friendsCount === null) {
           const jsonMatches = content.match(/"subscriber_count":(\d+)|"friend_count":(\d+)/g);
           if (jsonMatches) {
-            for (const match of jsonMatches) {
-              if (match.includes('subscriber_count') && followersCount === null) {
-                const countMatch = match.match(/(\d+)/);
-                if (countMatch) followersCount = parseInt(countMatch[1]);
-              }
-              if (match.includes('friend_count') && friendsCount === null) {
-                const countMatch = match.match(/(\d+)/);
-                if (countMatch) friendsCount = parseInt(countMatch[1]);
-              }
-            }
+                         for (const match of jsonMatches) {
+               if (match.includes('subscriber_count') && followersCount === null) {
+                 const countMatch = match.match(/(\d+)/);
+                 if (countMatch) {
+                   const rawNumber = countMatch[1];
+                   followersCount = parseInt(rawNumber);
+                   followersCountRaw = rawNumber;
+                 }
+               }
+               if (match.includes('friend_count') && friendsCount === null) {
+                 const countMatch = match.match(/(\d+)/);
+                 if (countMatch) {
+                   const rawNumber = countMatch[1];
+                   friendsCount = parseInt(rawNumber);
+                   friendsCountRaw = rawNumber;
+                 }
+               }
+             }
           }
         }
 
@@ -296,6 +312,8 @@ class LightweightScraperService {
         nickname: nickname?.trim() || null,
         followersCount: followersCount,
         friendsCount: friendsCount,
+        followersCountRaw: followersCountRaw,  // Facebook页面显示的原始粉丝数
+        friendsCountRaw: friendsCountRaw,      // Facebook页面显示的原始好友数
         type: 'profile',
         extractMethod: 'page_content'
       };
@@ -747,6 +765,8 @@ class FacebookScraperPlaywrightPoolService {
             nickname: serviceResult.data.nickname || null,
             followersCount: serviceResult.data.followersCount || null,
             friendsCount: serviceResult.data.friendsCount || null,
+            followersCountRaw: serviceResult.data.followersCountRaw || null,
+            friendsCountRaw: serviceResult.data.friendsCountRaw || null,
             totalTime: totalTime,
             instanceId: instance.instanceId
           }
