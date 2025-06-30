@@ -222,6 +222,7 @@ async function getMemberBills(memberId, options = {}) {
 /**
  * 获取所有账单列表（管理员用）
  * @param {Object} filters - 筛选条件
+ * @param {string} filters.keyword - 关键词（搜索会员昵称和账号）
  * @param {string} filters.memberNickname - 会员昵称
  * @param {string} filters.billType - 账单类型
  * @param {string} filters.settlementStatus - 结算状态
@@ -235,9 +236,14 @@ async function getMemberBills(memberId, options = {}) {
  * @returns {Promise<Object>} 账单列表和统计信息
  */
 async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
-  const { memberNickname, billType, settlementStatus, billNo, taskName, startTime, endTime, relatedGroupId } = filters;
+  const { keyword, memberNickname, billType, settlementStatus, billNo, taskName, startTime, endTime, relatedGroupId } = filters;
   const params = [];
   let whereClause = 'WHERE 1=1';
+  
+  if (keyword) {
+    whereClause += ' AND (m.nickname LIKE ? OR m.account LIKE ?)';
+    params.push(`%${keyword}%`, `%${keyword}%`);
+  }
   
   if (memberNickname) {
     whereClause += ' AND m.nickname LIKE ?';

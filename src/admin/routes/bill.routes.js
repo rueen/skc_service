@@ -39,6 +39,10 @@ router.get(
       .optional()
       .isInt({ min: 1 })
       .withMessage('common.validation.pageSize'),
+    query('keyword')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
     query('memberNickname')
       .optional()
       .isString()

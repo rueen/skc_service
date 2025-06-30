@@ -17,6 +17,7 @@ async function list(req, res) {
     const { 
       page = DEFAULT_PAGE, 
       pageSize = DEFAULT_PAGE_SIZE, 
+      keyword,
       memberNickname, 
       billType, 
       settlementStatus,
@@ -29,6 +30,7 @@ async function list(req, res) {
     
     const filters = {};
     
+    if (keyword) filters.keyword = keyword;
     if (memberNickname) filters.memberNickname = memberNickname;
     if (billType) filters.billType = billType;
     if (settlementStatus) filters.settlementStatus = settlementStatus;
