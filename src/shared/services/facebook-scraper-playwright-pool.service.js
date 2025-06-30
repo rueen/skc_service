@@ -5,6 +5,7 @@
  */
 const { chromium } = require('playwright');
 const { logger, scrapeFailureLogger, scrapeSuccessLogger } = require('../config/logger.config');
+const FacebookRedirectTrackerService = require('./facebook-redirect-tracker.service');
 
 /**
  * 轻量化的抓取服务 - 专为服务池优化
@@ -14,6 +15,8 @@ class LightweightScraperService {
     this.browser = null;
     this.context = null;
     this.page = null;
+    // 初始化重定向跟踪器
+    this.redirectTracker = new FacebookRedirectTrackerService();
   }
 
   /**
@@ -193,16 +196,81 @@ class LightweightScraperService {
     const startTime = Date.now();
     
     try {
-      // 首先尝试快速提取
+      // 如果 type 为 'profile' 直接执行浏览器抓取
+      if (type === 'profile') {
+        logger.info(`[LW-SCRAPER] 🔍 个人资料类型，直接执行浏览器抓取: ${url}`);
+        return await this.performBrowserScraping(url, type);
+      }
+      
+      // 如果 type 为 'post' 或者 'group'，首先执行快速抓取
+      logger.info(`[LW-SCRAPER] ⚡ 尝试快速提取: ${url}, 类型: ${type}`);
       const fastResult = this.tryFastExtract(url, type);
       if (fastResult) {
-        logger.info(`[LW-SCRAPER] ⚡ 快速提取成功: ${url}, 方法: ${fastResult.extractMethod}`);
+        logger.info(`[LW-SCRAPER] ✅ 快速提取成功: ${url}, 方法: ${fastResult.extractMethod}`);
         return {
           success: true,
           data: fastResult
         };
       }
       
+      // 如果快速抓取没有拿到结果，则执行重定向跟踪器
+      logger.info(`[LW-SCRAPER] 🔄 快速提取无结果，尝试重定向跟踪: ${url}`);
+      const redirectResult = await this.redirectTracker.trackRedirect(url);
+      
+      if (redirectResult.success && redirectResult.data.redirected) {
+        const redirectedUrl = redirectResult.data.finalUrl;
+        logger.info(`[LW-SCRAPER] 🎯 重定向跟踪成功: ${url} -> ${redirectedUrl}`);
+        
+        // 将跟踪器获取到的重定向后的URL执行快速抓取
+        const redirectFastResult = this.tryFastExtract(redirectedUrl, type, 'redirect_url_match');
+        if (redirectFastResult) {
+          logger.info(`[LW-SCRAPER] ✅ 重定向URL快速提取成功: ${redirectedUrl}, 方法: ${redirectFastResult.extractMethod}`);
+          // 添加重定向信息
+          redirectFastResult.originalUrl = url;
+          redirectFastResult.redirectUrl = redirectedUrl;
+          redirectFastResult.redirected = true;
+          redirectFastResult.redirectTrackingTime = redirectResult.data.trackingTime;
+          
+          return {
+            success: true,
+            data: redirectFastResult
+          };
+        }
+        
+        logger.info(`[LW-SCRAPER] ⚠️ 重定向URL快速提取无结果，执行浏览器抓取: ${redirectedUrl}`);
+        // 如果重定向URL快速提取也无结果，执行浏览器抓取（使用重定向后的URL）
+        return await this.performBrowserScraping(redirectedUrl, type, url);
+      }
+      
+      // 如果重定向跟踪失败或没有重定向，执行浏览器抓取
+      logger.info(`[LW-SCRAPER] 🌐 重定向跟踪无效，执行浏览器抓取: ${url}`);
+      return await this.performBrowserScraping(url, type);
+      
+    } catch (error) {
+      const totalTime = Date.now() - startTime;
+      logger.error(`[LW-SCRAPER] ❌ 抓取失败: ${url}, 耗时: ${totalTime}ms`, error);
+      
+      return {
+        success: false,
+        error: {
+          code: 'SCRAPE_ERROR',
+          message: error.message
+        }
+      };
+    }
+  }
+
+  /**
+   * 执行浏览器抓取
+   * @param {string} url - 要抓取的URL
+   * @param {string} type - 链接类型
+   * @param {string} originalUrl - 原始URL（如果存在重定向）
+   * @returns {Object} 抓取结果
+   */
+  async performBrowserScraping(url, type, originalUrl = null) {
+    const startTime = Date.now();
+    
+    try {
       // 需要浏览器抓取
       await this.initBrowser();
       
@@ -229,15 +297,22 @@ class LightweightScraperService {
       if (type === 'profile') {
         result = await this.scrapeProfile();
       } else if (type === 'post') {
-        result = await this.scrapePost(url);
+        result = await this.scrapePost(originalUrl || url);
       } else if (type === 'group') {
-        result = await this.scrapeGroup(url);
+        result = await this.scrapeGroup(originalUrl || url);
       } else {
         throw new Error(`不支持的链接类型: ${type}`);
       }
       
+      // 如果存在重定向，添加重定向信息
+      if (originalUrl && originalUrl !== url) {
+        result.originalUrl = originalUrl;
+        result.redirectUrl = url;
+        result.redirected = true;
+      }
+      
       const totalTime = Date.now() - startTime;
-      logger.info(`[LW-SCRAPER] ✅ 抓取完成: ${url}, 耗时: ${totalTime}ms`);
+      logger.info(`[LW-SCRAPER] ✅ 浏览器抓取完成: ${url}, 耗时: ${totalTime}ms`);
       
       return {
         success: true,
@@ -246,15 +321,8 @@ class LightweightScraperService {
       
     } catch (error) {
       const totalTime = Date.now() - startTime;
-      logger.error(`[LW-SCRAPER] ❌ 抓取失败: ${url}, 耗时: ${totalTime}ms`, error);
-      
-      return {
-        success: false,
-        error: {
-          code: 'SCRAPE_ERROR',
-          message: error.message
-        }
-      };
+      logger.error(`[LW-SCRAPER] ❌ 浏览器抓取失败: ${url}, 耗时: ${totalTime}ms`, error);
+      throw error;
     } finally {
       // 保持浏览器开启以供复用
     }
@@ -263,18 +331,28 @@ class LightweightScraperService {
   /**
    * 快速提取UID（无需启动浏览器）
    */
-  tryFastExtract(url, type) {
+  tryFastExtract(url, type, extractMethod='fast_url_extract') {
     try {
       if (type === 'post') {
         // 从URL提取账号UID
-        const postMatch = url.match(/facebook\.com\/(\d{10,})\/posts/);
-        if (postMatch) {
-          const uid = postMatch[1];
+        const postMatch1 = url.match(/facebook\.com\/(\d{10,})\/posts/);
+        if (postMatch1) {
+          const uid = postMatch1[1];
           return {
             uid,
-            sourceUrl: url,
             type: 'post',
-            extractMethod: 'fast_url_extract'
+            sourceUrl: url,
+            extractMethod: extractMethod,
+          };
+        }
+        let postMatch2 = url.match(/[?&]id=(\d{10,})/);
+        if (postMatch2) {
+          const uid = postMatch2[1];
+          return {
+            uid,
+            type: 'post',
+            sourceUrl: url,
+            extractMethod: extractMethod,
           };
         }
       }
@@ -286,9 +364,9 @@ class LightweightScraperService {
           const groupId = groupMatch[1];
           return {
             groupId: groupId,
-            sourceUrl: url,
             type: 'group',
-            extractMethod: 'fast_url_extract'
+            sourceUrl: url,
+            extractMethod: extractMethod
           };
         }
       }
@@ -466,89 +544,22 @@ class LightweightScraperService {
       // 获取当前页面URL
       const currentUrl = this.page.url();
       
-      // 检测是否需要登录
-      const pageText = await this.page.textContent('body').catch(() => '');
-      if (pageText.includes('You must log in to continue') || 
-          pageText.includes('Log Into Facebook') ||
-          currentUrl.includes('/login/')) {
-        throw new Error('帖子需要登录才能访问');
-      }
+      const metaElements = await this.page.$$eval('meta[property^="og:"]', metas => 
+        metas.map(meta => ({ property: meta.getAttribute('property'), content: meta.getAttribute('content') }))
+      );
       
-      // 方法1: 从重定向URL中提取UID (格式: ?id=数字)
-      let uidMatch = currentUrl.match(/[?&]id=(\d{15,})/);
-      if (uidMatch) {
-        const uid = uidMatch[1];
-        return {
-          uid,
-          type: 'post',
-          sourceUrl: originalUrl,
-          redirectUrl: currentUrl,
-          extractMethod: 'redirect_url_id_param'
-        };
-      }
-      
-      // 方法2: 从URL路径中提取UID (格式: /profile.php?id=数字)
-      uidMatch = currentUrl.match(/profile\.php\?id=(\d{15,})/);
-      if (uidMatch) {
-        const uid = uidMatch[1];
-        return {
-          uid,
-          type: 'post',
-          sourceUrl: originalUrl,
-          redirectUrl: currentUrl,
-          extractMethod: 'redirect_url_profile_id'
-        };
-      }
-      
-      // 方法3: 从story_fbid参数中提取UID
-      uidMatch = currentUrl.match(/story_fbid=(\d{15,})/);
-      if (uidMatch) {
-        const uid = uidMatch[1];
-        return {
-          uid,
-          type: 'post',
-          sourceUrl: originalUrl,
-          redirectUrl: currentUrl,
-          extractMethod: 'redirect_url_story_fbid'
-        };
-      }
-      
-      // 方法4: 尝试从页面内容中提取用户信息
-      try {
-        const metaElements = await this.page.$$eval('meta[property^="og:"]', metas => 
-          metas.map(meta => ({ property: meta.getAttribute('property'), content: meta.getAttribute('content') }))
-        );
-        
-        for (const meta of metaElements) {
-          if (meta.property === 'og:url' && meta.content) {
-            const metaUidMatch = meta.content.match(/[?&]id=(\d{15,})/);
-            if (metaUidMatch) {
-              return {
-                uid: metaUidMatch[1],
-                type: 'post',
-                sourceUrl: originalUrl,
-                redirectUrl: currentUrl,
-                extractMethod: 'meta_og_url'
-              };
-            }
+      for (const meta of metaElements) {
+        if (meta.property === 'og:url' && meta.content) {
+          const metaUidMatch = meta.content.match(/[?&]id=(\d{15,})/);
+          if (metaUidMatch) {
+            return {
+              uid: metaUidMatch[1],
+              type: 'post',
+              sourceUrl: originalUrl,
+              redirectUrl: currentUrl,
+              extractMethod: 'page_content'
+            };
           }
-        }
-      } catch (error) {
-        // Meta标签提取失败，继续尝试其他方法
-      }
-      
-      // 方法5: 从原始URL提取（回退方案）
-      if (originalUrl !== currentUrl) {
-        uidMatch = originalUrl.match(/[?&]id=(\d{15,})/);
-        if (uidMatch) {
-          const uid = uidMatch[1];
-          return {
-            uid,
-            type: 'post',
-            sourceUrl: originalUrl,
-            redirectUrl: currentUrl,
-            extractMethod: 'original_url_fallback'
-          };
         }
       }
 
@@ -562,25 +573,7 @@ class LightweightScraperService {
    * 抓取群组
    */
   async scrapeGroup(originalUrl) {
-    try {
-      // 获取当前页面URL
-      const currentUrl = this.page.url();
-      const groupIdMatch = currentUrl.match(/\/groups\/(\d{10,})\//);
-      if (groupIdMatch) {
-        const groupId = groupIdMatch[1];
-        return {
-          groupId,
-          type: 'group',
-          sourceUrl: originalUrl,
-          redirectUrl: currentUrl,
-          extractMethod: 'redirect_url_match'
-        };
-      }
-
-      throw new Error('无法提取Group ID');
-    } catch (error) {
-      throw error;
-    }
+    throw new Error('无法提取Group ID');
   }
 
   /**
@@ -594,6 +587,14 @@ class LightweightScraperService {
       return 'post';
     }
     return 'profile';
+  }
+
+  /**
+   * 获取重定向跟踪器统计信息
+   * @returns {Object} 重定向跟踪器统计信息
+   */
+  getRedirectTrackerStats() {
+    return this.redirectTracker.getStats();
   }
 }
 
@@ -616,6 +617,9 @@ class FacebookScraperPlaywrightPoolService {
       failedRequests: 0,
       queueTimeouts: 0
     };
+    
+    // 初始化重定向跟踪器（用于池级别的重定向跟踪）
+    this.redirectTracker = new FacebookRedirectTrackerService();
     
     this.startCleanupTimer();
     
@@ -946,6 +950,9 @@ class FacebookScraperPlaywrightPoolService {
         const logData = {
           sourceUrl: url,
           redirectUrl: serviceResult.data.redirectUrl || null,
+          originalUrl: serviceResult.data.originalUrl || null,
+          redirected: serviceResult.data.redirected || false,
+          redirectTrackingTime: serviceResult.data.redirectTrackingTime || null,
           type: type,
           extractMethod: serviceResult.data.extractMethod || 'unknown',
           result: {
