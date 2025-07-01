@@ -948,25 +948,9 @@ class FacebookScraperPlaywrightPoolService {
         
         // 记录抓取成功日志
         const logData = {
-          sourceUrl: url,
-          redirectUrl: serviceResult.data.redirectUrl || null,
-          originalUrl: serviceResult.data.originalUrl || null,
-          redirected: serviceResult.data.redirected || false,
-          redirectTrackingTime: serviceResult.data.redirectTrackingTime || null,
-          type: type,
-          extractMethod: serviceResult.data.extractMethod || 'unknown',
-          result: {
-            success: true,
-            uid: serviceResult.data.uid || null,
-            groupId: serviceResult.data.groupId || null,
-            nickname: serviceResult.data.nickname || null,
-            followersCount: serviceResult.data.followersCount || null,
-            friendsCount: serviceResult.data.friendsCount || null,
-            followersCountRaw: serviceResult.data.followersCountRaw || null,
-            friendsCountRaw: serviceResult.data.friendsCountRaw || null,
-            totalTime: totalTime,
-            instanceId: instance.instanceId
-          }
+          ...serviceResult.data,
+          acquireTime: acquireTime,
+          totalTime: totalTime
         };
         scrapeSuccessLogger.info(`${JSON.stringify(logData)}`);
         
@@ -986,15 +970,10 @@ class FacebookScraperPlaywrightPoolService {
         // 记录抓取失败日志
         const logData = {
           sourceUrl: url,
-          redirectUrl: null,
           type: type,
-          extractMethod: 'failed',
-          result: {
-            success: false,
-            error: serviceResult.error,
-            totalTime: totalTime,
-            instanceId: instance.instanceId
-          }
+          error: serviceResult.error,
+          acquireTime: acquireTime,
+          totalTime: totalTime,
         };
         scrapeFailureLogger.info(`${JSON.stringify(logData)}`);
         
