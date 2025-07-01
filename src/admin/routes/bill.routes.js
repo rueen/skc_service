@@ -26,7 +26,7 @@ router.use(authMiddleware.hasPermission('finance:bills'));
 /**
  * @route GET /api/admin/bills
  * @desc 获取账单列表
- * @access Private (Admin)
+ * @access Private (finance:bills)
  */
 router.get(
   '/',
@@ -72,6 +72,49 @@ router.get(
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   billController.list
+);
+
+/**
+ * @route GET /api/admin/bills/export
+ * @desc 导出账单数据
+ * @access Private (需要 finance:bills 权限)
+ */
+router.get(
+  '/export',
+  [
+    query('keyword')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
+    query('memberNickname')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
+    query('billType')
+      .optional(),
+    query('settlementStatus')
+      .optional()
+      .isIn(['success', 'failed', 'pending'])
+      .withMessage('common.validation.invalid'),
+    query('taskName')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
+    query('startTime')
+      .optional()
+      .isISO8601()
+      .withMessage('common.validation.mustBeISODate'),
+    query('endTime')
+      .optional()
+      .isISO8601()
+      .withMessage('common.validation.mustBeISODate'),
+    query('relatedGroupId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  billController.exportBills
 );
 
 module.exports = router; 

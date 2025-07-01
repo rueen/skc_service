@@ -231,12 +231,13 @@ async function getMemberBills(memberId, options = {}) {
  * @param {string} filters.startTime - 开始时间（ISO8601格式）
  * @param {string} filters.endTime - 结束时间（ISO8601格式）
  * @param {number} filters.relatedGroupId - 关联群组ID
+ * @param {boolean} filters.exportMode - 导出模式，不分页
  * @param {number} page - 页码
  * @param {number} pageSize - 每页数量
  * @returns {Promise<Object>} 账单列表和统计信息
  */
 async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
-  const { keyword, memberNickname, billType, settlementStatus, billNo, taskName, startTime, endTime, relatedGroupId } = filters;
+  const { keyword, memberNickname, billType, settlementStatus, billNo, taskName, startTime, endTime, relatedGroupId, exportMode = false } = filters;
   const params = [];
   let whereClause = 'WHERE 1=1';
   
@@ -299,11 +300,11 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
     );
     const total = countRows[0].total;
     
-    // 获取账单列表
-    const [rows] = await pool.query(
-      `SELECT 
+    // 构建查询语句
+    let query = `SELECT 
         b.*,
         m.nickname as member_nickname,
+        m.account as member_account,
         t.task_name,
         rm.nickname as related_member_nickname,
         g.group_name as related_group_name,
@@ -317,10 +318,16 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
       LEFT JOIN submitted_tasks st ON (b.task_id = st.task_id AND b.related_member_id = st.member_id)
       LEFT JOIN waiters w ON b.waiter_id = w.id
       ${whereClause}
-      ORDER BY b.update_time DESC
-      LIMIT ?, ?`,
-      [...params, offset, parseInt(pageSize, 10)]
-    );
+      ORDER BY b.update_time DESC`;
+    
+    // 根据exportMode决定是否添加分页
+    if (!exportMode) {
+      query += ' LIMIT ?, ?';
+      params.push(offset, parseInt(pageSize, 10));
+    }
+    
+    // 获取账单列表
+    const [rows] = await pool.query(query, params);
     
     // 格式化账单列表
     const formattedList = rows.map(row => formatBill(row));
