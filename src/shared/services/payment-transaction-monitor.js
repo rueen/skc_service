@@ -119,7 +119,7 @@ async function checkPendingTransactions() {
         if (Number(response.status) === 5) {
           transactionStatus = 'success';
           logger.info(`交易 ${lockedTransaction.order_id} 成功完成`);
-        } else if ([0, 3].indexOf(Number(response.status)) > -1) {
+        } else if ([0, 3].indexOf(Number(response.status)) > -1 && response.message != 'Order does not exist') {
           transactionStatus = 'failed';
           errorMessage = response.message || '代付失败';
           logger.warn(`交易 ${lockedTransaction.order_id} 失败: ${errorMessage}`);
