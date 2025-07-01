@@ -131,7 +131,7 @@ async function batchRejectWithdrawals(req, res) {
  */
 async function exportWithdrawals(req, res) {
   try {
-    const { memberNickname, withdrawalStatus, billNo, startDate, endDate } = req.query;
+    const { memberNickname, withdrawalStatus, billNo, startTime, endTime } = req.query;
     
     // 构建筛选条件
     const options = {
@@ -141,8 +141,8 @@ async function exportWithdrawals(req, res) {
       billNo
     };
     
-    if (startDate) options.startTime = `${startDate} 00:00:00`;
-    if (endDate) options.endTime = `${endDate} 23:59:59`;
+    if (startTime) options.startTime = startTime;
+    if (endTime) options.endTime = endTime;
     
     // 获取提现列表数据
     const result = await withdrawalModel.getAllWithdrawals(options);
@@ -168,7 +168,7 @@ async function exportWithdrawals(req, res) {
       { header: '姓名', key: 'withdrawalName', width: 15 },
       { header: '申请时间', key: 'createTime', width: 20 },
       { header: '提现状态', key: 'withdrawalStatus', width: 12 },
-      { header: '提现备注', key: 'rejectReason', width: 30 },
+      { header: '拒绝原因', key: 'rejectReason', width: 30 },
       { header: '操作员', key: 'waiterName', width: 15 }
     ];
     

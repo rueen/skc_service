@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 17:13:47
+ * @LastEditTime: 2025-07-01 16:10:22
  * @Description: 
  */
 /**
@@ -119,8 +119,8 @@ router.get(
       .isIn(Object.values(WithdrawalStatus))
       .withMessage('common.validation.invalid'),
     query('billNo').optional().isString().withMessage('common.validation.mustBeString'),
-    query('startDate').optional().isString().withMessage('common.validation.timeFormatInvalid'),
-    query('endDate').optional().isString().withMessage('common.validation.timeFormatInvalid')
+    query('startTime').optional().isString().withMessage('common.validation.timeFormatInvalid'),
+    query('endTime').optional().isString().withMessage('common.validation.timeFormatInvalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   withdrawalController.exportWithdrawals
