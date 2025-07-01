@@ -27,7 +27,9 @@ class OssTransport extends Transport {
       region: process.env.OSS_REGION,
       accessKeyId: process.env.OSS_ACCESS_KEY_ID,
       accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
-      bucket: options.bucket || 'skc-logs'
+      bucket: options.bucket || 'skc-logs',
+      timeout: options.timeout || 180000, // 增加超时时间到3分钟
+      secure: true
     };
     
     // 日志文件前缀路径
@@ -38,6 +40,10 @@ class OssTransport extends Transport {
     
     // 日志刷新间隔（毫秒），默认5分钟
     this.flushInterval = options.flushInterval || 5 * 60 * 1000;
+    
+    // 超时重试次数
+    this.maxRetries = options.maxRetries || 2;
+    this.retryDelay = options.retryDelay || 30000; // 30秒后重试
     
     // 本地缓存目录
     this.tempDir = options.tempDir || path.join(os.tmpdir(), 'winston-oss-logs', this.ossPrefix.replace(/[^a-zA-Z0-9]/g, '-'));
@@ -69,7 +75,9 @@ class OssTransport extends Transport {
         region: this.ossConfig.region,
         accessKeyId: this.ossConfig.accessKeyId,
         accessKeySecret: this.ossConfig.accessKeySecret,
-        bucket: this.ossConfig.bucket
+        bucket: this.ossConfig.bucket,
+        timeout: this.ossConfig.timeout,
+        secure: this.ossConfig.secure
       });
     } catch (error) {
       console.error('OSS客户端初始化失败:', error);
@@ -138,6 +146,11 @@ class OssTransport extends Transport {
    * @private
    */
   async _uploadToOss() {
+    // 检查是否禁用OSS上传
+    if (process.env.DISABLE_OSS_UPLOAD === 'true') {
+      return;
+    }
+    
     if (!this.ossClient) {
       console.error('OSS客户端未初始化，无法上传日志');
       return;
@@ -169,13 +182,17 @@ class OssTransport extends Transport {
         const combinedContent = Buffer.concat([existingContent, newContent]);
         
         // 上传合并后的内容
-        await this.ossClient.put(ossPath, combinedContent);
+        await this.ossClient.put(ossPath, combinedContent, {
+          timeout: this.ossConfig.timeout
+        });
         
         console.log(`日志已追加上传到OSS: ${ossPath}`);
       } catch (getError) {
         // OSS文件不存在，直接上传新内容
         if (getError.code === 'NoSuchKey') {
-          await this.ossClient.put(ossPath, newContent);
+          await this.ossClient.put(ossPath, newContent, {
+            timeout: this.ossConfig.timeout
+          });
           console.log(`日志已首次上传到OSS: ${ossPath}`);
         } else {
           throw getError;
@@ -183,9 +200,32 @@ class OssTransport extends Transport {
       }
       
       // 上传成功后清空临时文件内容（但保留文件）
-      fs.truncateSync(this.currentFilePath, 0);
+      if (fs.existsSync(this.currentFilePath)) {
+        fs.truncateSync(this.currentFilePath, 0);
+      }
     } catch (error) {
-      console.error('上传日志到OSS失败:', error);
+      // 增强错误处理
+      const errorMsg = error.message || error.toString();
+      if (errorMsg.includes('timeout') || errorMsg.includes('TIMEOUT') || errorMsg.includes('ResponseTimeoutError')) {
+        console.error(`[OSS] 上传超时，延迟重试: ${errorMsg}`);
+        // 超时时不清空文件，延迟后重试
+        setTimeout(() => {
+          this._uploadToOss();
+        }, this.retryDelay);
+      } else if (errorMsg.includes('ENOENT')) {
+        console.error(`[OSS] 日志文件不存在: ${errorMsg}`);
+        // 尝试重新创建文件
+        try {
+          if (!fs.existsSync(this.tempDir)) {
+            fs.mkdirSync(this.tempDir, { recursive: true });
+          }
+          fs.writeFileSync(this.currentFilePath, '');
+        } catch (createError) {
+          console.error(`[OSS] 重新创建日志文件失败: ${createError}`);
+        }
+      } else {
+        console.error(`[OSS] 上传失败: ${errorMsg}`);
+      }
     }
   }
   
@@ -213,8 +253,24 @@ class OssTransport extends Transport {
       logEntry = `${timestamp} [${info.level}]: ${info.message}\n`;
     }
     
-    // 追加到本地文件
-    fs.appendFileSync(this.currentFilePath, logEntry);
+    // 追加到本地文件 - 增强错误处理
+    try {
+      // 确保目录存在
+      if (!fs.existsSync(this.tempDir)) {
+        fs.mkdirSync(this.tempDir, { recursive: true });
+      }
+      
+      fs.appendFileSync(this.currentFilePath, logEntry);
+    } catch (writeError) {
+      console.error(`[OSS] 写入本地日志文件失败: ${writeError.message}`);
+      // 尝试重新创建文件
+      try {
+        fs.writeFileSync(this.currentFilePath, logEntry);
+        console.log(`[OSS] 重新创建日志文件成功: ${this.currentFilePath}`);
+      } catch (createError) {
+        console.error(`[OSS] 创建日志文件失败: ${createError.message}`);
+      }
+    }
     
     // 调用回调
     callback();
