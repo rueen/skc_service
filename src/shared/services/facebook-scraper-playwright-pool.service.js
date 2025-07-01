@@ -239,11 +239,33 @@ class LightweightScraperService {
         
         logger.info(`[LW-SCRAPER] ⚠️ 重定向URL快速提取无结果，执行浏览器抓取: ${redirectedUrl}`);
         // 如果重定向URL快速提取也无结果，执行浏览器抓取（使用重定向后的URL）
+        // TODO: 暂时为post和group类型跳过浏览器抓取
+        if (type === 'post' || type === 'group') {
+          logger.info(`[LW-SCRAPER] ⏹️ ${type}类型暂时跳过浏览器抓取: ${redirectedUrl}`);
+          return {
+            success: false,
+            error: {
+              code: 'BROWSER_SCRAPING_DISABLED',
+              message: `${type}类型暂时禁用浏览器抓取`
+            }
+          };
+        }
         return await this.performBrowserScraping(redirectedUrl, type, url);
       }
       
       // 如果重定向跟踪失败或没有重定向，执行浏览器抓取
       logger.info(`[LW-SCRAPER] 🌐 重定向跟踪无效，执行浏览器抓取: ${url}`);
+      // TODO: 暂时为post和group类型跳过浏览器抓取
+      if (type === 'post' || type === 'group') {
+        logger.info(`[LW-SCRAPER] ⏹️ ${type}类型暂时跳过浏览器抓取: ${url}`);
+        return {
+          success: false,
+          error: {
+            code: 'BROWSER_SCRAPING_DISABLED',
+            message: `${type}类型暂时禁用浏览器抓取`
+          }
+        };
+      }
       return await this.performBrowserScraping(url, type);
       
     } catch (error) {
