@@ -243,10 +243,13 @@ class LightweightScraperService {
         if (type === 'post' || type === 'group') {
           logger.info(`[LW-SCRAPER] ⏹️ ${type}类型暂时跳过浏览器抓取: ${redirectedUrl}`);
           return {
-            success: false,
-            error: {
-              code: 'BROWSER_SCRAPING_DISABLED',
-              message: `${type}类型暂时禁用浏览器抓取`
+            success: true,
+            data: {
+              type: type,
+              sourceUrl: url,
+              redirectUrl: redirectedUrl,
+              extractMethod: 'redirect_url_match',
+              message: '重定向URL快速提取无结果'
             }
           };
         }
@@ -259,10 +262,13 @@ class LightweightScraperService {
       if (type === 'post' || type === 'group') {
         logger.info(`[LW-SCRAPER] ⏹️ ${type}类型暂时跳过浏览器抓取: ${url}`);
         return {
-          success: false,
-          error: {
-            code: 'BROWSER_SCRAPING_DISABLED',
-            message: `${type}类型暂时禁用浏览器抓取`
+          success: true,
+          data: {
+            type: type,
+            sourceUrl: url,
+            extractMethod: 'redirect_url_match_failed',
+            message: '重定向跟踪失败或没有重定向',
+            redirectResult: JSON.stringify(redirectResult)
           }
         };
       }
