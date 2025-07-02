@@ -198,15 +198,15 @@ class LightweightScraperService {
     try {
       // 如果 type 为 'profile' 直接执行浏览器抓取
       if (type === 'profile') {
-        logger.info(`[LW-SCRAPER] 🔍 个人资料类型，直接执行浏览器抓取: ${url}`);
+        // logger.info(`[LW-SCRAPER] 🔍 个人资料类型，直接执行浏览器抓取: ${url}`);
         return await this.performBrowserScraping(url, type);
       }
       
       // 如果 type 为 'post' 或者 'group'，首先执行快速抓取
-      logger.info(`[LW-SCRAPER] ⚡ 尝试快速提取: ${url}, 类型: ${type}`);
+      // logger.info(`[LW-SCRAPER] ⚡ 尝试快速提取: ${url}, 类型: ${type}`);
       const fastResult = this.tryFastExtract(url, type);
       if (fastResult) {
-        logger.info(`[LW-SCRAPER] ✅ 快速提取成功: ${url}, 方法: ${fastResult.extractMethod}`);
+        // logger.info(`[LW-SCRAPER] ✅ 快速提取成功: ${url}, 方法: ${fastResult.extractMethod}`);
         scrapeSuccessLogger.info(`${JSON.stringify(fastResult)}`);
         return {
           success: true,
@@ -215,23 +215,23 @@ class LightweightScraperService {
       }
       
       // 如果快速抓取没有拿到结果，则执行重定向跟踪器
-      logger.info(`[LW-SCRAPER] 🔄 快速提取无结果，尝试重定向跟踪: ${url}`);
+      // logger.info(`[LW-SCRAPER] 🔄 快速提取无结果，尝试重定向跟踪: ${url}`);
       const redirectResult = await this.redirectTracker.trackRedirect(url);
       
       if (redirectResult.success && redirectResult.data.redirected) {
         const redirectedUrl = redirectResult.data.finalUrl;
-        logger.info(`[LW-SCRAPER] 🎯 重定向跟踪成功: ${url} -> ${redirectedUrl}`);
+        // logger.info(`[LW-SCRAPER] 🎯 重定向跟踪成功: ${url} -> ${redirectedUrl}`);
         
         // 检查是否重定向到登录页面
         if (redirectResult.data.isLoginRedirect) {
-          logger.info(`[LW-SCRAPER] 🔓 检测到登录重定向: ${redirectedUrl}`);
+          // logger.info(`[LW-SCRAPER] 🔓 检测到登录重定向: ${redirectedUrl}`);
           
           // 如果有next参数，对next链接执行快速抓取
           if (redirectResult.data.nextUrl) {
-            logger.info(`[LW-SCRAPER] 📎 对next链接执行快速抓取: ${redirectResult.data.nextUrl}`);
+            // logger.info(`[LW-SCRAPER] 📎 对next链接执行快速抓取: ${redirectResult.data.nextUrl}`);
             const nextUrlResult = this.tryFastExtract(redirectResult.data.nextUrl, type, 'login_redirect_next_extract');
             if (nextUrlResult) {
-              logger.info(`[LW-SCRAPER] ✅ next链接快速提取成功: ${redirectResult.data.nextUrl}, 方法: ${nextUrlResult.extractMethod}`);
+              // logger.info(`[LW-SCRAPER] ✅ next链接快速提取成功: ${redirectResult.data.nextUrl}, 方法: ${nextUrlResult.extractMethod}`);
               // 添加重定向信息
               nextUrlResult.originalUrl = url;
               nextUrlResult.redirectUrl = redirectedUrl;
@@ -250,21 +250,21 @@ class LightweightScraperService {
                 ...redirectResult,
                 message: 'next链接快速提取无结果'
               })}`);
-              logger.warn(`[LW-SCRAPER] ⚠️ next链接快速提取无结果: ${redirectResult.data.nextUrl}`);
+              // logger.warn(`[LW-SCRAPER] ⚠️ next链接快速提取无结果: ${redirectResult.data.nextUrl}`);
             }
           } else {
             scrapeFailureLogger.info(`${JSON.stringify({
               ...redirectResult,
               message: '登录重定向但无next参数'
             })}`);
-            logger.warn(`[LW-SCRAPER] ⚠️ 登录重定向但无next参数: ${redirectedUrl}`);
+                          // logger.warn(`[LW-SCRAPER] ⚠️ 登录重定向但无next参数: ${redirectedUrl}`);
           }
         }
         
         // 将跟踪器获取到的重定向后的URL执行快速抓取
         const redirectFastResult = this.tryFastExtract(redirectedUrl, type, 'redirect_url_match');
         if (redirectFastResult) {
-          logger.info(`[LW-SCRAPER] ✅ 重定向URL快速提取成功: ${redirectedUrl}, 方法: ${redirectFastResult.extractMethod}`);
+          // logger.info(`[LW-SCRAPER] ✅ 重定向URL快速提取成功: ${redirectedUrl}, 方法: ${redirectFastResult.extractMethod}`);
           // 添加重定向信息
           redirectFastResult.originalUrl = url;
           redirectFastResult.redirectUrl = redirectedUrl;
@@ -279,7 +279,7 @@ class LightweightScraperService {
           };
         }
         
-        logger.info(`[LW-SCRAPER] ⚠️ 重定向URL快速提取无结果，执行浏览器抓取: ${redirectedUrl}`);
+        // logger.info(`[LW-SCRAPER] ⚠️ 重定向URL快速提取无结果，执行浏览器抓取: ${redirectedUrl}`);
         // 如果重定向URL快速提取也无结果，执行浏览器抓取（使用重定向后的URL）
         // TODO: 暂时为post和group类型跳过浏览器抓取
         if (type === 'post' || type === 'group') {
@@ -287,7 +287,7 @@ class LightweightScraperService {
             ...redirectResult,
             message: '重定向URL快速提取无结果'
           })}`);
-          logger.info(`[LW-SCRAPER] ⏹️ ${type}类型暂时跳过浏览器抓取: ${redirectedUrl}`);
+          // logger.info(`[LW-SCRAPER] ⏹️ ${type}类型暂时跳过浏览器抓取: ${redirectedUrl}`);
           return {
             success: true,
             data: {
@@ -305,10 +305,10 @@ class LightweightScraperService {
       }
       
       // 如果重定向跟踪失败或没有重定向，执行浏览器抓取
-      logger.info(`[LW-SCRAPER] 🌐 重定向跟踪无效，执行浏览器抓取: ${url}`);
+      // logger.info(`[LW-SCRAPER] 🌐 重定向跟踪无效，执行浏览器抓取: ${url}`);
       // TODO: 暂时为post和group类型跳过浏览器抓取
       if (type === 'post' || type === 'group') {
-        logger.info(`[LW-SCRAPER] ⏹️ ${type}类型暂时跳过浏览器抓取: ${url}`);
+        // logger.info(`[LW-SCRAPER] ⏹️ ${type}类型暂时跳过浏览器抓取: ${url}`);
         scrapeFailureLogger.info(`${JSON.stringify({
           ...redirectResult,
           message: '重定向跟踪失败或没有重定向'
@@ -355,7 +355,7 @@ class LightweightScraperService {
       await this.initBrowser();
       
       // 真实的浏览行为：先访问Facebook首页
-      logger.info(`[LW-SCRAPER] 🏠 先访问Facebook首页`);
+      // logger.info(`[LW-SCRAPER] 🏠 先访问Facebook首页`);
       await this.page.goto('https://www.facebook.com', { 
         waitUntil: 'domcontentloaded', 
         timeout: 15000 
@@ -364,7 +364,7 @@ class LightweightScraperService {
       // 随机延迟，模拟真实用户行为
       await this.randomDelay();
       
-      logger.info(`[LW-SCRAPER] 🌐 导航到目标页面: ${url}`);
+      // logger.info(`[LW-SCRAPER] 🌐 导航到目标页面: ${url}`);
       await this.page.goto(url, { 
         waitUntil: 'domcontentloaded', 
         timeout: 15000 
@@ -392,7 +392,7 @@ class LightweightScraperService {
       }
       
       const totalTime = Date.now() - startTime;
-      logger.info(`[LW-SCRAPER] ✅ 浏览器抓取完成: ${url}, 耗时: ${totalTime}ms`);
+      // logger.info(`[LW-SCRAPER] ✅ 浏览器抓取完成: ${url}, 耗时: ${totalTime}ms`);
       
       return {
         success: true,
@@ -690,8 +690,8 @@ class FacebookScraperPlaywrightPoolService {
     
     this.startCleanupTimer();
     
-    logger.info(`[FB-PW-POOL] 🚀 初始化轻量化抓取服务池`);
-    logger.info(`[FB-PW-POOL] 📊 配置 - 最大实例: ${this.maxInstances}, 超时: ${this.instanceTimeout}ms`);
+    // logger.info(`[FB-PW-POOL] 🚀 初始化轻量化抓取服务池`);
+    // logger.info(`[FB-PW-POOL] 📊 配置 - 最大实例: ${this.maxInstances}, 超时: ${this.instanceTimeout}ms`);
   }
 
   /**
@@ -706,7 +706,7 @@ class FacebookScraperPlaywrightPoolService {
       throw new Error(`等待队列已满 (${this.maxQueueSize})，请稍后重试`);
     }
     
-    logger.info(`[FB-PW-POOL] 📞 请求实例: ${instanceId}, 当前活跃: ${this.instances.size}, 队列: ${this.instanceQueue.length}`);
+    // logger.info(`[FB-PW-POOL] 📞 请求实例: ${instanceId}, 当前活跃: ${this.instances.size}, 队列: ${this.instanceQueue.length}`);
     
     // 检查是否达到最大实例数
     if (this.instances.size >= this.maxInstances) {
@@ -724,16 +724,16 @@ class FacebookScraperPlaywrightPoolService {
   async releaseInstance(instanceId) {
     const instance = this.instances.get(instanceId);
     if (!instance) {
-      logger.warn(`[FB-PW-POOL] ⚠️ 尝试释放不存在的实例: ${instanceId}`);
+      // logger.warn(`[FB-PW-POOL] ⚠️ 尝试释放不存在的实例: ${instanceId}`);
       return;
     }
     
-    logger.info(`[FB-PW-POOL] 🔄 释放实例: ${instanceId}`);
+    // logger.info(`[FB-PW-POOL] 🔄 释放实例: ${instanceId}`);
     
     try {
       await instance.service.closeBrowser();
     } catch (error) {
-      logger.warn(`[FB-PW-POOL] ⚠️ 关闭实例浏览器失败: ${instanceId}`, error.message);
+      // logger.warn(`[FB-PW-POOL] ⚠️ 关闭实例浏览器失败: ${instanceId}`, error.message);
     }
     
     this.instances.delete(instanceId);
@@ -745,7 +745,7 @@ class FacebookScraperPlaywrightPoolService {
       const waitingRequest = this.instanceQueue.shift();
       this.stats.queued = this.instanceQueue.length;
       
-      logger.info(`[FB-PW-POOL] 🎯 处理等待队列，为 ${waitingRequest.instanceId} 创建实例`);
+      // logger.info(`[FB-PW-POOL] 🎯 处理等待队列，为 ${waitingRequest.instanceId} 创建实例`);
       
       try {
         const newInstance = await this.createInstance(waitingRequest.instanceId);
@@ -764,7 +764,7 @@ class FacebookScraperPlaywrightPoolService {
    */
   async createInstance(instanceId) {
     try {
-      logger.info(`[FB-PW-POOL] 🏗️ 创建新实例: ${instanceId}`);
+      // logger.info(`[FB-PW-POOL] 🏗️ 创建新实例: ${instanceId}`);
       
       const service = new LightweightScraperService();
       const instance = {
@@ -779,7 +779,7 @@ class FacebookScraperPlaywrightPoolService {
       this.stats.created++;
       this.stats.active = this.instances.size;
       
-      logger.info(`[FB-PW-POOL] ✅ 实例创建成功: ${instanceId}, 当前活跃: ${this.instances.size}`);
+      // logger.info(`[FB-PW-POOL] ✅ 实例创建成功: ${instanceId}, 当前活跃: ${this.instances.size}`);
       
       return {
         instanceId,
@@ -817,7 +817,7 @@ class FacebookScraperPlaywrightPoolService {
    */
   async waitForAvailableInstance(instanceId) {
     return new Promise((resolve, reject) => {
-      logger.info(`[FB-PW-POOL] ⏳ 实例池已满，加入等待队列: ${instanceId}`);
+      // logger.info(`[FB-PW-POOL] ⏳ 实例池已满，加入等待队列: ${instanceId}`);
       
       const timeout = setTimeout(() => {
         // 从队列中移除
@@ -828,7 +828,7 @@ class FacebookScraperPlaywrightPoolService {
           this.stats.queueTimeouts++;
         }
         
-        logger.warn(`[FB-PW-POOL] ⏰ 等待实例超时: ${instanceId}`);
+        // logger.warn(`[FB-PW-POOL] ⏰ 等待实例超时: ${instanceId}`);
         reject(new Error(`等待实例超时: ${instanceId} (${this.instanceTimeout}ms)`));
       }, this.instanceTimeout);
       
@@ -837,7 +837,7 @@ class FacebookScraperPlaywrightPoolService {
         createdAt: Date.now(),
         resolve: (instance) => {
           clearTimeout(timeout);
-          logger.info(`[FB-PW-POOL] 🎉 等待队列请求获得实例: ${instanceId}`);
+          // logger.info(`[FB-PW-POOL] 🎉 等待队列请求获得实例: ${instanceId}`);
           resolve(instance);
         },
         reject: (error) => {
@@ -866,7 +866,7 @@ class FacebookScraperPlaywrightPoolService {
       await this.cleanupStaleInstances();
     }, this.cleanupInterval);
     
-    logger.info(`[FB-PW-POOL] 🧹 启动清理定时器，间隔: ${this.cleanupInterval}ms`);
+    // logger.info(`[FB-PW-POOL] 🧹 启动清理定时器，间隔: ${this.cleanupInterval}ms`);
   }
 
   /**
@@ -884,7 +884,7 @@ class FacebookScraperPlaywrightPoolService {
     }
     
     if (staleInstances.length > 0) {
-      logger.info(`[FB-PW-POOL] 🧹 清理 ${staleInstances.length} 个过期实例`);
+      // logger.info(`[FB-PW-POOL] 🧹 清理 ${staleInstances.length} 个过期实例`);
       
       for (const instanceId of staleInstances) {
         await this.releaseInstance(instanceId);
@@ -902,7 +902,7 @@ class FacebookScraperPlaywrightPoolService {
     }
     
     if (expiredQueueRequests.length > 0) {
-      logger.info(`[FB-PW-POOL] 🧹 清理 ${expiredQueueRequests.length} 个过期队列请求`);
+      // logger.info(`[FB-PW-POOL] 🧹 清理 ${expiredQueueRequests.length} 个过期队列请求`);
       
       // 从后往前删除，避免索引变化
       for (let i = expiredQueueRequests.length - 1; i >= 0; i--) {
@@ -963,7 +963,7 @@ class FacebookScraperPlaywrightPoolService {
     }
     
     // 拒绝所有等待中的请求
-    logger.info(`[FB-PW-POOL] 📤 拒绝 ${this.instanceQueue.length} 个等待中的请求`);
+    // logger.info(`[FB-PW-POOL] 📤 拒绝 ${this.instanceQueue.length} 个等待中的请求`);
     while (this.instanceQueue.length > 0) {
       const request = this.instanceQueue.shift();
       request.reject(new Error('服务池正在关闭'));
@@ -971,7 +971,7 @@ class FacebookScraperPlaywrightPoolService {
     
     // 关闭所有活跃实例
     const instances = Array.from(this.instances.keys());
-    logger.info(`[FB-PW-POOL] 🔄 关闭 ${instances.length} 个活跃实例`);
+    // logger.info(`[FB-PW-POOL] 🔄 关闭 ${instances.length} 个活跃实例`);
     
     for (const instanceId of instances) {
       await this.releaseInstance(instanceId);
@@ -995,11 +995,11 @@ class FacebookScraperPlaywrightPoolService {
     
     try {
       // 获取实例
-      logger.info(`[FB-PW-POOL] 🎯 开始抓取: ${url}, 类型: ${type}`);
+      // logger.info(`[FB-PW-POOL] 🎯 开始抓取: ${url}, 类型: ${type}`);
       instance = await this.acquireInstance();
       
       const acquireTime = Date.now() - startTime;
-      logger.info(`[FB-PW-POOL] 🎪 获取实例耗时: ${acquireTime}ms, 实例: ${instance.instanceId}`);
+      // logger.info(`[FB-PW-POOL] 🎪 获取实例耗时: ${acquireTime}ms, 实例: ${instance.instanceId}`);
       
       // 更新使用时间
       instance.updateLastUsed();
@@ -1011,7 +1011,7 @@ class FacebookScraperPlaywrightPoolService {
       
       if (serviceResult.success) {
         this.stats.successfulRequests++;
-        logger.info(`[FB-PW-POOL] ✅ 抓取完成: ${url}, 总耗时: ${totalTime}ms, 实例: ${instance.instanceId}`);
+        // logger.info(`[FB-PW-POOL] ✅ 抓取完成: ${url}, 总耗时: ${totalTime}ms, 实例: ${instance.instanceId}`);
         
         // 记录抓取成功日志
         const logData = {

@@ -20,8 +20,8 @@ class FacebookRedirectTrackerService {
     this.proxyHost = options.proxyHost || process.env.PROXY_HOST;
     this.proxyPort = options.proxyPort || process.env.PROXY_PORT;
     
-    logger.info(`[FB-REDIRECT] 🔄 初始化重定向跟踪器服务`);
-    logger.info(`[FB-REDIRECT] 📍 代理配置 - 启用: ${this.useProxy}, 主机: ${this.proxyHost || 'N/A'}, 端口: ${this.proxyPort || 'N/A'}`);
+    // logger.info(`[FB-REDIRECT] 🔄 初始化重定向跟踪器服务`);
+    // logger.info(`[FB-REDIRECT] 📍 代理配置 - 启用: ${this.useProxy}, 主机: ${this.proxyHost || 'N/A'}, 端口: ${this.proxyPort || 'N/A'}`);
   }
 
   /**
@@ -33,7 +33,7 @@ class FacebookRedirectTrackerService {
     const startTime = Date.now();
     
     try {
-      logger.info(`[FB-REDIRECT] 🎯 开始跟踪重定向: ${originalUrl}`);
+      // logger.info(`[FB-REDIRECT] 🎯 开始跟踪重定向: ${originalUrl}`);
       
       const finalUrl = await this.followRedirects(originalUrl);
       const totalTime = Date.now() - startTime;
@@ -44,13 +44,13 @@ class FacebookRedirectTrackerService {
       
       if (isLoginRedirect) {
         nextUrl = this.extractNextUrl(finalUrl);
-        logger.info(`[FB-REDIRECT] 🔓 检测到登录重定向: ${originalUrl} -> ${finalUrl}`);
+        // logger.info(`[FB-REDIRECT] 🔓 检测到登录重定向: ${originalUrl} -> ${finalUrl}`);
         if (nextUrl) {
-          logger.info(`[FB-REDIRECT] 📎 提取到next链接: ${nextUrl}`);
+          // logger.info(`[FB-REDIRECT] 📎 提取到next链接: ${nextUrl}`);
         }
       }
       
-      logger.info(`[FB-REDIRECT] ✅ 重定向跟踪完成: ${originalUrl} -> ${finalUrl}, 耗时: ${totalTime}ms`);
+      // logger.info(`[FB-REDIRECT] ✅ 重定向跟踪完成: ${originalUrl} -> ${finalUrl}, 耗时: ${totalTime}ms`);
       
       return {
         success: true,
@@ -123,17 +123,17 @@ class FacebookRedirectTrackerService {
         if (isHttps) {
           // 对于HTTPS请求，使用HttpsProxyAgent
           requestOptions.agent = new HttpsProxyAgent(proxyUrl);
-          logger.debug(`[FB-REDIRECT] 🔀 使用HTTPS代理: ${proxyUrl} -> ${url}`);
+          // logger.debug(`[FB-REDIRECT] 🔀 使用HTTPS代理: ${proxyUrl} -> ${url}`);
         } else {
           // 对于HTTP请求，使用标准代理设置
           requestOptions.hostname = this.proxyHost;
           requestOptions.port = parseInt(this.proxyPort);
           requestOptions.path = url;
           requestOptions.headers['Host'] = urlObj.hostname;
-          logger.debug(`[FB-REDIRECT] 🔀 使用HTTP代理: ${proxyUrl} -> ${url}`);
+          // logger.debug(`[FB-REDIRECT] 🔀 使用HTTP代理: ${proxyUrl} -> ${url}`);
         }
       } else {
-        logger.debug(`[FB-REDIRECT] 🔗 直连请求: ${url}`);
+        // logger.debug(`[FB-REDIRECT] 🔗 直连请求: ${url}`);
       }
 
       const req = httpModule.request(requestOptions, (res) => {
@@ -142,7 +142,7 @@ class FacebookRedirectTrackerService {
         // 检查是否为重定向状态码
         if (statusCode >= 300 && statusCode < 400 && res.headers.location) {
           const redirectUrl = this.resolveRedirectUrl(url, res.headers.location);
-          logger.debug(`[FB-REDIRECT] 🔄 重定向 ${statusCode}: ${url} -> ${redirectUrl}`);
+          // logger.debug(`[FB-REDIRECT] 🔄 重定向 ${statusCode}: ${url} -> ${redirectUrl}`);
           
           // 递归跟踪重定向
           this.followRedirects(redirectUrl, redirectCount + 1)
@@ -150,7 +150,7 @@ class FacebookRedirectTrackerService {
             .catch(reject);
         } else if (statusCode >= 200 && statusCode < 300) {
           // 成功状态码，返回当前URL
-          logger.debug(`[FB-REDIRECT] 🎯 最终URL: ${url} (状态码: ${statusCode})`);
+          // logger.debug(`[FB-REDIRECT] 🎯 最终URL: ${url} (状态码: ${statusCode})`);
           resolve(url);
         } else {
           // 错误状态码
@@ -237,7 +237,7 @@ class FacebookRedirectTrackerService {
         const encodedNextUrl = nextMatch[1];
         // 对next参数进行URL解码
         const decodedNextUrl = decodeURIComponent(encodedNextUrl);
-        logger.debug(`[FB-REDIRECT] 🔍 提取next参数: ${encodedNextUrl} -> ${decodedNextUrl}`);
+        // logger.debug(`[FB-REDIRECT] 🔍 提取next参数: ${encodedNextUrl} -> ${decodedNextUrl}`);
         return decodedNextUrl;
       }
       return null;
