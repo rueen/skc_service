@@ -221,6 +221,36 @@ class LightweightScraperService {
         const redirectedUrl = redirectResult.data.finalUrl;
         logger.info(`[LW-SCRAPER] 🎯 重定向跟踪成功: ${url} -> ${redirectedUrl}`);
         
+        // 检查是否重定向到登录页面
+        if (redirectResult.data.isLoginRedirect) {
+          logger.info(`[LW-SCRAPER] 🔓 检测到登录重定向: ${redirectedUrl}`);
+          
+          // 如果有next参数，对next链接执行快速抓取
+          if (redirectResult.data.nextUrl) {
+            logger.info(`[LW-SCRAPER] 📎 对next链接执行快速抓取: ${redirectResult.data.nextUrl}`);
+            const nextUrlResult = this.tryFastExtract(redirectResult.data.nextUrl, type, 'login_redirect_next_extract');
+            if (nextUrlResult) {
+              logger.info(`[LW-SCRAPER] ✅ next链接快速提取成功: ${redirectResult.data.nextUrl}, 方法: ${nextUrlResult.extractMethod}`);
+              // 添加重定向信息
+              nextUrlResult.originalUrl = url;
+              nextUrlResult.redirectUrl = redirectedUrl;
+              nextUrlResult.nextUrl = redirectResult.data.nextUrl;
+              nextUrlResult.redirected = true;
+              nextUrlResult.isLoginRedirect = true;
+              nextUrlResult.redirectTrackingTime = redirectResult.data.trackingTime;
+              
+              return {
+                success: true,
+                data: nextUrlResult
+              };
+            } else {
+              logger.warn(`[LW-SCRAPER] ⚠️ next链接快速提取无结果: ${redirectResult.data.nextUrl}`);
+            }
+          } else {
+            logger.warn(`[LW-SCRAPER] ⚠️ 登录重定向但无next参数: ${redirectedUrl}`);
+          }
+        }
+        
         // 将跟踪器获取到的重定向后的URL执行快速抓取
         const redirectFastResult = this.tryFastExtract(redirectedUrl, type, 'redirect_url_match');
         if (redirectFastResult) {
@@ -229,6 +259,7 @@ class LightweightScraperService {
           redirectFastResult.originalUrl = url;
           redirectFastResult.redirectUrl = redirectedUrl;
           redirectFastResult.redirected = true;
+          redirectFastResult.isLoginRedirect = redirectResult.data.isLoginRedirect;
           redirectFastResult.redirectTrackingTime = redirectResult.data.trackingTime;
           
           return {
@@ -248,6 +279,8 @@ class LightweightScraperService {
               type: type,
               sourceUrl: url,
               redirectUrl: redirectedUrl,
+              nextUrl: redirectResult.data.nextUrl,
+              isLoginRedirect: redirectResult.data.isLoginRedirect,
               extractMethod: 'redirect_url_match',
               message: '重定向URL快速提取无结果'
             }

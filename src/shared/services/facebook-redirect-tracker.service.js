@@ -38,6 +38,18 @@ class FacebookRedirectTrackerService {
       const finalUrl = await this.followRedirects(originalUrl);
       const totalTime = Date.now() - startTime;
       
+      // 检查是否重定向到登录页面
+      const isLoginRedirect = this.isLoginRedirect(finalUrl);
+      let nextUrl = null;
+      
+      if (isLoginRedirect) {
+        nextUrl = this.extractNextUrl(finalUrl);
+        logger.info(`[FB-REDIRECT] 🔓 检测到登录重定向: ${originalUrl} -> ${finalUrl}`);
+        if (nextUrl) {
+          logger.info(`[FB-REDIRECT] 📎 提取到next链接: ${nextUrl}`);
+        }
+      }
+      
       logger.info(`[FB-REDIRECT] ✅ 重定向跟踪完成: ${originalUrl} -> ${finalUrl}, 耗时: ${totalTime}ms`);
       
       return {
@@ -46,6 +58,8 @@ class FacebookRedirectTrackerService {
           originalUrl,
           finalUrl,
           redirected: originalUrl !== finalUrl,
+          isLoginRedirect,
+          nextUrl,
           trackingTime: totalTime
         }
       };
@@ -192,6 +206,44 @@ class FacebookRedirectTrackerService {
     } catch (error) {
       logger.warn(`[FB-REDIRECT] ⚠️ 解析重定向URL失败: ${locationHeader}`, error);
       return locationHeader; // 回退方案
+    }
+  }
+
+  /**
+   * 检查是否重定向到登录页面
+   * @param {string} url - 要检查的URL
+   * @returns {boolean} 是否重定向到登录页面
+   */
+  isLoginRedirect(url) {
+    try {
+      // 检查URL是否包含Facebook登录页面的特征
+      return url.includes('facebook.com/login') && url.includes('next=');
+    } catch (error) {
+      logger.warn(`[FB-REDIRECT] ⚠️ 检测登录重定向失败: ${url}`, error);
+      return false;
+    }
+  }
+
+  /**
+   * 提取next参数
+   * @param {string} url - 要提取next参数的URL
+   * @returns {string|null} 提取到的next参数，如果为null则表示没有提取到
+   */
+  extractNextUrl(url) {
+    try {
+      // 使用正则表达式提取next参数
+      const nextMatch = url.match(/[?&]next=([^&]+)/);
+      if (nextMatch) {
+        const encodedNextUrl = nextMatch[1];
+        // 对next参数进行URL解码
+        const decodedNextUrl = decodeURIComponent(encodedNextUrl);
+        logger.debug(`[FB-REDIRECT] 🔍 提取next参数: ${encodedNextUrl} -> ${decodedNextUrl}`);
+        return decodedNextUrl;
+      }
+      return null;
+    } catch (error) {
+      logger.warn(`[FB-REDIRECT] ⚠️ 提取next参数失败: ${url}`, error);
+      return null;
     }
   }
 }
