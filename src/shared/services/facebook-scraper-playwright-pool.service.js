@@ -638,19 +638,6 @@ class LightweightScraperService {
   }
 
   /**
-   * 识别链接类型
-   */
-  identifyLinkType(url) {
-    if (url.includes('/groups/')) {
-      return 'group';
-    }
-    if (url.includes('/posts/') || url.includes('story_fbid=') || url.includes('permalink.php')) {
-      return 'post';
-    }
-    return 'profile';
-  }
-
-  /**
    * 获取重定向跟踪器统计信息
    * @returns {Object} 重定向跟踪器统计信息
    */
@@ -1091,82 +1078,6 @@ class FacebookScraperPlaywrightPoolService {
         await instance.release();
       }
     }
-  }
-
-  /**
-   * 批量抓取方法
-   * @param {Array} requests - 请求数组 [{url, type, options}]
-   * @param {Object} batchOptions - 批量选项
-   * @returns {Array} 抓取结果数组
-   */
-  async batchScrapeData(requests, batchOptions = {}) {
-    const { concurrency = this.maxInstances, timeout = 300000 } = batchOptions;
-    
-    logger.info(`[FB-PW-POOL] 🔥 开始批量抓取: ${requests.length} 个请求, 并发度: ${concurrency}`);
-    
-    const startTime = Date.now();
-    const results = [];
-    
-    // 分批处理
-    for (let i = 0; i < requests.length; i += concurrency) {
-      const batch = requests.slice(i, i + concurrency);
-      logger.info(`[FB-PW-POOL] 📦 处理批次 ${Math.floor(i / concurrency) + 1}, 包含 ${batch.length} 个请求`);
-      
-      const batchPromises = batch.map(async (request, index) => {
-        try {
-          const result = await this.scrapeData(request.url, request.type, request.options);
-          return { index: i + index, result };
-        } catch (error) {
-          // 记录批量抓取中的异常错误日志
-          const logData = {
-            sourceUrl: request.url,
-            redirectUrl: null,
-            type: request.type,
-            extractMethod: 'batch_error',
-            result: {
-              success: false,
-              error: {
-                code: 'BATCH_ERROR',
-                message: error.message
-              },
-              batchIndex: i + index
-            }
-          };
-          scrapeFailureLogger.info(`${JSON.stringify(logData)}`);
-          
-          return { 
-            index: i + index, 
-            result: { 
-              success: false, 
-              error: {
-                code: 'BATCH_ERROR',
-                message: error.message
-              }
-            } 
-          };
-        }
-      });
-      
-      const batchResults = await Promise.all(batchPromises);
-      results.push(...batchResults);
-    }
-    
-    const totalTime = Date.now() - startTime;
-    const successCount = results.filter(r => r.result.success).length;
-    const failCount = results.length - successCount;
-    
-    logger.info(`[FB-PW-POOL] 🎉 批量抓取完成: ${successCount} 成功, ${failCount} 失败, 总耗时: ${totalTime}ms`);
-    
-    return {
-      success: true,
-      results: results.sort((a, b) => a.index - b.index).map(r => r.result),
-      summary: {
-        total: requests.length,
-        successful: successCount,
-        failed: failCount,
-        totalTime: totalTime
-      }
-    };
   }
 
   /**

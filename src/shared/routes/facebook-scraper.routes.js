@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-06-21 17:13:19
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-27 12:14:41
+ * @LastEditTime: 2025-07-02 18:33:44
  * @Description: 
  */
 /**
@@ -31,19 +31,6 @@ router.post('/scrape',
   rateLimiterMiddleware.apiLimiter, // 使用统一的API限流
   FacebookScraperController.getValidationRules(),
   (req, res) => facebookScraperController.scrapeData(req, res)
-);
-
-/**
- * @route POST /api/facebook/batch-scrape
- * @desc 批量抓取 Facebook 数据（高并发优化）
- * @access Public
- * @body {Array} urls - Facebook 链接数组，每个元素可以是字符串或对象 {url, type}
- * @body {string} [engine=playwright] - 抓取引擎 (仅支持 playwright)
- * @body {Object} [options] - 抓取选项
- */
-router.post('/batch-scrape',
-  rateLimiterMiddleware.apiLimiter, // 使用统一的API限流
-  (req, res) => facebookScraperController.batchScrapeData(req, res)
 );
 
 /**
