@@ -322,7 +322,7 @@ class LightweightScraperService {
             originalUrl: url,
             extractMethod: 'redirect_url_match_failed',
             message: '重定向跟踪失败或没有重定向',
-            redirectResult: JSON.stringify(redirectResult)
+            redirectResult: redirectResult
           }
         };
       }
