@@ -233,7 +233,6 @@ class LightweightScraperService {
             if (nextUrlResult) {
               // logger.info(`[LW-SCRAPER] ✅ next链接快速提取成功: ${redirectResult.data.nextUrl}, 方法: ${nextUrlResult.extractMethod}`);
               // 添加重定向信息
-              nextUrlResult.originalUrl = url;
               nextUrlResult.redirectUrl = redirectedUrl;
               nextUrlResult.nextUrl = redirectResult.data.nextUrl;
               nextUrlResult.redirected = true;
@@ -247,14 +246,16 @@ class LightweightScraperService {
               };
             } else {
               scrapeFailureLogger.info(`${JSON.stringify({
-                ...redirectResult,
+                type: type,
+                ...redirectResult.data,
                 message: 'next链接快速提取无结果'
               })}`);
               // logger.warn(`[LW-SCRAPER] ⚠️ next链接快速提取无结果: ${redirectResult.data.nextUrl}`);
             }
           } else {
             scrapeFailureLogger.info(`${JSON.stringify({
-              ...redirectResult,
+              type: type,
+              ...redirectResult.data,
               message: '登录重定向但无next参数'
             })}`);
                           // logger.warn(`[LW-SCRAPER] ⚠️ 登录重定向但无next参数: ${redirectedUrl}`);
@@ -266,7 +267,6 @@ class LightweightScraperService {
         if (redirectFastResult) {
           // logger.info(`[LW-SCRAPER] ✅ 重定向URL快速提取成功: ${redirectedUrl}, 方法: ${redirectFastResult.extractMethod}`);
           // 添加重定向信息
-          redirectFastResult.originalUrl = url;
           redirectFastResult.redirectUrl = redirectedUrl;
           redirectFastResult.redirected = true;
           redirectFastResult.isLoginRedirect = redirectResult.data.isLoginRedirect;
@@ -284,7 +284,8 @@ class LightweightScraperService {
         // TODO: 暂时为post和group类型跳过浏览器抓取
         if (type === 'post' || type === 'group') {
           scrapeFailureLogger.info(`${JSON.stringify({
-            ...redirectResult,
+            type: type,
+            ...redirectResult.data,
             message: '重定向URL快速提取无结果'
           })}`);
           // logger.info(`[LW-SCRAPER] ⏹️ ${type}类型暂时跳过浏览器抓取: ${redirectedUrl}`);
@@ -292,7 +293,7 @@ class LightweightScraperService {
             success: true,
             data: {
               type: type,
-              sourceUrl: url,
+              originalUrl: url,
               redirectUrl: redirectedUrl,
               nextUrl: redirectResult.data.nextUrl,
               isLoginRedirect: redirectResult.data.isLoginRedirect,
@@ -310,14 +311,15 @@ class LightweightScraperService {
       if (type === 'post' || type === 'group') {
         // logger.info(`[LW-SCRAPER] ⏹️ ${type}类型暂时跳过浏览器抓取: ${url}`);
         scrapeFailureLogger.info(`${JSON.stringify({
-          ...redirectResult,
+          type: type,
+          ...redirectResult.data,
           message: '重定向跟踪失败或没有重定向'
         })}`);
         return {
           success: true,
           data: {
             type: type,
-            sourceUrl: url,
+            originalUrl: url,
             extractMethod: 'redirect_url_match_failed',
             message: '重定向跟踪失败或没有重定向',
             redirectResult: JSON.stringify(redirectResult)
@@ -421,7 +423,7 @@ class LightweightScraperService {
           return {
             uid,
             type: 'post',
-            sourceUrl: url,
+            originalUrl: url,
             extractMethod: extractMethod,
           };
         }
@@ -431,7 +433,7 @@ class LightweightScraperService {
           return {
             uid,
             type: 'post',
-            sourceUrl: url,
+            originalUrl: url,
             extractMethod: extractMethod,
           };
         }
@@ -445,7 +447,7 @@ class LightweightScraperService {
           return {
             groupId: groupId,
             type: 'group',
-            sourceUrl: url,
+            originalUrl: url,
             extractMethod: extractMethod
           };
         }
@@ -635,7 +637,7 @@ class LightweightScraperService {
             return {
               uid: metaUidMatch[1],
               type: 'post',
-              sourceUrl: originalUrl,
+              originalUrl: originalUrl,
               redirectUrl: currentUrl,
               extractMethod: 'page_content'
             };
@@ -1035,14 +1037,13 @@ class FacebookScraperPlaywrightPoolService {
         logger.error(`[FB-PW-POOL] ❌ 抓取失败: ${url}, 耗时: ${totalTime}ms, 错误: ${serviceResult.error.message}`);
         
         // 记录抓取失败日志
-        const logData = {
-          sourceUrl: url,
+        scrapeFailureLogger.info(`${JSON.stringify({
           type: type,
+          originalUrl: url,
           error: serviceResult.error,
           acquireTime: acquireTime,
           totalTime: totalTime,
-        };
-        scrapeFailureLogger.info(`${JSON.stringify(logData)}`);
+        })}`);
         
         return {
           success: false,
@@ -1062,22 +1063,15 @@ class FacebookScraperPlaywrightPoolService {
       this.stats.failedRequests++;
       
       // 记录池级别错误日志
-      const logData = {
-        sourceUrl: url,
-        redirectUrl: null,
+      scrapeFailureLogger.info(`${JSON.stringify({
         type: type,
-        extractMethod: 'pool_error',
-        result: {
-          success: false,
-          error: {
-            code: 'POOL_ERROR',
-            message: error.message
-          },
-          totalTime: totalTime,
-          instanceId: instance ? instance.instanceId : 'N/A'
-        }
-      };
-      scrapeFailureLogger.info(`${JSON.stringify(logData)}`);
+        originalUrl: url,
+        error: {
+          code: 'POOL_ERROR',
+          message: error.message
+        },
+        totalTime: totalTime,
+      })}`);
       
       return {
         success: false,
