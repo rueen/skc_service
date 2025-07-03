@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 16:10:51
  * @LastEditors: diaochan
- * @LastEditTime: 2025-06-25 10:20:02
+ * @LastEditTime: 2025-07-03 17:53:51
  * @Description: 
  */
 /**
@@ -64,8 +64,7 @@ const scrapeFailureTransports = [
   // 本地文件存储
   new transports.DailyRotateFile({
     ...fileRotateTransportOptions,
-    filename: 'scrape-failures-%DATE%.log',
-    format: format.printf(info => info.message) // 只输出消息内容，不加时间戳等格式
+    filename: 'scrape-failures-%DATE%.log'
   })
 ];
 
@@ -74,8 +73,7 @@ const scrapeSuccessTransports = [
   // 本地文件存储
   new transports.DailyRotateFile({
     ...fileRotateTransportOptions,
-    filename: 'scrape-success-%DATE%.log',
-    format: format.printf(info => info.message) // 只输出消息内容，不加时间戳等格式
+    filename: 'scrape-success-%DATE%.log'
   })
 ];
 
@@ -142,15 +140,13 @@ const logger = createLogger({
 // 创建抓取失败专用记录器
 const scrapeFailureLogger = createLogger({
   level: 'info',
-  transports: scrapeFailureTransports,
-  format: format.printf(info => info.message) // 只输出消息内容
+  transports: scrapeFailureTransports
 });
 
 // 创建抓取成功专用记录器
 const scrapeSuccessLogger = createLogger({
   level: 'info',
-  transports: scrapeSuccessTransports,
-  format: format.printf(info => info.message) // 只输出消息内容
+  transports: scrapeSuccessTransports
 });
 
 module.exports = {

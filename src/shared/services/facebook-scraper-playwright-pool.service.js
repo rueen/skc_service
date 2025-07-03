@@ -245,11 +245,6 @@ class LightweightScraperService {
                 data: nextUrlResult
               };
             } else {
-              scrapeFailureLogger.info(`${JSON.stringify({
-                type: type,
-                ...redirectResult.data,
-                message: 'next链接快速提取无结果'
-              })}`);
               // logger.warn(`[LW-SCRAPER] ⚠️ next链接快速提取无结果: ${redirectResult.data.nextUrl}`);
             }
           } else {
@@ -258,7 +253,7 @@ class LightweightScraperService {
               ...redirectResult.data,
               message: '登录重定向但无next参数'
             })}`);
-                          // logger.warn(`[LW-SCRAPER] ⚠️ 登录重定向但无next参数: ${redirectedUrl}`);
+            // logger.warn(`[LW-SCRAPER] ⚠️ 登录重定向但无next参数: ${redirectedUrl}`);
           }
         }
         
