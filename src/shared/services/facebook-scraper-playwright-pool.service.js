@@ -417,7 +417,7 @@ class LightweightScraperService {
     try {
       if (type === 'post') {
         // 从URL提取账号UID
-        const postMatch1 = url.match(/facebook\.com\/(\d{10,})\/posts/);
+        const postMatch1 = url.match(/facebook\.com\/(\d{6,})\/posts/);
         if (postMatch1) {
           const uid = postMatch1[1];
           return {
@@ -427,7 +427,7 @@ class LightweightScraperService {
             extractMethod: extractMethod,
           };
         }
-        let postMatch2 = url.match(/[?&]id=(\d{10,})/);
+        let postMatch2 = url.match(/[?&]id=(\d{6,})/);
         if (postMatch2) {
           const uid = postMatch2[1];
           return {
@@ -440,8 +440,8 @@ class LightweightScraperService {
       }
       
       if (type === 'group') {
-        // 从URL提取群组ID
-        const groupMatch = url.match(/\/groups\/(\d{10,})\//);
+        // 从URL提取群组ID - 支持数字ID和字母ID
+        const groupMatch = url.match(/\/groups\/(\d{6,}|[a-zA-Z][a-zA-Z0-9_.-]{2,})\//);
         if (groupMatch) {
           const groupId = groupMatch[1];
           return {
