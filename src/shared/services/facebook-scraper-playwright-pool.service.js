@@ -277,50 +277,50 @@ class LightweightScraperService {
         // logger.info(`[LW-SCRAPER] ⚠️ 重定向URL快速提取无结果，执行浏览器抓取: ${redirectedUrl}`);
         // 如果重定向URL快速提取也无结果，执行浏览器抓取（使用重定向后的URL）
         // TODO: 暂时为post和group类型跳过浏览器抓取
-        if (type === 'post' || type === 'group') {
-          scrapeFailureLogger.info(`${JSON.stringify({
-            type: type,
-            ...redirectResult.data,
-            message: '重定向URL快速提取无结果'
-          })}`);
-          // logger.info(`[LW-SCRAPER] ⏹️ ${type}类型暂时跳过浏览器抓取: ${redirectedUrl}`);
-          return {
-            success: true,
-            data: {
-              type: type,
-              originalUrl: url,
-              redirectUrl: redirectedUrl,
-              nextUrl: redirectResult.data.nextUrl,
-              isLoginRedirect: redirectResult.data.isLoginRedirect,
-              extractMethod: 'redirect_url_match_failed',
-              message: '重定向URL快速提取无结果'
-            }
-          };
-        }
+        // if (type === 'post' || type === 'group') {
+        //   scrapeFailureLogger.info(`${JSON.stringify({
+        //     type: type,
+        //     ...redirectResult.data,
+        //     extractMethod: 'redirect_url_match',
+        //     message: '重定向URL快速提取无结果'
+        //   })}`);
+        //   return {
+        //     success: true,
+        //     data: {
+        //       type: type,
+        //       originalUrl: url,
+        //       redirectUrl: redirectedUrl,
+        //       nextUrl: redirectResult.data.nextUrl,
+        //       isLoginRedirect: redirectResult.data.isLoginRedirect,
+        //       extractMethod: 'redirect_url_match',
+        //       message: '重定向URL快速提取无结果'
+        //     }
+        //   };
+        // }
         return await this.performBrowserScraping(redirectedUrl, type, url);
       }
       
       // 如果重定向跟踪失败或没有重定向，执行浏览器抓取
       // logger.info(`[LW-SCRAPER] 🌐 重定向跟踪无效，执行浏览器抓取: ${url}`);
       // TODO: 暂时为post和group类型跳过浏览器抓取
-      if (type === 'post' || type === 'group') {
-        // logger.info(`[LW-SCRAPER] ⏹️ ${type}类型暂时跳过浏览器抓取: ${url}`);
-        scrapeFailureLogger.info(`${JSON.stringify({
-          type: type,
-          ...redirectResult.data,
-          message: '重定向跟踪失败或没有重定向'
-        })}`);
-        return {
-          success: true,
-          data: {
-            type: type,
-            originalUrl: url,
-            extractMethod: 'redirect_url_match_failed',
-            message: '重定向跟踪失败或没有重定向',
-            redirectResult: redirectResult
-          }
-        };
-      }
+      // if (type === 'post' || type === 'group') {
+      //   scrapeFailureLogger.info(`${JSON.stringify({
+      //     type: type,
+      //     ...redirectResult.data,
+      //     extractMethod: 'redirect_url_match',
+      //     message: '重定向跟踪失败或没有重定向'
+      //   })}`);
+      //   return {
+      //     success: true,
+      //     data: {
+      //       type: type,
+      //       originalUrl: url,
+      //       extractMethod: 'redirect_url_match',
+      //       message: '重定向跟踪失败或没有重定向',
+      //       redirectResult: redirectResult
+      //     }
+      //   };
+      // }
       return await this.performBrowserScraping(url, type);
       
     } catch (error) {
@@ -620,6 +620,18 @@ class LightweightScraperService {
     try {
       // 获取当前页面URL
       const currentUrl = this.page.url();
+      const nextUrl = this.redirectTracker.extractNextUrl(currentUrl);
+      if(nextUrl) {
+        const fastExtractResult = this.tryFastExtract(nextUrl, 'post', 'page_content');
+        if (fastExtractResult) {
+          return {
+            ...fastExtractResult,
+            originalUrl: originalUrl,
+            redirectUrl: currentUrl,
+            nextUrl: nextUrl
+          };
+        }
+      }
       
       const metaElements = await this.page.$$eval('meta[property^="og:"]', metas => 
         metas.map(meta => ({ property: meta.getAttribute('property'), content: meta.getAttribute('content') }))
@@ -627,7 +639,7 @@ class LightweightScraperService {
       
       for (const meta of metaElements) {
         if (meta.property === 'og:url' && meta.content) {
-          const metaUidMatch = meta.content.match(/[?&]id=(\d{15,})/);
+          const metaUidMatch = meta.content.match(/[?&]id=(\d{6,})/);
           if (metaUidMatch) {
             return {
               uid: metaUidMatch[1],
@@ -639,8 +651,22 @@ class LightweightScraperService {
           }
         }
       }
-
-      throw new Error('无法提取账号UID');
+      scrapeFailureLogger.info(`${JSON.stringify({
+        type: 'post',
+        originalUrl: originalUrl,
+        redirectUrl: currentUrl,
+        extractMethod: 'page_content'
+      })}`);
+      return {
+        success: true,
+        data: {
+          type: 'post',
+          originalUrl: originalUrl,
+          redirectUrl: currentUrl,
+          extractMethod: 'page_content'
+        }
+      };
+      // throw new Error('无法提取账号UID');
     } catch (error) {
       throw error;
     }
