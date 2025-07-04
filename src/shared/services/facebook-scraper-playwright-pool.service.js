@@ -622,7 +622,7 @@ class LightweightScraperService {
       const currentUrl = this.page.url();
       const nextUrl = this.redirectTracker.extractNextUrl(currentUrl);
       if(nextUrl) {
-        const fastExtractResult = this.tryFastExtract(nextUrl, 'post', 'page_content');
+        const fastExtractResult = this.tryFastExtract(nextUrl, 'post', 'browser_url_match');
         if (fastExtractResult) {
           return {
             ...fastExtractResult,
@@ -633,30 +633,108 @@ class LightweightScraperService {
         }
       }
       
-      const metaElements = await this.page.$$eval('meta[property^="og:"]', metas => 
-        metas.map(meta => ({ property: meta.getAttribute('property'), content: meta.getAttribute('content') }))
-      );
+      // 获取页面内容用于提取 uid
+      const content = await this.page.content();
+      let uid = null;
       
-      for (const meta of metaElements) {
-        if (meta.property === 'og:url' && meta.content) {
-          const metaUidMatch = meta.content.match(/[?&]id=(\d{6,})/);
-          if (metaUidMatch) {
-            return {
-              uid: metaUidMatch[1],
-              type: 'post',
-              originalUrl: originalUrl,
-              redirectUrl: currentUrl,
-              extractMethod: 'page_content'
-            };
+      // 方法1：从 "actorID" 字段提取 (优先级最高)
+      const actorIdMatch = content.match(/"actorID":(\d{6,})/);
+      if (actorIdMatch) {
+        uid = actorIdMatch[1];
+      }
+      
+      // 方法2：从 "actor":{"id":"数字"} 模式提取
+      if (!uid) {
+        const actorMatch = content.match(/"actor":\{"id":"(\d{6,})"/);
+        if (actorMatch) {
+          uid = actorMatch[1];
+        }
+      }
+      
+      // 方法3：从 "id":"数字" 模式提取 (通用模式)
+      if (!uid) {
+        const idMatch = content.match(/"id":"(\d{6,})"/);
+        if (idMatch) {
+          uid = idMatch[1];
+        }
+      }
+      
+      // 方法4：从 "content_owner_id_new" 字段提取
+      if (!uid) {
+        const contentOwnerMatch = content.match(/"content_owner_id_new":"(\d{6,})"/);
+        if (contentOwnerMatch) {
+          uid = contentOwnerMatch[1];
+        }
+      }
+      
+      // 方法5：从 "page_id" 字段提取
+      if (!uid) {
+        const pageIdMatch = content.match(/"page_id":"(\d{6,})"/);
+        if (pageIdMatch) {
+          uid = pageIdMatch[1];
+        }
+      }
+      
+      // 方法6：从 "actor_id" 字段提取
+      if (!uid) {
+        const actorIdFieldMatch = content.match(/"actor_id":"(\d{6,})"/);
+        if (actorIdFieldMatch) {
+          uid = actorIdFieldMatch[1];
+        }
+      }
+      
+      // 方法7：从 "userID" 字段提取
+      if (!uid) {
+        const userIdMatch = content.match(/"userID":"(\d{6,})"/);
+        if (userIdMatch) {
+          uid = userIdMatch[1];
+        }
+      }
+      
+      // 方法8：从 og:url meta 标签提取
+      if (!uid) {
+        const metaElements = await this.page.$$eval('meta[property^="og:"]', metas => 
+          metas.map(meta => ({ property: meta.getAttribute('property'), content: meta.getAttribute('content') }))
+        );
+        
+        for (const meta of metaElements) {
+          if (meta.property === 'og:url' && meta.content) {
+            const metaUidMatch = meta.content.match(/[?&]id=(\d{6,})/);
+            if (metaUidMatch) {
+              uid = metaUidMatch[1];
+              break;
+            }
           }
         }
       }
+      
+      // 方法9：从原始URL路径中提取数字（如果是纯数字用户名）
+      if (!uid) {
+        const urlUidMatch = originalUrl.match(/facebook\.com\/(\d{6,})\/posts\//);
+        if (urlUidMatch) {
+          uid = urlUidMatch[1];
+        }
+      }
+      
+      if (uid) {
+        return {
+          uid: uid,
+          type: 'post',
+          originalUrl: originalUrl,
+          redirectUrl: currentUrl,
+          extractMethod: 'page_content'
+        };
+      }
+
+      // 如果所有方法都失败，记录失败日志
       scrapeFailureLogger.info(`${JSON.stringify({
         type: 'post',
         originalUrl: originalUrl,
         redirectUrl: currentUrl,
-        extractMethod: 'page_content'
+        extractMethod: 'page_content',
+        message: '无法提取账号UID'
       })}`);
+      
       return {
         success: true,
         data: {
