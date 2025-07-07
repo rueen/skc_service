@@ -244,10 +244,19 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     if (filters.completedTaskCount !== undefined || filters.channelId !== undefined) {
       total = filteredMembers.length;
     }
-    
+
+    // 统计所有 accountList 中 accountAuditStatus 为 'approved' 的数量总和
+    const totalApproved = filteredMembers.reduce((sum, member) => {
+      if (Array.isArray(member.accountList)) {
+        return sum + member.accountList.filter(acc => acc.accountAuditStatus === 'approved').length;
+      }
+      return sum;
+    }, 0);
+
     return {
       list: filteredMembers,
       total: total,
+      totalApproved,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
     };
