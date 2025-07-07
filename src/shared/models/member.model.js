@@ -116,8 +116,9 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     }
 
     // 组合查询条件
+    let whereClause = '';
     if (conditions.length > 0) {
-      const whereClause = ' WHERE ' + conditions.join(' AND ');
+      whereClause = ' WHERE ' + conditions.join(' AND ');
       baseQuery += whereClause;
       countQuery += whereClause;
     }
@@ -245,13 +246,18 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       total = filteredMembers.length;
     }
 
-    // 统计所有 accountList 中 accountAuditStatus 为 'approved' 的数量总和
-    const totalApproved = filteredMembers.reduce((sum, member) => {
-      if (Array.isArray(member.accountList)) {
-        return sum + member.accountList.filter(acc => acc.accountAuditStatus === 'approved').length;
-      }
-      return sum;
-    }, 0);
+    // 统计所有满足筛选条件的会员的已审核通过账号总数
+    const approvedQueryParams = filters.exportMode ? queryParams : queryParams.slice(0, -2); // 去掉分页参数
+    const [approvedStats] = await pool.query(
+      `SELECT COUNT(*) as totalApproved
+       FROM accounts a
+       JOIN members m ON a.member_id = m.id
+       ${whereClause}
+       AND a.account_audit_status = 'approved'`,
+      approvedQueryParams
+    );
+    
+    const totalApproved = approvedStats[0].totalApproved;
 
     return {
       list: filteredMembers,
