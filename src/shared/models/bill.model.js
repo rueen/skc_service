@@ -289,9 +289,11 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
   const offset = (page - 1) * pageSize;
   
   try {
-    // 获取账单总数
+    // 获取账单总数和总金额
     const [countRows] = await pool.query(
-      `SELECT COUNT(*) as total 
+      `SELECT 
+        COUNT(*) as total,
+        COALESCE(SUM(b.amount), 0) AS totalAmount
        FROM bills b
        JOIN members m ON b.member_id = m.id
        LEFT JOIN tasks t ON b.task_id = t.id
@@ -299,6 +301,7 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
       params
     );
     const total = countRows[0].total;
+    const totalAmount = parseFloat(countRows[0].totalAmount) || 0;
     
     // 构建查询语句
     let query = `SELECT 
@@ -334,6 +337,7 @@ async function getAllBills(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT
     
     return {
       total,
+      totalAmount,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10),
       list: formattedList
