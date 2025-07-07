@@ -14,7 +14,7 @@ const router = express.Router();
 router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 // 所有路由都需要支付渠道管理权限
-router.use(authMiddleware.hasPermission('finance:paymentChannels'));
+// router.use(authMiddleware.hasPermission('finance:paymentChannels'));
 
 /**
  * @route GET /api/admin/payment-channels
@@ -33,6 +33,7 @@ router.get(
  */
 router.post(
   '/',
+  authMiddleware.hasPermission('finance:paymentChannels'),
   [
     body('name')
       .notEmpty()
@@ -66,6 +67,7 @@ router.post(
  */
 router.put(
   '/:id',
+  authMiddleware.hasPermission('finance:paymentChannels'),
   [
     param('id')
       .isInt()
@@ -101,6 +103,7 @@ router.put(
  */
 router.delete(
   '/:id',
+  authMiddleware.hasPermission('finance:paymentChannels'),
   [
     param('id')
       .isInt()
