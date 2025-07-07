@@ -1093,9 +1093,7 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
     
     // 计算总数的查询
     const countQuery = `
-      SELECT 
-        COUNT(*) AS total,
-        COALESCE(SUM(t.reward), 0) AS totalAmount
+      SELECT COUNT(*) AS total
       FROM submitted_tasks st
       JOIN tasks t ON st.task_id = t.id
       WHERE ${whereClause}
@@ -1110,7 +1108,6 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
     const [countResult] = await pool.query(countQuery, queryParams);
     
     const total = countResult[0].total;
-    const totalAmount = parseFloat(countResult[0].totalAmount) || 0;
     
     // 使用 formatSubmittedTask 方法格式化结果
     const formattedList = rows.map(row => {
@@ -1141,7 +1138,6 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
     
     return {
       total,
-      totalAmount,
       list: formattedList,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
