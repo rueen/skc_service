@@ -204,14 +204,18 @@ async function getAllWithdrawals(options = {}) {
       queryParams.push(`%${memberNickname}%`);
     }
     
-    // 查询总数
+    // 查询总数和总金额
     const [countResult] = await pool.query(
-      `SELECT COUNT(*) as total FROM withdrawals w 
+      `SELECT 
+        COUNT(*) as total,
+        COALESCE(SUM(w.amount), 0) AS totalAmount
+      FROM withdrawals w 
        LEFT JOIN members m ON w.member_id = m.id
        ${whereClause}`,
       queryParams
     );
     const total = countResult[0].total;
+    const totalAmount = parseFloat(countResult[0].totalAmount) || 0;
     
     // 构建基础查询
     let query = `SELECT w.*, 
@@ -244,6 +248,7 @@ async function getAllWithdrawals(options = {}) {
     
     return {
       total,
+      totalAmount,
       page: parseInt(page),
       pageSize: parseInt(pageSize),
       list: formattedList
