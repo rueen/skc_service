@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-26 16:57:36
  * @LastEditors: diaochan
- * @LastEditTime: 2025-07-01 16:10:22
+ * @LastEditTime: 2025-07-07 15:12:45
  * @Description: 
  */
 /**
@@ -45,6 +45,10 @@ router.get(
       .isIn(Object.values(WithdrawalStatus))
       .withMessage('common.validation.invalid'),
     query('memberId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
+    query('paymentChannelId')
       .optional()
       .isInt()
       .withMessage('common.validation.mustBeInt'),
@@ -118,6 +122,10 @@ router.get(
       .optional()
       .isIn(Object.values(WithdrawalStatus))
       .withMessage('common.validation.invalid'),
+    query('paymentChannelId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
     query('billNo').optional().isString().withMessage('common.validation.mustBeString'),
     query('startTime').optional().isString().withMessage('common.validation.timeFormatInvalid'),
     query('endTime').optional().isString().withMessage('common.validation.timeFormatInvalid')

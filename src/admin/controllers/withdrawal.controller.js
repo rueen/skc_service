@@ -22,6 +22,7 @@ async function getWithdrawals(req, res) {
       pageSize = DEFAULT_PAGE_SIZE, 
       withdrawalStatus, 
       memberId, 
+      paymentChannelId,
       startTime, 
       endTime,
       billNo,
@@ -39,6 +40,10 @@ async function getWithdrawals(req, res) {
     
     if (memberId) {
       options.memberId = memberId;
+    }
+    
+    if (paymentChannelId) {
+      options.paymentChannelId = paymentChannelId;
     }
     
     if (startTime) {
@@ -131,13 +136,14 @@ async function batchRejectWithdrawals(req, res) {
  */
 async function exportWithdrawals(req, res) {
   try {
-    const { memberNickname, withdrawalStatus, billNo, startTime, endTime } = req.query;
+    const { memberNickname, withdrawalStatus, paymentChannelId, billNo, startTime, endTime } = req.query;
     
     // 构建筛选条件
     const options = {
       exportMode: true, // 使用导出模式，不分页
       memberNickname,
       withdrawalStatus,
+      paymentChannelId,
       billNo
     };
     

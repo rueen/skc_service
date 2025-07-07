@@ -163,6 +163,7 @@ async function getAllWithdrawals(options = {}) {
       pageSize = DEFAULT_PAGE_SIZE, 
       withdrawalStatus, 
       memberId,
+      paymentChannelId,
       startTime,
       endTime,
       billNo,
@@ -182,6 +183,11 @@ async function getAllWithdrawals(options = {}) {
     if (memberId) {
       whereClause += ' AND w.member_id = ?';
       queryParams.push(memberId);
+    }
+    
+    if (paymentChannelId) {
+      whereClause += ' AND wa.payment_channel_id = ?';
+      queryParams.push(paymentChannelId);
     }
     
     if (startTime) {
@@ -210,6 +216,7 @@ async function getAllWithdrawals(options = {}) {
         COUNT(*) as total,
         COALESCE(SUM(w.amount), 0) AS totalAmount
       FROM withdrawals w 
+       LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
        LEFT JOIN members m ON w.member_id = m.id
        ${whereClause}`,
       queryParams
