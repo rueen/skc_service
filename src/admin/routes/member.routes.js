@@ -49,6 +49,10 @@ router.get(
       .optional()
       .isInt({ min: 0 })
       .withMessage('common.validation.mustBeNonNegativeInteger'),
+    query('channelId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
     query('keyword')
       .optional()
       .isString()
@@ -91,6 +95,10 @@ router.get(
       .optional()
       .isInt({ min: 0 })
       .withMessage('common.validation.mustBeNonNegativeInteger'),
+    query('channelId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
     query('keyword')
       .optional()
       .isString()

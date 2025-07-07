@@ -30,6 +30,7 @@ async function list(req, res) {
       groupId, 
       inviterId,
       completedTaskCount,
+      channelId,
       keyword,
       createStartTime,
       createEndTime
@@ -41,6 +42,7 @@ async function list(req, res) {
     if (groupId) filters.groupId = parseInt(groupId, 10);
     if (inviterId) filters.inviterId = parseInt(inviterId, 10);
     if (completedTaskCount) filters.completedTaskCount = parseInt(completedTaskCount, 10);
+    if (channelId) filters.channelId = parseInt(channelId, 10);
     if (keyword) filters.keyword = keyword;
     if (createStartTime) filters.createStartTime = createStartTime;
     if (createEndTime) filters.createEndTime = createEndTime;
@@ -506,6 +508,7 @@ async function exportMembers(req, res) {
       groupId, 
       inviterId,
       completedTaskCount,
+      channelId,
       keyword,
       createStartTime,
       createEndTime
@@ -520,6 +523,7 @@ async function exportMembers(req, res) {
     if (groupId) filters.groupId = parseInt(groupId, 10);
     if (inviterId) filters.inviterId = parseInt(inviterId, 10);
     if (completedTaskCount) filters.completedTaskCount = parseInt(completedTaskCount, 10);
+    if (channelId) filters.channelId = parseInt(channelId, 10);
     if (keyword) filters.keyword = keyword; // 添加关键字筛选
     if (createStartTime) filters.createStartTime = createStartTime;
     if (createEndTime) filters.createEndTime = createEndTime;

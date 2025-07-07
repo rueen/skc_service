@@ -228,11 +228,20 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     // 如果指定了已完成任务次数筛选，进行过滤
     let filteredMembers = formattedMembers;
     if (filters.completedTaskCount !== undefined) {
-      filteredMembers = formattedMembers.filter(member => 
+      filteredMembers = filteredMembers.filter(member => 
         member.completedTaskCount === filters.completedTaskCount
       );
-      
-      // 更新总数以反映筛选后的结果
+    }
+    
+    // 如果指定了渠道ID筛选，进行过滤
+    if (filters.channelId !== undefined) {
+      filteredMembers = filteredMembers.filter(member => 
+        member.accountList.some(account => account.channelId === filters.channelId)
+      );
+    }
+    
+    // 更新总数以反映筛选后的结果
+    if (filters.completedTaskCount !== undefined || filters.channelId !== undefined) {
       total = filteredMembers.length;
     }
     
