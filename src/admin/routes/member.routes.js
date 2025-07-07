@@ -41,6 +41,10 @@ router.get(
       .optional()
       .isInt()
       .withMessage('common.validation.mustBeInt'),
+    query('inviterId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
     query('keyword')
       .optional()
       .isString()
@@ -72,6 +76,10 @@ router.get(
       .isString()
       .withMessage('common.validation.mustBeString'),
     query('groupId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt'),
+    query('inviterId')
       .optional()
       .isInt()
       .withMessage('common.validation.mustBeInt'),

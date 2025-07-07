@@ -28,6 +28,7 @@ async function list(req, res) {
       pageSize = DEFAULT_PAGE_SIZE, 
       memberNickname, 
       groupId, 
+      inviterId,
       keyword,
       createStartTime,
       createEndTime
@@ -37,6 +38,7 @@ async function list(req, res) {
     
     if (memberNickname) filters.memberNickname = memberNickname;
     if (groupId) filters.groupId = parseInt(groupId, 10);
+    if (inviterId) filters.inviterId = parseInt(inviterId, 10);
     if (keyword) filters.keyword = keyword;
     if (createStartTime) filters.createStartTime = createStartTime;
     if (createEndTime) filters.createEndTime = createEndTime;
@@ -500,6 +502,7 @@ async function exportMembers(req, res) {
     const { 
       memberNickname, 
       groupId, 
+      inviterId,
       keyword,
       createStartTime,
       createEndTime
@@ -512,6 +515,7 @@ async function exportMembers(req, res) {
     
     if (memberNickname) filters.memberNickname = memberNickname;
     if (groupId) filters.groupId = parseInt(groupId, 10);
+    if (inviterId) filters.inviterId = parseInt(inviterId, 10);
     if (keyword) filters.keyword = keyword; // 添加关键字筛选
     if (createStartTime) filters.createStartTime = createStartTime;
     if (createEndTime) filters.createEndTime = createEndTime;

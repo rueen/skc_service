@@ -97,6 +97,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.groupId);
     }
     
+    // 邀请人筛选
+    if (filters.inviterId) {
+      conditions.push('m.inviter_id = ?');
+      queryParams.push(filters.inviterId);
+    }
+    
     // 创建开始时间筛选
     if (filters.createStartTime) {
       conditions.push('m.create_time >= ?');
