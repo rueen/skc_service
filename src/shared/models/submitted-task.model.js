@@ -313,16 +313,15 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     // 计算总数的查询
     const countQuery = `
-      SELECT COUNT(*) AS total FROM (
-        SELECT 
-          st.id
-        FROM 
-          submitted_tasks st
-          JOIN tasks t ON st.task_id = t.id
-          JOIN members m ON st.member_id = m.id
-          LEFT JOIN channels c ON t.channel_id = c.id
-        WHERE ${whereClause} ${completedTaskWhere}
-      ) AS subquery
+      SELECT 
+        COUNT(*) AS total,
+        COALESCE(SUM(t.reward), 0) AS totalAmount
+      FROM 
+        submitted_tasks st
+        JOIN tasks t ON st.task_id = t.id
+        JOIN members m ON st.member_id = m.id
+        LEFT JOIN channels c ON t.channel_id = c.id
+      WHERE ${whereClause} ${completedTaskWhere}
     `;
     
     // 执行查询，添加分页
@@ -338,6 +337,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const [countResult] = await pool.query(countQuery, queryParams);
     
     const total = countResult[0].total;
+    const totalAmount = parseFloat(countResult[0].totalAmount) || 0;
     
     // 使用 formatSubmittedTask 方法格式化结果
     const formattedList = rows.map(row => {
@@ -407,6 +407,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     return {
       total,
+      totalAmount,
       list: formattedList,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
@@ -1092,7 +1093,9 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
     
     // 计算总数的查询
     const countQuery = `
-      SELECT COUNT(*) AS total 
+      SELECT 
+        COUNT(*) AS total,
+        COALESCE(SUM(t.reward), 0) AS totalAmount
       FROM submitted_tasks st
       JOIN tasks t ON st.task_id = t.id
       WHERE ${whereClause}
@@ -1107,6 +1110,7 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
     const [countResult] = await pool.query(countQuery, queryParams);
     
     const total = countResult[0].total;
+    const totalAmount = parseFloat(countResult[0].totalAmount) || 0;
     
     // 使用 formatSubmittedTask 方法格式化结果
     const formattedList = rows.map(row => {
@@ -1137,6 +1141,7 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
     
     return {
       total,
+      totalAmount,
       list: formattedList,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
