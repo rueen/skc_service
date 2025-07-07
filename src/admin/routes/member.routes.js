@@ -45,6 +45,10 @@ router.get(
       .optional()
       .isInt()
       .withMessage('common.validation.mustBeInt'),
+    query('completedTaskCount')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     query('keyword')
       .optional()
       .isString()
@@ -83,6 +87,10 @@ router.get(
       .optional()
       .isInt()
       .withMessage('common.validation.mustBeInt'),
+    query('completedTaskCount')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('common.validation.mustBeNonNegativeInteger'),
     query('keyword')
       .optional()
       .isString()

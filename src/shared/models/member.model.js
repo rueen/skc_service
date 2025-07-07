@@ -225,8 +225,19 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     // 等待所有任务计数查询完成
     await Promise.all(completedTaskCountPromises);
     
+    // 如果指定了已完成任务次数筛选，进行过滤
+    let filteredMembers = formattedMembers;
+    if (filters.completedTaskCount !== undefined) {
+      filteredMembers = formattedMembers.filter(member => 
+        member.completedTaskCount === filters.completedTaskCount
+      );
+      
+      // 更新总数以反映筛选后的结果
+      total = filteredMembers.length;
+    }
+    
     return {
-      list: formattedMembers,
+      list: filteredMembers,
       total: total,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
