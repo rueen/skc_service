@@ -63,7 +63,6 @@ function generateInviteCode() {
  */
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
   try {
-    // 修改基础查询，不再直接关联群组表
     let baseQuery = `
       SELECT m.*, 
              inv.nickname as inviter_nickname
@@ -72,7 +71,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     `;
     
     let countQuery = `
-      SELECT COUNT(*) as total 
+      SELECT COUNT(DISTINCT m.id) as total 
       FROM members m
     `;
     
@@ -113,6 +112,24 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     if (filters.createEndTime) {
       conditions.push('m.create_time <= ?');
       queryParams.push(filters.createEndTime);
+    }
+
+    // 渠道筛选
+    if (filters.channelId !== undefined) {
+      conditions.push('m.id IN (SELECT member_id FROM accounts WHERE channel_id = ?)');
+      queryParams.push(filters.channelId);
+    }
+
+    // 已完成任务次数筛选
+    if (filters.completedTaskCount !== undefined) {
+      conditions.push(`m.id IN (
+        SELECT member_id 
+        FROM submitted_tasks 
+        WHERE task_audit_status = 'approved'
+        GROUP BY member_id 
+        HAVING COUNT(*) = ?
+      )`);
+      queryParams.push(filters.completedTaskCount);
     }
 
     // 组合查询条件
@@ -215,36 +232,20 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     });
     
     // 获取每个会员已完成任务的次数
-    const completedTaskCountPromises = formattedMembers.map(member => 
-      taskStatsModel.getMemberCompletedTaskCount(member.id)
-        .then(count => {
-          member.completedTaskCount = count;
-          return member;
-        })
-    );
+    const completedTaskCountPromises = formattedMembers.map(async member => {
+      const [rows] = await pool.query(
+        `SELECT COUNT(*) as count 
+         FROM submitted_tasks st
+         WHERE st.member_id = ? 
+         AND st.task_audit_status = 'approved'`,
+        [member.id]
+      );
+      member.completedTaskCount = rows[0].count;
+      return member;
+    });
     
     // 等待所有任务计数查询完成
     await Promise.all(completedTaskCountPromises);
-    
-    // 如果指定了已完成任务次数筛选，进行过滤
-    let filteredMembers = formattedMembers;
-    if (filters.completedTaskCount !== undefined) {
-      filteredMembers = filteredMembers.filter(member => 
-        member.completedTaskCount === filters.completedTaskCount
-      );
-    }
-    
-    // 如果指定了渠道ID筛选，进行过滤
-    if (filters.channelId !== undefined) {
-      filteredMembers = filteredMembers.filter(member => 
-        member.accountList.some(account => account.channelId === filters.channelId)
-      );
-    }
-    
-    // 更新总数以反映筛选后的结果
-    if (filters.completedTaskCount !== undefined || filters.channelId !== undefined) {
-      total = filteredMembers.length;
-    }
 
     // 统计所有满足筛选条件的会员的已审核通过账号总数
     const approvedQueryParams = filters.exportMode ? queryParams : queryParams.slice(0, -2); // 去掉分页参数
@@ -260,7 +261,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const totalApproved = approvedStats[0].totalApproved;
 
     return {
-      list: filteredMembers,
+      list: formattedMembers,
       total: total,
       totalApproved,
       page: parseInt(page, 10),
