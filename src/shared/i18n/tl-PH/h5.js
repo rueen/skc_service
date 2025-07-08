@@ -2,11 +2,8 @@
  * @Author: diaochan
  * @Date: 2025-04-18 22:39:33
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-19 08:27:16
+ * @LastEditTime: 2025-07-08 15:40:50
  * @Description: 
- */
-/**
- * Pagsasalin sa Tagalog para sa H5
  */
 module.exports = {
   loginSuccess: 'Matagumpay na naka-login',
@@ -38,6 +35,7 @@ module.exports = {
     updateSuccess: 'Matagumpay na na-update ang account, mangyaring maghintay para sa pagsusuri',
     deleteSuccess: 'Matagumpay na natanggal ang account',
     duplicateBind: 'Nagamit na ang account na ito. Bawal ang paulit-ulit na pag-bind',
+    rejectTimesLimit: 'Ang account ay hindi maaaring i-update dahil ang pag-reject ay nahahati sa {maxRejectTimes} beses',
   },
 
   member: {

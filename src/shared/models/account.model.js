@@ -496,10 +496,10 @@ async function batchReject(ids, reason, waiterId) {
       return false;
     }
     
-    // 更新账号状态为已拒绝，只更新pending状态的账号
+    // 更新账号状态为已拒绝，只更新pending状态的账号，同时增加驳回次数
     const [result] = await connection.query(
       `UPDATE accounts 
-       SET account_audit_status = 'rejected', reject_reason = ?, waiter_id = ?, audit_time = NOW() 
+       SET account_audit_status = 'rejected', reject_reason = ?, waiter_id = ?, audit_time = NOW(), reject_times = reject_times + 1 
        WHERE id IN (?) AND account_audit_status = 'pending'`,
       [reason, waiterId, pendingIds]
     );

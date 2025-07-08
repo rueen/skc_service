@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   posts_count int(11) DEFAULT 0 COMMENT '发布数量',
   account_audit_status varchar(20) DEFAULT 'pending' COMMENT '账号审核状态：pending-待审核，approved-已通过，rejected-已拒绝',
   reject_reason varchar(255) DEFAULT NULL COMMENT '拒绝原因',
+  reject_times int(11) NOT NULL DEFAULT 0 COMMENT '驳回次数',
   waiter_id bigint(20) DEFAULT NULL COMMENT '审核小二ID',
   audit_time datetime DEFAULT NULL COMMENT '审核时间',
   submit_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '提交/修改时间',
@@ -229,7 +230,8 @@ VALUES
 ('max_group_members', '200', '群组最大成员数'),
 ('group_owner_commission_rate', '0.1', '群主收益率（0-1之间的小数）'),
 ('invite_reward_amount', '5.00', '邀请奖励金额（元）'),
-('withdrawal_threshold', '50', '提现门槛（元）')
+('withdrawal_threshold', '50', '提现门槛（元）'),
+('account_reject_times', '-1', '账号可驳回次数，-1:不限制；0:驳回后不可提交；1:驳回后可提交1次，再次驳回不可提交；')
 ON DUPLICATE KEY UPDATE update_time = NOW();
 `;
 

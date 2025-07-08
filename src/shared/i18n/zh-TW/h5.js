@@ -2,11 +2,8 @@
  * @Author: diaochan
  * @Date: 2025-04-18 22:38:15
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-19 08:26:58
+ * @LastEditTime: 2025-07-08 15:40:14
  * @Description: 
- */
-/**
- * 繁體中文 H5 翻譯
  */
 module.exports = {
   loginSuccess: '登錄成功',
@@ -38,6 +35,7 @@ module.exports = {
     updateSuccess: '更新賬號成功，請等待審核',
     deleteSuccess: '刪除賬號成功',
     duplicateBind: '該賬號已被使用，禁止重複綁定',
+    rejectTimesLimit: '賬號駁回次數已達上限，無法再次修改',
   },
 
   member: {

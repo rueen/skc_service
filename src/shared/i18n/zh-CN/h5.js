@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 19:53:45
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-19 08:26:51
+ * @LastEditTime: 2025-07-08 15:39:41
  * @Description: 
  */
 module.exports = {
@@ -35,6 +35,7 @@ module.exports = {
     updateSuccess: '更新账号成功，请等待审核',
     deleteSuccess: '删除账号成功',
     duplicateBind: '该账号已被使用，禁止重复绑定',
+    rejectTimesLimit: '账号驳回次数已达上限，无法再次修改',
   },
 
   member: {

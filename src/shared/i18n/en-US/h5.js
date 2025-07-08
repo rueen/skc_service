@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 19:53:45
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-19 08:27:05
+ * @LastEditTime: 2025-07-08 15:41:18
  * @Description: 
  */
 module.exports = {
@@ -35,6 +35,7 @@ module.exports = {
     updateSuccess: 'Account updated successfully, please wait for review',
     deleteSuccess: 'Account deleted successfully',
     duplicateBind: 'This account has already been used. Duplicate binding is not allowed',
+    rejectTimesLimit: 'Account rejection limit reached, cannot be updated again',
   },
 
   member: {

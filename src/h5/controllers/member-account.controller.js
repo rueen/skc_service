@@ -163,6 +163,22 @@ async function updateAccount(req, res) {
     if (accountInfo.member_id !== memberId) {
       return responseUtil.forbidden(res, i18n.t('h5.account.noPermissionUpdate', req.lang));
     }
+
+    // 检查账号驳回次数限制
+    const [systemConfigRows] = await pool.query(
+      'SELECT config_value FROM system_config WHERE config_key = ?',
+      ['account_reject_times']
+    );
+    
+    const maxRejectTimes = systemConfigRows.length > 0 ? parseInt(systemConfigRows[0].config_value, 10) : -1;
+    
+    // 如果系统配置不为-1（不限制），则检查驳回次数
+    if (maxRejectTimes !== -1) {
+      const currentRejectTimes = accountInfo.reject_times || 0;
+      if (currentRejectTimes > maxRejectTimes) {
+        return responseUtil.badRequest(res, i18n.t('h5.account.rejectTimesLimit', req.lang));
+      }
+    }
     let accountAuditStatus = 'pending';  // 修改后重置为待审核状态
     if(accountInfo.account_audit_status === 'approved'){
       accountAuditStatus = 'approved';
