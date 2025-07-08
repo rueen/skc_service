@@ -20,6 +20,8 @@ function formatSubmittedTask(submittedTask) {
     submitTime: formatDateTime(submittedTask.submit_time),
     taskPreAuditStatus: submittedTask.task_pre_audit_status,
     taskAuditStatus: submittedTask.task_audit_status,
+    preAuditTime: formatDateTime(submittedTask.pre_audit_time),
+    auditTime: formatDateTime(submittedTask.audit_time),
     createTime: formatDateTime(submittedTask.create_time),
     updateTime: formatDateTime(submittedTask.update_time),
     startTime: formatDateTime(submittedTask.start_time),
@@ -282,6 +284,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const query = `
       SELECT 
         st.*,
+        st.pre_audit_time,
+        st.audit_time,
         t.task_name,
         t.channel_id,
         t.brand,
@@ -477,6 +481,8 @@ async function getById(id, auditType = 'confirm', filtersParam = {}) {
     const [rows] = await pool.query(
       `SELECT 
         st.*,
+        st.pre_audit_time,
+        st.audit_time,
         t.task_name,
         t.reward,
         pre_w.username as pre_waiter_name,
@@ -687,7 +693,7 @@ async function batchApprove(ids, waiterId) {
     // 更新任务状态为已通过，只更新pending状态的任务
     const [result] = await connection.query(
       `UPDATE submitted_tasks 
-       SET task_audit_status = 'approved', waiter_id = ? 
+       SET task_audit_status = 'approved', waiter_id = ?, audit_time = NOW() 
        WHERE id IN (?) AND task_audit_status = 'pending'`,
       [waiterId, pendingTaskIds]
     );
@@ -824,7 +830,7 @@ async function batchReject(ids, reason, waiterId) {
     // 更新任务状态为已拒绝，只更新pending状态的任务
     const [result] = await connection.query(
       `UPDATE submitted_tasks 
-       SET task_audit_status = 'rejected', reject_reason = ?, waiter_id = ? 
+       SET task_audit_status = 'rejected', reject_reason = ?, waiter_id = ?, audit_time = NOW() 
        WHERE id IN (?) AND task_audit_status = 'pending'`,
       [reason, waiterId, pendingTaskIds]
     );
@@ -932,7 +938,7 @@ async function batchPreApprove(ids, waiterId) {
     // 更新任务预审状态为已通过，只更新预审状态为pending的任务
     const [result] = await connection.query(
       `UPDATE submitted_tasks 
-       SET task_pre_audit_status = 'approved', pre_waiter_id = ? 
+       SET task_pre_audit_status = 'approved', pre_waiter_id = ?, pre_audit_time = NOW() 
        WHERE id IN (?) AND task_pre_audit_status = 'pending'`,
       [waiterId, pendingTaskIds]
     );
@@ -984,7 +990,7 @@ async function batchPreReject(ids, reason, waiterId) {
     // 更新任务预审状态为已拒绝，只更新预审状态为pending的任务
     const [result] = await connection.query(
       `UPDATE submitted_tasks 
-       SET task_pre_audit_status = 'rejected', reject_reason = ?, pre_waiter_id = ? 
+       SET task_pre_audit_status = 'rejected', reject_reason = ?, pre_waiter_id = ?, pre_audit_time = NOW() 
        WHERE id IN (?) AND task_pre_audit_status = 'pending'`,
       [reason, waiterId, pendingTaskIds]
     );
