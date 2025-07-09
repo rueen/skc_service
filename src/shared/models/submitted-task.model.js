@@ -97,7 +97,7 @@ async function create(submitData) {
     
     // 检查是否已经提交过
     const [existingSubmits] = await connection.query(
-      'SELECT id, task_audit_status, task_pre_audit_status FROM submitted_tasks WHERE task_id = ? AND member_id = ?',
+      'SELECT id, task_audit_status, task_pre_audit_status, reject_times FROM submitted_tasks WHERE task_id = ? AND member_id = ?',
       [submitData.taskId, submitData.memberId]
     );
     
@@ -117,13 +117,26 @@ async function create(submitData) {
       const auditStatus = existingSubmits[0].task_audit_status;
       const preAuditStatus = existingSubmits[0].task_pre_audit_status;
       
-      // 如果正式审核已通过，不允许重新提交
-      if (auditStatus === 'approved') {
-        throw new Error('任务已提交并已通过审核');
-      } 
-      // 如果正式审核状态为pending，但初审被拒绝，允许重新提交
-      else if (auditStatus === 'pending' && preAuditStatus === 'rejected') {
-        // 允许重新提交，更新现有记录
+      // 检查任务驳回次数限制的内部函数
+      const checkRejectTimesLimit = async () => {
+        const [systemConfigRows] = await connection.query(
+          'SELECT config_value FROM system_config WHERE config_key = ?',
+          ['task_reject_times']
+        );
+        
+        const maxRejectTimes = systemConfigRows.length > 0 ? parseInt(systemConfigRows[0].config_value, 10) : -1;
+        
+        // 如果系统配置不为-1（不限制），则检查驳回次数
+        if (maxRejectTimes !== -1) {
+          const currentRejectTimes = existingSubmits[0].reject_times || 0;
+          if (currentRejectTimes > maxRejectTimes) {
+            throw new Error('该任务驳回次数已达上限，无法再次修改');
+          }
+        }
+      };
+      
+      // 重新提交的通用处理函数
+      const handleResubmit = async () => {
         await connection.query(
           `UPDATE submitted_tasks 
            SET submit_content = ?, submit_time = NOW(), task_audit_status = 'pending', task_pre_audit_status = 'pending', reject_reason = NULL, related_group_id = ? 
@@ -133,23 +146,25 @@ async function create(submitData) {
         
         await connection.commit();
         return { id: existingSubmits[0].id, isResubmit: true, relatedGroupId };
+      };
+      
+      // 如果正式审核已通过，不允许重新提交
+      if (auditStatus === 'approved') {
+        throw new Error('任务已提交并已通过审核');
+      } 
+      // 如果正式审核状态为pending，但初审被拒绝，允许重新提交（需检查驳回次数）
+      else if (auditStatus === 'pending' && preAuditStatus === 'rejected') {
+        await checkRejectTimesLimit();
+        return await handleResubmit();
       }
       // 如果正式审核状态为pending，初审状态不是rejected，不允许重新提交
       else if (auditStatus === 'pending' && preAuditStatus !== 'rejected') {
         throw new Error('任务已提交，正在审核中');
       }
-      // 如果正式审核状态为rejected，允许重新提交
+      // 如果正式审核状态为rejected，允许重新提交（需检查驳回次数）
       else if (auditStatus === 'rejected') {
-        // 允许重新提交，更新现有记录
-        await connection.query(
-          `UPDATE submitted_tasks 
-           SET submit_content = ?, submit_time = NOW(), task_audit_status = 'pending', task_pre_audit_status = 'pending', reject_reason = NULL, related_group_id = ? 
-           WHERE id = ?`,
-          [JSON.stringify(submitData.submitContent), relatedGroupId, existingSubmits[0].id]
-        );
-        
-        await connection.commit();
-        return { id: existingSubmits[0].id, isResubmit: true, relatedGroupId };
+        await checkRejectTimesLimit();
+        return await handleResubmit();
       }
     }
     
@@ -827,10 +842,11 @@ async function batchReject(ids, reason, waiterId) {
       return false;
     }
     
-    // 更新任务状态为已拒绝，只更新pending状态的任务
+    // 更新任务状态为已拒绝，只更新pending状态的任务，并增加驳回次数
     const [result] = await connection.query(
       `UPDATE submitted_tasks 
-       SET task_audit_status = 'rejected', reject_reason = ?, waiter_id = ?, audit_time = NOW() 
+       SET task_audit_status = 'rejected', reject_reason = ?, waiter_id = ?, audit_time = NOW(), 
+           reject_times = reject_times + 1
        WHERE id IN (?) AND task_audit_status = 'pending'`,
       [reason, waiterId, pendingTaskIds]
     );
@@ -987,10 +1003,11 @@ async function batchPreReject(ids, reason, waiterId) {
       return false;
     }
     
-    // 更新任务预审状态为已拒绝，只更新预审状态为pending的任务
+    // 更新任务预审状态为已拒绝，只更新预审状态为pending的任务，并增加驳回次数
     const [result] = await connection.query(
       `UPDATE submitted_tasks 
-       SET task_pre_audit_status = 'rejected', reject_reason = ?, pre_waiter_id = ?, pre_audit_time = NOW() 
+       SET task_pre_audit_status = 'rejected', reject_reason = ?, pre_waiter_id = ?, pre_audit_time = NOW(), 
+           reject_times = reject_times + 1
        WHERE id IN (?) AND task_pre_audit_status = 'pending'`,
       [reason, waiterId, pendingTaskIds]
     );

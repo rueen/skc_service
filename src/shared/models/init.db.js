@@ -231,7 +231,8 @@ VALUES
 ('group_owner_commission_rate', '0.1', '群主收益率（0-1之间的小数）'),
 ('invite_reward_amount', '5.00', '邀请奖励金额（元）'),
 ('withdrawal_threshold', '50', '提现门槛（元）'),
-('account_reject_times', '-1', '账号可驳回次数，-1:不限制；0:驳回后不可提交；1:驳回后可提交1次，再次驳回不可提交；')
+('account_reject_times', '-1', '账号可驳回次数，-1:不限制；0:驳回后不可提交；1:驳回后可提交1次，再次驳回不可提交；'),
+('task_reject_times', '-1', '任务可驳回次数，-1:不限制；0:驳回后不可提交；1:驳回后可提交1次，再次驳回不可提交；')
 ON DUPLICATE KEY UPDATE update_time = NOW();
 `;
 
@@ -305,6 +306,7 @@ CREATE TABLE IF NOT EXISTS submitted_tasks (
   waiter_id bigint(20) DEFAULT NULL COMMENT '审核小二ID',
   audit_time datetime DEFAULT NULL COMMENT '审核时间',
   reject_reason varchar(255) DEFAULT NULL COMMENT '拒绝原因',
+  reject_times int(11) NOT NULL DEFAULT 0 COMMENT '驳回次数',
   related_group_id bigint(20) DEFAULT NULL COMMENT '关联的群组ID',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
