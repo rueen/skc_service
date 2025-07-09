@@ -62,6 +62,9 @@ async function submitTask(req, res) {
     if (error.message === '任务名额已满，无法提交') {
       return responseUtil.badRequest(res, i18n.t('h5.task.taskFull', req.lang));
     }
+    if(error.message === 'h5.task.rejectTimesLimit') {
+      return responseUtil.badRequest(res, i18n.t('h5.task.rejectTimesLimit', req.lang));
+    }
     
     return responseUtil.serverError(res);
   }

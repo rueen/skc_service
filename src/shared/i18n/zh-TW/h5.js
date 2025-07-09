@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 22:38:15
  * @LastEditors: diaochan
- * @LastEditTime: 2025-07-08 15:40:14
+ * @LastEditTime: 2025-07-09 15:45:07
  * @Description: 
  */
 module.exports = {
@@ -61,6 +61,7 @@ module.exports = {
     taskSubmittedAndApproved: '任務已提交並已通過審核',
     taskFull: '任務名額已滿，無法提交',
     noPermissionView: '無權查看此提交記錄',
+    rejectTimesLimit: '該任務駁回次數已達上限，無法再次修改',
   },
 
   withdrawal: {

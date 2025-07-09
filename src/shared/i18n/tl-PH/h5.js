@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 22:39:33
  * @LastEditors: diaochan
- * @LastEditTime: 2025-07-08 15:40:50
+ * @LastEditTime: 2025-07-09 15:45:32
  * @Description: 
  */
 module.exports = {
@@ -61,6 +61,7 @@ module.exports = {
     taskSubmittedAndApproved: 'Naisumite na ang gawain at naaprubahan na',
     taskFull: 'Puno na ang mga slot para sa gawain, hindi maaaring magsumite',
     noPermissionView: 'Walang pahintulot na tingnan ang rekord ng pagsusumite na ito',
+    rejectTimesLimit: 'Ang gawain ay hindi maaaring i-update dahil ang pag-reject ay nahahati sa {maxRejectTimes} beses',
   },
 
   withdrawal: {

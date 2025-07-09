@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 19:53:45
  * @LastEditors: diaochan
- * @LastEditTime: 2025-07-08 15:41:18
+ * @LastEditTime: 2025-07-09 15:45:23
  * @Description: 
  */
 module.exports = {
@@ -61,6 +61,7 @@ module.exports = {
     taskSubmittedAndApproved: 'Task submitted and approved',
     taskFull: 'Task quota is full, cannot submit',
     noPermissionView: 'You do not have permission to view this submission record',
+    rejectTimesLimit: 'Task rejection limit reached, cannot be updated again',
   },
 
   withdrawal: {

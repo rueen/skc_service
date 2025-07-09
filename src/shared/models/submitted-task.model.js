@@ -130,7 +130,7 @@ async function create(submitData) {
         if (maxRejectTimes !== -1) {
           const currentRejectTimes = existingSubmits[0].reject_times || 0;
           if (currentRejectTimes > maxRejectTimes) {
-            throw new Error('该任务驳回次数已达上限，无法再次修改');
+            throw new Error('h5.task.rejectTimesLimit');
           }
         }
       };
