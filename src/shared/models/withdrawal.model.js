@@ -552,7 +552,7 @@ async function batchRejectWithdrawals(ids, rejectReason, waiterId, remark = null
       try {
         await withdrawalRefundService.refundWithdrawalBalance(
           withdrawal.bill_no, 
-          `管理员拒绝: ${rejectReason}`,
+          `${rejectReason}`,
           connection
         );
       } catch (error) {
