@@ -19,7 +19,9 @@ async function getList(req, res) {
       page = DEFAULT_PAGE, 
       pageSize = DEFAULT_PAGE_SIZE, 
       taskGroupName, 
-      taskName 
+      taskName,
+      sorterField,
+      sorterOrder 
     } = req.query;
     
     // 构建筛选条件
@@ -27,8 +29,15 @@ async function getList(req, res) {
     if (taskGroupName) filters.taskGroupName = taskGroupName;
     if (taskName) filters.taskName = taskName;
     
+    // 构建排序条件
+    const sortOptions = {};
+    if (sorterField && sorterOrder) {
+      sortOptions.field = sorterField;
+      sortOptions.order = sorterOrder;
+    }
+    
     // 获取任务组列表
-    const result = await taskGroupModel.getList(filters, page, pageSize);
+    const result = await taskGroupModel.getList(filters, page, pageSize, sortOptions);
     
     return responseUtil.success(res, result);
   } catch (error) {

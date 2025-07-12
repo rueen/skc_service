@@ -28,9 +28,12 @@ function formatTaskGroup(taskGroup) {
  * @param {Object} filters - 筛选条件
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
+ * @param {Object} sortOptions - 排序选项
+ * @param {string} sortOptions.field - 排序字段 (createTime, updateTime)
+ * @param {string} sortOptions.order - 排序方式 (ascend, descend)
  * @returns {Promise<Object>} 包含列表、总数、页码、页大小的对象
  */
-async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
+async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, sortOptions = {}) {
   try {
     let query = `
       SELECT 
@@ -80,7 +83,29 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     }
 
     // 添加分组、排序和分页
-    query += ' GROUP BY tg.id ORDER BY tg.create_time DESC LIMIT ? OFFSET ?';
+    query += ' GROUP BY tg.id';
+    
+    // 处理排序
+    if (sortOptions.field && sortOptions.order) {
+      // 字段映射
+      const fieldMap = {
+        createTime: 'tg.create_time',
+        updateTime: 'tg.update_time'
+      };
+      
+      const dbField = fieldMap[sortOptions.field];
+      const dbOrder = sortOptions.order === 'ascend' ? 'ASC' : 'DESC';
+      
+      if (dbField) {
+        query += ` ORDER BY ${dbField} ${dbOrder}`;
+      } else {
+        query += ' ORDER BY tg.create_time DESC';
+      }
+    } else {
+      query += ' ORDER BY tg.create_time DESC';
+    }
+    
+    query += ' LIMIT ? OFFSET ?';
     queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
 
     // 执行查询

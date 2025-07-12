@@ -37,7 +37,15 @@ router.get(
     query('taskName')
       .optional()
       .isString()
-      .withMessage('common.validation.mustBeString')
+      .withMessage('common.validation.mustBeString'),
+    query('sorterField')
+      .optional()
+      .isIn(['createTime', 'updateTime'])
+      .withMessage('排序字段只能是 createTime 或 updateTime'),
+    query('sorterOrder')
+      .optional()
+      .isIn(['ascend', 'descend'])
+      .withMessage('排序方式只能是 ascend 或 descend')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskGroupController.getList
