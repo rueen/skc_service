@@ -43,7 +43,15 @@ router.get(
     query('channelId')
       .optional()
       .isInt()
-      .withMessage('common.validation.mustBeInt')
+      .withMessage('common.validation.mustBeInt'),
+    query('sorterField')
+      .optional()
+      .isIn(['startTime', 'endTime', 'createTime', 'updateTime', 'reward', 'taskName'])
+      .withMessage('common.validation.invalid'),
+    query('sorterOrder')
+      .optional()
+      .isIn(['ascend', 'descend'])
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.getList

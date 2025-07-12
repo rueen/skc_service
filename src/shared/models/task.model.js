@@ -93,9 +93,10 @@ function formatDateTimeForMySQL(dateTimeString) {
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
  * @param {number} memberId - 会员ID (可选)，用于查询是否已报名
+ * @param {Object} sortOptions - 排序选项 { field: 'startTime', order: 'ascend' }
  * @returns {Promise<Object>} 包含列表、总数、页码、页大小的对象
  */
-async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberId = null) {
+async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberId = null, sortOptions = {}) {
   try {
     // 提前获取会员完成任务次数和群组信息，用于后续构建SQL查询条件
     let memberCompletedTaskCount = null;
@@ -221,7 +222,27 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     }
 
     // 添加排序和分页
-    query += ' ORDER BY t.create_time DESC LIMIT ? OFFSET ?';
+    let orderByClause = ' ORDER BY t.create_time DESC'; // 默认按创建时间倒序
+    
+    if (sortOptions.field && sortOptions.order) {
+      // 字段映射，将前端字段名映射到数据库字段名
+      const fieldMap = {
+        'startTime': 't.start_time',
+        'endTime': 't.end_time',
+        'createTime': 't.create_time',
+        'updateTime': 't.update_time',
+        'reward': 't.reward',
+        'taskName': 't.task_name'
+      };
+      
+      const dbField = fieldMap[sortOptions.field];
+      if (dbField) {
+        const direction = sortOptions.order === 'ascend' ? 'ASC' : 'DESC';
+        orderByClause = ` ORDER BY ${dbField} ${direction}`;
+      }
+    }
+    
+    query += orderByClause + ' LIMIT ? OFFSET ?';
     queryParams.push(parseInt(pageSize, 10), (parseInt(page, 10) - 1) * parseInt(pageSize, 10));
 
     // 执行查询

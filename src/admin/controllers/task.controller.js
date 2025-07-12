@@ -15,7 +15,15 @@ const i18n = require('../../shared/utils/i18n.util');
  */
 async function getList(req, res) {
   try {
-    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, taskName, taskStatus, channelId } = req.query;
+    const { 
+      page = DEFAULT_PAGE, 
+      pageSize = DEFAULT_PAGE_SIZE, 
+      taskName, 
+      taskStatus, 
+      channelId,
+      sorterField,
+      sorterOrder
+    } = req.query;
     
     // 构建筛选条件
     const filters = {};
@@ -23,8 +31,15 @@ async function getList(req, res) {
     if (taskStatus) filters.taskStatus = taskStatus;
     if (channelId) filters.channelId = parseInt(channelId, 10);
     
+    // 构建排序条件
+    const sortOptions = {};
+    if (sorterField && sorterOrder) {
+      sortOptions.field = sorterField;
+      sortOptions.order = sorterOrder;
+    }
+    
     // 获取任务列表
-    const result = await taskModel.getList(filters, page, pageSize);
+    const result = await taskModel.getList(filters, page, pageSize, null, sortOptions);
     
     return responseUtil.success(res, result);
   } catch (error) {
