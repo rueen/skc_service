@@ -180,6 +180,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(...filters.taskIds);
     }
     
+    // 按任务组ID筛选
+    if (filters.taskGroupId) {
+      conditions.push('tg.id = ?');
+      queryParams.push(filters.taskGroupId);
+    }
+    
     // 如果提供了会员ID，过滤掉已报名的任务
     if (memberId) {
       const enrolledTasksCondition = `NOT EXISTS (

@@ -77,7 +77,11 @@ router.get(
         }
         throw new Error('taskIds must be an array');
       })
-      .withMessage('common.validation.invalid')
+      .withMessage('common.validation.invalid'),
+    query('taskGroupId')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('任务组ID必须是正整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   taskController.getList

@@ -23,7 +23,8 @@ async function getList(req, res) {
       channelId,
       sorterField,
       sorterOrder,
-      taskIds
+      taskIds,
+      taskGroupId
     } = req.query;
     
     // 构建筛选条件
@@ -31,6 +32,7 @@ async function getList(req, res) {
     if (taskName) filters.taskName = taskName;
     if (taskStatus) filters.taskStatus = taskStatus;
     if (channelId) filters.channelId = parseInt(channelId, 10);
+    if (taskGroupId) filters.taskGroupId = parseInt(taskGroupId, 10);
     
     // 处理taskIds参数
     if (taskIds) {
