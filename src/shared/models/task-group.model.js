@@ -124,32 +124,14 @@ async function getDetail(id) {
     
     const taskGroup = formatTaskGroup(taskGroupRows[0]);
     
-    // 获取关联的任务列表
+    // 获取关联的任务ID列表
     const [taskRows] = await pool.query(
-      `SELECT t.*, c.name as channel_name
-       FROM tasks t
-       LEFT JOIN channels c ON t.channel_id = c.id
-       INNER JOIN task_task_groups ttg ON t.id = ttg.task_id
-       WHERE ttg.task_group_id = ?
-       ORDER BY t.create_time DESC`,
+      `SELECT task_id FROM task_task_groups WHERE task_group_id = ? ORDER BY task_id`,
       [id]
     );
     
-    // 格式化任务列表
-    const taskModel = require('./task.model');
-    taskGroup.relatedTasks = taskRows.map(task => {
-      const formattedTask = taskModel.formatTask ? taskModel.formatTask(task) : {
-        id: task.id,
-        taskName: task.task_name,
-        channelName: task.channel_name,
-        reward: parseFloat(task.reward),
-        taskStatus: task.task_status,
-        startTime: formatDateTime(task.start_time),
-        endTime: formatDateTime(task.end_time),
-        createTime: formatDateTime(task.create_time)
-      };
-      return formattedTask;
-    });
+    // 只返回任务ID数组
+    taskGroup.relatedTasks = taskRows.map(row => row.task_id);
     
     return taskGroup;
   } catch (error) {
