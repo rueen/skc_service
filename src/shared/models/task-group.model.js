@@ -86,12 +86,20 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     // 执行查询
     const [rows] = await pool.query(query, queryParams);
     
-    // 格式化结果
-    const formattedList = rows.map(row => {
+    // 格式化结果并获取关联任务ID
+    const formattedList = await Promise.all(rows.map(async (row) => {
       const formatted = formatTaskGroup(row);
       formatted.taskCount = parseInt(row.task_count || 0, 10);
+      
+      // 获取关联的任务ID列表
+      const [taskRows] = await pool.query(
+        'SELECT task_id FROM task_task_groups WHERE task_group_id = ? ORDER BY task_id',
+        [row.id]
+      );
+      formatted.relatedTasks = taskRows.map(taskRow => taskRow.task_id);
+      
       return formatted;
-    });
+    }));
     
     return {
       list: formattedList,
