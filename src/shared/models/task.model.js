@@ -65,6 +65,16 @@ function formatTask(task) {
     formattedTask.remainingQuota = Math.max(0, formattedTask.quota - task.submitted_count);
   }
   
+  // 添加任务组信息
+  if (task.task_group_id && task.task_group_name) {
+    formattedTask.taskGroup = {
+      id: task.task_group_id,
+      taskGroupName: task.task_group_name
+    };
+  } else {
+    formattedTask.taskGroup = null;
+  }
+  
   return formattedTask;
 }
 
@@ -126,12 +136,17 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 
     let query = `
       SELECT t.*, c.name as channel_name, c.icon as channel_icon,
+        tg.id as task_group_id, tg.task_group_name,
         (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND task_audit_status != "rejected" AND task_pre_audit_status != "rejected") as submitted_count
       FROM tasks t
       LEFT JOIN channels c ON t.channel_id = c.id
+      LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
+      LEFT JOIN task_groups tg ON ttg.task_group_id = tg.id
     `;
     
-    let countQuery = 'SELECT COUNT(*) as total FROM tasks t';
+    let countQuery = `SELECT COUNT(DISTINCT t.id) as total FROM tasks t
+      LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
+      LEFT JOIN task_groups tg ON ttg.task_group_id = tg.id`;
     const queryParams = [];
     const conditions = [];
 
@@ -308,9 +323,12 @@ async function getDetail(id, memberId = null) {
   try {
     const [rows] = await pool.query(
       `SELECT t.*, c.name as channel_name, c.icon as channel_icon,
+        tg.id as task_group_id, tg.task_group_name,
         (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND task_audit_status != "rejected" AND task_pre_audit_status != "rejected") as submitted_count
        FROM tasks t
        LEFT JOIN channels c ON t.channel_id = c.id
+       LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
+       LEFT JOIN task_groups tg ON ttg.task_group_id = tg.id
        WHERE t.id = ?`,
       [id]
     );
