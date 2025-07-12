@@ -13,6 +13,7 @@ const express = require('express');
 const authRoutes = require('./auth.routes');
 const memberRoutes = require('./member.routes');
 const taskRoutes = require('./task.routes');
+const taskGroupRoutes = require('./task-group.routes');
 const channelRoutes = require('./channel.routes');
 const systemConfigRoutes = require('./system-config.routes');
 const waiterRoutes = require('./waiter.routes');
@@ -38,6 +39,8 @@ router.use(`/auth`, authRoutes);
 
 // 任务管理路由
 router.use(`/tasks`, taskRoutes);
+// 任务组管理路由
+router.use(`/task-groups`, taskGroupRoutes);
 // 已提交任务
 router.use(`/submitted-tasks`, submittedTaskRoutes);
 

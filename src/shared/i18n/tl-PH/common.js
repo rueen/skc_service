@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-18 22:39:08
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-27 15:34:01
+ * @LastEditTime: 2025-07-12 17:32:42
  * @Description: 
  */
 /**
@@ -13,6 +13,7 @@ module.exports = {
   // Pangkalahatang mga mensahe ng tugon
   success: 'Tagumpay',
   failed: 'Nabigo',
+  updateSuccess: 'Tagumpay na nag-update',
   serverError: 'May error sa server, pakisubukang muli mamaya',
   badRequest: 'May mali sa parameter ng kahilingan',
   unauthorized: 'Hindi awtorisado, mangyaring mag-login muna',

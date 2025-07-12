@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:47
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-27 15:34:09
+ * @LastEditTime: 2025-07-12 17:32:31
  * @Description: 
  */
 /**
@@ -13,6 +13,7 @@ module.exports = {
   // Common response messages
   success: 'successful',
   failed: 'failed',
+  updateSuccess: 'Update successful',
   serverError: 'Server error, please try again later',
   badRequest: 'Invalid request parameters',
   unauthorized: 'Unauthorized, please login first',

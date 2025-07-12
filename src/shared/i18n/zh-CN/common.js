@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:41:38
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-27 15:33:42
+ * @LastEditTime: 2025-07-12 17:31:17
  * @Description: 
  */
 /**
@@ -13,6 +13,7 @@ module.exports = {
   // 通用响应消息
   success: '成功',
   failed: '失败',
+  updateSuccess: '更新成功',
   serverError: '服务器错误，请稍后重试',
   badRequest: '请求参数错误',
   unauthorized: '未授权，请先登录',
