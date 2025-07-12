@@ -22,7 +22,8 @@ async function getList(req, res) {
       taskStatus, 
       channelId,
       sorterField,
-      sorterOrder
+      sorterOrder,
+      taskIds
     } = req.query;
     
     // 构建筛选条件
@@ -30,6 +31,26 @@ async function getList(req, res) {
     if (taskName) filters.taskName = taskName;
     if (taskStatus) filters.taskStatus = taskStatus;
     if (channelId) filters.channelId = parseInt(channelId, 10);
+    
+    // 处理taskIds参数
+    if (taskIds) {
+      let parsedTaskIds;
+      if (typeof taskIds === 'string') {
+        try {
+          parsedTaskIds = JSON.parse(taskIds);
+        } catch (error) {
+          logger.error(`解析taskIds参数失败: ${error.message}`);
+          return responseUtil.badRequest(res, 'taskIds参数格式不正确');
+        }
+      } else if (Array.isArray(taskIds)) {
+        parsedTaskIds = taskIds;
+      }
+      
+      if (parsedTaskIds && Array.isArray(parsedTaskIds) && parsedTaskIds.length > 0) {
+        // 转换为整数数组
+        filters.taskIds = parsedTaskIds.map(id => parseInt(id, 10));
+      }
+    }
     
     // 构建排序条件
     const sortOptions = {};

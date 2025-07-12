@@ -51,6 +51,32 @@ router.get(
     query('sorterOrder')
       .optional()
       .isIn(['ascend', 'descend'])
+      .withMessage('common.validation.invalid'),
+    query('taskIds')
+      .optional()
+      .custom((value) => {
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            if (!Array.isArray(parsed)) {
+              throw new Error('taskIds must be an array');
+            }
+            if (!parsed.every(id => Number.isInteger(Number(id)) && Number(id) > 0)) {
+              throw new Error('taskIds must contain only positive integers');
+            }
+            return true;
+          } catch (error) {
+            throw new Error('taskIds must be a valid JSON array of positive integers');
+          }
+        }
+        if (Array.isArray(value)) {
+          if (!value.every(id => Number.isInteger(Number(id)) && Number(id) > 0)) {
+            throw new Error('taskIds must contain only positive integers');
+          }
+          return true;
+        }
+        throw new Error('taskIds must be an array');
+      })
       .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,

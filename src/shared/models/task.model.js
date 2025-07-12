@@ -158,6 +158,13 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.channelId);
     }
     
+    // 支持按任务ID列表筛选
+    if (filters.taskIds && Array.isArray(filters.taskIds) && filters.taskIds.length > 0) {
+      const placeholders = filters.taskIds.map(() => '?').join(', ');
+      conditions.push(`t.id IN (${placeholders})`);
+      queryParams.push(...filters.taskIds);
+    }
+    
     // 如果提供了会员ID，过滤掉已报名的任务
     if (memberId) {
       const enrolledTasksCondition = `NOT EXISTS (
