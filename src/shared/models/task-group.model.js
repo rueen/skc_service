@@ -581,6 +581,54 @@ async function getByTaskId(taskId) {
   }
 }
 
+/**
+ * 更新任务组提交状态
+ * 当会员首次提交任务组中的任务时，将任务组的提交状态更新为已提交
+ * @param {number} taskGroupId - 任务组ID
+ * @param {number} memberId - 会员ID
+ * @returns {Promise<boolean>} 更新是否成功
+ */
+async function updateSubmissionStatus(taskGroupId, memberId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // 检查会员是否已报名该任务组
+    const [enrolledRows] = await connection.query(
+      'SELECT id, submission_status FROM enrolled_task_groups WHERE task_group_id = ? AND member_id = ? FOR UPDATE',
+      [taskGroupId, memberId]
+    );
+    
+    if (enrolledRows.length === 0) {
+      throw new Error('会员未报名该任务组');
+    }
+    
+    const enrolledRecord = enrolledRows[0];
+    
+    // 如果已经是已提交状态，不需要更新
+    if (enrolledRecord.submission_status === 'submitted') {
+      await connection.commit();
+      return true;
+    }
+    
+    // 更新为已提交状态
+    await connection.query(
+      'UPDATE enrolled_task_groups SET submission_status = ? WHERE id = ?',
+      ['submitted', enrolledRecord.id]
+    );
+    
+    await connection.commit();
+    logger.info(`任务组提交状态已更新 - 任务组ID: ${taskGroupId}, 会员ID: ${memberId}`);
+    return true;
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`更新任务组提交状态失败: ${error.message}`);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   formatTaskGroup,
   getList,
@@ -590,5 +638,6 @@ module.exports = {
   update,
   remove,
   getByTaskId,
-  checkTasksInOtherGroups
+  checkTasksInOtherGroups,
+  updateSubmissionStatus
 }; 
