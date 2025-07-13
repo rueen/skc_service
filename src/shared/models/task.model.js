@@ -125,7 +125,7 @@ function formatDateTimeForMySQL(dateTimeString) {
  * @param {Object} sortOptions - 排序选项 { field: 'startTime', order: 'ascend' }
  * @returns {Promise<Object>} 包含列表、总数、页码、页大小的对象
  */
-async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberId = null, sortOptions = {}) {
+async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberId = null, sortOptions = {}, excludeEnrolledTasks = true) {
   try {
     // 提前获取会员完成任务次数和群组信息，用于后续构建SQL查询条件
     let memberCompletedTaskCount = null;
@@ -205,14 +205,17 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.taskGroupId);
     }
     
-    // 如果提供了会员ID，过滤掉已报名的任务
+    // 如果提供了会员ID，根据 excludeEnrolledTasks 参数决定是否过滤掉已报名的任务
     if (memberId) {
-      const enrolledTasksCondition = `NOT EXISTS (
-        SELECT 1 FROM enrolled_tasks et 
-        WHERE et.task_id = t.id AND et.member_id = ?
-      )`;
-      conditions.push(enrolledTasksCondition);
-      queryParams.push(memberId);
+      // 根据 excludeEnrolledTasks 参数决定是否过滤掉已报名的任务
+      if (excludeEnrolledTasks) {
+        const enrolledTasksCondition = `NOT EXISTS (
+          SELECT 1 FROM enrolled_tasks et 
+          WHERE et.task_id = t.id AND et.member_id = ?
+        )`;
+        conditions.push(enrolledTasksCondition);
+        queryParams.push(memberId);
+      }
       
       // 基于会员完成任务次数的筛选（用户范围筛选）
       if (memberCompletedTaskCount !== null) {
