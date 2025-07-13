@@ -30,6 +30,7 @@ function formatTask(task) {
   delete formattedTask.taskGroupName;
   delete formattedTask.taskGroupReward;
   delete formattedTask.relatedTasks;
+  delete formattedTask.relatedTasksRewardSum;
   
   // 安全解析 JSON 字段
   try {
@@ -73,10 +74,15 @@ function formatTask(task) {
   
   // 添加任务组信息
   if (task.task_group_id && task.task_group_name) {
+    const taskGroupReward = parseFloat(task.task_group_reward) || 0;
+    const relatedTasksRewardSum = parseFloat(task.related_tasks_reward_sum) || 0;
+    
     formattedTask.taskGroup = {
       id: task.task_group_id,
       taskGroupName: task.task_group_name,
-      taskGroupReward: parseFloat(task.task_group_reward) || 0
+      taskGroupReward: taskGroupReward,
+      relatedTasksRewardSum: relatedTasksRewardSum,
+      allReward: taskGroupReward + relatedTasksRewardSum
     };
     
     // 安全解析 related_tasks JSON 字段
@@ -158,7 +164,11 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     let query = `
       SELECT t.*, c.name as channel_name, c.icon as channel_icon,
         tg.id as task_group_id, tg.task_group_name, tg.task_group_reward, tg.related_tasks,
-        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND task_audit_status != "rejected" AND task_pre_audit_status != "rejected") as submitted_count
+        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND task_audit_status != "rejected" AND task_pre_audit_status != "rejected") as submitted_count,
+        (SELECT COALESCE(SUM(rt.reward), 0) 
+         FROM tasks rt 
+         WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+        ) as related_tasks_reward_sum
       FROM tasks t
       LEFT JOIN channels c ON t.channel_id = c.id
       LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
@@ -359,7 +369,11 @@ async function getDetail(id, memberId = null) {
     const [rows] = await pool.query(
       `SELECT t.*, c.name as channel_name, c.icon as channel_icon,
         tg.id as task_group_id, tg.task_group_name, tg.task_group_reward, tg.related_tasks,
-        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND task_audit_status != "rejected" AND task_pre_audit_status != "rejected") as submitted_count
+        (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND task_audit_status != "rejected" AND task_pre_audit_status != "rejected") as submitted_count,
+        (SELECT COALESCE(SUM(rt.reward), 0) 
+         FROM tasks rt 
+         WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+        ) as related_tasks_reward_sum
        FROM tasks t
        LEFT JOIN channels c ON t.channel_id = c.id
        LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id

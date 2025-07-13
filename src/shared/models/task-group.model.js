@@ -36,6 +36,15 @@ function formatTaskGroup(taskGroup) {
     formattedTaskGroup.relatedTasks = [];
   }
   
+  // 添加奖励相关字段
+  if (taskGroup.related_tasks_reward_sum !== undefined) {
+    const taskGroupReward = parseFloat(taskGroup.task_group_reward) || 0;
+    const relatedTasksRewardSum = parseFloat(taskGroup.related_tasks_reward_sum) || 0;
+    
+    formattedTaskGroup.relatedTasksRewardSum = relatedTasksRewardSum;
+    formattedTaskGroup.allReward = taskGroupReward + relatedTasksRewardSum;
+  }
+  
   return formattedTaskGroup;
 }
 
@@ -54,7 +63,11 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     let query = `
       SELECT tg.*,
         (SELECT COUNT(*) FROM enrolled_task_groups etg WHERE etg.task_group_id = tg.id) as enrolled_count,
-        (SELECT COUNT(*) FROM enrolled_task_groups etg WHERE etg.task_group_id = tg.id AND etg.completion_status = 'completed') as completed_count
+        (SELECT COUNT(*) FROM enrolled_task_groups etg WHERE etg.task_group_id = tg.id AND etg.completion_status = 'completed') as completed_count,
+        (SELECT COALESCE(SUM(rt.reward), 0) 
+         FROM tasks rt 
+         WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+        ) as related_tasks_reward_sum
       FROM task_groups tg
     `;
     let countQuery = 'SELECT COUNT(*) as total FROM task_groups tg';
@@ -152,9 +165,15 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
  */
 async function getDetail(id) {
   try {
-    // 获取任务组基本信息（包含 related_tasks 字段）
+    // 获取任务组基本信息，包含关联任务奖励总和
     const [taskGroupRows] = await pool.query(
-      'SELECT * FROM task_groups WHERE id = ?',
+      `SELECT tg.*,
+        (SELECT COALESCE(SUM(rt.reward), 0) 
+         FROM tasks rt 
+         WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+        ) as related_tasks_reward_sum
+       FROM task_groups tg
+       WHERE tg.id = ?`,
       [id]
     );
     
