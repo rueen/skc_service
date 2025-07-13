@@ -51,7 +51,12 @@ function formatTaskGroup(taskGroup) {
  */
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, sortOptions = {}) {
   try {
-    let query = 'SELECT tg.* FROM task_groups tg';
+    let query = `
+      SELECT tg.*,
+        (SELECT COUNT(*) FROM enrolled_task_groups etg WHERE etg.task_group_id = tg.id) as enrolled_count,
+        (SELECT COUNT(*) FROM enrolled_task_groups etg WHERE etg.task_group_id = tg.id AND etg.completion_status = 'completed') as completed_count
+      FROM task_groups tg
+    `;
     let countQuery = 'SELECT COUNT(*) as total FROM task_groups tg';
     const queryParams = [];
     const conditions = [];
@@ -122,6 +127,9 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       const formatted = formatTaskGroup(row);
       // 计算任务数量
       formatted.taskCount = formatted.relatedTasks ? formatted.relatedTasks.length : 0;
+      // 添加报名统计
+      formatted.enrolledCount = parseInt(row.enrolled_count) || 0;
+      formatted.completedCount = parseInt(row.completed_count) || 0;
       return formatted;
     });
     
