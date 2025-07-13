@@ -165,6 +165,110 @@ async function getDetail(id) {
 }
 
 /**
+ * 获取任务组已关联任务列表
+ * @param {number} id - 任务组ID
+ * @param {number} memberId - 用户ID
+ * @returns {Promise<Array>} 关联任务列表
+ */
+async function getRelatedTasks(id, memberId) {
+  try {
+    // 先获取任务组信息
+    const [taskGroupRows] = await pool.query(
+      'SELECT related_tasks FROM task_groups WHERE id = ?',
+      [id]
+    );
+    
+    if (taskGroupRows.length === 0) {
+      return null;
+    }
+    
+    // 解析 related_tasks 字段
+    let relatedTaskIds = [];
+    try {
+      if (Array.isArray(taskGroupRows[0].related_tasks)) {
+        relatedTaskIds = taskGroupRows[0].related_tasks;
+      } else if (typeof taskGroupRows[0].related_tasks === 'string' && taskGroupRows[0].related_tasks.trim()) {
+        relatedTaskIds = JSON.parse(taskGroupRows[0].related_tasks);
+      }
+    } catch (error) {
+      logger.error(`解析任务组 ${id} 的 related_tasks 失败: ${error.message}`);
+    }
+    
+    // 如果没有关联任务，返回空数组
+    if (relatedTaskIds.length === 0) {
+      return [];
+    }
+    
+    // 查询关联任务的详细信息
+    const placeholders = relatedTaskIds.map(() => '?').join(', ');
+    const query = `
+      SELECT 
+        t.id AS task_id,
+        t.task_name,
+        t.reward,
+        t.task_type,
+        t.fans_required,
+        t.unlimited_quota,
+        t.quota,
+        t.category,
+        t.start_time,
+        t.end_time,
+        c.icon AS channel_icon,
+        et.id AS enroll_id,
+        et.enroll_time,
+        st.task_pre_audit_status,
+        st.task_audit_status,
+        st.submit_time,
+        (SELECT COUNT(*) FROM submitted_tasks st2 WHERE st2.task_id = t.id AND st2.task_audit_status != 'rejected' AND st2.task_pre_audit_status != 'rejected') AS submitted_count
+      FROM tasks t
+      LEFT JOIN channels c ON t.channel_id = c.id
+      LEFT JOIN enrolled_tasks et ON t.id = et.task_id AND et.member_id = ?
+      LEFT JOIN submitted_tasks st ON t.id = st.task_id AND st.member_id = ?
+      WHERE t.id IN (${placeholders})
+      ORDER BY FIELD(t.id, ${placeholders})
+    `;
+    
+    const queryParams = [memberId, memberId, ...relatedTaskIds, ...relatedTaskIds];
+    const [taskRows] = await pool.query(query, queryParams);
+    
+    // 格式化结果
+    const formattedTasks = taskRows.map(row => {
+      // 计算剩余配额
+      let remainingQuota = null;
+      if (row.unlimited_quota === 1) {
+        remainingQuota = null; // 无限配额
+      } else {
+        remainingQuota = Math.max(0, row.quota - row.submitted_count);
+      }
+      
+      return {
+        taskId: row.task_id,
+        channelIcon: row.channel_icon,
+        taskName: row.task_name,
+        isEnrolled: !!row.enroll_id,
+        reward: row.reward,
+        taskType: row.task_type,
+        fansRequired: row.fans_required,
+        unlimitedQuota: row.unlimited_quota === 1,
+        remainingQuota: remainingQuota,
+        category: row.category,
+        startTime: formatDateTime(row.start_time),
+        endTime: formatDateTime(row.end_time),
+        enroll_id: row.enroll_id || null,
+        taskPreAuditStatus: row.task_pre_audit_status || null,
+        taskAuditStatus: row.task_audit_status || null,
+        submitTime: row.submit_time ? formatDateTime(row.submit_time) : null
+      };
+    });
+    
+    return formattedTasks;
+  } catch (error) {
+    logger.error(`获取任务组关联任务列表失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
  * 检查任务是否已属于其他任务组
  * @param {Array} taskIds - 任务ID数组
  * @param {number} excludeGroupId - 排除的任务组ID（用于更新时）
@@ -453,6 +557,7 @@ module.exports = {
   formatTaskGroup,
   getList,
   getDetail,
+  getRelatedTasks,
   create,
   update,
   remove,

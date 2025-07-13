@@ -33,4 +33,22 @@ router.get(
   taskGroupController.getDetail
 );
 
+/**
+ * @route GET /api/h5/task-groups/:id/related-tasks
+ * @desc 获取任务组已关联任务列表
+ * @access Private
+ */
+router.get(
+  '/:id/related-tasks',
+  [
+    param('id')
+      .notEmpty()
+      .withMessage('common.validation.mustNotBeEmpty')
+      .isInt({ min: 1 })
+      .withMessage('common.validation.mustBeInt')
+  ],
+  (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
+  taskGroupController.getRelatedTasks
+);
+
 module.exports = router; 
