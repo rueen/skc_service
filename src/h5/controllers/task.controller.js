@@ -74,8 +74,8 @@ async function getAllList(req, res) {
       filters.taskIds = taskIds.map(id => parseInt(id, 10));
     }
     
-    // 获取任务列表，传递memberId以检查报名状态，不过滤已报名任务
-    const result = await taskModel.getList(filters, page, pageSize, memberId, {}, false);
+    // 获取任务列表，传递memberId以检查报名状态
+    const result = await taskModel.getList(filters, page, pageSize, memberId);
     
     // 添加完整的调试日志，包括返回的任务数量
     logger.info(`所有任务列表返回 - 会员ID: ${memberId || '未登录'}, 任务数量: ${result.list.length}, 筛选条件: ${JSON.stringify(filters)}`);
