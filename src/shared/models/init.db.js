@@ -476,6 +476,7 @@ CREATE TABLE IF NOT EXISTS task_groups (
   id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '任务组ID',
   task_group_name varchar(100) NOT NULL COMMENT '任务组名称',
   task_group_reward decimal(10,2) NOT NULL COMMENT '任务组奖励金额',
+  related_tasks json DEFAULT NULL COMMENT '关联的任务ID列表，JSON数组格式',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),

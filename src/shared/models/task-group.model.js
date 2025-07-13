@@ -16,11 +16,27 @@ const { convertToCamelCase } = require('../utils/data.util');
 function formatTaskGroup(taskGroup) {
   if (!taskGroup) return null;
   
-  return convertToCamelCase({
+  const formattedTaskGroup = convertToCamelCase({
     ...taskGroup,
     createTime: formatDateTime(taskGroup.create_time),
     updateTime: formatDateTime(taskGroup.update_time),
   });
+  
+  // 安全解析 related_tasks JSON 字段
+  try {
+    if (Array.isArray(taskGroup.related_tasks)) {
+      formattedTaskGroup.relatedTasks = taskGroup.related_tasks;
+    } else if (typeof taskGroup.related_tasks === 'string' && taskGroup.related_tasks.trim()) {
+      formattedTaskGroup.relatedTasks = JSON.parse(taskGroup.related_tasks);
+    } else {
+      formattedTaskGroup.relatedTasks = [];
+    }
+  } catch (error) {
+    logger.error(`解析 related_tasks 失败: ${error.message}, 原始值: ${taskGroup.related_tasks}`);
+    formattedTaskGroup.relatedTasks = [];
+  }
+  
+  return formattedTaskGroup;
 }
 
 /**
@@ -35,15 +51,8 @@ function formatTaskGroup(taskGroup) {
  */
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, sortOptions = {}) {
   try {
-    let query = `
-      SELECT 
-        tg.*,
-        COUNT(ttg.task_id) as task_count
-      FROM task_groups tg
-      LEFT JOIN task_task_groups ttg ON tg.id = ttg.task_group_id
-    `;
-    
-    let countQuery = 'SELECT COUNT(DISTINCT tg.id) as total FROM task_groups tg';
+    let query = 'SELECT tg.* FROM task_groups tg';
+    let countQuery = 'SELECT COUNT(*) as total FROM task_groups tg';
     const queryParams = [];
     const conditions = [];
 
@@ -53,10 +62,10 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(`%${filters.taskGroupName}%`);
     }
     
-    // 按任务名称筛选
+    // 按任务名称筛选 - 需要在 JSON 字段中搜索
     if (filters.taskName) {
-      query += ' LEFT JOIN tasks t ON ttg.task_id = t.id';
-      countQuery += ' LEFT JOIN task_task_groups ttg2 ON tg.id = ttg2.task_group_id LEFT JOIN tasks t2 ON ttg2.task_id = t2.id';
+      query += ' LEFT JOIN tasks t ON JSON_CONTAINS(tg.related_tasks, CAST(t.id AS JSON))';
+      countQuery += ' LEFT JOIN tasks t ON JSON_CONTAINS(tg.related_tasks, CAST(t.id AS JSON))';
       conditions.push('t.task_name LIKE ?');
       queryParams.push(`%${filters.taskName}%`);
     }
@@ -65,7 +74,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     if (conditions.length > 0) {
       const whereClause = ' WHERE ' + conditions.join(' AND ');
       query += whereClause;
-      countQuery += whereClause.replace(/t\./g, 't2.');
+      countQuery += whereClause;
     }
 
     // 获取总数
@@ -82,9 +91,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       };
     }
 
-    // 添加分组、排序和分页
-    query += ' GROUP BY tg.id';
-    
     // 处理排序
     if (sortOptions.field && sortOptions.order) {
       // 字段映射
@@ -111,20 +117,13 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     // 执行查询
     const [rows] = await pool.query(query, queryParams);
     
-    // 格式化结果并获取关联任务ID
-    const formattedList = await Promise.all(rows.map(async (row) => {
+    // 格式化结果
+    const formattedList = rows.map((row) => {
       const formatted = formatTaskGroup(row);
-      formatted.taskCount = parseInt(row.task_count || 0, 10);
-      
-      // 获取关联的任务ID列表
-      const [taskRows] = await pool.query(
-        'SELECT task_id FROM task_task_groups WHERE task_group_id = ? ORDER BY task_id',
-        [row.id]
-      );
-      formatted.relatedTasks = taskRows.map(taskRow => taskRow.task_id);
-      
+      // 计算任务数量
+      formatted.taskCount = formatted.relatedTasks ? formatted.relatedTasks.length : 0;
       return formatted;
-    }));
+    });
     
     return {
       list: formattedList,
@@ -145,7 +144,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
  */
 async function getDetail(id) {
   try {
-    // 获取任务组基本信息
+    // 获取任务组基本信息（包含 related_tasks 字段）
     const [taskGroupRows] = await pool.query(
       'SELECT * FROM task_groups WHERE id = ?',
       [id]
@@ -155,16 +154,8 @@ async function getDetail(id) {
       return null;
     }
     
+    // 格式化任务组信息（formatTaskGroup 会处理 related_tasks 字段）
     const taskGroup = formatTaskGroup(taskGroupRows[0]);
-    
-    // 获取关联的任务ID列表
-    const [taskRows] = await pool.query(
-      `SELECT task_id FROM task_task_groups WHERE task_group_id = ? ORDER BY task_id`,
-      [id]
-    );
-    
-    // 只返回任务ID数组
-    taskGroup.relatedTasks = taskRows.map(row => row.task_id);
     
     return taskGroup;
   } catch (error) {
@@ -185,17 +176,37 @@ async function checkTasksInOtherGroups(taskIds, excludeGroupId = null) {
       return [];
     }
     
-    const placeholders = taskIds.map(() => '?').join(', ');
-    let query = `SELECT task_id FROM task_task_groups WHERE task_id IN (${placeholders})`;
-    const params = [...taskIds];
+    let query = 'SELECT id, related_tasks FROM task_groups WHERE related_tasks IS NOT NULL';
+    const params = [];
     
     if (excludeGroupId) {
-      query += ' AND task_group_id != ?';
+      query += ' AND id != ?';
       params.push(excludeGroupId);
     }
     
     const [rows] = await pool.query(query, params);
-    return rows.map(row => row.task_id);
+    
+    const occupiedTasks = [];
+    
+    for (const row of rows) {
+      try {
+        let relatedTasks = [];
+        if (Array.isArray(row.related_tasks)) {
+          relatedTasks = row.related_tasks;
+        } else if (typeof row.related_tasks === 'string' && row.related_tasks.trim()) {
+          relatedTasks = JSON.parse(row.related_tasks);
+        }
+        
+        // 检查是否有重叠的任务ID
+        const overlaps = taskIds.filter(taskId => relatedTasks.includes(taskId));
+        occupiedTasks.push(...overlaps);
+      } catch (error) {
+        logger.error(`解析任务组 ${row.id} 的 related_tasks 失败: ${error.message}`);
+      }
+    }
+    
+    // 去重并返回
+    return [...new Set(occupiedTasks)];
   } catch (error) {
     logger.error(`检查任务占用状态失败: ${error.message}`);
     throw error;
@@ -245,15 +256,18 @@ async function create(taskGroupData) {
       }
     }
     
-    // 创建任务组
+    // 序列化关联任务为 JSON
+    const relatedTasksJson = JSON.stringify(relatedTasks);
+    
+    // 创建任务组（包含 related_tasks 字段）
     const [result] = await connection.query(
-      'INSERT INTO task_groups (task_group_name, task_group_reward) VALUES (?, ?)',
-      [taskGroupName, taskGroupReward]
+      'INSERT INTO task_groups (task_group_name, task_group_reward, related_tasks) VALUES (?, ?, ?)',
+      [taskGroupName, taskGroupReward, relatedTasksJson]
     );
     
     const taskGroupId = result.insertId;
     
-    // 创建任务关联
+    // 同时在关联表中创建记录（保持兼容性）
     if (relatedTasks.length > 0) {
       const associations = relatedTasks.map(taskId => [taskId, taskGroupId]);
       await connection.query(
@@ -329,10 +343,13 @@ async function update(id, taskGroupData) {
       }
     }
     
-    // 更新任务组基本信息
+    // 序列化关联任务为 JSON
+    const relatedTasksJson = JSON.stringify(relatedTasks);
+    
+    // 更新任务组基本信息（包含 related_tasks 字段）
     await connection.query(
-      'UPDATE task_groups SET task_group_name = ?, task_group_reward = ? WHERE id = ?',
-      [taskGroupName, taskGroupReward, id]
+      'UPDATE task_groups SET task_group_name = ?, task_group_reward = ?, related_tasks = ? WHERE id = ?',
+      [taskGroupName, taskGroupReward, relatedTasksJson, id]
     );
     
     // 删除原有的任务关联
@@ -341,7 +358,7 @@ async function update(id, taskGroupData) {
       [id]
     );
     
-    // 创建新的任务关联
+    // 创建新的任务关联（保持兼容性）
     if (relatedTasks.length > 0) {
       const associations = relatedTasks.map(taskId => [taskId, id]);
       await connection.query(
