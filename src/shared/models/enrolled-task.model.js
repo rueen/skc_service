@@ -92,6 +92,54 @@ async function create(enrollData) {
       throw new Error('已经报名过该任务');
     }
     
+    // 检查任务组顺序逻辑
+    const [taskGroupRows] = await connection.query(
+      'SELECT task_group_id FROM task_task_groups WHERE task_id = ?',
+      [enrollData.taskId]
+    );
+    
+    let taskGroupId = null;
+    if (taskGroupRows.length > 0) {
+      taskGroupId = taskGroupRows[0].task_group_id;
+      
+      // 获取任务组信息
+      const [taskGroupInfo] = await connection.query(
+        'SELECT related_tasks FROM task_groups WHERE id = ?',
+        [taskGroupId]
+      );
+      
+      if (taskGroupInfo.length > 0 && taskGroupInfo[0].related_tasks) {
+        let relatedTasks = [];
+        try {
+          if (Array.isArray(taskGroupInfo[0].related_tasks)) {
+            relatedTasks = taskGroupInfo[0].related_tasks;
+          } else if (typeof taskGroupInfo[0].related_tasks === 'string') {
+            relatedTasks = JSON.parse(taskGroupInfo[0].related_tasks);
+          }
+        } catch (error) {
+          logger.error(`解析任务组related_tasks失败: ${error.message}`);
+          relatedTasks = [];
+        }
+        
+        // 检查当前任务在任务组中的位置
+        const currentTaskIndex = relatedTasks.indexOf(enrollData.taskId);
+        if (currentTaskIndex > 0) {
+          // 不是第一个任务，需要检查前一个任务是否已完成
+          const previousTaskId = relatedTasks[currentTaskIndex - 1];
+          
+          // 检查前一个任务是否已完成
+          const [previousTaskStatus] = await connection.query(
+            'SELECT task_audit_status FROM submitted_tasks WHERE task_id = ? AND member_id = ? AND task_audit_status = ?',
+            [previousTaskId, enrollData.memberId, 'approved']
+          );
+          
+          if (previousTaskStatus.length === 0) {
+            throw new Error('请先完成任务组中的前置任务');
+          }
+        }
+      }
+    }
+    
     // 检查会员是否符合任务完成次数要求
     if (tasks[0].user_range === 1) {
       // 获取会员完成任务次数
@@ -157,6 +205,23 @@ async function create(enrollData) {
       'INSERT INTO enrolled_tasks (task_id, member_id, related_group_id) VALUES (?, ?, ?)',
       [enrollData.taskId, enrollData.memberId, relatedGroupId]
     );
+    
+    // 如果任务属于任务组，需要在enrolled_task_groups表中记录
+    if (taskGroupId) {
+      // 检查是否已经报名过该任务组
+      const [existingTaskGroupEnroll] = await connection.query(
+        'SELECT id FROM enrolled_task_groups WHERE task_group_id = ? AND member_id = ?',
+        [taskGroupId, enrollData.memberId]
+      );
+      
+      // 如果没有报名过该任务组，则插入记录
+      if (existingTaskGroupEnroll.length === 0) {
+        await connection.query(
+          'INSERT INTO enrolled_task_groups (task_group_id, member_id) VALUES (?, ?)',
+          [taskGroupId, enrollData.memberId]
+        );
+      }
+    }
     
     await connection.commit();
     

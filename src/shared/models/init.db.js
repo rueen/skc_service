@@ -500,6 +500,22 @@ CREATE TABLE IF NOT EXISTS task_task_groups (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务-任务组关联表';
 `;
 
+// 创建已报名任务组表
+const createEnrolledTaskGroupsTable = `
+CREATE TABLE IF NOT EXISTS enrolled_task_groups (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+  task_group_id bigint(20) NOT NULL COMMENT '任务组ID',
+  member_id bigint(20) NOT NULL COMMENT '会员ID',
+  enroll_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '报名时间',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_member_task_group (member_id, task_group_id),
+  KEY idx_task_group_id (task_group_id),
+  KEY idx_member_id (member_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='已报名任务组表';
+`;
+
 // 执行所有SQL语句创建表
 async function initTables() {
   const connection = await pool.getConnection();
@@ -532,6 +548,7 @@ async function initTables() {
     await connection.query(createPaymentTransactionsTable);
     await connection.query(createTaskGroupsTable);
     await connection.query(createTaskTaskGroupsTable);
+    await connection.query(createEnrolledTaskGroupsTable);
     
     // 初始化管理员账号
     await connection.query(initAdminUser);
