@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-29 18:13:07
+ * @LastEditTime: 2025-07-13 15:11:56
  * @Description: 
  */
 /**
@@ -50,6 +50,44 @@ async function getList(req, res) {
 }
 
 /**
+ * 获取所有任务列表（不筛选状态）
+ * 支持 taskIds 数组格式参数：taskIds[]=1&taskIds[]=2&taskIds[]=3
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ */
+async function getAllList(req, res) {
+  try {
+    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, channelId, category, taskIds } = req.query;
+    const memberId = req.user ? req.user.id : null;
+    
+    // 添加调试日志，记录用户状态
+    logger.info(`获取所有任务列表API - 是否有用户: ${req.user ? '是' : '否'}, 会员ID: ${memberId || '未登录'}`);
+    
+    // 构建筛选条件（不筛选状态）
+    const filters = {};
+    
+    if (channelId) filters.channelId = parseInt(channelId, 10);
+    if (category) filters.category = category;
+    
+    // 处理taskIds参数 (数组格式)
+    if (taskIds && Array.isArray(taskIds) && taskIds.length > 0) {
+      filters.taskIds = taskIds.map(id => parseInt(id, 10));
+    }
+    
+    // 获取任务列表，传递memberId以检查报名状态
+    const result = await taskModel.getList(filters, page, pageSize, memberId);
+    
+    // 添加完整的调试日志，包括返回的任务数量
+    logger.info(`所有任务列表返回 - 会员ID: ${memberId || '未登录'}, 任务数量: ${result.list.length}, 筛选条件: ${JSON.stringify(filters)}`);
+    
+    return responseUtil.success(res, result);
+  } catch (error) {
+    logger.error(`获取所有任务列表失败: ${error.message}`);
+    return responseUtil.serverError(res);
+  }
+}
+
+/**
  * 获取任务详情
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
@@ -86,5 +124,6 @@ async function getDetail(req, res) {
 
 module.exports = {
   getList,
+  getAllList,
   getDetail
 }; 
