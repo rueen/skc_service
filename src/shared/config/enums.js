@@ -182,6 +182,7 @@ const WithdrawalStatusLang = {
 const BillType = {
   WITHDRAWAL: 'withdrawal',      // 提现
   TASK_REWARD: 'task_reward',    // 任务奖励
+  TASK_GROUP_REWARD: 'task_group_reward',  // 任务组奖励
   INVITE_REWARD: 'invite_reward', // 邀请奖励
   GROUP_OWNER_COMMISSION: 'group_owner_commission',   // 群主收益
   REWARD_GRANT: 'reward_grant',   // 奖励发放
@@ -200,6 +201,12 @@ const BillTypeLang = {
     'en-US': 'Task Reward',
     'zh-TW': '任務獎勵',
     'tl-PH': 'Gantimpala sa Gawain'
+  },
+  [BillType.TASK_GROUP_REWARD]: {
+    'zh-CN': '任务组奖励',
+    'en-US': 'Task Group Reward',
+    'zh-TW': '任務組獎勵',
+    'tl-PH': 'Gantimpala sa Grupo ng Gawain'
   },
   [BillType.INVITE_REWARD]: {
     'zh-CN': '邀请奖励',

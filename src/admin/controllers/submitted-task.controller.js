@@ -164,9 +164,55 @@ async function batchApproveSubmissions(req, res) {
       return responseUtil.badRequest(res, i18n.t('admin.submittedTask.noTasks', req.lang));
     }
 
+    // 检查并发放任务组奖励
+    const taskGroupRewardService = require('../../shared/services/task-group-reward.service');
+    const taskGroupRewardResults = [];
+    
+    // 获取审核通过的任务详情
+    const { pool } = require('../../shared/models/db');
+    const [approvedTasks] = await pool.query(
+      'SELECT task_id, member_id FROM submitted_tasks WHERE id IN (?) AND task_audit_status = ?',
+      [ids, 'approved']
+    );
+    
+    // 为每个审核通过的任务检查是否需要发放任务组奖励
+    for (const task of approvedTasks) {
+      try {
+        const rewardGranted = await taskGroupRewardService.checkAndGrantTaskGroupReward(
+          task.task_id, 
+          task.member_id
+        );
+        
+        if (rewardGranted) {
+          taskGroupRewardResults.push({
+            taskId: task.task_id,
+            memberId: task.member_id,
+            rewardGranted: true
+          });
+        }
+      } catch (error) {
+        logger.error(`检查任务组奖励失败 - 任务ID: ${task.task_id}, 会员ID: ${task.member_id}, 错误: ${error.message}`);
+        taskGroupRewardResults.push({
+          taskId: task.task_id,
+          memberId: task.member_id,
+          rewardGranted: false,
+          error: error.message
+        });
+      }
+    }
+    
+    // 记录任务组奖励发放结果
+    if (taskGroupRewardResults.length > 0) {
+      const grantedCount = taskGroupRewardResults.filter(r => r.rewardGranted).length;
+      logger.info(`任务组奖励发放完成 - 总任务数: ${approvedTasks.length}, 发放奖励数: ${grantedCount}`);
+    }
+
     return responseUtil.success(
       res, 
-      { updatedCount: result.updatedCount },
+      { 
+        updatedCount: result.updatedCount,
+        taskGroupRewardResults: taskGroupRewardResults
+      },
       i18n.t('admin.submittedTask.approveSuccess', req.lang, {
         updatedCount: result.updatedCount
       })
