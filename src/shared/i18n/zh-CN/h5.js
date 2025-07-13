@@ -64,6 +64,10 @@ module.exports = {
     rejectTimesLimit: '该任务驳回次数已达上限，无法再次修改',
   },
 
+  taskGroup: {
+    notFound: '任务组不存在',
+  },
+
   withdrawal: {
     notFound: '提现账户不存在',
     noPermissionUpdate: '没有权限修改此提现账户',

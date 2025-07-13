@@ -64,6 +64,10 @@ module.exports = {
     rejectTimesLimit: 'Ang gawain ay hindi maaaring i-update dahil ang pag-reject ay nahahati sa {maxRejectTimes} beses',
   },
 
+  taskGroup: {
+    notFound: 'Hindi mahanap ang task group',
+  },
+
   withdrawal: {
     notFound: 'Hindi mahanap ang withdrawal account',
     noPermissionUpdate: 'Walang pahintulot na baguhin ang withdrawal account na ito',

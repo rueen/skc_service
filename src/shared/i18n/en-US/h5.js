@@ -64,6 +64,10 @@ module.exports = {
     rejectTimesLimit: 'Task rejection limit reached, cannot be updated again',
   },
 
+  taskGroup: {
+    notFound: 'Task group not found',
+  },
+
   withdrawal: {
     notFound: 'Withdrawal account not found',
     noPermissionUpdate: 'You do not have permission to update this withdrawal account',

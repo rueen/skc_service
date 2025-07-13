@@ -21,6 +21,7 @@ const inviteRoutes = require('./invite.routes');
 const groupRoutes = require('./group.routes');
 const withdrawalRoutes = require('./withdrawal.routes');
 const taskSubmitRoutes = require('./task-submit.routes');
+const taskGroupRoutes = require('./task-group.routes');
 const notificationRoutes = require('./notification.routes');
 const systemConfigRoutes = require('./system-config.routes');
 const paymentChannelRoutes = require('./payment-channel.routes');
@@ -44,6 +45,9 @@ router.use('/tasks', taskRoutes);
 
 // 任务提交相关路由
 router.use('/task-submit', taskSubmitRoutes);
+
+// 任务组相关路由
+router.use('/task-groups', taskGroupRoutes);
 
 // 任务报名相关路由
 router.use('/task-enroll', taskEnrollRoutes);

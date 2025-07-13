@@ -64,6 +64,10 @@ module.exports = {
     rejectTimesLimit: '該任務駁回次數已達上限，無法再次修改',
   },
 
+  taskGroup: {
+    notFound: '任務組不存在',
+  },
+
   withdrawal: {
     notFound: '提現賬戶不存在',
     noPermissionUpdate: '沒有權限修改此提現賬戶',
