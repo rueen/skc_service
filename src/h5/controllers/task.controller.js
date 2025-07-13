@@ -30,7 +30,8 @@ async function getList(req, res) {
     
     // 构建筛选条件
     const filters = {
-      taskStatusIn: ['not_started', 'processing'] // 显示未开始和进行中的任务
+      taskStatusIn: ['not_started', 'processing'], // 显示未开始和进行中的任务
+      applyTaskGroupFilter: true // H5端启用任务组过滤，只显示任务组的首位任务
     };
     
     if (channelId) filters.channelId = parseInt(channelId, 10);

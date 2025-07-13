@@ -205,6 +205,14 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.taskGroupId);
     }
     
+    // H5端任务组过滤：只显示不属于任务组的任务，或者属于任务组且是首位任务的任务
+    if (filters.applyTaskGroupFilter) {
+      conditions.push(`(
+        ttg.task_id IS NULL OR 
+        (ttg.task_id IS NOT NULL AND JSON_EXTRACT(tg.related_tasks, '$[0]') = t.id)
+      )`);
+    }
+    
     // 如果提供了会员ID，过滤掉已报名的任务
     if (memberId) {
       const enrolledTasksCondition = `NOT EXISTS (
