@@ -246,6 +246,7 @@ async function getRelatedTasks(id, memberId) {
         channelIcon: row.channel_icon,
         taskName: row.task_name,
         isEnrolled: !!row.enroll_id,
+        isSubmited: !!row.submit_time,
         reward: row.reward,
         taskType: row.task_type,
         fansRequired: row.fans_required,
@@ -254,7 +255,7 @@ async function getRelatedTasks(id, memberId) {
         category: row.category,
         startTime: formatDateTime(row.start_time),
         endTime: formatDateTime(row.end_time),
-        enroll_id: row.enroll_id || null,
+        enrollId: row.enroll_id || null,
         taskPreAuditStatus: row.task_pre_audit_status || null,
         taskAuditStatus: row.task_audit_status || null,
         submitTime: row.submit_time ? formatDateTime(row.submit_time) : null
