@@ -53,6 +53,8 @@ module.exports = {
     memberNotFound: '会员不存在',
     alreadyEnrolled: '已经报名过该任务',
     notMeetEnrollCondition: '不满足报名条件',
+    needAddAccount: '请先添加对应渠道的账号',
+    accountNotApproved: '您在该渠道的账号尚未通过审核，请等待审核通过后再报名',
     submitSuccess: '任务提交成功',
     resubmitSuccess: '任务重新提交成功',
     onlySubmitActiveTask: '只能提交进行中的任务',

@@ -53,6 +53,8 @@ module.exports = {
     memberNotFound: 'Hindi mahanap ang miyembro',
     alreadyEnrolled: 'Naka-enroll ka na sa gawaing ito',
     notMeetEnrollCondition: 'Hindi nakakatugon sa mga kondisyon para sa pag-enroll',
+    needAddAccount: 'Mangyaring magdagdag muna ng account sa kaukulang channel',
+    accountNotApproved: 'Ang inyong account sa channel na ito ay hindi pa naaprubahan, maghintay para sa pag-apruba bago mag-enroll',
     submitSuccess: 'Matagumpay na naisumite ang gawain',
     resubmitSuccess: 'Matagumpay na naisumite muli ang gawain',
     onlySubmitActiveTask: 'Maaari lamang magsumite ng mga aktibong gawain',

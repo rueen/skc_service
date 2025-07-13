@@ -44,7 +44,7 @@ async function create(enrollData) {
     
     // 验证任务是否存在且状态为进行中
     const [tasks] = await connection.query(
-      'SELECT id, task_status, user_range, task_count, group_mode, group_ids FROM tasks WHERE id = ?',
+      'SELECT id, task_status, user_range, task_count, group_mode, group_ids, channel_id FROM tasks WHERE id = ?',
       [enrollData.taskId]
     );
     
@@ -64,6 +64,22 @@ async function create(enrollData) {
     
     if (members.length === 0) {
       throw new Error('会员不存在');
+    }
+    
+    // 检查用户是否有对应渠道的账号
+    const [userAccounts] = await connection.query(
+      'SELECT id, account_audit_status FROM accounts WHERE member_id = ? AND channel_id = ?',
+      [enrollData.memberId, tasks[0].channel_id]
+    );
+    
+    if (userAccounts.length === 0) {
+      throw new Error('请先添加对应渠道的账号');
+    }
+    
+    // 检查账号是否已通过审核
+    const approvedAccount = userAccounts.find(account => account.account_audit_status === 'approved');
+    if (!approvedAccount) {
+      throw new Error('您在该渠道的账号尚未通过审核，请等待审核通过后再报名');
     }
     
     // 检查是否已经报名过

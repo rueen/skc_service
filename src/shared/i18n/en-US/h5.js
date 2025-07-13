@@ -53,6 +53,8 @@ module.exports = {
     memberNotFound: 'Member not found',
     alreadyEnrolled: 'You have already enrolled for this task',
     notMeetEnrollCondition: 'Does not meet the enrollment conditions',
+    needAddAccount: 'Please add an account for the corresponding channel first',
+    accountNotApproved: 'Your account for this channel has not been approved yet, please wait for approval before enrolling',
     submitSuccess: 'Task submitted successfully',
     resubmitSuccess: 'Task resubmitted successfully',
     onlySubmitActiveTask: 'Only active tasks can be submitted',

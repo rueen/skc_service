@@ -61,6 +61,12 @@ async function enrollTask(req, res) {
     if (error.message.includes('该任务限')) {
       return responseUtil.badRequest(res, i18n.t('h5.task.notMeetEnrollCondition', req.lang));
     }
+    if (error.message === '请先添加对应渠道的账号') {
+      return responseUtil.badRequest(res, i18n.t('h5.task.needAddAccount', req.lang));
+    }
+    if (error.message === '您在该渠道的账号尚未通过审核，请等待审核通过后再报名') {
+      return responseUtil.badRequest(res, i18n.t('h5.task.accountNotApproved', req.lang));
+    }
     
     return responseUtil.serverError(res);
   }
