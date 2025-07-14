@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-07-13 19:28:55
+ * @LastEditTime: 2025-07-14 11:44:17
  * @Description: 
  */
 /**
@@ -89,7 +89,11 @@ router.get(
     query('keyword')
       .optional()
       .isString()
-      .withMessage('common.validation.mustBeString')
+      .withMessage('common.validation.mustBeString'),
+    query('taskGroupId')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('任务组ID必须是正整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:confirmAudit'),
@@ -163,7 +167,11 @@ router.get(
     query('keyword')
       .optional()
       .isString()
-      .withMessage('common.validation.mustBeString')
+      .withMessage('common.validation.mustBeString'),
+    query('taskGroupId')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('任务组ID必须是正整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:confirmAudit'),
