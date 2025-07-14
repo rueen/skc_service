@@ -27,6 +27,44 @@ function formatSubmittedTask(submittedTask) {
     startTime: formatDateTime(submittedTask.start_time),
     endTime: formatDateTime(submittedTask.end_time)
   });
+  
+  // 移除重复的任务组字段，因为我们将使用 taskGroup 对象
+  delete formattedSubmittedTask.taskGroupId;
+  delete formattedSubmittedTask.taskGroupName;
+  delete formattedSubmittedTask.taskGroupReward;
+  delete formattedSubmittedTask.relatedTasks;
+  delete formattedSubmittedTask.relatedTasksRewardSum;
+  
+  // 添加任务组信息
+  if (submittedTask.task_group_id && submittedTask.task_group_name) {
+    const taskGroupReward = parseFloat(submittedTask.task_group_reward) || 0;
+    const relatedTasksRewardSum = parseFloat(submittedTask.related_tasks_reward_sum) || 0;
+    
+    formattedSubmittedTask.taskGroup = {
+      id: submittedTask.task_group_id,
+      taskGroupName: submittedTask.task_group_name,
+      taskGroupReward: taskGroupReward,
+      relatedTasksRewardSum: relatedTasksRewardSum,
+      allReward: taskGroupReward + relatedTasksRewardSum
+    };
+    
+    // 安全解析 related_tasks JSON 字段
+    try {
+      if (Array.isArray(submittedTask.related_tasks)) {
+        formattedSubmittedTask.taskGroup.relatedTasks = submittedTask.related_tasks;
+      } else if (typeof submittedTask.related_tasks === 'string' && submittedTask.related_tasks.trim()) {
+        formattedSubmittedTask.taskGroup.relatedTasks = JSON.parse(submittedTask.related_tasks);
+      } else {
+        formattedSubmittedTask.taskGroup.relatedTasks = [];
+      }
+    } catch (error) {
+      logger.error(`解析任务组 related_tasks 失败: ${error.message}, 原始值: ${submittedTask.related_tasks}`);
+      formattedSubmittedTask.taskGroup.relatedTasks = [];
+    }
+  } else {
+    formattedSubmittedTask.taskGroup = null;
+  }
+  
   return formattedSubmittedTask;
 }
 
@@ -1121,13 +1159,23 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
         c.name AS channel_name,
         c.icon AS channel_icon,
         pre_w.username AS pre_waiter_name,
-        w.username AS waiter_name
+        w.username AS waiter_name,
+        tg.id as task_group_id,
+        tg.task_group_name,
+        tg.task_group_reward,
+        tg.related_tasks,
+        (SELECT COALESCE(SUM(rt.reward), 0) 
+         FROM tasks rt 
+         WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+        ) as related_tasks_reward_sum
       FROM 
         submitted_tasks st
         JOIN tasks t ON st.task_id = t.id
         LEFT JOIN channels c ON t.channel_id = c.id
         LEFT JOIN waiters pre_w ON st.pre_waiter_id = pre_w.id
         LEFT JOIN waiters w ON st.waiter_id = w.id
+        LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
+        LEFT JOIN task_groups tg ON ttg.task_group_id = tg.id
       WHERE ${whereClause}
       ORDER BY st.submit_time DESC
     `;
