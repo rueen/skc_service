@@ -27,6 +27,9 @@ function formatEnrolledTask(enrolledTask) {
     endTime: formatDateTime(enrolledTask.end_time),
   });
   
+  // 独立任务没有任务组信息
+  formattedEnrolledTask.taskGroup = null;
+  
   return formattedEnrolledTask;
 }
 
@@ -263,6 +266,7 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
       FROM enrolled_tasks et
       LEFT JOIN tasks t ON et.task_id = t.id
       LEFT JOIN channels c ON t.channel_id = c.id
+      LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
     `;
     
     // 如果需要排除已提交的任务，添加LEFT JOIN到submitted_tasks表
@@ -272,9 +276,9 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
       `;
     }
     
-    query += ' WHERE 1=1';
+    query += ' WHERE ttg.task_id IS NULL';
     
-    let countQuery = 'SELECT COUNT(*) as total FROM enrolled_tasks et';
+    let countQuery = 'SELECT COUNT(*) as total FROM enrolled_tasks et LEFT JOIN tasks t ON et.task_id = t.id LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id';
     
     // 如果需要排除已提交的任务，添加LEFT JOIN到submitted_tasks表
     if (filters.excludeSubmitted) {
@@ -283,7 +287,7 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
       `;
     }
     
-    countQuery += ' WHERE 1=1';
+    countQuery += ' WHERE ttg.task_id IS NULL';
     
     const queryParams = [];
     
@@ -319,9 +323,66 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
     // 使用 formatEnrolledTask 方法格式化每一行数据
     const formattedList = rows.map(row => formatEnrolledTask(row));
     
+    // 查询已报名的任务组（未完成且未提交）
+    let taskGroups = [];
+    if (filters.memberId) {
+      const taskGroupQuery = `
+        SELECT 
+          etg.*,
+          tg.task_group_name,
+          tg.task_group_reward,
+          tg.related_tasks,
+          (SELECT COALESCE(SUM(rt.reward), 0) 
+           FROM tasks rt 
+           WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+          ) as related_tasks_reward_sum
+        FROM enrolled_task_groups etg
+        LEFT JOIN task_groups tg ON etg.task_group_id = tg.id
+        WHERE etg.member_id = ? 
+        AND etg.completion_status = 'incomplete' 
+        AND etg.submit_status = 'not_submitted'
+        ORDER BY etg.enroll_time DESC
+      `;
+      
+      const [taskGroupRows] = await pool.query(taskGroupQuery, [filters.memberId]);
+      
+      // 格式化任务组数据
+      taskGroups = taskGroupRows.map(row => {
+        const formattedTaskGroup = convertToCamelCase({
+          ...row,
+          enrollTime: formatDateTime(row.enroll_time),
+          createTime: formatDateTime(row.create_time),
+          updateTime: formatDateTime(row.update_time)
+        });
+        
+        // 计算总奖励
+        const taskGroupReward = parseFloat(row.task_group_reward) || 0;
+        const relatedTasksRewardSum = parseFloat(row.related_tasks_reward_sum) || 0;
+        formattedTaskGroup.allReward = taskGroupReward + relatedTasksRewardSum;
+        formattedTaskGroup.relatedTasksRewardSum = relatedTasksRewardSum;
+        
+        // 安全解析 related_tasks JSON 字段
+        try {
+          if (Array.isArray(row.related_tasks)) {
+            formattedTaskGroup.relatedTasks = row.related_tasks;
+          } else if (typeof row.related_tasks === 'string' && row.related_tasks.trim()) {
+            formattedTaskGroup.relatedTasks = JSON.parse(row.related_tasks);
+          } else {
+            formattedTaskGroup.relatedTasks = [];
+          }
+        } catch (error) {
+          logger.error(`解析任务组 related_tasks 失败: ${error.message}, 原始值: ${row.related_tasks}`);
+          formattedTaskGroup.relatedTasks = [];
+        }
+        
+        return formattedTaskGroup;
+      });
+    }
+    
     return {
       total,
       list: formattedList,
+      taskGroups: taskGroups,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
     };
