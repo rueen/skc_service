@@ -176,20 +176,6 @@ async function create(submitData) {
       [submitData.taskId, submitData.memberId, JSON.stringify(submitData.submitContent), relatedGroupId]
     );
     
-    // 检查任务是否属于任务组，如果是则更新任务组提交状态
-    try {
-      const taskGroupModel = require('./task-group.model');
-      const taskGroup = await taskGroupModel.getByTaskId(submitData.taskId);
-      
-      if (taskGroup) {
-        await taskGroupModel.updateSubmissionStatus(taskGroup.id, submitData.memberId);
-        // logger.info(`任务组提交状态已更新 - 任务ID: ${submitData.taskId}, 任务组ID: ${taskGroup.id}, 会员ID: ${submitData.memberId}`);
-      }
-    } catch (error) {
-      logger.error(`更新任务组提交状态失败: ${error.message}`);
-      // 不影响任务提交的主要流程，只记录错误
-    }
-    
     await connection.commit();
     
     return { id: result.insertId, isResubmit: false, relatedGroupId };
