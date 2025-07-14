@@ -335,6 +335,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(`%${filters.keyword}%`, `%${filters.keyword}%`);
     }
     
+    // 添加任务组ID筛选
+    if (filters.taskGroupId) {
+      whereClause += ' AND tg.id = ?';
+      queryParams.push(filters.taskGroupId);
+    }
+    
     // 添加已完成任务次数筛选条件
     let completedTaskWhere = '';
     if (filters.completedTaskCount) {
@@ -368,6 +374,14 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         m.is_new,
         pre_w.username AS pre_waiter_name,
         w.username AS waiter_name,
+        tg.id as task_group_id,
+        tg.task_group_name,
+        tg.task_group_reward,
+        tg.related_tasks,
+        (SELECT COALESCE(SUM(rt.reward), 0) 
+         FROM tasks rt 
+         WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+        ) as related_tasks_reward_sum,
         (
           SELECT COUNT(*) 
           FROM submitted_tasks sub
@@ -382,6 +396,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         LEFT JOIN channels c ON t.channel_id = c.id
         LEFT JOIN waiters pre_w ON st.pre_waiter_id = pre_w.id
         LEFT JOIN waiters w ON st.waiter_id = w.id
+        LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
+        LEFT JOIN task_groups tg ON ttg.task_group_id = tg.id
       WHERE ${whereClause} ${completedTaskWhere}
       ORDER BY st.submit_time DESC
     `;
@@ -396,6 +412,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         JOIN tasks t ON st.task_id = t.id
         JOIN members m ON st.member_id = m.id
         LEFT JOIN channels c ON t.channel_id = c.id
+        LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
+        LEFT JOIN task_groups tg ON ttg.task_group_id = tg.id
       WHERE ${whereClause} ${completedTaskWhere}
     `;
     

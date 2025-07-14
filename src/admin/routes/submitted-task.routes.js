@@ -51,7 +51,11 @@ router.get(
     query('keyword')
       .optional()
       .isString()
-      .withMessage('common.validation.mustBeString')
+      .withMessage('common.validation.mustBeString'),
+    query('taskGroupId')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('任务组ID必须是正整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:preAudit'),
@@ -121,7 +125,11 @@ router.get(
     query('keyword')
       .optional()
       .isString()
-      .withMessage('common.validation.mustBeString')
+      .withMessage('common.validation.mustBeString'),
+    query('taskGroupId')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('任务组ID必须是正整数')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:preAudit'),
