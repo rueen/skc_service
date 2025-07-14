@@ -176,6 +176,24 @@ async function create(submitData) {
       [submitData.taskId, submitData.memberId, JSON.stringify(submitData.submitContent), relatedGroupId]
     );
     
+    // 检查任务是否属于任务组，如果是首次提交，则更新任务组提交状态
+    const [taskGroupRows] = await connection.query(
+      'SELECT task_group_id FROM task_task_groups WHERE task_id = ?',
+      [submitData.taskId]
+    );
+    
+    if (taskGroupRows.length > 0) {
+      const taskGroupId = taskGroupRows[0].task_group_id;
+      
+      // 更新任务组提交状态为已提交
+      await connection.query(
+        'UPDATE enrolled_task_groups SET submit_status = ? WHERE task_group_id = ? AND member_id = ?',
+        ['submitted', taskGroupId, submitData.memberId]
+      );
+      
+      logger.info(`任务首次提交，更新任务组提交状态 - 任务ID: ${submitData.taskId}, 任务组ID: ${taskGroupId}, 会员ID: ${submitData.memberId}`);
+    }
+    
     await connection.commit();
     
     return { id: result.insertId, isResubmit: false, relatedGroupId };

@@ -507,6 +507,7 @@ CREATE TABLE IF NOT EXISTS enrolled_task_groups (
   task_group_id bigint(20) NOT NULL COMMENT '任务组ID',
   member_id bigint(20) NOT NULL COMMENT '会员ID',
   enroll_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '报名时间',
+  submit_status varchar(20) NOT NULL DEFAULT 'not_submitted' COMMENT '提交状态：not_submitted-未提交，submitted-已提交',
   completion_status varchar(20) NOT NULL DEFAULT 'incomplete' COMMENT '完成状态：incomplete-未完成，completed-已完成',
   completion_time datetime DEFAULT NULL COMMENT '完成时间（发放奖励的时间）',
   reward_amount decimal(10,2) DEFAULT NULL COMMENT '实际发放的奖励金额',
@@ -516,6 +517,7 @@ CREATE TABLE IF NOT EXISTS enrolled_task_groups (
   UNIQUE KEY uk_member_task_group (member_id, task_group_id),
   KEY idx_task_group_id (task_group_id),
   KEY idx_member_id (member_id),
+  KEY idx_submit_status (submit_status),
   KEY idx_completion_status (completion_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='已报名任务组表';
 `;
