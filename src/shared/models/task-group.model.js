@@ -161,21 +161,44 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 /**
  * 获取任务组详情
  * @param {number} id - 任务组ID
+ * @param {number} memberId - 会员ID (可选)，用于查询报名信息
  * @returns {Promise<Object>} 任务组详情
  */
-async function getDetail(id) {
+async function getDetail(id, memberId = null) {
   try {
     // 获取任务组基本信息，包含关联任务奖励总和
-    const [taskGroupRows] = await pool.query(
-      `SELECT tg.*,
+    let query = `
+      SELECT tg.*,
         (SELECT COALESCE(SUM(rt.reward), 0) 
          FROM tasks rt 
          WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
         ) as related_tasks_reward_sum
-       FROM task_groups tg
-       WHERE tg.id = ?`,
-      [id]
-    );
+      FROM task_groups tg
+    `;
+    
+    let params = [];
+    
+    // 如果传入了会员ID，添加报名信息查询
+    if (memberId) {
+      query = `
+        SELECT tg.*,
+          (SELECT COALESCE(SUM(rt.reward), 0) 
+           FROM tasks rt 
+           WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+          ) as related_tasks_reward_sum,
+          etg.submit_status,
+          etg.completion_status
+        FROM task_groups tg
+        LEFT JOIN enrolled_task_groups etg ON tg.id = etg.task_group_id AND etg.member_id = ?
+        WHERE tg.id = ?
+      `;
+      params = [memberId, id];
+    } else {
+      query += ' WHERE tg.id = ?';
+      params = [id];
+    }
+    
+    const [taskGroupRows] = await pool.query(query, params);
     
     if (taskGroupRows.length === 0) {
       return null;
@@ -183,6 +206,13 @@ async function getDetail(id) {
     
     // 格式化任务组信息（formatTaskGroup 会处理 related_tasks 字段）
     const taskGroup = formatTaskGroup(taskGroupRows[0]);
+    
+    // 如果查询了报名信息，添加报名相关字段
+    if (memberId) {
+      taskGroup.isEnrolled = !!taskGroupRows[0].submit_status;
+      taskGroup.submitStatus = taskGroupRows[0].submit_status || null;
+      taskGroup.completionStatus = taskGroupRows[0].completion_status || null;
+    }
     
     return taskGroup;
   } catch (error) {

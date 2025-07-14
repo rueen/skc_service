@@ -15,12 +15,13 @@ const i18n = require('../../shared/utils/i18n.util');
 async function getDetail(req, res) {
   try {
     const { id } = req.params;
+    const memberId = req.user ? req.user.id : null;
     
     if (!id) {
       return responseUtil.badRequest(res, '任务组ID不能为空');
     }
     
-    const result = await taskGroupModel.getDetail(id);
+    const result = await taskGroupModel.getDetail(id, memberId);
     
     if (!result) {
       return responseUtil.notFound(res, i18n.t('h5.taskGroup.notFound', req.lang));
