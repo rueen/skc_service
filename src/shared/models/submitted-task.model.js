@@ -27,6 +27,44 @@ function formatSubmittedTask(submittedTask) {
     startTime: formatDateTime(submittedTask.start_time),
     endTime: formatDateTime(submittedTask.end_time)
   });
+  
+  // 移除重复的任务组字段，因为我们将使用 taskGroup 对象
+  delete formattedSubmittedTask.taskGroupId;
+  delete formattedSubmittedTask.taskGroupName;
+  delete formattedSubmittedTask.taskGroupReward;
+  delete formattedSubmittedTask.relatedTasks;
+  delete formattedSubmittedTask.relatedTasksRewardSum;
+  
+  // 添加任务组信息
+  if (submittedTask.task_group_id && submittedTask.task_group_name) {
+    const taskGroupReward = parseFloat(submittedTask.task_group_reward) || 0;
+    const relatedTasksRewardSum = parseFloat(submittedTask.related_tasks_reward_sum) || 0;
+    
+    formattedSubmittedTask.taskGroup = {
+      id: submittedTask.task_group_id,
+      taskGroupName: submittedTask.task_group_name,
+      taskGroupReward: taskGroupReward,
+      relatedTasksRewardSum: relatedTasksRewardSum,
+      allReward: taskGroupReward + relatedTasksRewardSum
+    };
+    
+    // 安全解析 related_tasks JSON 字段
+    try {
+      if (Array.isArray(submittedTask.related_tasks)) {
+        formattedSubmittedTask.taskGroup.relatedTasks = submittedTask.related_tasks;
+      } else if (typeof submittedTask.related_tasks === 'string' && submittedTask.related_tasks.trim()) {
+        formattedSubmittedTask.taskGroup.relatedTasks = JSON.parse(submittedTask.related_tasks);
+      } else {
+        formattedSubmittedTask.taskGroup.relatedTasks = [];
+      }
+    } catch (error) {
+      logger.error(`解析任务组 related_tasks 失败: ${error.message}, 原始值: ${submittedTask.related_tasks}`);
+      formattedSubmittedTask.taskGroup.relatedTasks = [];
+    }
+  } else {
+    formattedSubmittedTask.taskGroup = null;
+  }
+  
   return formattedSubmittedTask;
 }
 
@@ -1128,7 +1166,8 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
         LEFT JOIN channels c ON t.channel_id = c.id
         LEFT JOIN waiters pre_w ON st.pre_waiter_id = pre_w.id
         LEFT JOIN waiters w ON st.waiter_id = w.id
-      WHERE ${whereClause}
+        LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
+      WHERE ${whereClause} AND ttg.task_id IS NULL
       ORDER BY st.submit_time DESC
     `;
     
@@ -1137,7 +1176,8 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
       SELECT COUNT(*) AS total
       FROM submitted_tasks st
       JOIN tasks t ON st.task_id = t.id
-      WHERE ${whereClause}
+      LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
+      WHERE ${whereClause} AND ttg.task_id IS NULL
     `;
     
     // 执行查询，添加分页
@@ -1177,9 +1217,140 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
       return formattedItem;
     });
     
+    // 查询已提交/已完成的任务组
+    let taskGroups = [];
+    if (memberId) {
+      let taskGroupQuery = '';
+      let taskGroupParams = [memberId];
+      
+      if (taskAuditStatus) {
+        // 处理审核状态
+        if (taskAuditStatus.includes('|')) {
+          const statuses = taskAuditStatus.split('|').map(s => s.trim());
+          
+          if ((statuses.includes('pending') || statuses.includes('rejected')) && !statuses.includes('approved')) {
+            // 待审核或已拒绝：查询已提交但未完成的任务组
+            taskGroupQuery = `
+              SELECT 
+                etg.*,
+                tg.task_group_name,
+                tg.task_group_reward,
+                tg.related_tasks,
+                (SELECT COALESCE(SUM(rt.reward), 0) 
+                 FROM tasks rt 
+                 WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+                ) as related_tasks_reward_sum
+              FROM enrolled_task_groups etg
+              LEFT JOIN task_groups tg ON etg.task_group_id = tg.id
+              WHERE etg.member_id = ? 
+              AND etg.completion_status = 'incomplete' 
+              AND etg.submit_status = 'submitted'
+              ORDER BY etg.enroll_time DESC
+            `;
+          } else if (statuses.includes('approved')) {
+            // 已通过：查询已完成的任务组
+            taskGroupQuery = `
+              SELECT 
+                etg.*,
+                tg.task_group_name,
+                tg.task_group_reward,
+                tg.related_tasks,
+                (SELECT COALESCE(SUM(rt.reward), 0) 
+                 FROM tasks rt 
+                 WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+                ) as related_tasks_reward_sum
+              FROM enrolled_task_groups etg
+              LEFT JOIN task_groups tg ON etg.task_group_id = tg.id
+              WHERE etg.member_id = ? 
+              AND etg.completion_status = 'completed'
+              ORDER BY etg.enroll_time DESC
+            `;
+          }
+        } else {
+          // 单一状态处理
+          if (taskAuditStatus === 'pending' || taskAuditStatus === 'rejected') {
+            // 待审核或已拒绝：查询已提交但未完成的任务组
+            taskGroupQuery = `
+              SELECT 
+                etg.*,
+                tg.task_group_name,
+                tg.task_group_reward,
+                tg.related_tasks,
+                (SELECT COALESCE(SUM(rt.reward), 0) 
+                 FROM tasks rt 
+                 WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+                ) as related_tasks_reward_sum
+              FROM enrolled_task_groups etg
+              LEFT JOIN task_groups tg ON etg.task_group_id = tg.id
+              WHERE etg.member_id = ? 
+              AND etg.completion_status = 'incomplete' 
+              AND etg.submit_status = 'submitted'
+              ORDER BY etg.enroll_time DESC
+            `;
+          } else if (taskAuditStatus === 'approved') {
+            // 已通过：查询已完成的任务组
+            taskGroupQuery = `
+              SELECT 
+                etg.*,
+                tg.task_group_name,
+                tg.task_group_reward,
+                tg.related_tasks,
+                (SELECT COALESCE(SUM(rt.reward), 0) 
+                 FROM tasks rt 
+                 WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+                ) as related_tasks_reward_sum
+              FROM enrolled_task_groups etg
+              LEFT JOIN task_groups tg ON etg.task_group_id = tg.id
+              WHERE etg.member_id = ? 
+              AND etg.completion_status = 'completed'
+              ORDER BY etg.enroll_time DESC
+            `;
+          }
+        }
+      }
+      
+      // 执行任务组查询
+      if (taskGroupQuery) {
+        const [taskGroupRows] = await pool.query(taskGroupQuery, taskGroupParams);
+        
+        // 格式化任务组数据
+        taskGroups = taskGroupRows.map(row => {
+          const formattedTaskGroup = convertToCamelCase({
+            ...row,
+            enrollTime: formatDateTime(row.enroll_time),
+            createTime: formatDateTime(row.create_time),
+            updateTime: formatDateTime(row.update_time)
+          });
+          
+          // 计算总奖励
+          const taskGroupReward = parseFloat(row.task_group_reward) || 0;
+          const relatedTasksRewardSum = parseFloat(row.related_tasks_reward_sum) || 0;
+          formattedTaskGroup.allReward = taskGroupReward + relatedTasksRewardSum;
+          formattedTaskGroup.relatedTasksRewardSum = relatedTasksRewardSum;
+          
+          // 安全解析 related_tasks JSON 字段
+          try {
+            if (Array.isArray(row.related_tasks)) {
+              formattedTaskGroup.relatedTasks = row.related_tasks;
+            } else if (typeof row.related_tasks === 'string' && row.related_tasks.trim()) {
+              formattedTaskGroup.relatedTasks = JSON.parse(row.related_tasks);
+            } else {
+              formattedTaskGroup.relatedTasks = [];
+            }
+          } catch (error) {
+            logger.error(`解析任务组 related_tasks 失败: ${error.message}, 原始值: ${row.related_tasks}`);
+            formattedTaskGroup.relatedTasks = [];
+          }
+          
+          return formattedTaskGroup;
+        });
+      }
+    }
+    
     return {
       total,
       list: formattedList,
+      taskGroups: taskGroups,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
     };
