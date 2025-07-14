@@ -27,6 +27,43 @@ function formatEnrolledTask(enrolledTask) {
     endTime: formatDateTime(enrolledTask.end_time),
   });
   
+  // 移除重复的任务组字段，因为我们将使用 taskGroup 对象
+  delete formattedEnrolledTask.taskGroupId;
+  delete formattedEnrolledTask.taskGroupName;
+  delete formattedEnrolledTask.taskGroupReward;
+  delete formattedEnrolledTask.relatedTasks;
+  delete formattedEnrolledTask.relatedTasksRewardSum;
+  
+  // 添加任务组信息
+  if (enrolledTask.task_group_id && enrolledTask.task_group_name) {
+    const taskGroupReward = parseFloat(enrolledTask.task_group_reward) || 0;
+    const relatedTasksRewardSum = parseFloat(enrolledTask.related_tasks_reward_sum) || 0;
+    
+    formattedEnrolledTask.taskGroup = {
+      id: enrolledTask.task_group_id,
+      taskGroupName: enrolledTask.task_group_name,
+      taskGroupReward: taskGroupReward,
+      relatedTasksRewardSum: relatedTasksRewardSum,
+      allReward: taskGroupReward + relatedTasksRewardSum
+    };
+    
+    // 安全解析 related_tasks JSON 字段
+    try {
+      if (Array.isArray(enrolledTask.related_tasks)) {
+        formattedEnrolledTask.taskGroup.relatedTasks = enrolledTask.related_tasks;
+      } else if (typeof enrolledTask.related_tasks === 'string' && enrolledTask.related_tasks.trim()) {
+        formattedEnrolledTask.taskGroup.relatedTasks = JSON.parse(enrolledTask.related_tasks);
+      } else {
+        formattedEnrolledTask.taskGroup.relatedTasks = [];
+      }
+    } catch (error) {
+      logger.error(`解析任务组 related_tasks 失败: ${error.message}, 原始值: ${enrolledTask.related_tasks}`);
+      formattedEnrolledTask.taskGroup.relatedTasks = [];
+    }
+  } else {
+    formattedEnrolledTask.taskGroup = null;
+  }
+  
   return formattedEnrolledTask;
 }
 
@@ -259,10 +296,20 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
         t.task_type,
         t.fans_required,
         c.name as channel_name,
-        c.icon as channel_icon
+        c.icon as channel_icon,
+        tg.id as task_group_id,
+        tg.task_group_name,
+        tg.task_group_reward,
+        tg.related_tasks,
+        (SELECT COALESCE(SUM(rt.reward), 0) 
+         FROM tasks rt 
+         WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
+        ) as related_tasks_reward_sum
       FROM enrolled_tasks et
       LEFT JOIN tasks t ON et.task_id = t.id
       LEFT JOIN channels c ON t.channel_id = c.id
+      LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
+      LEFT JOIN task_groups tg ON ttg.task_group_id = tg.id
     `;
     
     // 如果需要排除已提交的任务，添加LEFT JOIN到submitted_tasks表
