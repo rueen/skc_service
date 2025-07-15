@@ -55,7 +55,15 @@ router.get(
     query('taskGroupId')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('任务组ID必须是正整数')
+      .withMessage('任务组ID必须是正整数'),
+    query('sorterField')
+      .optional()
+      .isIn(['preAuditTime'])
+      .withMessage('common.validation.invalid'),
+    query('sorterOrder')
+      .optional()
+      .isIn(['ascend', 'descend'])
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:preAudit'),

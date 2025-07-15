@@ -29,7 +29,9 @@ async function getPreAuditTasks(req, res) {
       completedTaskCount,
       preWaiterId,
       keyword,
-      taskGroupId
+      taskGroupId,
+      sorterField,
+      sorterOrder
     } = req.query;
     
     // 构建筛选条件
@@ -47,11 +49,19 @@ async function getPreAuditTasks(req, res) {
     if (keyword) filters.keyword = keyword;
     if (taskGroupId) filters.taskGroupId = parseInt(taskGroupId, 10);
     
+    // 构建排序选项
+    const sortOptions = {};
+    if (sorterField && sorterOrder) {
+      sortOptions.field = sorterField;
+      sortOptions.order = sorterOrder;
+    }
+    
     // 获取已提交任务列表
     const result = await submittedTaskModel.getList(
       filters,
       parseInt(page, 10),
-      parseInt(pageSize, 10)
+      parseInt(pageSize, 10),
+      sortOptions
     );
     
     return responseUtil.success(res, result);

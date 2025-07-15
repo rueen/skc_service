@@ -262,9 +262,10 @@ async function create(submitData) {
  * @param {boolean} filters.exportMode - 是否为导出模式，为true时不使用分页
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
+ * @param {Object} sortOptions - 排序选项 { field: 'preAuditTime', order: 'ascend' }
  * @returns {Promise<Object>} 任务列表和总数
  */
-async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
+async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, sortOptions = {}) {
   try {
     // 构建 WHERE 子句
     let whereClause = '1 = 1';
@@ -399,7 +400,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
         LEFT JOIN task_groups tg ON ttg.task_group_id = tg.id
       WHERE ${whereClause} ${completedTaskWhere}
-      ORDER BY st.submit_time DESC
     `;
     
     // 计算总数的查询
@@ -417,8 +417,24 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       WHERE ${whereClause} ${completedTaskWhere}
     `;
     
+    // 添加排序
+    let orderByClause = ' ORDER BY st.submit_time DESC';
+    
+    if (sortOptions.field && sortOptions.order) {
+      // 字段映射，将前端字段名映射到数据库字段名
+      const fieldMap = {
+        'preAuditTime': 'st.pre_audit_time'
+      };
+      
+      const dbField = fieldMap[sortOptions.field];
+      if (dbField) {
+        const direction = sortOptions.order === 'ascend' ? 'ASC' : 'DESC';
+        orderByClause = ` ORDER BY ${dbField} ${direction}`;
+      }
+    }
+    
     // 执行查询，添加分页
-    let finalQuery = query;
+    let finalQuery = query + orderByClause;
     
     // 仅在非导出模式下添加分页限制
     if (!filters.exportMode) {
