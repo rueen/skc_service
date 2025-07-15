@@ -423,7 +423,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     if (sortOptions.field && sortOptions.order) {
       // 字段映射，将前端字段名映射到数据库字段名
       const fieldMap = {
-        'preAuditTime': 'st.pre_audit_time'
+        'preAuditTime': 'st.pre_audit_time',
+        'confirmAuditTime': 'st.audit_time'
       };
       
       const dbField = fieldMap[sortOptions.field];
@@ -540,9 +541,10 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
  * @param {boolean} filters.exportMode - 是否为导出模式，为true时不使用分页
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
+ * @param {Object} sortOptions - 排序选项 { field: 'preAuditTime|confirmAuditTime', order: 'ascend|descend' }
  * @returns {Promise<Object>} 任务列表和总数
  */
-async function getPreAuditedList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
+async function getPreAuditedList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, sortOptions = {}) {
   // 创建一个新的筛选条件对象，避免修改原始对象
   const newFilters = { ...filters };
   
@@ -550,7 +552,7 @@ async function getPreAuditedList(filters = {}, page = DEFAULT_PAGE, pageSize = D
   newFilters.taskPreAuditStatus = 'approved';
   
   // 调用getList方法获取数据
-  const result = await getList(newFilters, page, pageSize);
+  const result = await getList(newFilters, page, pageSize, sortOptions);
   
   // 确保导出时显示正确的预审状态文本
   if (result && result.list) {

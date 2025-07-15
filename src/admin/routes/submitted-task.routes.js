@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-23 15:39:26
  * @LastEditors: diaochan
- * @LastEditTime: 2025-07-14 11:44:17
+ * @LastEditTime: 2025-07-15 17:35:19
  * @Description: 
  */
 /**
@@ -101,7 +101,15 @@ router.get(
     query('taskGroupId')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('任务组ID必须是正整数')
+      .withMessage('任务组ID必须是正整数'),
+    query('sorterField')
+      .optional()
+      .isIn(['preAuditTime', 'confirmAuditTime'])
+      .withMessage('common.validation.invalid'),
+    query('sorterOrder')
+      .optional()
+      .isIn(['ascend', 'descend'])
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   authMiddleware.hasPermission('task:confirmAudit'),

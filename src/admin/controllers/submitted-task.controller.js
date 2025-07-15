@@ -91,7 +91,9 @@ async function getConfirmAuditTasks(req, res) {
       waiterId,
       preWaiterId,
       keyword,
-      taskGroupId
+      taskGroupId,
+      sorterField,
+      sorterOrder
     } = req.query;
     
     // 构建筛选条件
@@ -109,11 +111,19 @@ async function getConfirmAuditTasks(req, res) {
     if (keyword) filters.keyword = keyword;
     if (taskGroupId) filters.taskGroupId = parseInt(taskGroupId, 10);
     
+    // 构建排序选项
+    const sortOptions = {};
+    if (sorterField && sorterOrder) {
+      sortOptions.field = sorterField;
+      sortOptions.order = sorterOrder;
+    }
+    
     // 获取预审已通过的任务列表
     const result = await submittedTaskModel.getPreAuditedList(
       filters,
       parseInt(page, 10),
-      parseInt(pageSize, 10)
+      parseInt(pageSize, 10),
+      sortOptions
     );
     
     return responseUtil.success(res, result);
