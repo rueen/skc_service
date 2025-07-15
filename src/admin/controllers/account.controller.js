@@ -27,7 +27,9 @@ async function getAccounts(req, res) {
       memberId,
       waiterId,
       submitStartTime,
-      submitEndTime
+      submitEndTime,
+      sorterField,
+      sorterOrder
     } = req.query;
     
     // 构建筛选条件
@@ -69,8 +71,15 @@ async function getAccounts(req, res) {
       filters.submitEndTime = submitEndTime;
     }
     
+    // 构建排序选项
+    const sortOptions = {};
+    if (sorterField && sorterOrder) {
+      sortOptions.field = sorterField;
+      sortOptions.order = sorterOrder;
+    }
+    
     // 调用模型获取账号列表（包含群组和渠道详细信息）
-    const result = await accountModel.getList(filters, page, pageSize);
+    const result = await accountModel.getList(filters, page, pageSize, sortOptions);
     
     return responseUtil.success(res, {
       total: result.pagination.total,

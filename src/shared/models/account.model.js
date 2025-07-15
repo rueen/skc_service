@@ -28,7 +28,7 @@ function formatAccount(account) {
   return formattedAccount;
 }
 
-async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE) {
+async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, sortOptions = {}) {
   try {
     const offset = (page - 1) * pageSize;
     
@@ -101,8 +101,26 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       LEFT JOIN channels c ON a.channel_id = c.id
       LEFT JOIN waiters w ON a.waiter_id = w.id
       WHERE ${whereClause}
-      ORDER BY a.submit_time DESC
     `;
+    
+    // 添加排序
+    let orderByClause = ' ORDER BY a.submit_time DESC';
+    
+    if (sortOptions.field && sortOptions.order) {
+      // 字段映射，将前端字段名映射到数据库字段名
+      const fieldMap = {
+        'submitTime': 'a.submit_time',
+        'auditTime': 'a.audit_time'
+      };
+      
+      const dbField = fieldMap[sortOptions.field];
+      if (dbField) {
+        const direction = sortOptions.order === 'ascend' ? 'ASC' : 'DESC';
+        orderByClause = ` ORDER BY ${dbField} ${direction}`;
+      }
+    }
+    
+    query += orderByClause;
     
     // 根据是否为导出模式决定是否使用分页
     if (!filters.exportMode) {

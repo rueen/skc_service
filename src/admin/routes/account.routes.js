@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-20 10:10:12
  * @LastEditors: diaochan
- * @LastEditTime: 2025-05-13 15:35:13
+ * @LastEditTime: 2025-07-15 17:45:46
  * @Description: 
  */
 /**
@@ -73,7 +73,15 @@ router.get(
     query('submitEndTime')
       .optional()
       .isISO8601()
-      .withMessage('common.validation.timeFormatInvalid')
+      .withMessage('common.validation.timeFormatInvalid'),
+    query('sorterField')
+      .optional()
+      .isIn(['submitTime', 'auditTime'])
+      .withMessage('common.validation.invalid'),
+    query('sorterOrder')
+      .optional()
+      .isIn(['ascend', 'descend'])
+      .withMessage('common.validation.invalid')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.getAccounts
