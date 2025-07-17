@@ -228,25 +228,25 @@ async function create(submitData) {
         'SELECT submit_task_ids FROM enrolled_task_groups WHERE task_group_id = ? AND member_id = ?',
         [taskGroupId, submitData.memberId]
       );
-      
+
       if (currentSubmitTasks.length > 0) {
         let submitTaskIds = [];
         
         // 解析当前的已提交任务ID列表
         try {
           if (currentSubmitTasks[0].submit_task_ids) {
-            submitTaskIds = JSON.parse(currentSubmitTasks[0].submit_task_ids);
+            // 确保是数组格式
+            if (!Array.isArray(currentSubmitTasks[0].submit_task_ids)) {
+              submitTaskIds = JSON.parse(currentSubmitTasks[0].submit_task_ids);
+            } else {
+              submitTaskIds = currentSubmitTasks[0].submit_task_ids;
+            }
           }
         } catch (error) {
           logger.error(`解析已提交任务ID列表失败: ${error.message}`);
           submitTaskIds = [];
         }
-        
-        // 确保是数组格式
-        if (!Array.isArray(submitTaskIds)) {
-          submitTaskIds = [];
-        }
-        
+
         // 检查任务ID是否已存在，避免重复添加
         if (!submitTaskIds.includes(submitData.taskId)) {
           submitTaskIds.push(submitData.taskId);
@@ -1303,7 +1303,7 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
           const statuses = taskAuditStatus.split('|').map(s => s.trim());
           
           if ((statuses.includes('pending') || statuses.includes('rejected')) && !statuses.includes('approved')) {
-            // 待审核或已拒绝：查询已提交但未完成的任务组
+            // 待审核或已拒绝：查询已完全提交且未完成的任务组
             taskGroupQuery = `
               SELECT 
                 etg.*,
@@ -1317,8 +1317,15 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
               FROM enrolled_task_groups etg
               LEFT JOIN task_groups tg ON etg.task_group_id = tg.id
               WHERE etg.member_id = ? 
-              AND etg.completion_status = 'incomplete' 
-              AND etg.submit_status = 'submitted'
+              AND etg.completion_status = 'incomplete'
+              AND etg.submit_task_ids IS NOT NULL 
+              AND JSON_LENGTH(etg.submit_task_ids) > 0
+              AND JSON_LENGTH(tg.related_tasks) > 0
+              AND (
+                SELECT COUNT(*)
+                FROM JSON_TABLE(tg.related_tasks, '$[*]' COLUMNS (task_id INT PATH '$')) AS rt
+                WHERE JSON_CONTAINS(etg.submit_task_ids, CAST(rt.task_id AS JSON))
+              ) = JSON_LENGTH(tg.related_tasks)
               ORDER BY etg.enroll_time DESC
             `;
           } else if (statuses.includes('approved')) {
@@ -1343,7 +1350,7 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
         } else {
           // 单一状态处理
           if (taskAuditStatus === 'pending' || taskAuditStatus === 'rejected') {
-            // 待审核或已拒绝：查询已提交但未完成的任务组
+            // 待审核或已拒绝：查询已完全提交且未完成的任务组
             taskGroupQuery = `
               SELECT 
                 etg.*,
@@ -1357,8 +1364,15 @@ async function getH5List(memberId, taskAuditStatus, page = DEFAULT_PAGE, pageSiz
               FROM enrolled_task_groups etg
               LEFT JOIN task_groups tg ON etg.task_group_id = tg.id
               WHERE etg.member_id = ? 
-              AND etg.completion_status = 'incomplete' 
-              AND etg.submit_status = 'submitted'
+              AND etg.completion_status = 'incomplete'
+              AND etg.submit_task_ids IS NOT NULL 
+              AND JSON_LENGTH(etg.submit_task_ids) > 0
+              AND JSON_LENGTH(tg.related_tasks) > 0
+              AND (
+                SELECT COUNT(*)
+                FROM JSON_TABLE(tg.related_tasks, '$[*]' COLUMNS (task_id INT PATH '$')) AS rt
+                WHERE JSON_CONTAINS(etg.submit_task_ids, CAST(rt.task_id AS JSON))
+              ) = JSON_LENGTH(tg.related_tasks)
               ORDER BY etg.enroll_time DESC
             `;
           } else if (taskAuditStatus === 'approved') {

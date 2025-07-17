@@ -323,7 +323,7 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
     // 使用 formatEnrolledTask 方法格式化每一行数据
     const formattedList = rows.map(row => formatEnrolledTask(row));
     
-    // 查询已报名的任务组（未完成且未提交）
+    // 查询已报名的任务组（未完成且未完全提交）
     let taskGroups = [];
     if (filters.memberId) {
       const taskGroupQuery = `
@@ -339,8 +339,17 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
         FROM enrolled_task_groups etg
         LEFT JOIN task_groups tg ON etg.task_group_id = tg.id
         WHERE etg.member_id = ? 
-        AND etg.completion_status = 'incomplete' 
-        AND etg.submit_status = 'not_submitted'
+        AND etg.completion_status = 'incomplete'
+        AND NOT (
+          etg.submit_task_ids IS NOT NULL 
+          AND JSON_LENGTH(etg.submit_task_ids) > 0
+          AND JSON_LENGTH(tg.related_tasks) > 0
+          AND (
+            SELECT COUNT(*)
+            FROM JSON_TABLE(tg.related_tasks, '$[*]' COLUMNS (task_id INT PATH '$')) AS rt
+            WHERE JSON_CONTAINS(etg.submit_task_ids, CAST(rt.task_id AS JSON))
+          ) = JSON_LENGTH(tg.related_tasks)
+        )
         ORDER BY etg.enroll_time DESC
       `;
       
