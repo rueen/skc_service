@@ -223,13 +223,51 @@ async function create(submitData) {
     if (taskGroupRows.length > 0) {
       const taskGroupId = taskGroupRows[0].task_group_id;
       
-      // 更新任务组提交状态为已提交
-      await connection.query(
-        'UPDATE enrolled_task_groups SET submit_status = ? WHERE task_group_id = ? AND member_id = ?',
-        ['submitted', taskGroupId, submitData.memberId]
+      // 获取当前的已提交任务ID列表
+      const [currentSubmitTasks] = await connection.query(
+        'SELECT submit_task_ids FROM enrolled_task_groups WHERE task_group_id = ? AND member_id = ?',
+        [taskGroupId, submitData.memberId]
       );
       
-      logger.info(`任务首次提交，更新任务组提交状态 - 任务ID: ${submitData.taskId}, 任务组ID: ${taskGroupId}, 会员ID: ${submitData.memberId}`);
+      if (currentSubmitTasks.length > 0) {
+        let submitTaskIds = [];
+        
+        // 解析当前的已提交任务ID列表
+        try {
+          if (currentSubmitTasks[0].submit_task_ids) {
+            submitTaskIds = JSON.parse(currentSubmitTasks[0].submit_task_ids);
+          }
+        } catch (error) {
+          logger.error(`解析已提交任务ID列表失败: ${error.message}`);
+          submitTaskIds = [];
+        }
+        
+        // 确保是数组格式
+        if (!Array.isArray(submitTaskIds)) {
+          submitTaskIds = [];
+        }
+        
+        // 检查任务ID是否已存在，避免重复添加
+        if (!submitTaskIds.includes(submitData.taskId)) {
+          submitTaskIds.push(submitData.taskId);
+          
+          // 更新任务组提交状态和已提交任务ID列表
+          await connection.query(
+            'UPDATE enrolled_task_groups SET submit_status = ?, submit_task_ids = ? WHERE task_group_id = ? AND member_id = ?',
+            ['submitted', JSON.stringify(submitTaskIds), taskGroupId, submitData.memberId]
+          );
+          
+          logger.info(`任务首次提交，更新任务组提交状态和已提交任务ID列表 - 任务ID: ${submitData.taskId}, 任务组ID: ${taskGroupId}, 会员ID: ${submitData.memberId}, 已提交任务列表: ${JSON.stringify(submitTaskIds)}`);
+        } else {
+          // 任务ID已存在，只更新提交状态
+          await connection.query(
+            'UPDATE enrolled_task_groups SET submit_status = ? WHERE task_group_id = ? AND member_id = ?',
+            ['submitted', taskGroupId, submitData.memberId]
+          );
+          
+          logger.info(`任务重复提交，仅更新任务组提交状态 - 任务ID: ${submitData.taskId}, 任务组ID: ${taskGroupId}, 会员ID: ${submitData.memberId}`);
+        }
+      }
     }
     
     await connection.commit();

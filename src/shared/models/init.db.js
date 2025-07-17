@@ -511,6 +511,7 @@ CREATE TABLE IF NOT EXISTS enrolled_task_groups (
   completion_status varchar(20) NOT NULL DEFAULT 'incomplete' COMMENT '完成状态：incomplete-未完成，completed-已完成',
   completion_time datetime DEFAULT NULL COMMENT '完成时间（发放奖励的时间）',
   reward_amount decimal(10,2) DEFAULT NULL COMMENT '实际发放的奖励金额',
+  submit_task_ids json DEFAULT NULL COMMENT '已提交的任务ID列表，JSON数组格式',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
