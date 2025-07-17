@@ -20,7 +20,6 @@ router.use(authMiddleware.verifyToken);
  */
 router.get(
   '/',
-  authMiddleware.hasPermission('task:group'),
   [
     query('page')
       .optional()
