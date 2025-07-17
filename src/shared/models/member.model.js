@@ -129,14 +129,24 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 
     // 已完成任务次数筛选
     if (filters.completedTaskCount !== undefined) {
-      conditions.push(`m.id IN (
-        SELECT member_id 
-        FROM submitted_tasks 
-        WHERE task_audit_status = 'approved'
-        GROUP BY member_id 
-        HAVING COUNT(*) = ?
-      )`);
-      queryParams.push(filters.completedTaskCount);
+      if (filters.completedTaskCount === 0) {
+        // 查找完成任务数为 0 的会员（没有 approved 任务记录的会员）
+        conditions.push(`m.id NOT IN (
+          SELECT DISTINCT member_id 
+          FROM submitted_tasks 
+          WHERE task_audit_status = 'approved'
+        )`);
+      } else {
+        // 查找完成任务数为指定数量的会员
+        conditions.push(`m.id IN (
+          SELECT member_id 
+          FROM submitted_tasks 
+          WHERE task_audit_status = 'approved'
+          GROUP BY member_id 
+          HAVING COUNT(*) = ?
+        )`);
+        queryParams.push(filters.completedTaskCount);
+      }
     }
 
     // 组合查询条件

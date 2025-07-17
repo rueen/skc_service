@@ -43,7 +43,9 @@ async function list(req, res) {
     if (groupId) filters.groupId = parseInt(groupId, 10);
     if (inviterId) filters.inviterId = parseInt(inviterId, 10);
     if (inviter) filters.inviter = inviter;
-    if (completedTaskCount) filters.completedTaskCount = parseInt(completedTaskCount, 10);
+    if (completedTaskCount !== undefined && completedTaskCount !== null && completedTaskCount !== '') {
+      filters.completedTaskCount = parseInt(completedTaskCount, 10);
+    }
     if (channelId) filters.channelId = parseInt(channelId, 10);
     if (keyword) filters.keyword = keyword;
     if (createStartTime) filters.createStartTime = createStartTime;
@@ -526,7 +528,9 @@ async function exportMembers(req, res) {
     if (groupId) filters.groupId = parseInt(groupId, 10);
     if (inviterId) filters.inviterId = parseInt(inviterId, 10);
     if (inviter) filters.inviter = inviter;
-    if (completedTaskCount) filters.completedTaskCount = parseInt(completedTaskCount, 10);
+    if (completedTaskCount !== undefined && completedTaskCount !== null && completedTaskCount !== '') {
+      filters.completedTaskCount = parseInt(completedTaskCount, 10);
+    }
     if (channelId) filters.channelId = parseInt(channelId, 10);
     if (keyword) filters.keyword = keyword; // 添加关键字筛选
     if (createStartTime) filters.createStartTime = createStartTime;
