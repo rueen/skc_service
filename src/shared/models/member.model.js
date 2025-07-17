@@ -65,7 +65,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
   try {
     let baseQuery = `
       SELECT m.*, 
-             inv.nickname as inviter_nickname
+        inv.nickname as inviter_nickname,
+        inv.account as inviter_account
       FROM members m
       LEFT JOIN members inv ON m.inviter_id = inv.id
     `;
@@ -100,6 +101,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     if (filters.inviterId) {
       conditions.push('m.inviter_id = ?');
       queryParams.push(filters.inviterId);
+    }
+    
+    // 邀请人账号或昵称搜索
+    if (filters.inviter) {
+      conditions.push('(m.inviter_id IN (SELECT id FROM members WHERE account LIKE ? OR nickname LIKE ?))');
+      queryParams.push(`%${filters.inviter}%`, `%${filters.inviter}%`);
     }
     
     // 创建开始时间筛选

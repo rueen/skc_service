@@ -45,6 +45,10 @@ router.get(
       .optional()
       .isInt()
       .withMessage('common.validation.mustBeInt'),
+    query('inviter')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
     query('completedTaskCount')
       .optional()
       .isInt({ min: 0 })
@@ -91,6 +95,10 @@ router.get(
       .optional()
       .isInt()
       .withMessage('common.validation.mustBeInt'),
+    query('inviter')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
     query('completedTaskCount')
       .optional()
       .isInt({ min: 0 })
