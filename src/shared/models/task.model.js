@@ -369,19 +369,11 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
             // 格式化关联任务列表
             const relatedTasksList = relatedTasksResult.map(relatedTask => {
               const formattedRelatedTask = formatTask(relatedTask);
-              formattedRelatedTask.submittedCount = parseInt(relatedTask.submitted_count || 0, 10);
-              
-              // 为关联任务添加报名状态（如果有会员ID）
-              formattedRelatedTask.isEnrolled = false;
-              formattedRelatedTask.enrollmentId = null;
-              
               return formattedRelatedTask;
             });
             
             // 添加到任务组信息中
             task.taskGroup.relatedTasksList = relatedTasksList;
-            
-            logger.debug(`获取关联任务详情成功 - 任务ID: ${task.id}, 关联任务数量: ${relatedTasksList.length}`);
           } catch (error) {
             logger.error(`获取关联任务详情失败 - 任务ID: ${task.id}, 错误: ${error.message}`);
             // 如果获取失败，设置为空数组
@@ -1003,6 +995,7 @@ async function remove(id) {
 }
 
 module.exports = {
+  formatTask,
   getList,
   getDetail,
   create,

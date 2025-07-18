@@ -8,6 +8,7 @@ const { formatDateTime } = require('../utils/date.util');
 const { DEFAULT_PAGE_SIZE, DEFAULT_PAGE } = require('../config/api.config');
 const groupModel = require('./group.model');
 const { convertToCamelCase } = require('../utils/data.util');
+const { formatTask } = require('./task.model');
 
 /**
  * 格式化已报名任务信息
@@ -386,6 +387,44 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
         
         return formattedTaskGroup;
       });
+      
+      // 为每个任务组获取关联任务详情列表
+      for (const taskGroup of taskGroups) {
+        if (taskGroup.relatedTasks && taskGroup.relatedTasks.length > 0) {
+          try {
+            // 获取关联任务的详细信息
+            const relatedTaskIds = taskGroup.relatedTasks;
+            const placeholders = relatedTaskIds.map(() => '?').join(', ');
+            const orderField = relatedTaskIds.map(() => '?').join(', ');
+            
+            const [relatedTasksResult] = await pool.query(
+              `SELECT t.*, c.name as channel_name, c.icon as channel_icon,
+                (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND task_audit_status != "rejected" AND task_pre_audit_status != "rejected") as submitted_count
+               FROM tasks t
+               LEFT JOIN channels c ON t.channel_id = c.id
+               WHERE t.id IN (${placeholders})
+               ORDER BY FIELD(t.id, ${orderField})`,
+              [...relatedTaskIds, ...relatedTaskIds]
+            );
+            
+            // 格式化关联任务列表
+            const relatedTasksList = relatedTasksResult.map(relatedTask => {
+              const formattedRelatedTask = formatTask(relatedTask);
+              return formattedRelatedTask;
+            });
+            
+            // 添加到任务组信息中
+            taskGroup.relatedTasksList = relatedTasksList;
+          } catch (error) {
+            logger.error(`获取任务组关联任务详情失败 - 任务组ID: ${taskGroup.taskGroupId}, 错误: ${error.message}`);
+            // 如果获取失败，设置为空数组
+            taskGroup.relatedTasksList = [];
+          }
+        } else {
+          // 如果没有关联任务，设置为空数组
+          taskGroup.relatedTasksList = [];
+        }
+      }
     }
     
     return {
