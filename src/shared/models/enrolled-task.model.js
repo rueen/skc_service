@@ -450,9 +450,7 @@ async function checkEnrollment(taskId, memberId) {
   try {
     const parsedTaskId = parseInt(taskId, 10);
     const parsedMemberId = parseInt(memberId, 10);
-    
-    logger.debug(`检查报名状态 - 任务ID: ${parsedTaskId}, 会员ID: ${parsedMemberId}`);
-    
+        
     const [rows] = await pool.query(
       'SELECT id FROM enrolled_tasks WHERE task_id = ? AND member_id = ?',
       [parsedTaskId, parsedMemberId]

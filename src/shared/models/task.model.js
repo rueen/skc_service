@@ -144,7 +144,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       const taskStatsModel = require('./task-stats.model');
       try {
         memberCompletedTaskCount = await taskStatsModel.getMemberCompletedTaskCount(memberId);
-        logger.debug(`会员已完成任务次数 - 会员ID: ${memberId}, 完成次数: ${memberCompletedTaskCount}`);
       } catch (error) {
         logger.error(`获取会员完成任务次数失败 - 会员ID: ${memberId}, 错误: ${error.message}`);
         memberCompletedTaskCount = 0;
@@ -154,7 +153,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       const groupModel = require('./group.model');
       try {
         memberGroups = await groupModel.getMemberGroups(memberId);
-        logger.debug(`获取会员群组 - 会员ID: ${memberId}, 群组数: ${memberGroups ? memberGroups.length : 0}`);
       } catch (error) {
         logger.error(`获取会员群组失败 - 会员ID: ${memberId}, 错误: ${error.message}`);
         memberGroups = [];
@@ -332,7 +330,6 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         if (memberId) {
           isEnrolled = false; // 已报名的已被SQL过滤
           enrollmentId = null;
-          logger.debug(`任务列表项 - 任务ID: ${taskId}, 会员ID: ${memberId}, 是否已报名: ${isEnrolled}`);
         }
         
         formattedTask.isEnrolled = isEnrolled;
@@ -456,7 +453,6 @@ async function getDetail(id, memberId = null) {
       try {
         const taskStatsModel = require('./task-stats.model');
         memberCompletedTaskCount = await taskStatsModel.getMemberCompletedTaskCount(memberId);
-        logger.debug(`会员已完成任务次数 - 会员ID: ${memberId}, 完成次数: ${memberCompletedTaskCount}`);
       } catch (error) {
         logger.error(`获取会员完成任务次数失败 - 会员ID: ${memberId}, 错误: ${error.message}`);
         memberCompletedTaskCount = 0;
@@ -493,7 +489,6 @@ async function getDetail(id, memberId = null) {
           // 会员不在指定群组中，不能报名
           task.eligibleToEnroll = false;
           task.ineligibleReason = '该任务仅限指定群组的会员可报名';
-          logger.debug(`会员不在指定群组中 - 会员ID: ${memberId}, 任务ID: ${id}`);
         }
       } catch (error) {
         logger.error(`检查会员是否在指定群组中失败 - 会员ID: ${memberId}, 任务ID: ${id}, 错误: ${error.message}`);
