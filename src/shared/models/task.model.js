@@ -133,7 +133,7 @@ function formatDateTimeForMySQL(dateTimeString) {
  * @param {Object} sortOptions - 排序选项 { field: 'startTime', order: 'ascend' }
  * @returns {Promise<Object>} 包含列表、总数、页码、页大小的对象
  */
-async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberId = null, sortOptions = {}) {
+async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberId = null, sortOptions = {}, withRelatedTasksList = false) {
   try {
     // 提前获取会员完成任务次数和群组信息，用于后续构建SQL查询条件
     let memberCompletedTaskCount = null;
@@ -343,6 +343,53 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       } catch (error) {
         logger.error(`格式化任务失败，任务ID: ${task.id}, 错误: ${error.message}`);
         // 跳过这条记录，继续处理其他记录
+      }
+    }
+    
+    if (withRelatedTasksList) {
+      // 为有任务组的任务获取关联任务详情列表
+      for (const task of formattedList) {
+        if (task.taskGroup && task.taskGroup.relatedTasks && task.taskGroup.relatedTasks.length > 0) {
+          try {
+            // 获取关联任务的详细信息
+            const relatedTaskIds = task.taskGroup.relatedTasks;
+            const placeholders = relatedTaskIds.map(() => '?').join(', ');
+            
+            const [relatedTasksResult] = await pool.query(
+              `SELECT t.*, c.name as channel_name, c.icon as channel_icon,
+                (SELECT COUNT(*) FROM submitted_tasks st WHERE st.task_id = t.id AND task_audit_status != "rejected" AND task_pre_audit_status != "rejected") as submitted_count
+              FROM tasks t
+              LEFT JOIN channels c ON t.channel_id = c.id
+              WHERE t.id IN (${placeholders})
+              ORDER BY t.create_time ASC`,
+              relatedTaskIds
+            );
+            
+            // 格式化关联任务列表
+            const relatedTasksList = relatedTasksResult.map(relatedTask => {
+              const formattedRelatedTask = formatTask(relatedTask);
+              formattedRelatedTask.submittedCount = parseInt(relatedTask.submitted_count || 0, 10);
+              
+              // 为关联任务添加报名状态（如果有会员ID）
+              formattedRelatedTask.isEnrolled = false;
+              formattedRelatedTask.enrollmentId = null;
+              
+              return formattedRelatedTask;
+            });
+            
+            // 添加到任务组信息中
+            task.taskGroup.relatedTasksList = relatedTasksList;
+            
+            logger.debug(`获取关联任务详情成功 - 任务ID: ${task.id}, 关联任务数量: ${relatedTasksList.length}`);
+          } catch (error) {
+            logger.error(`获取关联任务详情失败 - 任务ID: ${task.id}, 错误: ${error.message}`);
+            // 如果获取失败，设置为空数组
+            task.taskGroup.relatedTasksList = [];
+          }
+        } else if (task.taskGroup) {
+          // 如果有任务组但没有关联任务，设置为空数组
+          task.taskGroup.relatedTasksList = [];
+        }
       }
     }
     

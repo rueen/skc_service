@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-25 10:15:13
  * @LastEditors: diaochan
- * @LastEditTime: 2025-07-13 15:11:56
+ * @LastEditTime: 2025-07-18 16:39:22
  * @Description: 
  */
 /**
@@ -38,7 +38,7 @@ async function getList(req, res) {
     if (category) filters.category = category;
     
     // 获取任务列表，传递memberId以检查报名状态
-    const result = await taskModel.getList(filters, page, pageSize, memberId);
+    const result = await taskModel.getList(filters, page, pageSize, memberId, {}, true);
     
     // 添加完整的调试日志，包括返回的任务数量
     logger.info(`任务列表返回 - 会员ID: ${memberId || '未登录'}, 任务数量: ${result.list.length}`);

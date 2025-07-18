@@ -62,7 +62,7 @@ async function getList(req, res) {
     }
     
     // 获取任务列表
-    const result = await taskModel.getList(filters, page, pageSize, null, sortOptions);
+    const result = await taskModel.getList(filters, page, pageSize, null, sortOptions, false);
     
     return responseUtil.success(res, result);
   } catch (error) {
