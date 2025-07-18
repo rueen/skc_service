@@ -354,6 +354,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
             // 获取关联任务的详细信息
             const relatedTaskIds = task.taskGroup.relatedTasks;
             const placeholders = relatedTaskIds.map(() => '?').join(', ');
+            const orderField = relatedTaskIds.map(() => '?').join(', ');
             
             const [relatedTasksResult] = await pool.query(
               `SELECT t.*, c.name as channel_name, c.icon as channel_icon,
@@ -361,8 +362,8 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
               FROM tasks t
               LEFT JOIN channels c ON t.channel_id = c.id
               WHERE t.id IN (${placeholders})
-              ORDER BY t.create_time ASC`,
-              relatedTaskIds
+              ORDER BY FIELD(t.id, ${orderField})`,
+              [...relatedTaskIds, ...relatedTaskIds]
             );
             
             // 格式化关联任务列表
