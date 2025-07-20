@@ -74,6 +74,8 @@ function formatDateTimeForMySQL(dateTimeString) {
   }
 }
 
+
+
 /**
  * 获取广告列表
  * @param {Object} filters - 筛选条件
@@ -109,21 +111,15 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
 
     // 状态筛选需要通过时间条件实现
     if (filters.status) {
-      const now = new Date();
-      const nowStr = now.toISOString().slice(0, 19).replace('T', ' ');
-      
       switch (filters.status) {
         case 'not_started':
-          conditions.push('a.start_time > ?');
-          queryParams.push(nowStr);
+          conditions.push('a.start_time > NOW()');
           break;
         case 'processing':
-          conditions.push('a.start_time <= ? AND a.end_time >= ?');
-          queryParams.push(nowStr, nowStr);
+          conditions.push('a.start_time <= NOW() AND a.end_time >= NOW()');
           break;
         case 'ended':
-          conditions.push('a.end_time < ?');
-          queryParams.push(nowStr);
+          conditions.push('a.end_time < NOW()');
           break;
       }
     }
@@ -413,16 +409,13 @@ async function remove(id) {
  */
 async function getH5List(location) {
   try {
-    const now = new Date();
-    const nowStr = now.toISOString().slice(0, 19).replace('T', ' ');
-    
     const [rows] = await pool.query(
       `SELECT * FROM ads 
        WHERE location = ? 
-       AND start_time <= ? 
-       AND end_time >= ?
+       AND start_time <= NOW() 
+       AND end_time >= NOW()
        ORDER BY create_time DESC`,
-      [location, nowStr, nowStr]
+      [location]
     );
     
     // 格式化数据
