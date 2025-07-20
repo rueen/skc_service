@@ -25,6 +25,7 @@ const taskGroupRoutes = require('./task-group.routes');
 const notificationRoutes = require('./notification.routes');
 const systemConfigRoutes = require('./system-config.routes');
 const paymentChannelRoutes = require('./payment-channel.routes');
+const adRoutes = require('./ad.routes');
 const apiSignMiddleware = require('../../shared/middlewares/api-sign.middleware');
 
 const router = express.Router();
@@ -78,5 +79,8 @@ router.use('/system-configs', systemConfigRoutes);
 
 // 支付渠道路由
 router.use('/payment-channels', paymentChannelRoutes);
+
+// 广告路由
+router.use('/ads', adRoutes);
 
 module.exports = router; 

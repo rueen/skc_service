@@ -31,6 +31,34 @@ const TaskStatusLang = {
   }
 };
 
+// 广告状态枚举
+const AdStatus = {
+  NOT_STARTED: 'not_started',  // 未开始
+  PROCESSING: 'processing',    // 进行中
+  ENDED: 'ended'              // 已结束
+};
+
+const AdStatusLang = {
+  [TaskStatus.NOT_STARTED]: {
+    'zh-CN': '未开始',
+    'en-US': 'Not Started',
+    'zh-TW': '未開始',
+    'tl-PH': 'Hindi Pa Nagsisimula'
+  },
+  [TaskStatus.PROCESSING]: {
+    'zh-CN': '进行中',
+    'en-US': 'Processing',
+    'zh-TW': '進行中',
+    'tl-PH': 'Nagpoproseso'
+  },
+  [TaskStatus.ENDED]: {
+    'zh-CN': '已结束',
+    'en-US': 'Ended',
+    'zh-TW': '已結束',
+    'tl-PH': 'Natapos Na'
+  }
+};
+
 // 任务类型枚举
 const TaskType = {
   POST: 'post',       // 图文
@@ -315,6 +343,8 @@ const SettlementStatusLang = {
 module.exports = {
   TaskStatus,
   TaskStatusLang,
+  AdStatus,
+  AdStatusLang,
   TaskType,
   TaskTypeLang,
   TaskAuditStatus,

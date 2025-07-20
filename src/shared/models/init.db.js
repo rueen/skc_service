@@ -523,6 +523,50 @@ CREATE TABLE IF NOT EXISTS enrolled_task_groups (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='已报名任务组表';
 `;
 
+// 创建位置表
+const createLocationsTable = `
+CREATE TABLE IF NOT EXISTS locations (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '位置ID',
+  name varchar(100) NOT NULL COMMENT '位置名称',
+  code varchar(50) NOT NULL COMMENT '位置代码',
+  type varchar(20) NOT NULL COMMENT '位置类型',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_code (code),
+  KEY idx_type (type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='位置表';
+`;
+
+// 初始化位置数据
+const initLocations = `
+INSERT INTO locations (name, code, type) 
+SELECT 'Home Banner', 'home_banner', 'ad'
+FROM dual 
+WHERE NOT EXISTS (SELECT 1 FROM locations WHERE code = 'home_banner')
+`;
+
+// 创建广告表
+const createAdsTable = `
+CREATE TABLE IF NOT EXISTS ads (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '广告ID',
+  title varchar(200) NOT NULL COMMENT '广告标题',
+  location varchar(50) NOT NULL COMMENT '广告位置代码',
+  start_time datetime NOT NULL COMMENT '开始时间',
+  end_time datetime NOT NULL COMMENT '结束时间',
+  content json DEFAULT NULL COMMENT '广告内容，JSON格式',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  KEY idx_location (location),
+  KEY idx_start_time (start_time),
+  KEY idx_end_time (end_time),
+  KEY idx_title (title),
+  KEY idx_create_time (create_time),
+  KEY idx_update_time (update_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='广告表';
+`;
+
 // 执行所有SQL语句创建表
 async function initTables() {
   const connection = await pool.getConnection();
@@ -556,6 +600,8 @@ async function initTables() {
     await connection.query(createTaskGroupsTable);
     await connection.query(createTaskTaskGroupsTable);
     await connection.query(createEnrolledTaskGroupsTable);
+    await connection.query(createLocationsTable);
+    await connection.query(createAdsTable);
     
     // 初始化管理员账号
     await connection.query(initAdminUser);
@@ -564,6 +610,8 @@ async function initTables() {
     // 初始化文章
     await connection.query(initUserAgreement);
     await connection.query(initPrivacyPolicy);
+    // 初始化位置数据
+    await connection.query(initLocations);
     
     // 提交事务
     await connection.commit();

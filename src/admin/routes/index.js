@@ -25,6 +25,7 @@ const withdrawalRoutes = require('./withdrawal.routes');
 const submittedTaskRoutes = require('./submitted-task.routes');
 const oldAccountsFbRoutes = require('./old-accounts-fb.routes');
 const paymentChannelRoutes = require('./payment-channel.routes');
+const adRoutes = require('./ad.routes');
 const apiSignMiddleware = require('../../shared/middlewares/api-sign.middleware');
 
 const router = express.Router();
@@ -76,5 +77,8 @@ router.use(`/old-accounts-fb`, oldAccountsFbRoutes);
 
 // 支付渠道管理路由
 router.use(`/payment-channels`, paymentChannelRoutes);
+
+// 广告管理路由
+router.use(`/ads`, adRoutes);
 
 module.exports = router; 

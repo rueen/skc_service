@@ -16,6 +16,7 @@ const enumRoutes = require('./enum.routes');
 const taskSchedulerRoutes = require('./task-scheduler.routes');
 const timeRoutes = require('./time.routes');
 const facebookScraperRoutes = require('./facebook-scraper.routes');
+const locationRoutes = require('./location.routes');
 
 const router = express.Router();
 
@@ -36,6 +37,9 @@ router.use('/api/time', timeRoutes);
 
 // Facebook 数据抓取路由
 router.use('/api/facebook', facebookScraperRoutes);
+
+// 位置路由
+router.use('/api/location', locationRoutes);
 
 module.exports = {
   router,
