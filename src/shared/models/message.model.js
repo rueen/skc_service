@@ -251,17 +251,35 @@ async function remove(id) {
 
 /**
  * 获取有效期内的站内信列表（H5端）
- * @returns {Promise<Array>} 有效期内的站内信列表
+ * @param {number} memberId - 会员ID，用于过滤已读消息
+ * @returns {Promise<Array>} 有效期内且未读的站内信列表
  */
-async function getValidMessages() {
+async function getValidMessages(memberId = null) {
   try {
     const now = new Date();
-    const [rows] = await pool.query(
-      'SELECT * FROM messages WHERE start_time <= ? AND end_time >= ? ORDER BY create_time DESC',
-      [now, now]
-    );
     
-    return rows.map(formatMessage);
+    if (memberId) {
+      // 如果提供了会员ID，过滤掉已读的消息
+      const [rows] = await pool.query(
+        `SELECT m.* FROM messages m 
+         WHERE m.start_time <= ? AND m.end_time >= ? 
+         AND m.id NOT IN (
+           SELECT mr.message_id FROM message_reads mr WHERE mr.member_id = ?
+         )
+         ORDER BY m.create_time DESC`,
+        [now, now, memberId]
+      );
+      
+      return rows.map(formatMessage);
+    } else {
+      // 如果没有提供会员ID，返回所有有效期内的消息
+      const [rows] = await pool.query(
+        'SELECT * FROM messages WHERE start_time <= ? AND end_time >= ? ORDER BY create_time DESC',
+        [now, now]
+      );
+      
+      return rows.map(formatMessage);
+    }
   } catch (error) {
     logger.error(`获取有效期内站内信列表失败: ${error.message}`);
     throw error;
@@ -288,26 +306,6 @@ async function markAsRead(messageId, memberId) {
   }
 }
 
-/**
- * 检查用户是否已读某条站内信
- * @param {number} messageId - 站内信ID
- * @param {number} memberId - 会员ID
- * @returns {Promise<boolean>} 是否已读
- */
-async function isMessageRead(messageId, memberId) {
-  try {
-    const [rows] = await pool.query(
-      'SELECT id FROM message_reads WHERE message_id = ? AND member_id = ?',
-      [messageId, memberId]
-    );
-    
-    return rows.length > 0;
-  } catch (error) {
-    logger.error(`检查站内信阅读状态失败: ${error.message}`);
-    throw error;
-  }
-}
-
 module.exports = {
   getList,
   getById,
@@ -316,6 +314,5 @@ module.exports = {
   remove,
   getValidMessages,
   markAsRead,
-  isMessageRead,
   formatMessage
 }; 

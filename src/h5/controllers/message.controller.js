@@ -14,8 +14,10 @@ const { logger } = require('../../shared/config/logger.config');
  */
 async function getList(req, res) {
   try {
-    // 获取有效期内的站内信列表
-    const messages = await messageModel.getValidMessages();
+    const memberId = req.user.id; // 从认证中间件获取用户ID
+    
+    // 获取有效期内且未读的站内信列表
+    const messages = await messageModel.getValidMessages(memberId);
     
     return responseUtil.success(res, messages);
   } catch (error) {
