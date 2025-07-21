@@ -331,7 +331,7 @@ CREATE TABLE IF NOT EXISTS waiters (
   password varchar(255) NOT NULL COMMENT '密码（加密存储）',
   is_admin tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否管理员：0-否，1-是',
   remarks varchar(255) DEFAULT NULL COMMENT '备注',
-  permissions varchar(255) DEFAULT NULL COMMENT '权限列表，逗号分隔',
+  permissions text DEFAULT NULL COMMENT '权限列表，逗号分隔',
   last_login_time datetime DEFAULT NULL COMMENT '最后登录时间',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
