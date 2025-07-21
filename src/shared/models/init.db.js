@@ -567,6 +567,42 @@ CREATE TABLE IF NOT EXISTS ads (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='广告表';
 `;
 
+// 创建站内信表
+const createMessagesTable = `
+CREATE TABLE IF NOT EXISTS messages (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '站内信ID',
+  title varchar(200) NOT NULL COMMENT '站内信标题',
+  content text NOT NULL COMMENT '站内信内容',
+  start_time datetime NOT NULL COMMENT '开始时间',
+  end_time datetime NOT NULL COMMENT '结束时间',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  KEY idx_start_time (start_time),
+  KEY idx_end_time (end_time),
+  KEY idx_title (title),
+  KEY idx_create_time (create_time),
+  KEY idx_update_time (update_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内信表';
+`;
+
+// 创建站内信阅读状态表
+const createMessageReadsTable = `
+CREATE TABLE IF NOT EXISTS message_reads (
+  id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '阅读记录ID',
+  message_id bigint(20) NOT NULL COMMENT '站内信ID',
+  member_id bigint(20) NOT NULL COMMENT '会员ID',
+  read_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '阅读时间',
+  create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_message_member (message_id, member_id),
+  KEY idx_message_id (message_id),
+  KEY idx_member_id (member_id),
+  KEY idx_read_time (read_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内信阅读状态表';
+`;
+
 // 执行所有SQL语句创建表
 async function initTables() {
   const connection = await pool.getConnection();
@@ -602,6 +638,8 @@ async function initTables() {
     await connection.query(createEnrolledTaskGroupsTable);
     await connection.query(createLocationsTable);
     await connection.query(createAdsTable);
+    await connection.query(createMessagesTable);
+    await connection.query(createMessageReadsTable);
     
     // 初始化管理员账号
     await connection.query(initAdminUser);
