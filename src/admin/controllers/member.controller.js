@@ -153,8 +153,8 @@ async function create(req, res) {
       actualPhone = memberAccount;
     }
 
-    // 生成默认昵称（如果没有提供）
-    const actualNickname = memberNickname || `user${Math.floor(Math.random() * 1000000)}`;
+    // 昵称处理将在model层进行，这里直接传递
+    const actualNickname = memberNickname;
 
     // 设置默认头像
     const defaultAvatar = 'http://skc-statics.oss-ap-southeast-6.aliyuncs.com/skc/defaultAvatar.png';

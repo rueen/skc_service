@@ -46,9 +46,6 @@ async function login(req, res) {
     
     // 如果用户不存在，自动注册
     if (!member) {
-      // 生成随机昵称
-      const randomNickname = `user${Math.floor(Math.random() * 1000000)}`;
-      
       // 加密密码
       const hashedPassword = await authUtil.hashPassword(password);
       
@@ -56,7 +53,7 @@ async function login(req, res) {
       // 设置默认头像
       const defaultAvatar = 'http://skc-statics.oss-ap-southeast-6.aliyuncs.com/skc/defaultAvatar.png';
       const memberData = {
-        memberNickname: randomNickname,
+        memberNickname: null,
         memberAccount: memberAccount,
         password: hashedPassword,
         avatar: defaultAvatar,

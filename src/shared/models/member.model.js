@@ -55,6 +55,47 @@ function generateInviteCode() {
 }
 
 /**
+ * 生成唯一的默认昵称
+ * @param {Object} connection - 数据库连接
+ * @returns {Promise<string>} 唯一的默认昵称
+ */
+async function generateUniqueDefaultNickname(connection) {
+  let nickname;
+  let isUnique = false;
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  while (!isUnique && attempts < maxAttempts) {
+    // 生成默认昵称，使用时间戳和随机数确保更高的唯一性
+    const timestamp = Date.now().toString().slice(-6); // 取时间戳后6位
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0'); // 4位随机数
+    nickname = `user${timestamp}${random}`;
+
+    // 检查昵称是否已存在
+    const [existing] = await connection.query(
+      'SELECT id FROM members WHERE nickname = ?',
+      [nickname]
+    );
+
+    if (existing.length === 0) {
+      isUnique = true;
+    } else {
+      attempts++;
+      // 稍微延迟一下，确保时间戳不同
+      await new Promise(resolve => setTimeout(resolve, 1));
+    }
+  }
+
+  if (!isUnique) {
+    // 如果尝试多次仍不唯一，使用UUID的一部分
+    const uuid = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+    nickname = `user${uuid}`;
+  }
+
+  return nickname;
+}
+
+/**
  * 获取会员列表
  * @param {Object} filters - 筛选条件
  * @param {number} page - 页码
@@ -423,6 +464,12 @@ async function create(memberData) {
       }
     }
     
+    // 如果没有提供昵称，生成唯一的默认昵称
+    let finalNickname = memberData.memberNickname;
+    if (!finalNickname) {
+      finalNickname = await generateUniqueDefaultNickname(connection);
+    }
+    
     // 生成唯一邀请码
     let inviteCode;
     let isUniqueCode = false;
@@ -445,7 +492,7 @@ async function create(memberData) {
        (nickname, account, password, inviter_id, occupation, invite_code, phone, area_code, email, avatar, gender, telegram, register_source)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        memberData.memberNickname,
+        finalNickname,
         memberData.memberAccount,
         memberData.password || null,
         memberData.inviterId || null,
@@ -1108,5 +1155,6 @@ module.exports = {
   updateIsNewStatus,
   isNewMember,
   grantReward,
-  deductReward
+  deductReward,
+  generateUniqueDefaultNickname
 }; 
