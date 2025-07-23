@@ -81,7 +81,11 @@ router.get(
     query('sorterOrder')
       .optional()
       .isIn(['ascend', 'descend'])
-      .withMessage('common.validation.invalid')
+      .withMessage('common.validation.invalid'),
+    query('inviter')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   accountController.getAccounts

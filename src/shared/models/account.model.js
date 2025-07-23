@@ -19,6 +19,9 @@ function formatAccount(account) {
   // 转换字段名称为驼峰命名法
   const formattedAccount = convertToCamelCase({
     ...account,
+    inviterId: account.inviter_id,
+    inviterNickname: account.inviter_nickname,
+    inviterAccount: account.inviter_account,
     createTime: formatDateTime(account.create_time),
     updateTime: formatDateTime(account.update_time),
     submitTime: formatDateTime(account.submit_time),
@@ -28,6 +31,18 @@ function formatAccount(account) {
   return formattedAccount;
 }
 
+/**
+ * 获取账户列表
+ * @param {Object} filters - 筛选条件
+ * @param {number} page - 页码
+ * @param {number} pageSize - 每页条数
+ * @param {Object} sortOptions - 排序选项
+ * @returns {Promise<Object>} 账户列表和分页信息
+ * @property {Array} list 账户列表
+ * @property {Number} list[].inviterId 邀请人ID
+ * @property {String} list[].inviterNickname 邀请人昵称
+ * @property {String} list[].inviterAccount 邀请人账号
+ */
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, sortOptions = {}) {
   try {
     const offset = (page - 1) * pageSize;
@@ -86,18 +101,28 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(filters.submitEndTime);
     }
     
+    // 新增邀请人搜索条件
+    if (filters.inviter) {
+      whereClause += ' AND (m.inviter_id IN (SELECT id FROM members WHERE account LIKE ? OR nickname LIKE ?))';
+      queryParams.push(`%${filters.inviter}%`, `%${filters.inviter}%`);
+    }
+    
     // 构建查询语句
     let query = `
       SELECT a.*, 
              m.nickname as member_nickname,
              m.account as member_account,
              m.create_time as member_create_time,
+             m.inviter_id as inviter_id,
+             inv.nickname as inviter_nickname,
+             inv.account as inviter_account,
              c.name as channel_name,
              c.icon as channel_icon,
              c.custom_fields as channel_custom_fields,
              w.username as waiter_name
       FROM accounts a
       LEFT JOIN members m ON a.member_id = m.id
+      LEFT JOIN members inv ON m.inviter_id = inv.id
       LEFT JOIN channels c ON a.channel_id = c.id
       LEFT JOIN waiters w ON a.waiter_id = w.id
       WHERE ${whereClause}
@@ -135,6 +160,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const countQuery = `
       SELECT COUNT(*) as total
       FROM accounts a
+      LEFT JOIN members m ON a.member_id = m.id
       WHERE ${whereClause}
     `;
     

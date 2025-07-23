@@ -13,6 +13,14 @@ const i18n = require('../../shared/utils/i18n.util');
  * 获取账号列表
  * @param {Object} req - 请求对象
  * @param {Object} res - 响应对象
+ * @returns {Object} 响应数据
+ * @property {Array} list 账号列表
+ * @property {Number} total 总数
+ * @property {Number} page 当前页
+ * @property {Number} pageSize 每页条数
+ * @property {Number} list[].inviterId 邀请人ID
+ * @property {String} list[].inviterNickname 邀请人昵称
+ * @property {String} list[].inviterAccount 邀请人账号
  */
 async function getAccounts(req, res) {
   try {
@@ -29,7 +37,8 @@ async function getAccounts(req, res) {
       submitStartTime,
       submitEndTime,
       sorterField,
-      sorterOrder
+      sorterOrder,
+      inviter // 新增
     } = req.query;
     
     // 构建筛选条件
@@ -69,6 +78,10 @@ async function getAccounts(req, res) {
     
     if (submitEndTime) {
       filters.submitEndTime = submitEndTime;
+    }
+
+    if (inviter) {
+      filters.inviter = inviter;
     }
     
     // 构建排序选项
