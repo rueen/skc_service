@@ -146,8 +146,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     // 邀请人账号或昵称搜索
     if (filters.inviter) {
-      conditions.push('(m.inviter_id IN (SELECT id FROM members WHERE account LIKE ? OR nickname LIKE ?))');
-      queryParams.push(`%${filters.inviter}%`, `%${filters.inviter}%`);
+      if (filters.inviter === '--') {
+        conditions.push('m.inviter_id IS NULL');
+      } else {
+        conditions.push('(m.inviter_id IN (SELECT id FROM members WHERE account LIKE ? OR nickname LIKE ?))');
+        queryParams.push(`%${filters.inviter}%`, `%${filters.inviter}%`);
+      }
     }
     
     // 创建开始时间筛选

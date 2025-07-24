@@ -103,8 +103,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     // 新增邀请人搜索条件
     if (filters.inviter) {
-      whereClause += ' AND (m.inviter_id IN (SELECT id FROM members WHERE account LIKE ? OR nickname LIKE ?))';
-      queryParams.push(`%${filters.inviter}%`, `%${filters.inviter}%`);
+      if (filters.inviter === '--') {
+        whereClause += ' AND m.inviter_id IS NULL';
+      } else {
+        whereClause += ' AND (m.inviter_id IN (SELECT id FROM members WHERE account LIKE ? OR nickname LIKE ?))';
+        queryParams.push(`%${filters.inviter}%`, `%${filters.inviter}%`);
+      }
     }
     
     // 构建查询语句
