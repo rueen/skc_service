@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-03-15 15:43:57
  * @LastEditors: diaochan
- * @LastEditTime: 2025-07-28 20:55:21
+ * @LastEditTime: 2025-07-28 21:19:34
  * @Description: 
  */
 /**
@@ -28,7 +28,7 @@ const PORT = process.env.H5_PORT || 3001;
 const app = createApp({
   appName: 'h5',
   corsOrigins: process.env.NODE_ENV === 'production' 
-    ? ['https://m.skcpop.com', 'http://m.skcpop.com', 'https://m.skcjpy.com', 'http://m.skcjpy.com']
+    ? ['https://m.skcpop.com', 'http://m.skcpop.com', 'https://m.skcjpy.com', 'http://m.skcjpy.com', 'https://m.skcph.com', 'http://m.skcph.com']
     : '*'
 });
 
