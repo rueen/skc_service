@@ -80,11 +80,52 @@ async function addAccount(req, res) {
     const memberId = req.user.id;
     const { channelId, account, uid, homeUrl, fansCount, friendsCount, postsCount } = req.body;
     
-    // 检查是否已存在相同渠道的账号
-    const existingAccount = await accountModel.getByMemberAndChannel(memberId, channelId);
+    // 检查是否已存在相同渠道的账号（包括已删除的）
+    const existingAccount = await accountModel.getByMemberAndChannelIncludeDeleted(memberId, channelId);
     
-    if (existingAccount) {
+    // 如果存在未删除的账号，返回错误
+    if (existingAccount && existingAccount.isDeleted === 0) {
       return responseUtil.badRequest(res, i18n.t('h5.account.alreadyExists', req.lang));
+    }
+    
+    // 如果存在已删除的账号，恢复该账号
+    if (existingAccount && existingAccount.isDeleted === 1) {
+      const updateData = {
+        id: existingAccount.id,
+        account,
+        uid,
+        homeUrl,
+        fansCount: fansCount || 0,
+        friendsCount: friendsCount || 0,
+        postsCount: postsCount || 0,
+        accountAuditStatus: 'pending', // 重置审核状态
+        isDeleted: 0, // 恢复账号
+        submitTime: new Date()
+      };
+      
+      await accountModel.update(updateData);
+      
+      // 如果提供了uid，尝试关联FB老账号
+      if (uid) {
+        try {
+          const bindResult = await oldAccountsFbModel.bindMember(uid, memberId);
+          if (bindResult && bindResult.success && bindResult.associated) {
+            // 如果成功关联了FB老账号，则更新该账号为老账号
+            try {
+              await accountModel.updateIsNewStatusByMemberAndChannel(memberId, channelId);
+              logger.info(`会员${memberId}的渠道${channelId}账号已标记为老账号`);
+            } catch (updateError) {
+              logger.error(`更新账号is_new状态失败: ${updateError.message}`);
+            }
+          }
+        } catch (bindError) {
+          logger.error(`关联FB老账号失败，但不影响账号恢复: ${bindError.message}`);
+        }
+      }
+      
+      // 获取恢复后的账号信息
+      const restoredAccount = await accountModel.getById(existingAccount.id);
+      return responseUtil.success(res, restoredAccount, i18n.t('h5.account.addSuccess', req.lang));
     }
     
     // 添加账号
@@ -255,29 +296,22 @@ async function deleteAccount(req, res) {
     }
     
     // 获取账号详情，检查是否存在以及是否属于当前会员
-    const query = `
-      SELECT a.*
-      FROM accounts a
-      WHERE a.id = ?
-      LIMIT 1
-    `;
+    const accountInfo = await accountModel.getById(accountId);
     
-    const { pool } = require('../../shared/models/db');
-    const [rows] = await pool.query(query, [accountId]);
-    
-    if (rows.length === 0) {
+    if (!accountInfo) {
       return responseUtil.notFound(res, i18n.t('h5.account.notFound', req.lang));
     }
     
-    const accountInfo = rows[0];
-    
     // 检查账号是否属于当前会员
-    if (accountInfo.member_id !== memberId) {
+    if (accountInfo.memberId !== memberId) {
       return responseUtil.forbidden(res, i18n.t('h5.account.noPermissionDelete', req.lang));
     }
     
-    // 调用模型的删除方法
-    const result = await accountModel.remove(accountId);
+    // 软删除账号（设置is_deleted为1）
+    const result = await accountModel.update({
+      id: accountId,
+      isDeleted: 1
+    });
     
     return responseUtil.success(res, result);
   } catch (error) {
