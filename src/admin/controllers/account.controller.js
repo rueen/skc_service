@@ -510,8 +510,11 @@ async function deleteAccount(req, res) {
       return responseUtil.notFound(res, i18n.t('admin.account.notFound', req.lang));
     }
     
-    // 删除账号
-    const result = await accountModel.remove(parseInt(id, 10));
+    // 软删除账号（设置is_deleted为1）
+    const result = await accountModel.update({
+      id: parseInt(id, 10),
+      isDeleted: 1
+    });
     
     return responseUtil.success(res, result);
   } catch (error) {

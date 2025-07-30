@@ -23,6 +23,7 @@ function formatAccount(account) {
     inviterNickname: account.inviter_nickname,
     inviterAccount: account.inviter_account,
     isNew: account.is_new,
+    isDeleted: account.is_deleted,
     createTime: formatDateTime(account.create_time),
     updateTime: formatDateTime(account.update_time),
     submitTime: formatDateTime(account.submit_time),
@@ -49,7 +50,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     const offset = (page - 1) * pageSize;
     
     // 构建查询条件
-    let whereClause = '1=1';
+    let whereClause = 'a.is_deleted = 0';
     const queryParams = [];
     
     if (filters.memberId) {
@@ -263,7 +264,7 @@ async function getByMemberId(memberId) {
          c.icon as channel_icon
       FROM accounts a
       LEFT JOIN channels c ON a.channel_id = c.id
-      WHERE a.member_id = ?
+      WHERE a.member_id = ? AND a.is_deleted = 0
       ORDER BY a.channel_id
     `;
     
@@ -291,7 +292,7 @@ async function getByMemberAndChannel(memberId, channelId) {
              c.icon as channel_icon
       FROM accounts a
       LEFT JOIN channels c ON a.channel_id = c.id
-      WHERE a.member_id = ? AND a.channel_id = ?
+      WHERE a.member_id = ? AND a.channel_id = ? AND a.is_deleted = 0
       LIMIT 1
     `;
     
@@ -305,6 +306,38 @@ async function getByMemberAndChannel(memberId, channelId) {
     return formatAccount(rows[0]);
   } catch (error) {
     logger.error(`根据会员ID和渠道ID获取账号失败: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * 根据会员ID和渠道ID获取账号（包括已删除的）
+ * @param {number} memberId - 会员ID
+ * @param {number} channelId - 渠道ID
+ * @returns {Promise<Object>} 账号信息
+ */
+async function getByMemberAndChannelIncludeDeleted(memberId, channelId) {
+  try {
+    const query = `
+      SELECT a.*,
+             c.name as channel_name,
+             c.icon as channel_icon
+      FROM accounts a
+      LEFT JOIN channels c ON a.channel_id = c.id
+      WHERE a.member_id = ? AND a.channel_id = ?
+      LIMIT 1
+    `;
+    
+    const [rows] = await pool.query(query, [memberId, channelId]);
+    
+    if (rows.length === 0) {
+      return null;
+    }
+    
+    // 格式化结果
+    return formatAccount(rows[0]);
+  } catch (error) {
+    logger.error(`根据会员ID和渠道ID获取账号（包括已删除）失败: ${error.message}`);
     throw error;
   }
 }
@@ -340,6 +373,7 @@ async function create(accountData) {
       posts_count: accountData.postsCount || 0,
       account_audit_status: accountData.accountAuditStatus || 'pending',
       is_new: accountData.isNew !== undefined ? accountData.isNew : 1,
+      is_deleted: accountData.isDeleted !== undefined ? accountData.isDeleted : 0,
       submit_time: new Date()
     };
     
@@ -412,6 +446,7 @@ async function update(accountData) {
     if (accountData.rejectReason !== undefined) updateData.reject_reason = accountData.rejectReason;
     if (accountData.waiterId !== undefined) updateData.waiter_id = accountData.waiterId;
     if (accountData.isNew !== undefined) updateData.is_new = accountData.isNew;
+    if (accountData.isDeleted !== undefined) updateData.is_deleted = accountData.isDeleted;
     
     // 如果有更新字段，才执行更新操作
     if (Object.keys(updateData).length > 0) {
@@ -584,7 +619,7 @@ async function getById(id) {
              c.custom_fields as channel_custom_fields
       FROM accounts a
       LEFT JOIN channels c ON a.channel_id = c.id
-      WHERE a.id = ?
+      WHERE a.id = ? AND a.is_deleted = 0
       LIMIT 1
     `;
     
@@ -701,6 +736,7 @@ module.exports = {
   formatAccount,
   getByMemberId,
   getByMemberAndChannel,
+  getByMemberAndChannelIncludeDeleted,
   create,
   update,
   remove,
