@@ -199,6 +199,36 @@ async function batchApproveSubmissions(req, res) {
       [ids, 'approved']
     );
     
+    // 更新关联账号的is_new状态为老账号
+    if (approvedTasks.length > 0) {
+      try {
+        const accountModel = require('../../shared/models/account.model');
+        
+        // 批量更新账号状态
+        for (const task of approvedTasks) {
+          try {
+            // 根据任务获取渠道信息，然后更新对应的账号
+            const [taskInfo] = await pool.query(
+              'SELECT channel_id FROM tasks WHERE id = ?',
+              [task.task_id]
+            );
+            
+            if (taskInfo.length > 0) {
+              await accountModel.updateIsNewStatusByMemberAndChannel(
+                task.member_id, 
+                taskInfo[0].channel_id
+              );
+              logger.info(`任务审核通过，会员${task.member_id}的渠道${taskInfo[0].channel_id}账号已标记为老账号`);
+            }
+          } catch (accountUpdateError) {
+            logger.error(`更新账号is_new状态失败 - 任务ID: ${task.task_id}, 会员ID: ${task.member_id}, 错误: ${accountUpdateError.message}`);
+          }
+        }
+      } catch (error) {
+        logger.error(`批量更新账号is_new状态失败: ${error.message}`);
+      }
+    }
+    
     // 为每个审核通过的任务检查是否需要发放任务组奖励
     for (const task of approvedTasks) {
       try {

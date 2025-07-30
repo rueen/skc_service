@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   waiter_id bigint(20) DEFAULT NULL COMMENT '审核小二ID',
   audit_time datetime DEFAULT NULL COMMENT '审核时间',
   submit_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '提交/修改时间',
+  is_new tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否新账号：0-老账号，1-新账号',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
@@ -30,7 +31,8 @@ CREATE TABLE IF NOT EXISTS accounts (
   KEY idx_member_id (member_id),
   KEY idx_channel_id (channel_id),
   KEY idx_account_audit_status (account_audit_status),
-  KEY idx_waiter_id (waiter_id)
+  KEY idx_waiter_id (waiter_id),
+  KEY idx_is_new (is_new)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='账户表';
 `;
 

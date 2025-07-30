@@ -105,7 +105,16 @@ async function addAccount(req, res) {
     // 如果提供了uid，尝试关联FB老账号
     if (uid) {
       try {
-        await oldAccountsFbModel.bindMember(uid, memberId);
+        const bindResult = await oldAccountsFbModel.bindMember(uid, memberId);
+        if (bindResult && bindResult.success && bindResult.associated) {
+          // 如果成功关联了FB老账号，则更新该账号为老账号
+          try {
+            await accountModel.updateIsNewStatusByMemberAndChannel(memberId, channelId);
+            logger.info(`会员${memberId}的渠道${channelId}账号已标记为老账号`);
+          } catch (updateError) {
+            logger.error(`更新账号is_new状态失败: ${updateError.message}`);
+          }
+        }
       } catch (bindError) {
         logger.error(`关联FB老账号失败，但不影响账号创建: ${bindError.message}`);
         // 关联失败不影响账号创建的结果
@@ -201,7 +210,16 @@ async function updateAccount(req, res) {
     // 如果提供了uid，尝试关联FB老账号
     if (uid) {
       try {
-        await oldAccountsFbModel.bindMember(uid, memberId);
+        const bindResult = await oldAccountsFbModel.bindMember(uid, memberId);
+        if (bindResult && bindResult.success && bindResult.associated) {
+          // 如果成功关联了FB老账号，则更新该账号为老账号
+          try {
+            await accountModel.updateIsNewStatusByMemberAndChannel(memberId, accountInfo.channel_id);
+            logger.info(`会员${memberId}的渠道${accountInfo.channel_id}账号已标记为老账号`);
+          } catch (updateError) {
+            logger.error(`更新账号is_new状态失败: ${updateError.message}`);
+          }
+        }
       } catch (bindError) {
         logger.error(`关联FB老账号失败，但不影响账号更新: ${bindError.message}`);
         // 关联失败不影响账号更新的结果

@@ -22,6 +22,7 @@ function formatAccount(account) {
     inviterId: account.inviter_id,
     inviterNickname: account.inviter_nickname,
     inviterAccount: account.inviter_account,
+    isNew: account.is_new,
     createTime: formatDateTime(account.create_time),
     updateTime: formatDateTime(account.update_time),
     submitTime: formatDateTime(account.submit_time),
@@ -338,6 +339,7 @@ async function create(accountData) {
       friends_count: accountData.friendsCount || 0,
       posts_count: accountData.postsCount || 0,
       account_audit_status: accountData.accountAuditStatus || 'pending',
+      is_new: accountData.isNew !== undefined ? accountData.isNew : 1,
       submit_time: new Date()
     };
     
@@ -409,6 +411,7 @@ async function update(accountData) {
     if (accountData.accountAuditStatus !== undefined) updateData.account_audit_status = accountData.accountAuditStatus;
     if (accountData.rejectReason !== undefined) updateData.reject_reason = accountData.rejectReason;
     if (accountData.waiterId !== undefined) updateData.waiter_id = accountData.waiterId;
+    if (accountData.isNew !== undefined) updateData.is_new = accountData.isNew;
     
     // 如果有更新字段，才执行更新操作
     if (Object.keys(updateData).length > 0) {
@@ -614,6 +617,85 @@ async function getById(id) {
   }
 }
 
+/**
+ * 更新账号新账号状态为老账号
+ * @param {number} accountId - 账号ID
+ * @param {Object} connection - 数据库连接（可选，用于事务）
+ * @returns {Promise<boolean>} 更新是否成功
+ */
+async function updateIsNewStatus(accountId, connection) {
+  const conn = connection || await pool.getConnection();
+  const shouldRelease = !connection; // 如果是外部传入的连接，则不需要释放
+  
+  try {
+    if (shouldRelease) {
+      await conn.beginTransaction();
+    }
+    
+    // 更新账号新账号状态为老账号
+    const [result] = await conn.query(
+      'UPDATE accounts SET is_new = 0 WHERE id = ? AND is_new = 1',
+      [accountId]
+    );
+    
+    if (shouldRelease) {
+      await conn.commit();
+    }
+    
+    return result.affectedRows > 0;
+  } catch (error) {
+    if (shouldRelease) {
+      await conn.rollback();
+    }
+    logger.error(`更新账号新账号状态失败: ${error.message}`);
+    throw error;
+  } finally {
+    if (shouldRelease) {
+      conn.release();
+    }
+  }
+}
+
+/**
+ * 根据会员ID和渠道ID更新账号的is_new状态
+ * @param {number} memberId - 会员ID
+ * @param {number} channelId - 渠道ID
+ * @param {Object} connection - 数据库连接（可选，用于事务）
+ * @returns {Promise<boolean>} 更新是否成功
+ */
+async function updateIsNewStatusByMemberAndChannel(memberId, channelId, connection) {
+  const conn = connection || await pool.getConnection();
+  const shouldRelease = !connection; // 如果是外部传入的连接，则不需要释放
+  
+  try {
+    if (shouldRelease) {
+      await conn.beginTransaction();
+    }
+    
+    // 更新账号新账号状态为老账号
+    const [result] = await conn.query(
+      'UPDATE accounts SET is_new = 0 WHERE member_id = ? AND channel_id = ? AND is_new = 1',
+      [memberId, channelId]
+    );
+    
+    if (shouldRelease) {
+      await conn.commit();
+    }
+    
+    return result.affectedRows > 0;
+  } catch (error) {
+    if (shouldRelease) {
+      await conn.rollback();
+    }
+    logger.error(`更新账号新账号状态失败: ${error.message}`);
+    throw error;
+  } finally {
+    if (shouldRelease) {
+      conn.release();
+    }
+  }
+}
+
 module.exports = {
   getList,
   formatAccount,
@@ -624,5 +706,7 @@ module.exports = {
   remove,
   batchApprove,
   batchReject,
-  getById
+  getById,
+  updateIsNewStatus,
+  updateIsNewStatusByMemberAndChannel
 }; 

@@ -423,7 +423,7 @@ async function batchReject(req, res) {
 async function editAccount(req, res) {
   try {
     const { id } = req.params;
-    const { homeUrl, uid, account, fansCount, friendsCount, postsCount } = req.body;
+    const { homeUrl, uid, account, fansCount, friendsCount, postsCount, isNew } = req.body;
     
     // 检查账号是否存在
     const { pool } = require('../../shared/models/db');
@@ -445,6 +445,7 @@ async function editAccount(req, res) {
     if (fansCount !== undefined) accountData.fansCount = parseInt(fansCount, 10);
     if (friendsCount !== undefined) accountData.friendsCount = parseInt(friendsCount, 10);
     if (postsCount !== undefined) accountData.postsCount = parseInt(postsCount, 10);
+    if (isNew !== undefined) accountData.isNew = isNew;
     
     // 调用模型更新账号信息
     const result = await accountModel.update(accountData);
@@ -558,6 +559,7 @@ async function exportAccounts(req, res) {
       { header: '会员账号', key: 'memberAccount', width: 20 },
       { header: '注册时间', key: 'memberCreatetime', width: 20 },
       { header: '所属群组', key: 'groupName', width: 20 },
+      { header: '是否新账号', key: 'isNew', width: 15 },
     ];
     
     // 添加数据行
@@ -567,6 +569,7 @@ async function exportAccounts(req, res) {
         memberAccount: item.memberAccount || '',
         memberCreatetime: item.memberCreateTime || '',
         groupName: item.groupName || '',
+        isNew: item.isNew === 1 ? '是' : '否',
       });
     });
     
