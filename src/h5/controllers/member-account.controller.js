@@ -4,6 +4,7 @@
  */
 const accountModel = require('../../shared/models/account.model');
 const oldAccountsFbModel = require('../../shared/models/old-accounts-fb.model');
+const memberModel = require('../../shared/models/member.model');
 const { logger } = require('../../shared/config/logger.config');
 const responseUtil = require('../../shared/utils/response.util');
 const i18n = require('../../shared/utils/i18n.util');
@@ -80,52 +81,101 @@ async function addAccount(req, res) {
     const memberId = req.user.id;
     const { channelId, account, uid, homeUrl, fansCount, friendsCount, postsCount } = req.body;
     
-    // 检查是否已存在相同渠道的账号（包括已删除的）
-    const existingAccount = await accountModel.getByMemberAndChannelIncludeDeleted(memberId, channelId);
-    
-    // 如果存在未删除的账号，返回错误
-    if (existingAccount && existingAccount.isDeleted === 0) {
+    // 1. 检查当前会员在该渠道是否已有未删除的账号
+    const memberAccountInChannel = await accountModel.getByMemberAndChannel(memberId, channelId);
+    if (memberAccountInChannel) {
       return responseUtil.badRequest(res, i18n.t('h5.account.alreadyExists', req.lang));
     }
     
-    // 如果存在已删除的账号，恢复该账号
-    if (existingAccount && existingAccount.isDeleted === 1) {
-      const updateData = {
-        id: existingAccount.id,
-        account,
-        uid,
-        homeUrl,
-        fansCount: fansCount || 0,
-        friendsCount: friendsCount || 0,
-        postsCount: postsCount || 0,
-        accountAuditStatus: 'pending', // 重置审核状态
-        isDeleted: 0, // 恢复账号
-        submitTime: new Date()
-      };
+    // 2. 检查要添加的账号（通过uid）是否已存在
+    let existingAccountByUid = null;
+    if (uid) {
+      const { pool } = require('../../shared/models/db');
+      const [rows] = await pool.query(
+        'SELECT * FROM accounts WHERE uid = ? LIMIT 1',
+        [uid]
+      );
+      if (rows.length > 0) {
+        existingAccountByUid = accountModel.formatAccount(rows[0]);
+      }
+    }
+    
+    // 3. 如果uid对应的账号已存在且未删除，返回错误
+    if (existingAccountByUid && existingAccountByUid.isDeleted === 0) {
+      return responseUtil.badRequest(res, i18n.t('h5.account.duplicateBind', req.lang));
+    }
+    
+    // 4. 如果uid对应的账号已存在且已删除，恢复该账号并更新member_id
+    if (existingAccountByUid && existingAccountByUid.isDeleted === 1) {
+      const { pool } = require('../../shared/models/db');
+      const connection = await pool.getConnection();
       
-      await accountModel.update(updateData);
-      
-      // 如果提供了uid，尝试关联FB老账号
-      if (uid) {
-        try {
-          const bindResult = await oldAccountsFbModel.bindMember(uid, memberId);
-          if (bindResult && bindResult.success && bindResult.associated) {
-            // 如果成功关联了FB老账号，则更新该账号为老账号
-            try {
-              await accountModel.updateIsNewStatusByMemberAndChannel(memberId, channelId);
-              logger.info(`会员${memberId}的渠道${channelId}账号已标记为老账号`);
-            } catch (updateError) {
-              logger.error(`更新账号is_new状态失败: ${updateError.message}`);
+      try {
+        await connection.beginTransaction();
+        
+        const updateData = {
+          id: existingAccountByUid.id,
+          memberId, // 更新member_id为当前会员
+          channelId, // 更新channel_id为当前渠道
+          account,
+          uid,
+          homeUrl,
+          fansCount: fansCount || 0,
+          friendsCount: friendsCount || 0,
+          postsCount: postsCount || 0,
+          accountAuditStatus: 'pending', // 重置审核状态
+          isDeleted: 0, // 恢复账号
+          submitTime: new Date()
+        };
+        
+        await accountModel.update(updateData);
+        logger.info(`恢复已删除账号并更新归属，账号ID: ${existingAccountByUid.id}，原会员ID: ${existingAccountByUid.memberId}，新会员ID: ${memberId}`);
+        
+        // 检查是否需要将会员标记为老会员
+        // 条件：恢复的账号是老账号(is_new = 0) 且 当前会员是新会员(is_new = 1)
+        if (existingAccountByUid.isNew === 0) {
+          // 获取当前会员信息
+          const member = await memberModel.getById(memberId);
+          if (member && member.isNew === 1) {
+            // 将会员标记为老会员
+            const memberUpdated = await memberModel.updateIsNewStatus(memberId, connection);
+            if (memberUpdated) {
+              logger.info(`会员${memberId}因恢复老账号${existingAccountByUid.id}被标记为老会员`);
             }
           }
-        } catch (bindError) {
-          logger.error(`关联FB老账号失败，但不影响账号恢复: ${bindError.message}`);
         }
+        
+        // 如果提供了uid，尝试关联FB老账号
+        if (uid) {
+          try {
+            const bindResult = await oldAccountsFbModel.bindMember(uid, memberId);
+            if (bindResult && bindResult.success && bindResult.associated) {
+              // 如果成功关联了FB老账号，则更新该账号为老账号
+              try {
+                await accountModel.updateIsNewStatusByMemberAndChannel(memberId, channelId);
+                logger.info(`会员${memberId}的渠道${channelId}账号已标记为老账号`);
+              } catch (updateError) {
+                logger.error(`更新账号is_new状态失败: ${updateError.message}`);
+              }
+            }
+          } catch (bindError) {
+            logger.error(`关联FB老账号失败，但不影响账号恢复: ${bindError.message}`);
+          }
+        }
+        
+        await connection.commit();
+        
+        // 获取恢复后的账号信息
+        const restoredAccount = await accountModel.getById(existingAccountByUid.id);
+        return responseUtil.success(res, restoredAccount, i18n.t('h5.account.addSuccess', req.lang));
+        
+      } catch (error) {
+        await connection.rollback();
+        logger.error(`恢复账号失败: ${error.message}`);
+        throw error;
+      } finally {
+        connection.release();
       }
-      
-      // 获取恢复后的账号信息
-      const restoredAccount = await accountModel.getById(existingAccount.id);
-      return responseUtil.success(res, restoredAccount, i18n.t('h5.account.addSuccess', req.lang));
     }
     
     // 添加账号

@@ -436,6 +436,8 @@ async function update(accountData) {
     const updateData = {};
     
     // 只更新提供的字段
+    if (accountData.memberId !== undefined) updateData.member_id = accountData.memberId;
+    if (accountData.channelId !== undefined) updateData.channel_id = accountData.channelId;
     if (accountData.account !== undefined) updateData.account = accountData.account;
     if (accountData.uid !== undefined) updateData.uid = accountData.uid;
     if (accountData.homeUrl !== undefined) updateData.home_url = accountData.homeUrl;
