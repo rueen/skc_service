@@ -264,7 +264,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         `SELECT a.*, c.name as channel_name, c.icon as channel_icon
          FROM accounts a
          LEFT JOIN channels c ON a.channel_id = c.id
-         WHERE a.member_id IN (?)`,
+         WHERE a.member_id IN (?) AND a.is_deleted = 0`,
         [memberIds]
       );
       
