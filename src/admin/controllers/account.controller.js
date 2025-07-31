@@ -426,11 +426,76 @@ async function editAccount(req, res) {
     const { homeUrl, uid, account, fansCount, friendsCount, postsCount, isNew } = req.body;
     
     // 检查账号是否存在
-    const { pool } = require('../../shared/models/db');
-    const [accountRows] = await pool.query('SELECT * FROM accounts WHERE id = ?', [id]);
+    const accountInfo = await accountModel.getById(parseInt(id, 10));
     
-    if (accountRows.length === 0) {
+    if (!accountInfo) {
       return responseUtil.notFound(res, i18n.t('admin.account.notFound', req.lang));
+    }
+    
+    // 如果提供了新的uid，检查是否存在冲突
+    if (uid && uid !== accountInfo.uid) {
+      const { pool } = require('../../shared/models/db');
+      // 检查新uid对应的账号是否已存在
+      const [existingUidRows] = await pool.query(
+        'SELECT * FROM accounts WHERE uid = ? LIMIT 1',
+        [uid]
+      );
+      
+      if (existingUidRows.length > 0) {
+        const existingAccountByUid = accountModel.formatAccount(existingUidRows[0]);
+        
+        // 如果uid对应的账号存在且未删除，返回错误
+        if (existingAccountByUid.isDeleted === 0) {
+          return responseUtil.badRequest(res, '该账号已被使用，禁止重复绑定');
+        }
+        
+        // 如果uid对应的账号存在且已删除，恢复该账号并更新归属
+        if (existingAccountByUid.isDeleted === 1) {
+          const connection = await pool.getConnection();
+          
+          try {
+            await connection.beginTransaction();
+            
+            // 恢复已删除的账号并更新归属和信息
+            const updateDataForRecovery = {
+              id: existingAccountByUid.id,
+              memberId: accountInfo.memberId, // 保持原会员ID
+              channelId: accountInfo.channelId, // 保持原渠道ID
+              account: account !== undefined ? account : existingAccountByUid.account,
+              uid,
+              homeUrl: homeUrl !== undefined ? homeUrl : existingAccountByUid.homeUrl,
+              fansCount: fansCount !== undefined ? parseInt(fansCount, 10) : existingAccountByUid.fansCount,
+              friendsCount: friendsCount !== undefined ? parseInt(friendsCount, 10) : existingAccountByUid.friendsCount,
+              postsCount: postsCount !== undefined ? parseInt(postsCount, 10) : existingAccountByUid.postsCount,
+              isNew: isNew !== undefined ? isNew : existingAccountByUid.isNew,
+              // 管理端编辑时不重置审核状态，保持原有状态
+              isDeleted: 0, // 恢复账号
+              submitTime: new Date()
+            };
+            
+            await accountModel.update(updateDataForRecovery);
+            logger.info(`管理端编辑账号时恢复已删除账号并更新信息，账号ID: ${existingAccountByUid.id}，会员ID: ${accountInfo.memberId}`);
+            
+            // 软删除当前账号
+            await accountModel.update({
+              id: parseInt(id, 10),
+              isDeleted: 1
+            });
+            logger.info(`软删除原账号，账号ID: ${id}`);
+            
+            await connection.commit();
+            
+            return responseUtil.success(res, { success: true, newAccountId: existingAccountByUid.id });
+            
+          } catch (error) {
+            await connection.rollback();
+            logger.error(`恢复账号失败: ${error.message}`);
+            throw error;
+          } finally {
+            connection.release();
+          }
+        }
+      }
     }
     
     // 准备更新数据
