@@ -276,6 +276,7 @@ async function getRelatedTasks(id, memberId) {
         st.task_pre_audit_status,
         st.task_audit_status,
         st.submit_time,
+        st.id AS submitted_id,
         (SELECT COUNT(*) FROM submitted_tasks st2 WHERE st2.task_id = t.id AND st2.task_audit_status != 'rejected' AND st2.task_pre_audit_status != 'rejected') AS submitted_count
       FROM tasks t
       LEFT JOIN channels c ON t.channel_id = c.id
@@ -315,7 +316,8 @@ async function getRelatedTasks(id, memberId) {
         enrollId: row.enroll_id || null,
         taskPreAuditStatus: row.task_pre_audit_status || null,
         taskAuditStatus: row.task_audit_status || null,
-        submitTime: row.submit_time ? formatDateTime(row.submit_time) : null
+        submitTime: row.submit_time ? formatDateTime(row.submit_time) : null,
+        submittedId: row.submitted_id || null
       };
     });
     
