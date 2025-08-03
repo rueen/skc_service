@@ -322,10 +322,22 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     const totalApproved = approvedStats[0].totalApproved;
 
+    // 统计所有满足筛选条件的会员的账户余额总和（余额为负数时不参与统计）
+    const balanceQueryParams = filters.exportMode ? queryParams : queryParams.slice(0, -2); // 去掉分页参数
+    const [balanceStats] = await pool.query(
+      `SELECT COALESCE(SUM(CASE WHEN m.balance > 0 THEN m.balance ELSE 0 END), 0) as totalBalance
+       FROM members m
+       ${whereClause}`,
+      balanceQueryParams
+    );
+    
+    const totalBalance = parseFloat(balanceStats[0].totalBalance);
+
     return {
       list: formattedMembers,
       total: total,
       totalApproved,
+      totalBalance,
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10)
     };
