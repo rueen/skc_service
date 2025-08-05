@@ -376,6 +376,9 @@ CREATE TABLE IF NOT EXISTS withdrawals (
   bill_no varchar(64) NOT NULL COMMENT '账单编号，与bills表关联',
   member_id bigint(20) NOT NULL COMMENT '会员ID，外键关联members表',
   withdrawal_account_id bigint(20) NOT NULL COMMENT '提现账户ID，外键关联withdrawal_accounts表',
+  withdrawal_name varchar(50) DEFAULT NULL COMMENT '提现姓名',
+  withdrawal_account varchar(100) DEFAULT NULL COMMENT '提现账号',
+  withdrawal_payment_channel_id bigint(20) DEFAULT NULL COMMENT '提现支付渠道ID',
   amount decimal(10,2) NOT NULL COMMENT '申请提现金额',
   withdrawal_status varchar(20) NOT NULL DEFAULT 'pending' COMMENT '提现状态：pending-待处理，success-已完成，failed-已拒绝',
   waiter_id bigint(20) DEFAULT NULL COMMENT '审核员ID，外键关联waiters表',
@@ -388,6 +391,7 @@ CREATE TABLE IF NOT EXISTS withdrawals (
   UNIQUE KEY uk_bill_no (bill_no),
   KEY idx_member_id (member_id),
   KEY idx_withdrawal_account_id (withdrawal_account_id),
+  KEY idx_withdrawal_payment_channel_id (withdrawal_payment_channel_id),
   KEY idx_withdrawal_status (withdrawal_status),
   KEY idx_waiter_id (waiter_id),
   KEY idx_create_time (create_time)

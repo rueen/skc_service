@@ -58,12 +58,26 @@ async function createWithdrawal(withdrawalData) {
     const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
     const billNo = `WIT${timestamp}${randomNum}`;
     
+    // 获取提现账户信息以填充新字段
+    const [withdrawalAccountInfo] = await connection.query(
+      `SELECT account, name, payment_channel_id 
+       FROM withdrawal_accounts 
+       WHERE id = ?`,
+      [withdrawal_account_id]
+    );
+    
+    if (withdrawalAccountInfo.length === 0) {
+      throw new Error('提现账户不存在');
+    }
+    
+    const accountInfo = withdrawalAccountInfo[0];
+    
     // 插入提现记录
     const [result] = await connection.query(
       `INSERT INTO withdrawals 
-      (bill_no, member_id, withdrawal_account_id, amount, withdrawal_status) 
-      VALUES (?, ?, ?, ?, ?)`,
-      [billNo, member_id, withdrawal_account_id, amount, WithdrawalStatus.PENDING]
+      (bill_no, member_id, withdrawal_account_id, withdrawal_name, withdrawal_account, withdrawal_payment_channel_id, amount, withdrawal_status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [billNo, member_id, withdrawal_account_id, accountInfo.name, accountInfo.account, accountInfo.payment_channel_id, amount, WithdrawalStatus.PENDING]
     );
     
     const withdrawalId = result.insertId;
@@ -120,16 +134,12 @@ async function getWithdrawalsByMemberId(memberId, options = {}) {
     );
     const total = countResult[0].total;
     
-    // 查询提现记录列表，增加支付渠道名称
+    // 查询提现记录列表，使用withdrawals表的新字段
     const [withdrawals] = await pool.query(
       `SELECT w.*, 
-              wa.payment_channel_id, 
-              wa.account, 
-              wa.name as withdrawal_name, 
               pc.name as payment_channel_name
        FROM withdrawals w
-       LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
-       LEFT JOIN payment_channels pc ON wa.payment_channel_id = pc.id
+       LEFT JOIN payment_channels pc ON w.withdrawal_payment_channel_id = pc.id
        ${whereClause}
        ORDER BY w.create_time DESC
        LIMIT ?, ?`,
@@ -186,7 +196,7 @@ async function getAllWithdrawals(options = {}) {
     }
     
     if (paymentChannelId) {
-      whereClause += ' AND wa.payment_channel_id = ?';
+      whereClause += ' AND w.withdrawal_payment_channel_id = ?';
       queryParams.push(paymentChannelId);
     }
     
@@ -216,7 +226,6 @@ async function getAllWithdrawals(options = {}) {
         COUNT(*) as total,
         COALESCE(SUM(w.amount), 0) AS totalAmount
       FROM withdrawals w 
-       LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
        LEFT JOIN members m ON w.member_id = m.id
        ${whereClause}`,
       queryParams
@@ -226,17 +235,13 @@ async function getAllWithdrawals(options = {}) {
     
     // 构建基础查询
     let query = `SELECT w.*, 
-              wa.payment_channel_id, 
-              wa.account, 
-              wa.name as withdrawal_name, 
               m.nickname, 
               m.account as member_account, 
               pc.name as payment_channel_name,
               wtr.username as waiter_name
        FROM withdrawals w
-       LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
        LEFT JOIN members m ON w.member_id = m.id
-       LEFT JOIN payment_channels pc ON wa.payment_channel_id = pc.id
+       LEFT JOIN payment_channels pc ON w.withdrawal_payment_channel_id = pc.id
        LEFT JOIN waiters wtr ON w.waiter_id = wtr.id
        ${whereClause}
        ORDER BY w.create_time DESC`;
@@ -322,15 +327,11 @@ async function batchApproveWithdrawals(ids, waiterId, remark = null) {
       // 获取提现记录的详细信息，包括提现账户信息
       const [withdrawalDetails] = await connection.query(
         `SELECT w.*, 
-                wa.account, 
-                wa.name as account_name, 
-                wa.payment_channel_id,
                 pc.merchant_id,
                 pc.secret_key,
                 pc.bank
          FROM withdrawals w
-         LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
-         LEFT JOIN payment_channels pc ON wa.payment_channel_id = pc.id
+         LEFT JOIN payment_channels pc ON w.withdrawal_payment_channel_id = pc.id
          WHERE w.id = ?`,
         [withdrawal.id]
       );
@@ -385,8 +386,8 @@ async function processThirdPartyPayment(withdrawalDetail) {
       order_id: orderId,
       bank: withdrawalDetail.bank,
       total_amount: withdrawalDetail.amount,
-      bank_card_account: withdrawalDetail.account,
-      bank_card_name: withdrawalDetail.accountName,
+      bank_card_account: withdrawalDetail.withdrawalAccount,
+      bank_card_name: withdrawalDetail.withdrawalName,
       bank_card_remark: 'no',
       callback_url: 'no'
     };
@@ -395,10 +396,10 @@ async function processThirdPartyPayment(withdrawalDetail) {
       orderId: orderId,
       withdrawalId: withdrawalDetail.id,
       memberId: withdrawalDetail.memberId,
-      paymentChannelId: withdrawalDetail.paymentChannelId,
+      paymentChannelId: withdrawalDetail.withdrawalPaymentChannelId,
       amount: withdrawalDetail.amount,
-      account: withdrawalDetail.account,
-      accountName: withdrawalDetail.accountName,
+      account: withdrawalDetail.withdrawalAccount,
+      accountName: withdrawalDetail.withdrawalName,
       transactionStatus: 'pending',
       requestParams: requestParams,
       requestTime: new Date()
@@ -424,8 +425,8 @@ async function processThirdPartyPayment(withdrawalDetail) {
       order_id: orderId,
       bank: withdrawalDetail.bank,
       total_amount: formattedAmount,
-      bank_card_account: withdrawalDetail.account,
-      bank_card_name: withdrawalDetail.accountName,
+      bank_card_account: withdrawalDetail.withdrawalAccount,
+      bank_card_name: withdrawalDetail.withdrawalName,
       bank_card_remark: 'no',
       callback_url: 'no',
     };
