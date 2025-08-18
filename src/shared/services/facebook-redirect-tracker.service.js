@@ -16,7 +16,7 @@ class FacebookRedirectTrackerService {
     this.userAgent = options.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
     
     // 代理配置 - 仅在本地环境使用
-    this.useProxy = process.env.NODE_ENV === 'development';
+    this.useProxy = false;//process.env.NODE_ENV === 'development';
     this.proxyHost = options.proxyHost || process.env.PROXY_HOST;
     this.proxyPort = options.proxyPort || process.env.PROXY_PORT;
     
