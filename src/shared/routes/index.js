@@ -17,6 +17,7 @@ const taskSchedulerRoutes = require('./task-scheduler.routes');
 const timeRoutes = require('./time.routes');
 const facebookScraperRoutes = require('./facebook-scraper.routes');
 const locationRoutes = require('./location.routes');
+const regionRoutes = require('./region.routes');
 
 const router = express.Router();
 
@@ -40,6 +41,9 @@ router.use('/api/facebook', facebookScraperRoutes);
 
 // 位置路由
 router.use('/api/location', locationRoutes);
+
+// 地区路由
+router.use('/api', regionRoutes);
 
 module.exports = {
   router,
