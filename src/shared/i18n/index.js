@@ -6,10 +6,12 @@ const zhCN = require('./zh-CN');
 const enUS = require('./en-US');
 const zhTW = require('./zh-TW');
 const tlPH = require('./tl-PH');
+const jaJP = require('./ja-JP');
 
 module.exports = {
   'zh-CN': zhCN,
   'en-US': enUS,
   'zh-TW': zhTW,
-  'tl-PH': tlPH
+  'tl-PH': tlPH,
+  'ja-JP': jaJP
 }; 

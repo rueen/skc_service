@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2025-04-17 11:40:52
  * @LastEditors: diaochan
- * @LastEditTime: 2025-04-18 22:50:30
+ * @LastEditTime: 2025-08-28 14:56:17
  * @Description: 
  */
 /**
@@ -14,13 +14,13 @@ const i18nResources = require('../i18n');
 /**
  * 获取翻译文本
  * @param {string} key - 翻译键，格式为 "模块.键名" 或 "模块.子模块.键名"，例如 "common.success" 或 "common.validation.required"
- * @param {string} lang - 语言代码，默认为 "zh-CN"
+ * @param {string} lang - 语言代码，默认为 "en-US"
  * @param {Object} params - 替换参数，用于替换翻译文本中的占位符
  * @returns {string} 翻译后的文本
  */
-function t(key, lang = 'zh-CN', params = {}) {
-  // 如果语言代码不存在，默认使用中文
-  if (!['zh-CN', 'en-US', 'zh-TW', 'tl-PH'].includes(lang)) {
+function t(key, lang = 'en-US', params = {}) {
+  // 如果语言代码不存在，默认使用英文
+  if (!lang) {
     lang = 'en-US';
   }
 
