@@ -381,17 +381,18 @@ async function getTaskStats(req, res) {
  */
 async function grantReward(req, res) {
   try {
-    const { memberId, amount, remark } = req.body;
+    const { memberId, amount, remark, taskId } = req.body;
     
     // 获取操作员信息
     const operatorId = req.user.id;
     
-    // 调用模型层方法发放奖励，直接传递操作人ID
+    // 调用模型层方法发放奖励，直接传递操作人ID和可选的taskId
     const result = await memberModel.grantReward(
       parseInt(memberId, 10),
       parseFloat(amount),
       remark,
-      operatorId
+      operatorId,
+      taskId ? parseInt(taskId, 10) : null
     );
     
     // 记录操作日志
@@ -419,17 +420,18 @@ async function grantReward(req, res) {
  */
 async function deductReward(req, res) {
   try {
-    const { memberId, amount, remark } = req.body;
+    const { memberId, amount, remark, taskId } = req.body;
     
     // 获取操作员信息
     const operatorId = req.user.id;
     
-    // 调用模型层方法扣除奖励，直接传递操作人ID
+    // 调用模型层方法扣除奖励，直接传递操作人ID和可选的taskId
     const result = await memberModel.deductReward(
       parseInt(memberId, 10),
       parseFloat(amount),
       remark,
-      operatorId
+      operatorId,
+      taskId ? parseInt(taskId, 10) : null
     );
     
     // 记录操作日志

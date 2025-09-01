@@ -376,7 +376,11 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 255 })
-      .withMessage('common.validation.maxLength{max:255}')
+      .withMessage('common.validation.maxLength{max:255}'),
+    body('taskId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.grantReward
@@ -405,7 +409,11 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 255 })
-      .withMessage('common.validation.maxLength{max:255}')
+      .withMessage('common.validation.maxLength{max:255}'),
+    body('taskId')
+      .optional()
+      .isInt()
+      .withMessage('common.validation.mustBeInt')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   memberController.deductReward

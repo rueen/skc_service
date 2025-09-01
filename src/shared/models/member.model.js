@@ -1004,9 +1004,10 @@ async function isNewMember(memberId) {
  * @param {number} amount - 奖励金额
  * @param {string} remark - 备注说明
  * @param {number} waiterId - 操作人ID
+ * @param {number|null} taskId - 任务ID（可选）
  * @returns {Promise<Object>} 操作结果
  */
-async function grantReward(memberId, amount, remark, waiterId) {
+async function grantReward(memberId, amount, remark, waiterId, taskId = null) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -1029,13 +1030,16 @@ async function grantReward(memberId, amount, remark, waiterId) {
     
     // 获取当前余额用于返回结果
     const currentBalance = parseFloat(memberRows[0].balance) || 0;
-    
+    let transactionType = BillType.REWARD_GRANT;
+    if (taskId) {
+      transactionType = `${BillType.REWARD_GRANT}(任务ID: ${taskId})`;
+    }
     // 使用 memberBalanceModel 统一更新余额
     await memberBalanceModel.updateBalance(
       memberId, 
       rewardAmount, 
       {
-        transactionType: BillType.REWARD_GRANT,
+        transactionType: transactionType,
         connection
       }
     );
@@ -1046,8 +1050,8 @@ async function grantReward(memberId, amount, remark, waiterId) {
       billType: BillType.REWARD_GRANT,
       amount: rewardAmount.toFixed(2),
       remark,
-      taskId: null,
-      relatedMemberId: null,
+      taskId: taskId,
+      relatedMemberId: memberId,
       settlementStatus: 'success',
       waiterId
     };
@@ -1084,9 +1088,10 @@ async function grantReward(memberId, amount, remark, waiterId) {
  * @param {number} amount - 扣除金额
  * @param {string} remark - 备注说明
  * @param {number} waiterId - 操作人ID
+ * @param {number|null} taskId - 任务ID（可选）
  * @returns {Promise<Object>} 操作结果
  */
-async function deductReward(memberId, amount, remark, waiterId) {
+async function deductReward(memberId, amount, remark, waiterId, taskId = null) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -1110,12 +1115,16 @@ async function deductReward(memberId, amount, remark, waiterId) {
     // 获取当前余额用于返回结果
     const currentBalance = parseFloat(memberRows[0].balance) || 0;
     
+    let transactionType = BillType.REWARD_DEDUCTION;
+    if (taskId) {
+      transactionType = `${BillType.REWARD_DEDUCTION}(任务ID: ${taskId})`;
+    }
     // 使用 memberBalanceModel 统一更新余额
     await memberBalanceModel.updateBalance(
       memberId, 
       -deductAmount, // 负数表示扣除
       {
-        transactionType: BillType.REWARD_DEDUCTION,
+        transactionType: transactionType,
         connection,
         allowNegativeBalance: true // 允许余额为负数
       }
@@ -1127,8 +1136,8 @@ async function deductReward(memberId, amount, remark, waiterId) {
       billType: BillType.REWARD_DEDUCTION,
       amount: deductAmount.toFixed(2), // 使用正数，账单类型决定了是扣除
       remark,
-      taskId: null,
-      relatedMemberId: null,
+      taskId: taskId,
+      relatedMemberId: memberId,
       settlementStatus: 'success',
       waiterId
     };
