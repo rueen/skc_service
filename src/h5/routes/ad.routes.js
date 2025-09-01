@@ -5,18 +5,20 @@
 const express = require('express');
 const { query } = require('express-validator');
 const adController = require('../controllers/ad.controller');
+const authMiddleware = require('../middlewares/auth.middleware');
 const validatorUtil = require('../../shared/utils/validator.util');
 const rateLimiterMiddleware = require('../../shared/middlewares/rateLimiter.middleware');
 
 const router = express.Router();
 
-// 应用速率限制
+// 与任务路由保持一致，需要登录认证
+router.use(authMiddleware.verifyToken);
 router.use(rateLimiterMiddleware.apiLimiter);
 
 /**
  * @route GET /api/h5/ads
  * @desc 获取H5端广告列表
- * @access Public
+ * @access Private
  */
 router.get(
   '/',

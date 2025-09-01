@@ -39,6 +39,23 @@ function formatAd(ad) {
     formattedAd.content = {};
   }
 
+  // 安全解析群组ID列表
+  try {
+    if (typeof ad.group_ids === 'string' && ad.group_ids.trim()) {
+      formattedAd.groupIds = JSON.parse(ad.group_ids);
+    } else if (ad.group_ids && typeof ad.group_ids === 'object') {
+      formattedAd.groupIds = ad.group_ids;
+    } else {
+      formattedAd.groupIds = [];
+    }
+  } catch (error) {
+    logger.error(`解析广告groupIds失败: ${error.message}, 原始值: ${ad.group_ids}`);
+    formattedAd.groupIds = [];
+  }
+
+  // 处理群组模式
+  formattedAd.groupMode = ad.group_mode || 0;
+
   // 计算广告状态
   const now = new Date();
   const startTime = new Date(ad.start_time);
@@ -245,18 +262,32 @@ async function create(adData) {
       logger.error(`序列化content失败: ${error.message}`);
       contentJson = '{}';
     }
+
+    // 处理群组相关字段
+    const groupMode = adData.groupMode !== undefined ? adData.groupMode : 0;
+    let groupIdsJson = '[]';
+    if (adData.groupIds && Array.isArray(adData.groupIds)) {
+      try {
+        groupIdsJson = JSON.stringify(adData.groupIds);
+      } catch (error) {
+        logger.error(`序列化groupIds失败: ${error.message}`);
+        groupIdsJson = '[]';
+      }
+    }
     
     // 创建广告
     const [result] = await connection.query(
       `INSERT INTO ads 
-       (title, location, start_time, end_time, content)
-       VALUES (?, ?, ?, ?, ?)`,
+       (title, location, start_time, end_time, content, group_mode, group_ids)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         adData.title,
         adData.location,
         startTime,
         endTime,
-        contentJson
+        contentJson,
+        groupMode,
+        groupIdsJson
       ]
     );
     
@@ -341,6 +372,24 @@ async function update(adData) {
         params.push('{}');
       }
     }
+
+    if (adData.groupMode !== undefined) {
+      updateFields.push('group_mode = ?');
+      params.push(adData.groupMode);
+    }
+
+    if (adData.groupIds !== undefined) {
+      try {
+        const groupIdsJson = JSON.stringify(adData.groupIds || []);
+        updateFields.push('group_ids = ?');
+        params.push(groupIdsJson);
+      } catch (error) {
+        logger.error(`序列化groupIds失败: ${error.message}`);
+        // 使用空数组作为默认值
+        updateFields.push('group_ids = ?');
+        params.push('[]');
+      }
+    }
     
     if (updateFields.length === 0) {
       return true; // 没有需要更新的字段
@@ -405,18 +454,50 @@ async function remove(id) {
 /**
  * 获取H5端广告列表（根据位置和有效期）
  * @param {string} location - 位置代码
+ * @param {number|null} memberId - 会员ID（用于群组模式筛选）
  * @returns {Promise<Array>} 广告列表
  */
-async function getH5List(location) {
+async function getH5List(location, memberId = null) {
   try {
-    const [rows] = await pool.query(
-      `SELECT * FROM ads 
-       WHERE location = ? 
-       AND start_time <= NOW() 
-       AND end_time >= NOW()
-       ORDER BY create_time DESC`,
-      [location]
-    );
+    let query = `
+      SELECT a.* FROM ads a
+      WHERE a.location = ? 
+      AND a.start_time <= NOW() 
+      AND a.end_time >= NOW()
+    `;
+    const queryParams = [location];
+
+    // 如果提供了会员ID，添加群组模式筛选
+    if (memberId) {
+      // 获取会员所在的群组
+      const [memberGroups] = await pool.query(
+        `SELECT DISTINCT mg.group_id as id 
+         FROM member_groups mg 
+         WHERE mg.member_id = ?`,
+        [memberId]
+      );
+
+      if (memberGroups && memberGroups.length > 0) {
+        // 转换会员群组ID为集合，方便检查
+        const memberGroupIds = memberGroups.map(g => g.id);
+        // 1. 如果不是群组模式广告(group_mode=0)，则显示
+        // 2. 如果是群组模式广告(group_mode=1)，会员必须在至少一个指定群组中
+        query += ` AND (
+          a.group_mode = 0 OR 
+          (a.group_mode = 1 AND (
+            a.group_ids = '[]' OR 
+            JSON_OVERLAPS(a.group_ids, JSON_ARRAY(${memberGroupIds.join(',')}))
+          ))
+        )`;
+      } else {
+        // 如果会员不在任何群组中，则只显示非群组模式的广告
+        query += ` AND (a.group_mode = 0 OR (a.group_mode = 1 AND a.group_ids = '[]'))`;
+      }
+    }
+
+    query += ' ORDER BY a.create_time DESC';
+
+    const [rows] = await pool.query(query, queryParams);
     
     // 格式化数据
     return rows.map(formatAd);

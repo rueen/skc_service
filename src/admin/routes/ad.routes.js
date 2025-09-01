@@ -112,7 +112,15 @@ router.post(
           throw new Error('内容必须是对象格式');
         }
         return true;
-      })
+      }),
+    body('groupIds')
+      .optional()
+      .isArray()
+      .withMessage('common.validation.mustBeArray'),
+    body('groupMode')
+      .optional()
+      .isBoolean()
+      .withMessage('common.validation.formatInvalid'),
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   adController.create
@@ -155,7 +163,15 @@ router.put(
           throw new Error('内容必须是对象格式');
         }
         return true;
-      })
+      }),
+    body('groupIds')
+      .optional()
+      .isArray()
+      .withMessage('common.validation.mustBeArray'),
+    body('groupMode')
+      .optional()
+      .isBoolean()
+      .withMessage('common.validation.formatInvalid'),
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
   adController.update

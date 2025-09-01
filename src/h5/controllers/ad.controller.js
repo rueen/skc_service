@@ -18,11 +18,14 @@ async function getList(req, res) {
     if (!location) {
       return responseUtil.badRequest(res, '广告位置不能为空');
     }
+
+    // 提取会员ID用于群组筛选
+    const memberId = req.user ? req.user.id : null;
     
-    logger.info(`获取H5端广告列表 - 位置: ${location}`);
+    logger.info(`获取H5端广告列表 - 位置: ${location}, 是否有用户: ${req.user ? '是' : '否'}, 会员ID: ${memberId || '未登录'}`);
     
-    // 获取有效期内的广告列表
-    const adList = await adModel.getH5List(location);
+    // 获取有效期内的广告列表，进行群组筛选
+    const adList = await adModel.getH5List(location, memberId);
     
     logger.info(`H5端广告列表返回 - 位置: ${location}, 广告数量: ${adList.length}`);
     

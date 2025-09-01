@@ -86,7 +86,7 @@ async function getDetail(req, res) {
  */
 async function create(req, res) {
   try {
-    const { title, location, startTime, endTime, content } = req.body;
+    const { title, location, startTime, endTime, content, groupMode, groupIds } = req.body;
     
     // 基本参数验证
     if (!title) {
@@ -125,7 +125,9 @@ async function create(req, res) {
       location,
       startTime,
       endTime,
-      content
+      content,
+      groupMode,
+      groupIds
     });
     
     logger.info(`广告创建成功 - ID: ${result.id}`);
@@ -154,7 +156,7 @@ async function create(req, res) {
 async function update(req, res) {
   try {
     const { id } = req.params;
-    const { title, location, startTime, endTime, content } = req.body;
+    const { title, location, startTime, endTime, content, groupMode, groupIds } = req.body;
     
     if (!id) {
       return responseUtil.badRequest(res, '广告ID不能为空');
@@ -183,7 +185,9 @@ async function update(req, res) {
       location,
       startTime,
       endTime,
-      content
+      content,
+      groupMode,
+      groupIds
     });
     
     if (!result) {
