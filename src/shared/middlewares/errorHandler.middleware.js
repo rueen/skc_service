@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2025-03-15 16:10:39
+ * @LastEditors: diaochan
+ * @LastEditTime: 2025-09-02 17:28:14
+ * @Description: 
+ */
 /**
  * 错误处理中间件
  * 统一处理应用程序中的错误
@@ -52,7 +59,7 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // 默认返回500错误
-  return responseUtil.serverError(res, '服务器内部错误');
+  return responseUtil.serverError(res, 'error occurred. Please try again later.');
 };
 
 module.exports = {
