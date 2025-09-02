@@ -58,8 +58,9 @@ function createApp(options = {}) {
   }));
   
   // 请求体解析
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  // 设置JSON请求体大小限制为1MB，防止任务提交时内容过大导致错误
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   
   // 静态文件服务
   app.use('/uploads', (req, res, next) => {

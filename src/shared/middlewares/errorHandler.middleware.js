@@ -46,6 +46,11 @@ const errorHandler = (err, req, res, next) => {
     return responseUtil.notFound(res, err.message);
   }
 
+  // 处理请求体过大错误
+  if (err.type === 'entity.too.large' || err.name === 'PayloadTooLargeError') {
+    return responseUtil.badRequest(res, '请求内容过大，请减少提交内容的大小');
+  }
+
   // 默认返回500错误
   return responseUtil.serverError(res, '服务器内部错误');
 };
