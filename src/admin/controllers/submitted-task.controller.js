@@ -44,7 +44,9 @@ async function getPreAuditTasks(req, res) {
     if (groupId) filters.groupId = parseInt(groupId, 10);
     if (submitStartTime) filters.submitStartTime = submitStartTime;
     if (submitEndTime) filters.submitEndTime = submitEndTime;
-    if (completedTaskCount) filters.completedTaskCount = completedTaskCount;
+    if (completedTaskCount !== undefined && completedTaskCount !== null && completedTaskCount !== '') {
+      filters.completedTaskCount = parseInt(completedTaskCount, 10);
+    }
     if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
     if (keyword) filters.keyword = keyword;
     if (taskGroupId) filters.taskGroupId = parseInt(taskGroupId, 10);
@@ -105,7 +107,9 @@ async function getConfirmAuditTasks(req, res) {
     if (groupId) filters.groupId = parseInt(groupId, 10);
     if (submitStartTime) filters.submitStartTime = submitStartTime;
     if (submitEndTime) filters.submitEndTime = submitEndTime;
-    if (completedTaskCount) filters.completedTaskCount = completedTaskCount;
+    if (completedTaskCount !== undefined && completedTaskCount !== null && completedTaskCount !== '') {
+      filters.completedTaskCount = parseInt(completedTaskCount, 10);
+    }
     if (waiterId) filters.waiterId = parseInt(waiterId, 10);
     if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
     if (keyword) filters.keyword = keyword;
@@ -348,7 +352,9 @@ async function exportPreAuditTasks(req, res) {
     if (groupId) filters.groupId = parseInt(groupId, 10);
     if (submitStartTime) filters.submitStartTime = submitStartTime;
     if (submitEndTime) filters.submitEndTime = submitEndTime;
-    if (completedTaskCount) filters.completedTaskCount = completedTaskCount;
+    if (completedTaskCount !== undefined && completedTaskCount !== null && completedTaskCount !== '') {
+      filters.completedTaskCount = parseInt(completedTaskCount, 10);
+    }
     if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
     if (keyword) filters.keyword = keyword;
     if (taskGroupId) filters.taskGroupId = parseInt(taskGroupId, 10);
@@ -513,7 +519,9 @@ async function exportConfirmAuditTasks(req, res) {
     if (groupId) filters.groupId = parseInt(groupId, 10);
     if (submitStartTime) filters.submitStartTime = submitStartTime;
     if (submitEndTime) filters.submitEndTime = submitEndTime;
-    if (completedTaskCount) filters.completedTaskCount = completedTaskCount;
+    if (completedTaskCount !== undefined && completedTaskCount !== null && completedTaskCount !== '') {
+      filters.completedTaskCount = parseInt(completedTaskCount, 10);
+    }
     if (waiterId) filters.waiterId = parseInt(waiterId, 10);
     if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
     if (keyword) filters.keyword = keyword;

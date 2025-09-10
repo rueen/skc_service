@@ -383,7 +383,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
     
     // 添加已完成任务次数筛选条件
     let completedTaskWhere = '';
-    if (filters.completedTaskCount) {
+    if (filters.completedTaskCount !== undefined) {
       const count = parseInt(filters.completedTaskCount, 10);
       if (!isNaN(count) && count >= 0) {
         completedTaskWhere = ` AND (
@@ -748,7 +748,7 @@ async function getById(id, auditType = 'confirm', filtersParam = {}) {
     
     // 添加已完成任务次数筛选条件
     let completedTaskWhere = '';
-    if (filters.completedTaskCount) {
+    if (filters.completedTaskCount !== undefined) {
       const count = parseInt(filters.completedTaskCount, 10);
       if (!isNaN(count) && count >= 0) {
         completedTaskWhere = ` AND (
@@ -798,7 +798,7 @@ async function getById(id, auditType = 'confirm', filtersParam = {}) {
     // 初始化前后任务ID为null
     formattedTask.prevTaskId = null;
     formattedTask.nextTaskId = null;
-    
+
     if (filteredTasks.length > 0) {
       // 查找提交时间比当前任务更新的最接近的任务（前一个任务）
       const currentSubmitTime = new Date(row.submit_time).getTime();
