@@ -617,6 +617,8 @@ async function getPreAuditedList(filters = {}, page = DEFAULT_PAGE, pageSize = D
  * @param {string} filtersParam.taskAuditStatus - 审核状态
  * @param {number} filtersParam.waiterId - 审核员ID
  * @param {number} filtersParam.groupId - 群组ID
+ * @param {string} filtersParam.keyword - 关键词搜索（昵称或账号）
+ * @param {number} filtersParam.taskGroupId - 任务组ID
  * @param {number} filtersParam.completedTaskCount - 已完成任务次数
  * @param {string} filtersParam.submitStartTime - 提交开始时间
  * @param {string} filtersParam.submitEndTime - 提交结束时间
@@ -732,6 +734,34 @@ async function getById(id, auditType = 'confirm', filtersParam = {}) {
       }
     }
     
+    // 添加关键词搜索条件（昵称或账号）
+    if (filters.keyword) {
+      whereClause += ' AND (m.nickname LIKE ? OR m.account LIKE ?)';
+      queryParams.push(`%${filters.keyword}%`, `%${filters.keyword}%`);
+    }
+    
+    // 添加任务组ID筛选
+    if (filters.taskGroupId) {
+      whereClause += ' AND tg.id = ?';
+      queryParams.push(filters.taskGroupId);
+    }
+    
+    // 添加已完成任务次数筛选条件
+    let completedTaskWhere = '';
+    if (filters.completedTaskCount) {
+      const count = parseInt(filters.completedTaskCount, 10);
+      if (!isNaN(count) && count >= 0) {
+        completedTaskWhere = ` AND (
+          SELECT COUNT(*) 
+          FROM submitted_tasks sub
+          JOIN tasks tt ON sub.task_id = tt.id
+          WHERE sub.member_id = st.member_id 
+          AND sub.task_audit_status = 'approved'
+        ) = ${count}`;
+        // 这里不再需要添加到queryParams，因为count已经直接内联到SQL语句中
+      }
+    }
+    
     // 添加审核类型相关条件
     if (auditType === 'pre') {
       // 预审：获取所有预审任务，使用filtersParam中的筛选条件
@@ -747,6 +777,8 @@ async function getById(id, auditType = 'confirm', filtersParam = {}) {
       JOIN tasks t ON st.task_id = t.id
       LEFT JOIN members m ON st.member_id = m.id
       LEFT JOIN channels c ON t.channel_id = c.id
+      LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
+      LEFT JOIN task_groups tg ON ttg.task_group_id = tg.id
       LEFT JOIN (
         SELECT member_id, group_id, is_owner
         FROM member_groups
@@ -757,7 +789,7 @@ async function getById(id, auditType = 'confirm', filtersParam = {}) {
         )
       ) mg ON st.member_id = mg.member_id
       LEFT JOIN \`groups\` g ON mg.group_id = g.id
-      WHERE ${whereClause}
+      WHERE ${whereClause} ${completedTaskWhere}
       ORDER BY st.submit_time DESC
     `;
     
