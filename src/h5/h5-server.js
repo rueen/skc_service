@@ -28,7 +28,7 @@ const PORT = process.env.H5_PORT || 3001;
 const app = createApp({
   appName: 'h5',
   corsOrigins: process.env.NODE_ENV === 'production' 
-    ? ['https://m.skcpop.com', 'http://m.skcpop.com', 'https://m.skcjpy.com', 'http://m.skcjpy.com', 'https://m.skcph.com', 'http://m.skcph.com']
+    ? (process.env.H5_CORS_ORIGINS ? process.env.H5_CORS_ORIGINS.split(',').map(origin => origin.trim()) : ['https://m.jpskc.com'])
     : '*'
 });
 

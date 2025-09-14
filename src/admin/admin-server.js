@@ -27,7 +27,7 @@ const PORT = process.env.ADMIN_PORT;
 const app = createApp({
   appName: 'admin',
   corsOrigins: process.env.NODE_ENV === 'production' 
-    ? ['https://support.skcpop.com', 'http://support.skcpop.com'] 
+    ? (process.env.ADMIN_CORS_ORIGINS ? process.env.ADMIN_CORS_ORIGINS.split(',').map(origin => origin.trim()) : ['https://support.jpskc.com'])
     : '*'
 });
 
