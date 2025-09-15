@@ -135,9 +135,10 @@ function formatDateTimeForMySQL(dateTimeString) {
  */
 async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE, memberId = null, sortOptions = {}, withRelatedTasksList = false) {
   try {
-    // 提前获取会员完成任务次数和群组信息，用于后续构建SQL查询条件
+    // 提前获取会员完成任务次数、群组信息和新用户状态，用于后续构建SQL查询条件
     let memberCompletedTaskCount = null;
     let memberGroups = null;
+    let isNewMember = false;
     
     if (memberId) {
       // 获取会员完成任务次数
@@ -156,6 +157,15 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       } catch (error) {
         logger.error(`获取会员群组失败 - 会员ID: ${memberId}, 错误: ${error.message}`);
         memberGroups = [];
+      }
+
+      // 获取会员是否为新用户
+      const memberModel = require('./member.model');
+      try {
+        isNewMember = await memberModel.isNewMember(memberId);
+      } catch (error) {
+        logger.error(`获取会员新用户状态失败 - 会员ID: ${memberId}, 错误: ${error.message}`);
+        isNewMember = false;
       }
     }
 
@@ -259,8 +269,15 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
             ))
           )`);
         } else {
-          // 如果会员不在任何群组中，则只显示非群组模式的任务
-          conditions.push(`(t.group_mode = 0 OR (t.group_mode = 1 AND t.group_ids = '[]'))`);
+          // 如果会员不在任何群组中
+          if (isNewMember) {
+            // 新用户：显示所有任务（无群组限制）
+            logger.info(`新用户(ID: ${memberId})不在任何群组中，显示所有任务`);
+            // 不添加任何群组模式筛选条件
+          } else {
+            // 老用户：只显示非群组模式的任务或群组ID为空的任务
+            conditions.push(`(t.group_mode = 0 OR (t.group_mode = 1 AND t.group_ids = '[]'))`);
+          }
         }
       }
     }
