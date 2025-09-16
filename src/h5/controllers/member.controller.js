@@ -18,7 +18,7 @@ const i18n = require('../../shared/utils/i18n.util');
 async function updateProfile(req, res) {
   try {
     const memberId = req.user.id;
-    const { memberNickname, occupation, phone, email, avatar, gender, telegram } = req.body;
+    const { memberNickname, occupation, phone, email, avatar, gender, telegram, line } = req.body;
     
     // 获取会员信息
     const member = await memberModel.getById(memberId);
@@ -48,6 +48,7 @@ async function updateProfile(req, res) {
     if (avatar !== undefined) updateData.avatar = avatar;
     if (gender !== undefined) updateData.gender = Number(gender);
     if (telegram !== undefined) updateData.telegram = telegram;
+    if (line !== undefined) updateData.line = line;
     
     const success = await memberModel.update(updateData);
     

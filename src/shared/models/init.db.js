@@ -197,6 +197,7 @@ CREATE TABLE IF NOT EXISTS members (
   gender tinyint(1) DEFAULT 2 COMMENT '性别：0-男，1-女，2-保密',
   balance decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT '账户余额',
   telegram varchar(50) DEFAULT NULL COMMENT 'Telegram账号',
+  line varchar(50) DEFAULT NULL COMMENT 'Line账号',
   register_source varchar(20) NOT NULL DEFAULT 'h5' COMMENT '注册来源：admin-管理端添加，h5-H5端注册',
   is_new tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否新人：0-否，1-是',
   password_changed_time datetime DEFAULT NULL COMMENT '密码最后修改时间',
