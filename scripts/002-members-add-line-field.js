@@ -1,6 +1,11 @@
 /**
  * 会员表添加Line字段迁移脚本
  * 为members表添加line字段，并处理老数据
+ * 
+ * ⚠️  重要提醒：
+ * 1. 此脚本会对members表加排他锁，可能导致业务接口503错误
+ * 2. 建议在低峰期或维护窗口期执行
+ * 3. 大表（>10万记录）建议启用维护模式
  */
 try {
   require('dotenv').config();
@@ -15,6 +20,16 @@ async function migrate() {
   const connection = await pool.getConnection();
   try {
     console.log('开始执行members表Line字段迁移...');
+    
+    // 检查表记录数量，评估迁移风险
+    const [countResult] = await connection.query('SELECT COUNT(*) as count FROM members');
+    const recordCount = countResult[0].count;
+    console.log(`当前members表记录数：${recordCount}`);
+    
+    if (recordCount > 100000) {
+      console.warn('⚠️  警告：表记录数超过10万，建议在维护模式下执行此迁移！');
+      console.warn('    ALTER TABLE操作可能需要数分钟，会阻塞所有业务请求！');
+    }
     
     await connection.beginTransaction();
     
@@ -44,15 +59,9 @@ async function migrate() {
     
     console.log('line字段添加成功');
     
-    // 处理老数据：确保所有现有记录的line字段为NULL（默认值）
-    console.log('处理老数据...');
-    const [updateResult] = await connection.query(`
-      UPDATE members 
-      SET line = NULL
-      WHERE line IS NULL
-    `);
-    
-    console.log(`更新了 ${updateResult.affectedRows} 条老数据记录`);
+    // 注释：移除不必要的UPDATE操作
+    // 由于新添加的字段默认值已设为NULL，无需额外更新
+    console.log('字段已设置默认值为NULL，无需处理老数据');
     
     await connection.commit();
     console.log('members表Line字段迁移完成');
