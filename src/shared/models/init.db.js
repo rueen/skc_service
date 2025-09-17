@@ -304,6 +304,7 @@ CREATE TABLE IF NOT EXISTS submitted_tasks (
   id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '提交ID',
   task_id bigint(20) NOT NULL COMMENT '任务ID',
   member_id bigint(20) NOT NULL COMMENT '会员ID',
+  enrolled_id bigint(20) DEFAULT NULL COMMENT '关联的报名ID',
   submit_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
   submit_content text NOT NULL COMMENT '提交内容',
   task_pre_audit_status varchar(20) NOT NULL DEFAULT 'pending' COMMENT '预审状态：pending-待审核，approved-已通过，rejected-已拒绝',
@@ -321,12 +322,14 @@ CREATE TABLE IF NOT EXISTS submitted_tasks (
   UNIQUE KEY uk_task_member (task_id, member_id),
   KEY idx_task_id (task_id),
   KEY idx_member_id (member_id),
+  KEY idx_enrolled_id (enrolled_id),
   KEY idx_task_audit_status (task_audit_status),
   KEY idx_task_pre_audit_status (task_pre_audit_status),
   KEY idx_waiter_id (waiter_id),
   KEY idx_pre_waiter_id (pre_waiter_id),
   KEY idx_related_group_id (related_group_id),
-  KEY idx_create_time (create_time)
+  KEY idx_create_time (create_time),
+  CONSTRAINT fk_submitted_tasks_enrolled_id FOREIGN KEY (enrolled_id) REFERENCES enrolled_tasks(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='已提交任务表';
 `;
 

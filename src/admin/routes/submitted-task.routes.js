@@ -52,6 +52,10 @@ router.get(
       .optional()
       .isString()
       .withMessage('common.validation.mustBeString'),
+    query('brandKeywords')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
     query('taskGroupId')
       .optional()
       .isInt({ min: 1 })
@@ -95,6 +99,10 @@ router.get(
     query('preWaiterId')
       .optional(),
     query('keyword')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
+    query('brandKeywords')
       .optional()
       .isString()
       .withMessage('common.validation.mustBeString'),
@@ -146,6 +154,10 @@ router.get(
       .optional()
       .isString()
       .withMessage('common.validation.mustBeString'),
+    query('brandKeywords')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
     query('taskGroupId')
       .optional()
       .isInt({ min: 1 })
@@ -181,6 +193,10 @@ router.get(
     query('preWaiterId')
       .optional(),
     query('keyword')
+      .optional()
+      .isString()
+      .withMessage('common.validation.mustBeString'),
+    query('brandKeywords')
       .optional()
       .isString()
       .withMessage('common.validation.mustBeString'),

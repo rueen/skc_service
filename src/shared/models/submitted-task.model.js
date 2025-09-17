@@ -26,7 +26,8 @@ function formatSubmittedTask(submittedTask) {
     createTime: formatDateTime(submittedTask.create_time),
     updateTime: formatDateTime(submittedTask.update_time),
     startTime: formatDateTime(submittedTask.start_time),
-    endTime: formatDateTime(submittedTask.end_time)
+    endTime: formatDateTime(submittedTask.end_time),
+    showKeywords: submittedTask.show_keywords || ''
   });
   
   // 移除重复的任务组字段，因为我们将使用 taskGroup 对象
@@ -124,7 +125,7 @@ async function create(submitData) {
       throw new Error('会员不存在');
     }
     
-    // 验证会员是否已报名该任务
+    // 验证会员是否已报名该任务，并获取报名ID
     const [enrolls] = await connection.query(
       'SELECT id FROM enrolled_tasks WHERE task_id = ? AND member_id = ?',
       [submitData.taskId, submitData.memberId]
@@ -133,6 +134,8 @@ async function create(submitData) {
     if (enrolls.length === 0) {
       throw new Error('请先报名任务');
     }
+    
+    const enrolledId = enrolls[0].id;
     
     // 检查是否已经提交过
     const [existingSubmits] = await connection.query(
@@ -207,12 +210,12 @@ async function create(submitData) {
       }
     }
     
-    // 插入提交记录，包含关联的群组ID
+    // 插入提交记录，包含关联的群组ID和报名ID
     const [result] = await connection.query(
       `INSERT INTO submitted_tasks 
-       (task_id, member_id, submit_content, task_audit_status, task_pre_audit_status, related_group_id) 
-       VALUES (?, ?, ?, 'pending', 'pending', ?)`,
-      [submitData.taskId, submitData.memberId, JSON.stringify(submitData.submitContent), relatedGroupId]
+       (task_id, member_id, enrolled_id, submit_content, task_audit_status, task_pre_audit_status, related_group_id) 
+       VALUES (?, ?, ?, ?, 'pending', 'pending', ?)`,
+      [submitData.taskId, submitData.memberId, enrolledId, JSON.stringify(submitData.submitContent), relatedGroupId]
     );
     
     // 检查任务是否属于任务组，如果是首次提交，则更新任务组提交状态
@@ -298,6 +301,7 @@ async function create(submitData) {
  * @param {number} filters.preWaiterId - 初审员ID
  * @param {number} filters.waiterId - 审核员ID
  * @param {string} filters.keyword - 关键词搜索（昵称或账号）
+ * @param {string} filters.brandKeywords - 品牌关键词精确搜索
  * @param {boolean} filters.exportMode - 是否为导出模式，为true时不使用分页
  * @param {number} page - 页码
  * @param {number} pageSize - 每页条数
@@ -375,6 +379,12 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
       queryParams.push(`%${filters.keyword}%`, `%${filters.keyword}%`);
     }
     
+    // 添加品牌关键词精确搜索条件
+    if (filters.brandKeywords) {
+      whereClause += ' AND et.brand_keywords = ?';
+      queryParams.push(filters.brandKeywords);
+    }
+    
     // 添加任务组ID筛选
     if (filters.taskGroupId) {
       whereClause += ' AND tg.id = ?';
@@ -418,6 +428,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         tg.task_group_name,
         tg.task_group_reward,
         tg.related_tasks,
+        et.brand_keywords AS show_keywords,
         (SELECT COALESCE(SUM(rt.reward), 0) 
          FROM tasks rt 
          WHERE JSON_CONTAINS(tg.related_tasks, CAST(rt.id AS JSON))
@@ -438,6 +449,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         LEFT JOIN waiters w ON st.waiter_id = w.id
         LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
         LEFT JOIN task_groups tg ON ttg.task_group_id = tg.id
+        LEFT JOIN enrolled_tasks et ON st.enrolled_id = et.id
       WHERE ${whereClause} ${completedTaskWhere}
     `;
     
@@ -453,6 +465,7 @@ async function getList(filters = {}, page = DEFAULT_PAGE, pageSize = DEFAULT_PAG
         LEFT JOIN channels c ON t.channel_id = c.id
         LEFT JOIN task_task_groups ttg ON t.id = ttg.task_id
         LEFT JOIN task_groups tg ON ttg.task_group_id = tg.id
+        LEFT JOIN enrolled_tasks et ON st.enrolled_id = et.id
       WHERE ${whereClause} ${completedTaskWhere}
     `;
     
@@ -634,11 +647,13 @@ async function getById(id, auditType = 'confirm', filtersParam = {}) {
         t.task_name,
         t.reward,
         pre_w.username as pre_waiter_name,
-        w.username as waiter_name
+        w.username as waiter_name,
+        et.brand_keywords AS show_keywords
       FROM submitted_tasks st
       LEFT JOIN tasks t ON st.task_id = t.id
       LEFT JOIN waiters pre_w ON st.pre_waiter_id = pre_w.id
       LEFT JOIN waiters w ON st.waiter_id = w.id
+      LEFT JOIN enrolled_tasks et ON st.enrolled_id = et.id
       WHERE st.id = ?`,
       [id]
     );
@@ -669,6 +684,7 @@ async function getById(id, auditType = 'confirm', filtersParam = {}) {
     formattedTask.reward = row.reward;
     formattedTask.preWaiterName = row.pre_waiter_name || '';
     formattedTask.waiterName = row.waiter_name || '';
+    formattedTask.showKeywords = row.show_keywords || '';
     
     // 根据审核类型设置审核状态
     formattedTask.auditStatus = auditType === 'pre' ? formattedTask.taskPreAuditStatus : formattedTask.taskAuditStatus;
@@ -738,6 +754,12 @@ async function getById(id, auditType = 'confirm', filtersParam = {}) {
     if (filters.keyword) {
       whereClause += ' AND (m.nickname LIKE ? OR m.account LIKE ?)';
       queryParams.push(`%${filters.keyword}%`, `%${filters.keyword}%`);
+    }
+    
+    // 添加品牌关键词精确搜索条件
+    if (filters.brandKeywords) {
+      whereClause += ' AND et.brand_keywords = ?';
+      queryParams.push(filters.brandKeywords);
     }
     
     // 添加任务组ID筛选

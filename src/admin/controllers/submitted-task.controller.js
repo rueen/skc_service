@@ -29,6 +29,7 @@ async function getPreAuditTasks(req, res) {
       completedTaskCount,
       preWaiterId,
       keyword,
+      brandKeywords,
       taskGroupId,
       sorterField,
       sorterOrder
@@ -49,6 +50,7 @@ async function getPreAuditTasks(req, res) {
     }
     if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
     if (keyword) filters.keyword = keyword;
+    if (brandKeywords) filters.brandKeywords = brandKeywords;
     if (taskGroupId) filters.taskGroupId = parseInt(taskGroupId, 10);
     
     // 构建排序选项
@@ -93,6 +95,7 @@ async function getConfirmAuditTasks(req, res) {
       waiterId,
       preWaiterId,
       keyword,
+      brandKeywords,
       taskGroupId,
       sorterField,
       sorterOrder
@@ -113,6 +116,7 @@ async function getConfirmAuditTasks(req, res) {
     if (waiterId) filters.waiterId = parseInt(waiterId, 10);
     if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
     if (keyword) filters.keyword = keyword;
+    if (brandKeywords) filters.brandKeywords = brandKeywords;
     if (taskGroupId) filters.taskGroupId = parseInt(taskGroupId, 10);
     
     // 构建排序选项
@@ -337,6 +341,7 @@ async function exportPreAuditTasks(req, res) {
       completedTaskCount,
       preWaiterId,
       keyword,
+      brandKeywords,
       taskGroupId
     } = req.query;
     
@@ -357,6 +362,7 @@ async function exportPreAuditTasks(req, res) {
     }
     if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
     if (keyword) filters.keyword = keyword;
+    if (brandKeywords) filters.brandKeywords = brandKeywords;
     if (taskGroupId) filters.taskGroupId = parseInt(taskGroupId, 10);
     
     // 获取所有符合条件的任务提交记录
@@ -382,6 +388,7 @@ async function exportPreAuditTasks(req, res) {
       { header: '初审状态', key: 'preAuditStatus', width: 10 },
       { header: '初审员', key: 'preWaiterName', width: 10 },
       { header: '品牌', key: 'brand', width: 10 },
+      { header: '品牌关键词', key: 'showKeywords', width: 20 },
       { header: '提交内容', key: 'submitContent', width: 60 }
     ];
     
@@ -453,6 +460,7 @@ async function exportPreAuditTasks(req, res) {
         preAuditStatus: getPreAuditStatusText(item.taskPreAuditStatus) || '',
         preWaiterName: item.preWaiterName || '',
         brand: item.brand || '',
+        showKeywords: item.showKeywords || '',
         submitContent: formattedContent
       });
     });
@@ -504,6 +512,7 @@ async function exportConfirmAuditTasks(req, res) {
       waiterId,
       preWaiterId,
       keyword,
+      brandKeywords,
       taskGroupId
     } = req.query;
     
@@ -525,6 +534,7 @@ async function exportConfirmAuditTasks(req, res) {
     if (waiterId) filters.waiterId = parseInt(waiterId, 10);
     if (preWaiterId) filters.preWaiterId = parseInt(preWaiterId, 10);
     if (keyword) filters.keyword = keyword;
+    if (brandKeywords) filters.brandKeywords = brandKeywords;
     if (taskGroupId) filters.taskGroupId = parseInt(taskGroupId, 10);
     
     // 获取所有符合条件的预审已通过任务提交记录
@@ -552,6 +562,7 @@ async function exportConfirmAuditTasks(req, res) {
       { header: '审核状态', key: 'auditStatus', width: 10 },
       { header: '审核员', key: 'waiterName', width: 10 },
       { header: '品牌', key: 'brand', width: 10 },
+      { header: '品牌关键词', key: 'showKeywords', width: 20 },
       { header: '提交内容', key: 'submitContent', width: 60 }
     ];
     
@@ -625,6 +636,7 @@ async function exportConfirmAuditTasks(req, res) {
         auditStatus: getAuditStatusText(item.taskAuditStatus) || '',
         waiterName: item.waiterName || '',
         brand: item.brand || '',
+        showKeywords: item.showKeywords || '',
         submitContent: formattedContent
       });
     });
