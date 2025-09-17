@@ -536,16 +536,19 @@ async function getDetail(id, memberId = null) {
         // 直接使用enrolled-task模型的checkEnrollment函数
         const enrolledTaskModel = require('./enrolled-task.model');
         const enrollmentResult = await enrolledTaskModel.checkEnrollment(task.id, memberId);
-        
         task.isEnrolled = enrollmentResult.isEnrolled;
         task.enrollmentId = enrollmentResult.enrollmentId;
         
+        // 设置showKeywords字段
+        task.showKeywords = enrollmentResult.isEnrolled ? (enrollmentResult.brandKeywords || '') : '';
+        
         // 记录日志，用于调试报名状态
-        logger.info(`任务详情(使用checkEnrollment) - 任务ID: ${id}, 会员ID: ${memberId}, 是否已报名: ${task.isEnrolled}, 报名ID: ${task.enrollmentId}`);
+        logger.info(`任务详情(使用checkEnrollment) - 任务ID: ${id}, 会员ID: ${memberId}, 是否已报名: ${task.isEnrolled}, 报名ID: ${task.enrollmentId}, 品牌关键词: ${task.showKeywords}`);
       } catch (error) {
         logger.error(`检查任务报名状态失败: ${error.message}`);
         task.isEnrolled = false;
         task.enrollmentId = null;
+        task.showKeywords = '';
       }
       
       // 检查任务是否已提交
@@ -573,6 +576,7 @@ async function getDetail(id, memberId = null) {
       task.isSubmitted = false;
       task.submittedId = null;
       task.taskAuditStatus = null;
+      task.showKeywords = '';
     }
     
     // 获取报名人数

@@ -445,7 +445,7 @@ async function getListByMember(filters = {}, page = DEFAULT_PAGE, pageSize = DEF
  * 检查会员是否已报名任务并返回报名详情
  * @param {number} taskId - 任务ID
  * @param {number} memberId - 会员ID
- * @returns {Promise<Object>} 包含是否已报名和报名ID的对象
+ * @returns {Promise<Object>} 包含是否已报名、报名ID和品牌关键词的对象
  */
 async function checkEnrollment(taskId, memberId) {
   try {
@@ -453,18 +453,20 @@ async function checkEnrollment(taskId, memberId) {
     const parsedMemberId = parseInt(memberId, 10);
         
     const [rows] = await pool.query(
-      'SELECT id FROM enrolled_tasks WHERE task_id = ? AND member_id = ?',
+      'SELECT id, brand_keywords FROM enrolled_tasks WHERE task_id = ? AND member_id = ?',
       [parsedTaskId, parsedMemberId]
     );
     
     const isEnrolled = rows.length > 0;
     const enrollmentId = isEnrolled ? rows[0].id : null;
+    const brandKeywords = isEnrolled ? (rows[0].brand_keywords || '') : '';
     
-    logger.info(`报名状态检查结果 - 任务ID: ${parsedTaskId}, 会员ID: ${parsedMemberId}, 是否已报名: ${isEnrolled}, 报名ID: ${enrollmentId}`);
+    logger.info(`报名状态检查结果 - 任务ID: ${parsedTaskId}, 会员ID: ${parsedMemberId}, 是否已报名: ${isEnrolled}, 报名ID: ${enrollmentId}, 品牌关键词: ${brandKeywords}`);
     
     return {
       isEnrolled,
-      enrollmentId
+      enrollmentId,
+      brandKeywords
     };
   } catch (error) {
     logger.error(`检查会员是否已报名任务失败: ${error.message}`);
