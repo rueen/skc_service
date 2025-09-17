@@ -39,6 +39,7 @@ function formatEnrolledTask(enrolledTask) {
  * @param {Object} enrollData - 报名数据
  * @param {number} enrollData.taskId - 任务ID
  * @param {number} enrollData.memberId - 会员ID
+ * @param {string} enrollData.brandKeywords - 品牌关键词（可选）
  * @returns {Promise<Object>} 创建结果
  */
 async function create(enrollData) {
@@ -204,10 +205,10 @@ async function create(enrollData) {
       logger.warn(`获取会员群组失败，将不记录群组ID: ${error.message}`);
     }
     
-    // 插入报名记录，包含关联的群组ID
+    // 插入报名记录，包含关联的群组ID和品牌关键词
     const [result] = await connection.query(
-      'INSERT INTO enrolled_tasks (task_id, member_id, related_group_id) VALUES (?, ?, ?)',
-      [enrollData.taskId, enrollData.memberId, relatedGroupId]
+      'INSERT INTO enrolled_tasks (task_id, member_id, related_group_id, brand_keywords) VALUES (?, ?, ?, ?)',
+      [enrollData.taskId, enrollData.memberId, relatedGroupId, enrollData.brandKeywords || null]
     );
     
     // 如果任务属于任务组，需要在enrolled_task_groups表中记录

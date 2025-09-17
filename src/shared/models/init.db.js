@@ -286,6 +286,7 @@ CREATE TABLE IF NOT EXISTS enrolled_tasks (
   member_id bigint(20) NOT NULL COMMENT '会员ID',
   enroll_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '报名时间',
   related_group_id bigint(20) DEFAULT NULL COMMENT '关联的群组ID',
+  brand_keywords varchar(255) DEFAULT NULL COMMENT '品牌关键词',
   create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),

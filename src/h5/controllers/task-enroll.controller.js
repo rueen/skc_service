@@ -23,6 +23,7 @@ const i18n = require('../../shared/utils/i18n.util');
 async function enrollTask(req, res) {
   try {
     const { taskId } = req.params;
+    const { brandKeywords } = req.body;
     const memberId = req.user.id;
     
     if (!taskId) {
@@ -32,7 +33,8 @@ async function enrollTask(req, res) {
     // 创建报名记录
     const result = await enrolledTaskModel.create({
       taskId: parseInt(taskId, 10),
-      memberId
+      memberId,
+      brandKeywords
     });
     
     // 确保响应使用驼峰格式

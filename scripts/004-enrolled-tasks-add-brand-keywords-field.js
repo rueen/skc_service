@@ -1,6 +1,6 @@
 /**
- * 任务表添加品牌关键词字段迁移脚本
- * 为tasks表添加brand_keywords字段，无需处理老数据
+ * 为 enrolled_tasks 表新增 brand_keywords 字段
+ * 迁移脚本 004
  */
 try {
   require('dotenv').config();
@@ -11,11 +11,15 @@ try {
 const { pool } = require('../src/shared/models/db');
 const { logger } = require('../src/shared/config/logger.config');
 
-async function migrate() {
+/**
+ * 执行迁移
+ */
+async function runMigration() {
   const connection = await pool.getConnection();
   try {
-    console.log('开始执行tasks表品牌关键词字段迁移...');
+    console.log('开始执行迁移脚本 004...');
     
+    // 开始事务
     await connection.beginTransaction();
     
     // 检查字段是否已存在
@@ -23,34 +27,34 @@ async function migrate() {
       SELECT COLUMN_NAME 
       FROM INFORMATION_SCHEMA.COLUMNS 
       WHERE TABLE_SCHEMA = DATABASE() 
-        AND TABLE_NAME = 'tasks' 
+        AND TABLE_NAME = 'enrolled_tasks' 
         AND COLUMN_NAME = 'brand_keywords'
     `);
     
     if (columns.length > 0) {
-      console.log('brand_keywords字段已存在，跳过添加');
+      console.log('字段 brand_keywords 已存在，跳过此次迁移');
       await connection.commit();
       return true;
     }
     
-    // 添加brand_keywords字段
-    console.log('添加brand_keywords字段...');
+    // 为 enrolled_tasks 表新增 brand_keywords 字段
+    console.log('添加 brand_keywords 字段...');
     await connection.query(`
-      ALTER TABLE tasks 
-      ADD COLUMN brand_keywords json DEFAULT NULL 
-      COMMENT '品牌关键词，JSON格式存储对象数组[{text, ratio}]' 
-      AFTER brand
+      ALTER TABLE enrolled_tasks 
+      ADD COLUMN brand_keywords varchar(255) DEFAULT NULL COMMENT '品牌关键词'
+      AFTER related_group_id
     `);
     
-    console.log('brand_keywords字段添加成功');
+    console.log('已为 enrolled_tasks 表新增 brand_keywords 字段');
     
+    // 提交事务
     await connection.commit();
-    console.log('tasks表品牌关键词字段迁移完成');
+    console.log('迁移脚本 004 执行成功');
     
     return true;
   } catch (error) {
     await connection.rollback();
-    console.error(`迁移失败: ${error.message}`);
+    console.error(`迁移脚本 004 执行失败: ${error.message}`);
     throw error;
   } finally {
     connection.release();
@@ -58,7 +62,7 @@ async function migrate() {
 }
 
 // 执行迁移
-migrate()
+runMigration()
   .then(() => {
     console.log('迁移成功完成');
     process.exit(0);
