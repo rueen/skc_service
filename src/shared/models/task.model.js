@@ -62,6 +62,21 @@ function formatTask(task) {
     formattedTask.customFields = [];
   }
   
+  // 安全解析 brand_keywords JSON 字段
+  try {
+    // 检查 brand_keywords 是否已经是数组
+    if (Array.isArray(task.brand_keywords)) {
+      formattedTask.brandKeywords = task.brand_keywords;
+    } else if (typeof task.brand_keywords === 'string' && task.brand_keywords.trim()) {
+      formattedTask.brandKeywords = JSON.parse(task.brand_keywords);
+    } else {
+      formattedTask.brandKeywords = [];
+    }
+  } catch (error) {
+    logger.error(`解析 brand_keywords 失败: ${error.message}, 原始值: ${task.brand_keywords}`);
+    formattedTask.brandKeywords = [];
+  }
+  
   formattedTask.unlimitedQuota = task.unlimited_quota === 1;
   
   // 计算剩余名额
@@ -636,6 +651,7 @@ async function create(taskData) {
     // 安全处理 JSON 数据
     let groupIdsJson = '[]';
     let customFieldsJson = '[]';
+    let brandKeywordsJson = '[]';
     
     try {
       groupIdsJson = JSON.stringify(taskData.groupIds || []);
@@ -651,6 +667,13 @@ async function create(taskData) {
       customFieldsJson = '[]';
     }
     
+    try {
+      brandKeywordsJson = JSON.stringify(taskData.brandKeywords || []);
+    } catch (error) {
+      logger.error(`序列化 brandKeywords 失败: ${error.message}`);
+      brandKeywordsJson = '[]';
+    }
+    
     // 格式化日期时间为 MySQL 兼容格式
     const startTime = formatDateTimeForMySQL(taskData.startTime);
     const endTime = formatDateTimeForMySQL(taskData.endTime);
@@ -661,11 +684,11 @@ async function create(taskData) {
     // 创建任务
     const [result] = await connection.query(
       `INSERT INTO tasks 
-       (task_name, channel_id, category, task_type, reward, brand, 
+       (task_name, channel_id, category, task_type, reward, brand, brand_keywords,
         group_ids, group_mode, user_range, task_count, custom_fields, 
         start_time, end_time, unlimited_quota, quota, fans_required, 
         content_requirement, task_info, notice, task_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         taskData.taskName,
         taskData.channelId,
@@ -673,6 +696,7 @@ async function create(taskData) {
         taskData.taskType,
         taskData.reward,
         taskData.brand,
+        brandKeywordsJson,
         groupIdsJson,
         groupMode,
         userRange,
@@ -819,6 +843,19 @@ async function update(taskData) {
     if (taskData.brand !== undefined) {
       updateFields.push('brand = ?');
       params.push(taskData.brand);
+    }
+    
+    if (taskData.brandKeywords !== undefined) {
+      try {
+        const brandKeywordsJson = JSON.stringify(taskData.brandKeywords || []);
+        updateFields.push('brand_keywords = ?');
+        params.push(brandKeywordsJson);
+      } catch (error) {
+        logger.error(`序列化 brandKeywords 失败: ${error.message}`);
+        // 使用空数组作为默认值
+        updateFields.push('brand_keywords = ?');
+        params.push('[]');
+      }
     }
     
     if (taskData.groupIds !== undefined) {

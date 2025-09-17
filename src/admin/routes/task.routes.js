@@ -143,6 +143,10 @@ router.post(
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 100 })
       .withMessage('common.validation.maxLength{max:100}'),
+    body('brandKeywords')
+      .optional()
+      .isArray()
+      .withMessage('common.validation.mustBeArray'),
     body('groupIds')
       .optional()
       .isArray()
@@ -249,6 +253,10 @@ router.put(
       .optional()
       .isLength({ max: 100 })
       .withMessage('common.validation.maxLength{max:100}'),
+    body('brandKeywords')
+      .optional()
+      .isArray()
+      .withMessage('common.validation.mustBeArray'),
     body('groupIds')
       .optional()
       .isArray()

@@ -251,6 +251,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   task_type varchar(50) NOT NULL COMMENT '任务类型',
   reward decimal(10,2) NOT NULL COMMENT '任务奖励金额',
   brand varchar(100) DEFAULT NULL COMMENT '品牌名称',
+  brand_keywords json DEFAULT NULL COMMENT '品牌关键词，JSON格式',
   group_ids json DEFAULT NULL COMMENT '关联的群组ID列表，JSON格式',
   group_mode tinyint(1) NOT NULL DEFAULT 0 COMMENT '群组模式：0-不指定，1-指定群组',
   user_range tinyint(1) NOT NULL DEFAULT 0 COMMENT '用户范围：0-全部用户，1-完成任务次数',
