@@ -79,12 +79,12 @@ async function getList(req, res) {
 async function getDetail(req, res) {
   try {
     const { id } = req.params;
+    const memberId = req.query.memberId || null;
     
     if (!id) {
       return responseUtil.badRequest(res, '任务ID不能为空');
     }
-    
-    const result = await taskModel.getDetail(id);
+    const result = await taskModel.getDetail(id, memberId);
     
     if (!result) {
       return responseUtil.notFound(res, i18n.t('admin.task.notFound', req.lang));
