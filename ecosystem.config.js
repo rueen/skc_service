@@ -15,7 +15,7 @@ module.exports = {
       // 管理后台服务
       name: 'skc-admin',
       script: 'src/admin/admin-server.js',
-      instances: 2, // 为4核CPU分配2个实例以避免资源竞争
+      instances: 1, // 调整为1个实例，因为员工使用人数较少
       exec_mode: 'cluster', // 使用集群模式以实现负载均衡
       watch: false, // 生产环境中不启用文件监视
       max_memory_restart: '400M', // 内存超过400M时自动重启
@@ -38,7 +38,7 @@ module.exports = {
       // H5前端服务
       name: 'skc-h5',
       script: 'src/h5/h5-server.js',
-      instances: 2, // 为4核CPU分配2个实例以避免资源竞争
+      instances: 3, // 调整为3个实例，因为用户端使用人数较多
       exec_mode: 'cluster', // 使用集群模式以实现负载均衡
       watch: false, // 生产环境中不启用文件监视
       max_memory_restart: '400M', // 内存超过400M时自动重启
