@@ -15,14 +15,17 @@ const i18n = require('../../shared/utils/i18n.util');
  */
 async function createWithdrawalAccount(req, res) {
   try {
-    const { paymentChannelId, account, name } = req.body;
+    const { paymentChannelId, account, name, bankName, bankBranchName, bankAccountNature } = req.body;
     const memberId = req.user.id;
     
     const accountData = {
       memberId: memberId,
       paymentChannelId: paymentChannelId,
       account,
-      name
+      name,
+      bankName,
+      bankBranchName,
+      bankAccountNature
     };
     
     const createdAccount = await withdrawalAccountModel.createWithdrawalAccount(accountData);
@@ -42,7 +45,7 @@ async function createWithdrawalAccount(req, res) {
 async function updateWithdrawalAccount(req, res) {
   try {
     const { id } = req.params;
-    const { paymentChannelId, account, name } = req.body;
+    const { paymentChannelId, account, name, bankName, bankBranchName, bankAccountNature } = req.body;
     const memberId = req.user.id;
     
     // 验证账户所有权
@@ -58,7 +61,10 @@ async function updateWithdrawalAccount(req, res) {
     const accountData = {
       paymentChannelId: paymentChannelId,
       account,
-      name
+      name,
+      bankName,
+      bankBranchName,
+      bankAccountNature
     };
     
     const updatedAccount = await withdrawalAccountModel.updateWithdrawalAccount(id, accountData);

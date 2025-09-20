@@ -238,11 +238,15 @@ async function getAllWithdrawals(options = {}) {
               m.nickname, 
               m.account as member_account, 
               pc.name as payment_channel_name,
-              wtr.username as waiter_name
+              wtr.username as waiter_name,
+              wa.bank_name,
+              wa.bank_branch_name,
+              wa.bank_account_nature
        FROM withdrawals w
        LEFT JOIN members m ON w.member_id = m.id
        LEFT JOIN payment_channels pc ON w.withdrawal_payment_channel_id = pc.id
        LEFT JOIN waiters wtr ON w.waiter_id = wtr.id
+       LEFT JOIN withdrawal_accounts wa ON w.withdrawal_account_id = wa.id
        ${whereClause}
        ORDER BY w.create_time DESC`;
     

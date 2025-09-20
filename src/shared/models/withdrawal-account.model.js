@@ -26,13 +26,13 @@ function formatWithdrawalAccount(withdrawalAccount) {
  */
 async function createWithdrawalAccount(accountData) {
   try {
-    const { memberId, paymentChannelId, account, name } = accountData;
+    const { memberId, paymentChannelId, account, name, bankName, bankBranchName, bankAccountNature } = accountData;
     
     const [result] = await pool.query(
       `INSERT INTO withdrawal_accounts 
-      (member_id, payment_channel_id, account, name) 
-      VALUES (?, ?, ?, ?)`,
-      [memberId, paymentChannelId, account, name]
+      (member_id, payment_channel_id, account, name, bank_name, bank_branch_name, bank_account_nature) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [memberId, paymentChannelId, account, name, bankName, bankBranchName, bankAccountNature]
     );
     
     if (result.affectedRows === 0) {
@@ -45,6 +45,9 @@ async function createWithdrawalAccount(accountData) {
       payment_channel_id: paymentChannelId,
       account,
       name,
+      bank_name: bankName,
+      bank_branch_name: bankBranchName,
+      bank_account_nature: bankAccountNature,
       create_time: new Date()
     };
     
@@ -63,13 +66,13 @@ async function createWithdrawalAccount(accountData) {
  */
 async function updateWithdrawalAccount(id, accountData) {
   try {
-    const { paymentChannelId, account, name } = accountData;
+    const { paymentChannelId, account, name, bankName, bankBranchName, bankAccountNature } = accountData;
     
     const [result] = await pool.query(
       `UPDATE withdrawal_accounts 
-      SET payment_channel_id = ?, account = ?, name = ? 
+      SET payment_channel_id = ?, account = ?, name = ?, bank_name = ?, bank_branch_name = ?, bank_account_nature = ? 
       WHERE id = ?`,
-      [paymentChannelId, account, name, id]
+      [paymentChannelId, account, name, bankName, bankBranchName, bankAccountNature, id]
     );
     
     if (result.affectedRows === 0) {
@@ -81,6 +84,9 @@ async function updateWithdrawalAccount(id, accountData) {
       payment_channel_id: paymentChannelId,
       account,
       name,
+      bank_name: bankName,
+      bank_branch_name: bankBranchName,
+      bank_account_nature: bankAccountNature,
       update_time: new Date()
     };
     

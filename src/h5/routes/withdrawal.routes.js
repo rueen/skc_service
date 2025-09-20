@@ -36,6 +36,18 @@ router.post(
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
       .isLength({ max: 50 })
+      .withMessage('common.validation.maxLength{max:50}'),
+    body('bankName')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('common.validation.maxLength{max:100}'),
+    body('bankBranchName')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('common.validation.maxLength{max:100}'),
+    body('bankAccountNature')
+      .optional()
+      .isLength({ max: 50 })
       .withMessage('common.validation.maxLength{max:50}')
   ],
   (req, res, next) => validatorUtil.validateRequest(req, res) ? next() : null,
@@ -66,6 +78,18 @@ router.put(
     body('name')
       .notEmpty()
       .withMessage('common.validation.mustNotBeEmpty')
+      .isLength({ max: 50 })
+      .withMessage('common.validation.maxLength{max:50}'),
+    body('bankName')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('common.validation.maxLength{max:100}'),
+    body('bankBranchName')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('common.validation.maxLength{max:100}'),
+    body('bankAccountNature')
+      .optional()
       .isLength({ max: 50 })
       .withMessage('common.validation.maxLength{max:50}')
   ],
